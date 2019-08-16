@@ -1,9 +1,6 @@
 class EntityBase
 {
-    static get TAG()
-    {
-        return `#${this.name}`;
-    }
+    static get TAG() { return `#${this.name}`; }
 
     /**
      * Creates an entity.
@@ -18,6 +15,7 @@ class EntityBase
     {
         const tags = findInheritedTags(this.constructor);
         this.id = this.entityManager.create(...tags);
+        this.onCreate();
         return this;
     }
 
@@ -28,7 +26,7 @@ class EntityBase
     {
         this.entityManager.destroy(this.id);
         this.id = -1;
-        return false;
+        return this.onDestroy();
     }
 
     assign(component, ...args)
@@ -51,6 +49,13 @@ class EntityBase
     get(component, ...components)
     {
         return this.entityManager.get(this.id, component, ...components);
+    }
+
+    onCreate() {}
+
+    onDestroy()
+    {
+        return false;
     }
 }
 

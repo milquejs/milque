@@ -36,12 +36,12 @@ class Box extends EntityBase
     }
 
     /** @override */
-    create()
+    onCreate()
     {
-        super.create()
-            .assign(Position)
+        super.onCreate()
+
+        this.assign(Position)
             .assign(Velocity);
-        return this;
     }
 }
 
