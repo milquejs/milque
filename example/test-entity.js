@@ -28,17 +28,12 @@ console.log(circle, E.get(circle, Position, Velocity));
 // A way to create custom entities...
 class Box extends EntityBase
 {
-    static get TAG() { return '#Box'; }
-
-    constructor(entityManager)
-    {
-        super(entityManager);
-    }
+    constructor() { super(); }
 
     /** @override */
-    onCreate()
+    onCreate(...args)
     {
-        super.onCreate()
+        super.onCreate(...args);
 
         this.assign(Position)
             .assign(Velocity);

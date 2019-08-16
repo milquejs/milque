@@ -1,21 +1,23 @@
-class EntityBase
+import ComponentBase from './ComponentBase.js';
+
+class EntityBase extends ComponentBase
 {
-    static get TAG() { return `#${this.name}`; }
+    constructor()
+    {
+        this.entityManager = null;
+        this.id = -1;
+    }
 
     /**
      * Creates an entity.
      * @param {EntityManager} entityManager The entity manager that owns this entity.
+     * @param {Number} entityID The id of the represented entity.
      */
-    constructor(entityManager)
+    create(entityManager, entityID, ...args)
     {
         this.entityManager = entityManager;
-    }
-
-    create()
-    {
-        const tags = findInheritedTags(this.constructor);
-        this.id = this.entityManager.create(...tags);
-        this.onCreate();
+        this.id = entityID;
+        this.onCreate(...args);
         return this;
     }
 
@@ -24,9 +26,10 @@ class EntityBase
      */
     destroy()
     {
+        const result = this.onDestroy();
         this.entityManager.destroy(this.id);
         this.id = -1;
-        return this.onDestroy();
+        return result;
     }
 
     assign(component, ...args)
@@ -51,40 +54,12 @@ class EntityBase
         return this.entityManager.get(this.id, component, ...components);
     }
 
-    onCreate() {}
+    onCreate(...args) {}
 
     onDestroy()
     {
         return false;
     }
-}
-
-function findInheritedTags(Class, dst=[])
-{
-    if (Class.hasOwnProperty('INHERITED_TAGS'))
-    {
-        for(const tag of Class.INHERITED_TAGS)
-        {
-            dst.push(tag);
-        }
-    }
-    else if (Class.hasOwnProperty('TAG'))
-    {
-        dst.push(Class.TAG);
-
-        const superClass = Object.getPrototypeOf(Class);
-        if (superClass)
-        {
-            for(const tag of findInheritedTags(superClass))
-            {
-                dst.push(tag);
-            }
-        }
-
-        Class.INHERITED_TAGS = dst;
-    }
-
-    return dst;
 }
 
 export default EntityBase;

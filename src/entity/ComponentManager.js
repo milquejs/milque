@@ -1,3 +1,5 @@
+import ComponentBase from './ComponentBase.js';
+
 const STATIC_TAG_INSTANCE = {};
 
 class ComponentManager
@@ -13,6 +15,11 @@ class ComponentManager
         {
             this._createComponent = createComponentByTag;
             this._destroyComponent = destroyComponentByTag;
+        }
+        else if (component.prototype instanceof ComponentBase)
+        {
+            this._createComponent = createComponentByClass;
+            this._destroyComponent = destroyComponentByClass;
         }
         else
         {
@@ -79,6 +86,18 @@ function createComponentByFunction(ComponentFunction, ...args)
 function destroyComponentByFunction(ComponentFunction, instance)
 {
     return true;
+}
+
+function createComponentByClass(ComponentClass, ...args)
+{
+    const result = new ComponentClass();
+    result.create(...args);
+    return result;
+}
+
+function destroyComponentByClass(ComponentClass, instance)
+{
+    return instance.destroy();
 }
 
 export default ComponentManager;

@@ -1,5 +1,6 @@
 import EntityView from './EntityView.js';
 import ComponentManager from './ComponentManager.js';
+import EntityBase from './EntityBase.js';
 
 class EntityManager
 {
@@ -10,6 +11,11 @@ class EntityManager
         this._nextEntityID = 1;
     }
 
+    /**
+     * Creates an entity.
+     * @param  {...any} components Any components to be assigned to the created entity.
+     * @returns {Number} The id of the entity created.
+     */
     create(...components)
     {
         const entity = this._nextEntityID++;
@@ -21,6 +27,10 @@ class EntityManager
         return entity;
     }
 
+    /**
+     * Destroys an entity and all its components.
+     * @param {Number} entity The id of the entity to be destroyed.
+     */
     destroy(entity)
     {
         for(const componentManager of this._componentManagers.values())
@@ -31,6 +41,30 @@ class EntityManager
             }
         }
         this._entities.delete(entity);
+    }
+
+    /**
+     * Spawns an entity of the class type. This serves as the hybrid ECS / MVC entity.
+     * The returned value can be treated as the entity object itself and any manipulations
+     * should be handled through that object. Implementation-wise, the created instance is
+     * treated as a component (with fancy callbacks) and therefore can easily interoperate
+     * with other components while being able to own its data and logic. In other words,
+     * you can easily substitute a Component with a EntityClass for any component function,
+     * including entitites(), has(), etc.
+     * 
+     * NOTE: Because references to this instance may exist AFTER it has been destroyed, it
+     * is NOT recommended to destroy() or remove() "class" components from the manager.
+     * Instead, it should be done through the entity itself, and therefore the user will
+     * at least SEE the destruction and take action in removing it manually.
+     * 
+     * @param {Class<EntityBase>} EntityClass The class of the entity to create.
+     * @param  {...any} args Any additional arguments to pass to the entity's create().
+     * @returns {EntityBase} The handler component for the entity.
+     */
+    spawn(EntityClass = EntityBase, ...args)
+    {
+        const entity = ENTITY_MANAGER.create();
+        return ENTITY_MANAGER.assign(entity, EntityClass, ENTITY_MANAGER, entity, ...args);
     }
 
     entities(...components)

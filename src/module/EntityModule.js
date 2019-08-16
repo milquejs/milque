@@ -3,14 +3,9 @@ import EntityManager from '../entity/EntityManager.js';
 
 const ENTITY_MANAGER = new EntityManager();
 
-/**
- * @param {Class} EntityClass A sub-class of EntityBase.
- * @returns {EntityBase} The created entity instance of passed-in class.
- */
-function spawn(EntityClass = EntityBase)
+function spawn(EntityClass = EntityBase, ...args)
 {
-    const result = new EntityClass(ENTITY_MANAGER);
-    return result.create();
+    return ENTITY_MANAGER.spawn(EntityClass, ...args);
 }
 
 function keys(...components)
