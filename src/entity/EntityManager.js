@@ -2,6 +2,12 @@ import EntityView from './EntityView.js';
 import ComponentManager from './ComponentManager.js';
 import EntityBase from './EntityBase.js';
 
+import ComponentTagFactory from './ComponentTagFactory.js';
+import ComponentObjectFactory from './ComponentObjectFactory.js';
+import ComponentFunctionFactory from './ComponentFunctionFactory.js';
+import ComponentClassFactory from './ComponentClassFactory.js';
+import ComponentBase from './ComponentBase.js';
+
 class EntityManager
 {
     constructor()
@@ -9,6 +15,42 @@ class EntityManager
         this._entities = new Set();
         this._componentManagers = new Map();
         this._nextEntityID = 1;
+    }
+
+    registerComponent(component, componentFactory = null)
+    {
+        if (!componentFactory)
+        {
+            if (typeof component === 'string')
+            {
+                componentFactory = new ComponentTagFactory(component);
+            }
+            else if (typeof component === 'object')
+            {
+                componentFactory = new ComponentObjectFactory(component);
+            }
+            else if (component instanceof ComponentBase)
+            {
+                componentFactory = new ComponentClassFactory(component);
+            }
+            else if (typeof component === 'function')
+            {
+                componentFactory = new ComponentFunctionFactory(component);
+            }
+            else
+            {
+                throw new Error('Cannot find factory for component type.');
+            }
+        }
+
+        const componentManager = new ComponentManager(componentFactory);
+        this._componentManagers.set(component, componentManager);
+        return componentManager;
+    }
+
+    unregisterComponent(component)
+    {
+        this._componentManagers.delete(component);
     }
 
     /**
@@ -115,8 +157,7 @@ class EntityManager
         let componentManager;
         if (!this._componentManagers.has(component))
         {
-            componentManager = new ComponentManager(component);
-            this._componentManagers.set(component, componentManager);
+            this.registerComponent(component);
         }
         else
         {
