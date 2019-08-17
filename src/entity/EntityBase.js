@@ -1,4 +1,4 @@
-import ComponentBase from './ComponentBase.js';
+import ComponentBase from './component/ComponentBase.js';
 
 class EntityBase extends ComponentBase
 {
