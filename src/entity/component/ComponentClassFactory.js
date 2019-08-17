@@ -12,7 +12,8 @@ class ComponentClassFactory extends ComponentFactory
     /** @override */
     create(...args)
     {
-        const result = new (this.componentClass)();
+        const ComponentClass = this.componentClass;
+        const result = new ComponentClass();
         result.create(...args);
         return result;
     }

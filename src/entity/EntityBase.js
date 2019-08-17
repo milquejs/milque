@@ -4,6 +4,7 @@ class EntityBase extends ComponentBase
 {
     constructor()
     {
+        super();
         this.entityManager = null;
         this.id = -1;
     }

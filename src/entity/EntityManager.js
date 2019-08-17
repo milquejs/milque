@@ -29,7 +29,7 @@ class EntityManager
             {
                 componentFactory = new ComponentObjectFactory(component);
             }
-            else if (component instanceof ComponentBase)
+            else if (component.prototype instanceof ComponentBase)
             {
                 componentFactory = new ComponentClassFactory(component);
             }
@@ -105,8 +105,8 @@ class EntityManager
      */
     spawn(EntityClass = EntityBase, ...args)
     {
-        const entity = ENTITY_MANAGER.create();
-        return ENTITY_MANAGER.assign(entity, EntityClass, ENTITY_MANAGER, entity, ...args);
+        const entity = this.create();
+        return this.assign(entity, EntityClass, this, entity, ...args);
     }
 
     entities(...components)
@@ -154,10 +154,12 @@ class EntityManager
 
     assign(entity, component, ...args)
     {
+        if (typeof entity !== 'number') throw new Error('Invalid entity handle - must be a number.');
+        
         let componentManager;
         if (!this._componentManagers.has(component))
         {
-            this.registerComponent(component);
+            componentManager = this.registerComponent(component);
         }
         else
         {
