@@ -2,11 +2,11 @@ import EntityView from './EntityView.js';
 import EntityBase from './EntityBase.js';
 
 import ComponentManager from './component/ComponentManager.js';
-import ComponentTagFactory from './component/ComponentTagFactory.js';
-import ComponentObjectFactory from './component/ComponentObjectFactory.js';
-import ComponentFunctionFactory from './component/ComponentFunctionFactory.js';
-import ComponentClassFactory from './component/ComponentClassFactory.js';
 import ComponentBase from './component/ComponentBase.js';
+import ComponentTagFactory from './component/factory/ComponentTagFactory.js';
+import ComponentObjectFactory from './component/factory/ComponentObjectFactory.js';
+import ComponentFunctionFactory from './component/factory/ComponentFunctionFactory.js';
+import ComponentClassFactory from './component/factory/ComponentClassFactory.js';
 
 class EntityManager
 {
