@@ -60,8 +60,8 @@ class Mouse extends InputDevice
         }
         else
         {
-            this.dispatchEvent('input', 'pos', 'x', e.clientX);
-            this.dispatchEvent('input', 'pos', 'y', e.clientY);
+            this.dispatchEvent('input', 'pos', 'x', e.pageX);
+            this.dispatchEvent('input', 'pos', 'y', e.pageY);
         }
     }
 
