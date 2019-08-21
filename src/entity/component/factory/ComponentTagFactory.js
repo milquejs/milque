@@ -2,23 +2,15 @@ import ComponentFactory from './ComponentFactory.js';
 
 class ComponentTagFactory extends ComponentFactory
 {
-    constructor(tag)
+    constructor(tagName)
     {
         super();
 
-        this.tag = tag;
+        this.tagName = tagName;
     }
-
+    
     /** @override */
-    create(...args)
-    {
-        return null;
-    }
-
-    /** @override */
-    destroy(instance)
-    {
-    }
+    create(...args) { return null; }
 }
 
 export default ComponentTagFactory;

@@ -2,22 +2,33 @@ import ComponentFactory from './ComponentFactory.js';
 
 class ComponentFunctionFactory extends ComponentFactory
 {
-    constructor(handler)
+    constructor(componentHandler)
     {
         super();
 
-        this.handler = handler;
+        this.componentHandler = componentHandler;
     }
 
     /** @override */
     create(...args)
     {
-        return this.handler(...args);
+        return this.componentHandler(...args);
+    }
+
+    /** @override */
+    update(instance, ...args)
+    {
+        const target = this.componentHandler(...args);
+        for(const key of Object.keys(target))
+        {
+            instance[key] = target[key];
+        }
     }
 
     /** @override */
     destroy(instance)
     {
+        // Instance can always be cached :D
     }
 }
 

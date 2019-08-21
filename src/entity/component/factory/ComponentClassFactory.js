@@ -19,9 +19,19 @@ class ComponentClassFactory extends ComponentFactory
     }
 
     /** @override */
+    update(instance, ...args)
+    {
+        instance.update(...args);
+    }
+
+    /** @override */
     destroy(instance)
     {
-        instance.destroy();
+        const result = instance.destroy();
+        if (result)
+        {
+            // Instance can be cached :D
+        }
     }
 }
 

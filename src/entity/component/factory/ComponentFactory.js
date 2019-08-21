@@ -1,19 +1,10 @@
 class ComponentFactory
 {
-    constructor()
-    {
-
-    }
+    constructor() {}
     
-    create(...args)
-    {
-        return {};
-    }
-
-    destroy(instance)
-    {
-
-    }
+    create(...args) { return {}; }
+    update(instance, ...args) {}
+    destroy(instance) {}
 }
 
 export default ComponentFactory;

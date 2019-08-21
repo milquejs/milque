@@ -1,10 +1,8 @@
 import EntityView from './EntityView.js';
-import EntityBase from './EntityBase.js';
 
 import ComponentManager from './component/ComponentManager.js';
 import ComponentBase from './component/ComponentBase.js';
 import ComponentTagFactory from './component/factory/ComponentTagFactory.js';
-import ComponentObjectFactory from './component/factory/ComponentObjectFactory.js';
 import ComponentFunctionFactory from './component/factory/ComponentFunctionFactory.js';
 import ComponentClassFactory from './component/factory/ComponentClassFactory.js';
 
@@ -24,10 +22,6 @@ class EntityManager
             if (typeof component === 'string')
             {
                 componentFactory = new ComponentTagFactory(component);
-            }
-            else if (typeof component === 'object')
-            {
-                componentFactory = new ComponentObjectFactory(component);
             }
             else if (component.prototype instanceof ComponentBase)
             {
@@ -85,30 +79,6 @@ class EntityManager
         this._entities.delete(entity);
     }
 
-    /**
-     * Spawns an entity of the class type. This serves as the hybrid ECS / MVC entity.
-     * The returned value can be treated as the entity object itself and any manipulations
-     * should be handled through that object. Implementation-wise, the created instance is
-     * treated as a component (with fancy callbacks) and therefore can easily interoperate
-     * with other components while being able to own its data and logic. In other words,
-     * you can easily substitute a Component with a EntityClass for any component function,
-     * including entitites(), has(), etc.
-     * 
-     * NOTE: Because references to this instance may exist AFTER it has been destroyed, it
-     * is NOT recommended to destroy() or remove() "class" components from the manager.
-     * Instead, it should be done through the entity itself, and therefore the user will
-     * at least SEE the destruction and take action in removing it manually.
-     * 
-     * @param {Class<EntityBase>} EntityClass The class of the entity to create.
-     * @param  {...any} args Any additional arguments to pass to the entity's create().
-     * @returns {EntityBase} The handler component for the entity.
-     */
-    spawn(EntityClass = EntityBase, ...args)
-    {
-        const entity = this.create();
-        return this.assign(entity, EntityClass, this, entity, ...args);
-    }
-
     entities(...components)
     {
         return new EntityView(this, (entity) => this.has(entity, ...components));
@@ -134,6 +104,15 @@ class EntityManager
         return true;
     }
 
+    /**
+     * Gets the component instances for the listed components. If only 1 component is passed in,
+     * then just the instance is returned. Otherwise, an array of all listed components, in the order
+     * provided, is returned instead (this allows easy spreading of values).
+     * @param {Number} entity The id of the entity for the components.
+     * @param {ComponentBase|Function|String} component The component type to get the instance for.
+     * @param  {...ComponentBase|Function|String} components Additional component types to get instances for.
+     * @returns {Object|Array<Object>}
+     */
     get(entity, component, ...components)
     {
         if (components.length > 0)
@@ -152,6 +131,14 @@ class EntityManager
         }
     }
 
+    /**
+     * Assigns the component to the entity. Assumes component does not exist
+     * for the entity yet.
+     * @param {Number} entity The id of the entity to assign to.
+     * @param {ComponentBase|Function|String} component The component type to create.
+     * @param  {...any} args Additional args passed to the component to create.
+     * @returns {Object} The component instance assigned.
+     */
     assign(entity, component, ...args)
     {
         if (typeof entity !== 'number') throw new Error('Invalid entity handle - must be a number.');
@@ -168,21 +155,60 @@ class EntityManager
         return componentManager.add(entity, ...args);
     }
 
+    /**
+     * Updates the component for the entity. Assumes component has already been
+     * assigned to the entity.
+     * @param {Number} entity The id of the entity to update.
+     * @param {ComponentBase|Function|String} component The component type to update.
+     * @param  {...any} args Additional args passed to the component to update.
+     * @returns {Object} The component instance updated.
+     */
+    update(entity, component, ...args)
+    {
+        if (typeof entity !== 'number') throw new Error('Invalid entity handle - must be a number.');
+
+        // Due to assumption, this will NEVER be null.
+        const componentManager = this._componentManagers.get(component);
+        return componentManager.update(entity, ...args);
+    }
+
+    /**
+     * Removes the listed components from the entity. If component does not exist
+     * for the entity, it is ignored.
+     * @param {Number} entity The id of the entity to remove from.
+     * @param  {...any} components The component types to remove.
+     */
     remove(entity, ...components)
     {
         for(const c of components)
         {
-            this._componentManagers.get(c).remove(entity);
+            if (this._componentManagers.has(c))
+            {
+                const componentManager = this._componentManagers.get(c);
+                if (componentManager.has(entity))
+                {
+                    componentManager.remove(entity);
+                }
+            }
         }
     }
 
+    /**
+     * Clears all instances of the listed component type. If none are supplied, then all are removed.
+     * If the component has no instances, it is skipped.
+     * @param {...ComponentBase|Function|String} components Component types to be cleared.
+     */
     clear(...components)
     {
-        if (this.components.length > 0)
+        if (components.length > 0)
         {
             for(const c of components)
             {
-                this._componentManagers.get(c).clear();
+                if (this._componentManagers.has(c))
+                {
+                    const componentManager = this._componentManagers.get(c);
+                    componentManager.clear();
+                }
             }
         }
         else
