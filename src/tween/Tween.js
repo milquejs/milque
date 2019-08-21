@@ -2,19 +2,17 @@
 
 // TODO: Do we need Tween Groups to separate updates?
 
-import Eventable from '../Eventable.js';
+import Eventable from '../util/Eventable.js';
 import * as Easing from './Easing.js';
 import * as Interpolation from './Interpolation.js';
 
 let NEXT_ID = 1;
-class Tween extends Eventable()
+class Tween
 {
     static now() { return Date.now(); }
 
     constructor(target)
     {
-        super();
-
         this.target = target;
         this.id = NEXT_ID++;
         this.active = false;
@@ -297,5 +295,7 @@ class Tween extends Eventable()
         return this;
     }
 }
+
+Eventable.mixin(Tween);
 
 export default Tween;
