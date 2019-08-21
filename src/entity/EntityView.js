@@ -6,6 +6,11 @@ class EntityView
         this.filter = filter;
     }
 
+    subview(filter)
+    {
+        return new EntityView(this.entityManager, (entity) => this.filter(entity) && filter(entity));
+    }
+
     [Symbol.iterator]()
     {
         return {
