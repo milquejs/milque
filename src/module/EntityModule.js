@@ -1,5 +1,6 @@
 import EntityBase from '../entity/EntityBase.js';
 import EntityManager from '../entity/EntityManager.js';
+import EntityView from '../entity/EntityView.js';
 
 const ENTITY_MANAGER = new EntityManager();
 
@@ -23,24 +24,70 @@ const ENTITY_MANAGER = new EntityManager();
  */
 function spawn(EntityClass = EntityBase, ...args)
 {
-    const entity = ENTITY_MANAGER.create();
-    return ENTITY_MANAGER.assign(entity, EntityClass, this, entity, ...args);
+    const entityID = ENTITY_MANAGER.create();
+    return ENTITY_MANAGER.assign(entityID, EntityClass, ENTITY_MANAGER, entityID, ...args);
 }
 
-function keys(...components)
+function entities(...components)
 {
-    return ENTITY_MANAGER.entities(...components);
+    return {
+        view: new EntityView(ENTITY_MANAGER, (entity) => ENTITY_MANAGER.has(entity, EntityBase, ...components)),
+        [Symbol.iterator]()
+        {
+            return {
+                iterator: this.view[Symbol.iterator](),
+                next()
+                {
+                    let result = this.iterator.next();
+                    if (!result.done)
+                    {
+                        return {
+                            value: ENTITY_MANAGER.get(result.value, EntityBase),
+                            done: false
+                        };
+                    }
+                    else
+                    {
+                        return { done: true };
+                    }
+                }
+            }
+        }
+    }
 }
 
-function component(entity, component, ...components)
+function components(...components)
 {
-    return ENTITY_MANAGER.get(entity, component, ...components);
+    return {
+        view: new EntityView(ENTITY_MANAGER, (entity) => ENTITY_MANAGER.has(entity, ...components)),
+        [Symbol.iterator]()
+        {
+            return {
+                iterator: this.view[Symbol.iterator](),
+                next()
+                {
+                    let result = this.iterator.next();
+                    if (!result.done)
+                    {
+                        return {
+                            value: ENTITY_MANAGER.get(result.value, ...components),
+                            done: false
+                        };
+                    }
+                    else
+                    {
+                        return { done: true };
+                    }
+                }
+            }
+        }
+    }
 }
 
 export {
     ENTITY_MANAGER,
     EntityBase,
     spawn,
-    keys,
-    component,
+    entities,
+    components
 };

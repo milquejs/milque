@@ -94,5 +94,5 @@ export {
     MOUSE,
     Action,
     State,
-    Range
+    Range,
 };

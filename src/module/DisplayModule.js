@@ -64,14 +64,11 @@ function height()
     return VIEW.canvas.height;
 }
 
-function halfWidth()
+function clear(color = '#000000')
 {
-    return VIEW.canvas.width / 2;
-}
-
-function halfHeight()
-{
-    return VIEW.canvas.height / 2;
+    const ctx = VIEW.canvas.getContext('2d');
+    ctx.fillStyle = color;
+    ctx.fillRect(0, 0, width(), height());
 }
 
 export {
@@ -82,6 +79,5 @@ export {
     unbind,
     width,
     height,
-    halfWidth,
-    halfHeight,
+    clear,
 };
