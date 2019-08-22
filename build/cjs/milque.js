@@ -61,12 +61,11 @@ function height() {
   return VIEW.canvas.height;
 }
 
-function halfWidth() {
-  return VIEW.canvas.width / 2;
-}
-
-function halfHeight() {
-  return VIEW.canvas.height / 2;
+function clear() {
+  var color = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '#000000';
+  var ctx = VIEW.canvas.getContext('2d');
+  ctx.fillStyle = color;
+  ctx.fillRect(0, 0, width(), height());
 }
 
 var DisplayModule = /*#__PURE__*/Object.freeze({
@@ -77,8 +76,7 @@ var DisplayModule = /*#__PURE__*/Object.freeze({
     unbind: unbind,
     width: width,
     height: height,
-    halfWidth: halfWidth,
-    halfHeight: halfHeight
+    clear: clear
 });
 
 function _classCallCheck(instance, Constructor) {
@@ -101,6 +99,21 @@ function _createClass(Constructor, protoProps, staticProps) {
   if (protoProps) _defineProperties(Constructor.prototype, protoProps);
   if (staticProps) _defineProperties(Constructor, staticProps);
   return Constructor;
+}
+
+function _defineProperty(obj, key, value) {
+  if (key in obj) {
+    Object.defineProperty(obj, key, {
+      value: value,
+      enumerable: true,
+      configurable: true,
+      writable: true
+    });
+  } else {
+    obj[key] = value;
+  }
+
+  return obj;
 }
 
 function _inherits(subClass, superClass) {
@@ -208,6 +221,10 @@ function _get(target, property, receiver) {
   }
 
   return _get(target, property, receiver || target);
+}
+
+function _readOnlyError(name) {
+  throw new Error("\"" + name + "\" is read-only");
 }
 
 function _slicedToArray(arr, i) {
@@ -1145,8 +1162,8 @@ function (_InputDevice) {
         this.dispatchEvent('input', 'pos', 'x', e.clientX - rect.left);
         this.dispatchEvent('input', 'pos', 'y', e.clientY - rect.top);
       } else {
-        this.dispatchEvent('input', 'pos', 'x', e.clientX);
-        this.dispatchEvent('input', 'pos', 'y', e.clientY);
+        this.dispatchEvent('input', 'pos', 'x', e.pageX);
+        this.dispatchEvent('input', 'pos', 'y', e.pageY);
       }
     }
   }, {
@@ -1187,60 +1204,81 @@ INPUT_MANAGER.addDevice(KEYBOARD);
 INPUT_MANAGER.addDevice(MOUSE);
 
 function Action(name) {
-  for (var _len = arguments.length, eventKeys = new Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
-    eventKeys[_key - 1] = arguments[_key];
-  }
+  var result = {
+    input: null,
+    attach: function attach() {
+      if (this.input) throw new Error('Already attached input to source.');
 
-  var input = _construct(ActionInput, [name].concat(eventKeys));
+      for (var _len2 = arguments.length, eventKeys = new Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+        eventKeys[_key2] = arguments[_key2];
+      }
 
-  INPUT_MANAGER.getContext().mapping.register(input);
-  return {
-    input: input,
+      this.input = _construct(ActionInput, [name].concat(eventKeys));
+      INPUT_MANAGER.getContext().mapping.register(this.input);
+      return this;
+    },
     get: function get() {
       var consume = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : true;
-      var inputState = INPUT_MANAGER.currentState;
 
-      if (inputState.hasAction(this.input.name)) {
-        return inputState.getAction(this.input.name, consume);
+      if (this.input) {
+        var inputState = INPUT_MANAGER.currentState;
+
+        if (inputState.hasAction(this.input.name)) {
+          return inputState.getAction(this.input.name, consume);
+        }
       }
 
       return false;
     }
   };
+
+  for (var _len = arguments.length, eventKeys = new Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+    eventKeys[_key - 1] = arguments[_key];
+  }
+
+  if (eventKeys.length > 0) {
+    result.attach.apply(result, eventKeys);
+  }
+
+  return result;
 }
 
 function State(name) {
-  var inputs = [];
+  var result = {
+    inputs: null,
+    attach: function attach() {
+      if (this.inputs) throw new Error('Already attached input to source.');
+      this.inputs = [];
 
-  for (var _len2 = arguments.length, downUpEventKeys = new Array(_len2 > 1 ? _len2 - 1 : 0), _key2 = 1; _key2 < _len2; _key2++) {
-    downUpEventKeys[_key2 - 1] = arguments[_key2];
-  }
+      for (var _len4 = arguments.length, downUpEventKeys = new Array(_len4), _key4 = 0; _key4 < _len4; _key4++) {
+        downUpEventKeys[_key4] = arguments[_key4];
+      }
 
-  for (var _i = 0, _downUpEventKeys = downUpEventKeys; _i < _downUpEventKeys.length; _i++) {
-    var downUpEventKey = _downUpEventKeys[_i];
-    var downEventKey = void 0;
-    var upEventKey = void 0;
+      for (var _i = 0, _downUpEventKeys = downUpEventKeys; _i < _downUpEventKeys.length; _i++) {
+        var downUpEventKey = _downUpEventKeys[_i];
+        var downEventKey = void 0;
+        var upEventKey = void 0;
 
-    if (Array.isArray(downUpEventKey)) {
-      downEventKey = downUpEventKey[0];
-      upEventKey = downUpEventKey[1];
-    } else {
-      var _InputMapping$fromEve = InputMapping.fromEventKey(downUpEventKey),
-          _InputMapping$fromEve2 = _slicedToArray(_InputMapping$fromEve, 2),
-          sourceName = _InputMapping$fromEve2[0],
-          key = _InputMapping$fromEve2[1];
+        if (Array.isArray(downUpEventKey)) {
+          downEventKey = downUpEventKey[0];
+          upEventKey = downUpEventKey[1];
+        } else {
+          var _InputMapping$fromEve = InputMapping.fromEventKey(downUpEventKey),
+              _InputMapping$fromEve2 = _slicedToArray(_InputMapping$fromEve, 2),
+              sourceName = _InputMapping$fromEve2[0],
+              key = _InputMapping$fromEve2[1];
 
-      downEventKey = InputMapping.toEventKey(sourceName, key, 'down');
-      upEventKey = InputMapping.toEventKey(sourceName, key, 'up');
-    }
+          downEventKey = InputMapping.toEventKey(sourceName, key, 'down');
+          upEventKey = InputMapping.toEventKey(sourceName, key, 'up');
+        }
 
-    var input = new StateInput(name, downEventKey, upEventKey);
-    INPUT_MANAGER.getContext().mapping.register(input);
-    inputs.push(input);
-  }
+        var input = new StateInput(name, downEventKey, upEventKey);
+        INPUT_MANAGER.getContext().mapping.register(input);
+        this.inputs.push(input);
+      }
 
-  return {
-    inputs: inputs,
+      return this;
+    },
     get: function get() {
       var consume = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : true;
       var inputState = INPUT_MANAGER.currentState;
@@ -1252,15 +1290,31 @@ function State(name) {
       return false;
     }
   };
+
+  for (var _len3 = arguments.length, downUpEventKeys = new Array(_len3 > 1 ? _len3 - 1 : 0), _key3 = 1; _key3 < _len3; _key3++) {
+    downUpEventKeys[_key3 - 1] = arguments[_key3];
+  }
+
+  if (downUpEventKeys.length > 0) {
+    result.attach.apply(result, downUpEventKeys);
+  }
+
+  return result;
 }
 
 function Range(name, eventKey) {
   var min = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
   var max = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 1;
-  var input = new RangeInput(name, eventKey, min, max);
-  INPUT_MANAGER.getContext().mapping.register(input);
-  return {
-    input: input,
+  var result = {
+    input: null,
+    attach: function attach(eventKey) {
+      var min = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+      var max = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 1;
+      if (this.input) throw new Error('Already attached input to source.');
+      this.input = new RangeInput(name, eventKey, min, max);
+      INPUT_MANAGER.getContext().mapping.register(this.input);
+      return this;
+    },
     get: function get() {
       var consume = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : true;
       var inputState = INPUT_MANAGER.currentState;
@@ -1272,6 +1326,12 @@ function Range(name, eventKey) {
       return 0;
     }
   };
+
+  if (eventKey) {
+    result.attach(eventKey, min, max);
+  }
+
+  return result;
 }
 
 var InputModule = /*#__PURE__*/Object.freeze({
@@ -1283,162 +1343,222 @@ var InputModule = /*#__PURE__*/Object.freeze({
     Range: Range
 });
 
-var EntityBase =
+var ComponentBase =
 /*#__PURE__*/
 function () {
-  _createClass(EntityBase, null, [{
-    key: "TAG",
-    get: function get() {
-      return "#".concat(this.name);
-    }
-    /**
-     * Creates an entity.
-     * @param {EntityManager} entityManager The entity manager that owns this entity.
-     */
-
-  }]);
-
-  function EntityBase(entityManager) {
-    _classCallCheck(this, EntityBase);
-
-    this.entityManager = entityManager;
+  function ComponentBase() {
+    _classCallCheck(this, ComponentBase);
   }
+  /**
+   * Creates the component instance. Must also support no args.
+   * @param  {...any} args Any additional arguments.
+   * @returns {this} For method chaining.
+   */
 
-  _createClass(EntityBase, [{
+
+  _createClass(ComponentBase, [{
     key: "create",
     value: function create() {
-      var _this$entityManager;
-
-      var tags = findInheritedTags(this.constructor);
-      this.id = (_this$entityManager = this.entityManager).create.apply(_this$entityManager, _toConsumableArray(tags));
       return this;
     }
     /**
+     * Changes the component instance for the provided args.
+     * @param  {...any} args 
+     * @returns {this} For method chaining.
+     */
+
+  }, {
+    key: "change",
+    value: function change() {
+      return this;
+    }
+    /**
+     * Destroys the component instance.
      * @returns {Boolean} True if instance can be cached and re-used.
      */
 
   }, {
     key: "destroy",
     value: function destroy() {
-      this.entityManager.destroy(this.id);
-      this.id = -1;
       return false;
     }
-  }, {
-    key: "assign",
-    value: function assign(component) {
-      var _this$entityManager2;
+  }]);
 
-      for (var _len = arguments.length, args = new Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
-        args[_key - 1] = arguments[_key];
+  return ComponentBase;
+}();
+
+var EntityBase =
+/*#__PURE__*/
+function (_ComponentBase) {
+  _inherits(EntityBase, _ComponentBase);
+
+  function EntityBase() {
+    var _this;
+
+    _classCallCheck(this, EntityBase);
+
+    _this = _possibleConstructorReturn(this, _getPrototypeOf(EntityBase).call(this));
+    _this.entityManager = null;
+    _this.entityID = -1;
+    return _this;
+  }
+  /**
+   * @override
+   * @param {EntityManager} entityManager The entity manager that owns this entity.
+   * @param {Number} entityID The id of the represented entity.
+   */
+
+
+  _createClass(EntityBase, [{
+    key: "create",
+    value: function create(entityManager, entityID) {
+      this.entityManager = entityManager;
+      this.entityID = entityID;
+
+      for (var _len = arguments.length, args = new Array(_len > 2 ? _len - 2 : 0), _key = 2; _key < _len; _key++) {
+        args[_key - 2] = arguments[_key];
       }
 
-      (_this$entityManager2 = this.entityManager).assign.apply(_this$entityManager2, [this.id, component].concat(args));
+      this.onCreate.apply(this, args);
+      return this;
+    }
+    /** @override */
+
+  }, {
+    key: "change",
+    value: function change() {
+      this.onChange.apply(this, arguments);
+      return this;
+    }
+    /**
+     * @override
+     * @returns {Boolean} True if instance can be cached and re-used.
+     */
+
+  }, {
+    key: "destroy",
+    value: function destroy() {
+      var result = this.onDestroy();
+      this.entityManager.destroy(this.entityID);
+      this.entityID = -1;
+      return result;
+    }
+  }, {
+    key: "component",
+    value: function component(_component) {
+      var _this2 = this;
+
+      for (var _len2 = arguments.length, args = new Array(_len2 > 1 ? _len2 - 1 : 0), _key2 = 1; _key2 < _len2; _key2++) {
+        args[_key2 - 1] = arguments[_key2];
+      }
+
+      if (this.entityManager.has(this.entityID, _component)) {
+        var _this$entityManager;
+
+        (_this$entityManager = this.entityManager).update.apply(_this$entityManager, [this.entityID, _component].concat(args));
+      } else {
+        (function () {
+          var _this2$entityManager;
+
+          var instance = (_this2$entityManager = _this2.entityManager).assign.apply(_this2$entityManager, [_this2.entityID, _component].concat(args));
+
+          var _loop = function _loop() {
+            var key = _Object$keys[_i];
+            var propDescriptor = Object.getOwnPropertyDescriptor(_this2, key); // Initialize property if already defined.
+
+            if (propDescriptor.value) instance[key] = value;
+            Object.defineProperty(_this2, key, {
+              get: function get() {
+                return instance[key];
+              },
+              set: function set(value) {
+                instance[key] = value;
+              },
+              enumerable: true
+            });
+          };
+
+          for (var _i = 0, _Object$keys = Object.keys(instance); _i < _Object$keys.length; _i++) {
+            _loop();
+          }
+        })();
+      }
+
+      return this;
+    }
+  }, {
+    key: "tag",
+    value: function tag(_tag) {
+      var enabled = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
+
+      if (enabled) {
+        this.entityManager.assign(this.entityID, _tag);
+      } else {
+        this.entityManager.remove(this.entityID, _tag);
+      }
 
       return this;
     }
   }, {
     key: "remove",
     value: function remove() {
-      var _this$entityManager3;
+      var _this$entityManager2;
 
-      for (var _len2 = arguments.length, components = new Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
-        components[_key2] = arguments[_key2];
+      for (var _len3 = arguments.length, components = new Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
+        components[_key3] = arguments[_key3];
       }
 
-      (_this$entityManager3 = this.entityManager).remove.apply(_this$entityManager3, [this.id].concat(components));
+      for (var _i2 = 0, _components = components; _i2 < _components.length; _i2++) {
+        var component = _components[_i2];
+        var instance = this.entityManager.get(this.entityID, component);
+
+        for (var _i3 = 0, _Object$keys2 = Object.keys(instance); _i3 < _Object$keys2.length; _i3++) {
+          var key = _Object$keys2[_i3];
+          delete this[key];
+        }
+      }
+
+      (_this$entityManager2 = this.entityManager).remove.apply(_this$entityManager2, [this.entityID].concat(components));
 
       return this;
     }
   }, {
     key: "has",
     value: function has() {
-      var _this$entityManager4;
+      var _this$entityManager3;
 
-      for (var _len3 = arguments.length, components = new Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
-        components[_key3] = arguments[_key3];
+      for (var _len4 = arguments.length, components = new Array(_len4), _key4 = 0; _key4 < _len4; _key4++) {
+        components[_key4] = arguments[_key4];
       }
 
-      return (_this$entityManager4 = this.entityManager).has.apply(_this$entityManager4, [this.id].concat(components));
+      return (_this$entityManager3 = this.entityManager).has.apply(_this$entityManager3, [this.entityID].concat(components));
     }
   }, {
     key: "get",
     value: function get(component) {
-      var _this$entityManager5;
+      var _this$entityManager4;
 
-      for (var _len4 = arguments.length, components = new Array(_len4 > 1 ? _len4 - 1 : 0), _key4 = 1; _key4 < _len4; _key4++) {
-        components[_key4 - 1] = arguments[_key4];
+      for (var _len5 = arguments.length, components = new Array(_len5 > 1 ? _len5 - 1 : 0), _key5 = 1; _key5 < _len5; _key5++) {
+        components[_key5 - 1] = arguments[_key5];
       }
 
-      return (_this$entityManager5 = this.entityManager).get.apply(_this$entityManager5, [this.id, component].concat(components));
+      return (_this$entityManager4 = this.entityManager).get.apply(_this$entityManager4, [this.entityID, component].concat(components));
+    }
+  }, {
+    key: "onCreate",
+    value: function onCreate() {}
+  }, {
+    key: "onChange",
+    value: function onChange() {}
+  }, {
+    key: "onDestroy",
+    value: function onDestroy() {
+      return false;
     }
   }]);
 
   return EntityBase;
-}();
-
-function findInheritedTags(Class) {
-  var dst = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : [];
-
-  if (Class.hasOwnProperty('INHERITED_TAGS')) {
-    var _iteratorNormalCompletion = true;
-    var _didIteratorError = false;
-    var _iteratorError = undefined;
-
-    try {
-      for (var _iterator = Class.INHERITED_TAGS[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-        var tag = _step.value;
-        dst.push(tag);
-      }
-    } catch (err) {
-      _didIteratorError = true;
-      _iteratorError = err;
-    } finally {
-      try {
-        if (!_iteratorNormalCompletion && _iterator["return"] != null) {
-          _iterator["return"]();
-        }
-      } finally {
-        if (_didIteratorError) {
-          throw _iteratorError;
-        }
-      }
-    }
-  } else if (Class.hasOwnProperty('TAG')) {
-    dst.push(Class.TAG);
-    var superClass = Object.getPrototypeOf(Class);
-
-    if (superClass) {
-      var _iteratorNormalCompletion2 = true;
-      var _didIteratorError2 = false;
-      var _iteratorError2 = undefined;
-
-      try {
-        for (var _iterator2 = findInheritedTags(superClass)[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-          var _tag = _step2.value;
-          dst.push(_tag);
-        }
-      } catch (err) {
-        _didIteratorError2 = true;
-        _iteratorError2 = err;
-      } finally {
-        try {
-          if (!_iteratorNormalCompletion2 && _iterator2["return"] != null) {
-            _iterator2["return"]();
-          }
-        } finally {
-          if (_didIteratorError2) {
-            throw _iteratorError2;
-          }
-        }
-      }
-    }
-
-    Class.INHERITED_TAGS = dst;
-  }
-
-  return dst;
-}
+}(ComponentBase);
 
 var EntityView =
 /*#__PURE__*/
@@ -1451,6 +1571,15 @@ function () {
   }
 
   _createClass(EntityView, [{
+    key: "subview",
+    value: function subview(filter) {
+      var _this = this;
+
+      return new EntityView(this.entityManager, function (entity) {
+        return _this.filter(entity) && filter(entity);
+      });
+    }
+  }, {
     key: Symbol.iterator,
     value: function value() {
       return {
@@ -1481,64 +1610,114 @@ function () {
   return EntityView;
 }();
 
-var STATIC_TAG_INSTANCE = {};
-
 var ComponentManager =
 /*#__PURE__*/
 function () {
-  function ComponentManager(component) {
+  _createClass(ComponentManager, null, [{
+    key: "getComponentName",
+    value: function getComponentName(component) {
+      if (typeof component === 'string') {
+        return component;
+      } else {
+        return component.name;
+      }
+    }
+  }]);
+
+  function ComponentManager(componentFactory) {
     _classCallCheck(this, ComponentManager);
 
     this.components = new Map();
-    this.type = component;
-    this._createComponent = null;
-    this._destroyComponent = null;
-
-    if (typeof component === 'string') {
-      this._createComponent = createComponentByTag;
-      this._destroyComponent = destroyComponentByTag;
-    } else {
-      this._createComponent = createComponentByFunction;
-      this._destroyComponent = destroyComponentByFunction;
-    }
+    this.factory = componentFactory;
   }
+  /**
+   * Creates a component for the entity. Assumes component has not yet
+   * been assigned for the entity.
+   * @param {Number} entity The id of the entity to add.
+   * @param  {...any} args Create arguments passed to the component handler.
+   * @returns {Object} The added component instance.
+   */
+
 
   _createClass(ComponentManager, [{
     key: "add",
     value: function add(entity) {
+      var _this$factory;
+
       for (var _len = arguments.length, args = new Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
         args[_key - 1] = arguments[_key];
       }
 
-      var dst = this._createComponent.apply(this, [this.type].concat(args));
+      var dst = (_this$factory = this.factory).create.apply(_this$factory, args);
 
       this.components.set(entity, dst);
       return dst;
     }
+    /**
+     * Changes the component for the entity. Assumes component has already
+     * been assigned to the entity.
+     * @param {Number} entity The id of the entity to change for.
+     * @param  {...any} args Change arguments passed to the component handler.
+     * @returns {Object} The changed component instance.
+     */
+
+  }, {
+    key: "change",
+    value: function change(entity) {
+      var _this$factory2;
+
+      // Due to assumption, this will NEVER be null.
+      var component = this.components.get(entity);
+
+      for (var _len2 = arguments.length, args = new Array(_len2 > 1 ? _len2 - 1 : 0), _key2 = 1; _key2 < _len2; _key2++) {
+        args[_key2 - 1] = arguments[_key2];
+      }
+
+      (_this$factory2 = this.factory).change.apply(_this$factory2, [component].concat(args));
+
+      return component;
+    }
+    /**
+     * Removes the component for the entity. Assumes component has already
+     * been assigned and not yet removed from the entity.
+     * @param {Number} entity The id of the entity to remove.
+     */
+
   }, {
     key: "remove",
     value: function remove(entity) {
-      if (this.components.has(entity)) {
-        var component = this.components.get(entity);
+      // Due to assumption, this will NEVER be null.
+      var component = this.components.get(entity);
+      this.factory.destroy(component); // Remove it from the entity.
 
-        if (this._destroyComponent(this.type, component)) ; // NOTE: Can re-use component for a new entity!
-        // TODO: Implement this later. For now, always assume you can't.
-        // Remove it from the entity.
-
-
-        this.components["delete"](entity);
-      }
+      this.components["delete"](entity);
     }
+    /**
+     * Gets the component instance assigned to the entity.
+     * @param {Number} entity The id of the entity to get.
+     * @returns {Object} The component instance for the entity.
+     */
+
   }, {
     key: "get",
     value: function get(entity) {
       return this.components.get(entity);
     }
+    /**
+     * Checks whether the component exists for the entity.
+     * @param {Number} entity The id of the entity to check for.
+     * @returns {Boolean} Whether the entity has the component.
+     */
+
   }, {
     key: "has",
     value: function has(entity) {
       return this.components.has(entity);
     }
+    /**
+     * Removes all component instances.
+     */
+
   }, {
     key: "clear",
     value: function clear() {
@@ -1549,26 +1728,168 @@ function () {
   return ComponentManager;
 }();
 
-function createComponentByTag(ComponentTag) {
-  // (...args) are ignored...
-  return STATIC_TAG_INSTANCE;
-}
-
-function destroyComponentByTag(ComponentTag, instance) {
-  return true;
-}
-
-function createComponentByFunction(ComponentFunction) {
-  for (var _len2 = arguments.length, args = new Array(_len2 > 1 ? _len2 - 1 : 0), _key2 = 1; _key2 < _len2; _key2++) {
-    args[_key2 - 1] = arguments[_key2];
+var ComponentFactory =
+/*#__PURE__*/
+function () {
+  function ComponentFactory() {
+    _classCallCheck(this, ComponentFactory);
   }
 
-  return ComponentFunction.apply(void 0, args);
-}
+  _createClass(ComponentFactory, [{
+    key: "create",
+    value: function create() {
+      return {};
+    }
+  }, {
+    key: "change",
+    value: function change(instance) {}
+  }, {
+    key: "destroy",
+    value: function destroy(instance) {}
+  }]);
 
-function destroyComponentByFunction(ComponentFunction, instance) {
-  return true;
-}
+  return ComponentFactory;
+}();
+
+var ComponentTagFactory =
+/*#__PURE__*/
+function (_ComponentFactory) {
+  _inherits(ComponentTagFactory, _ComponentFactory);
+
+  function ComponentTagFactory(tagName) {
+    var _this;
+
+    _classCallCheck(this, ComponentTagFactory);
+
+    _this = _possibleConstructorReturn(this, _getPrototypeOf(ComponentTagFactory).call(this));
+    _this.tagName = tagName;
+    return _this;
+  }
+  /** @override */
+
+
+  _createClass(ComponentTagFactory, [{
+    key: "create",
+    value: function create() {
+      return null;
+    }
+  }]);
+
+  return ComponentTagFactory;
+}(ComponentFactory);
+
+var ComponentFunctionFactory =
+/*#__PURE__*/
+function (_ComponentFactory) {
+  _inherits(ComponentFunctionFactory, _ComponentFactory);
+
+  function ComponentFunctionFactory(componentHandler) {
+    var _this;
+
+    _classCallCheck(this, ComponentFunctionFactory);
+
+    _this = _possibleConstructorReturn(this, _getPrototypeOf(ComponentFunctionFactory).call(this));
+    _this.componentHandler = componentHandler;
+    return _this;
+  }
+  /** @override */
+
+
+  _createClass(ComponentFunctionFactory, [{
+    key: "create",
+    value: function create() {
+      return this.componentHandler.apply(this, arguments);
+    }
+    /** @override */
+
+  }, {
+    key: "change",
+    value: function change(instance) {
+      for (var _len = arguments.length, args = new Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+        args[_key - 1] = arguments[_key];
+      }
+
+      var target = this.componentHandler.apply(this, args);
+
+      for (var _i = 0, _Object$keys = Object.keys(target); _i < _Object$keys.length; _i++) {
+        var key = _Object$keys[_i];
+        instance[key] = target[key];
+      }
+    }
+    /** @override */
+
+  }, {
+    key: "destroy",
+    value: function destroy(instance) {// Instance can always be cached :D
+    }
+  }]);
+
+  return ComponentFunctionFactory;
+}(ComponentFactory);
+
+var ComponentClassFactory =
+/*#__PURE__*/
+function (_ComponentFactory) {
+  _inherits(ComponentClassFactory, _ComponentFactory);
+
+  function ComponentClassFactory(componentClass) {
+    var _this;
+
+    _classCallCheck(this, ComponentClassFactory);
+
+    _this = _possibleConstructorReturn(this, _getPrototypeOf(ComponentClassFactory).call(this));
+    _this._cache = [];
+    _this.componentClass = componentClass;
+    return _this;
+  }
+  /** @override */
+
+
+  _createClass(ComponentClassFactory, [{
+    key: "create",
+    value: function create() {
+      var _instance;
+
+      var instance;
+
+      if (this._cache.length > 0) {
+        instance = this._cache.shift();
+      } else {
+        var ComponentClass = this.componentClass;
+        instance = new ComponentClass();
+      }
+
+      (_instance = instance).create.apply(_instance, arguments);
+
+      return instance;
+    }
+    /** @override */
+
+  }, {
+    key: "change",
+    value: function change(instance) {
+      for (var _len = arguments.length, args = new Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+        args[_key - 1] = arguments[_key];
+      }
+
+      instance.change.apply(instance, args);
+    }
+    /** @override */
+
+  }, {
+    key: "destroy",
+    value: function destroy(instance) {
+      var result = instance.destroy();
+
+      if (result) {
+        // Instance can be cached :D
+        this._cache.push(result);
+      }
+    }
+  }]);
+
+  return ComponentClassFactory;
+}(ComponentFactory);
 
 var EntityManager =
 /*#__PURE__*/
@@ -1582,6 +1903,40 @@ function () {
   }
 
   _createClass(EntityManager, [{
+    key: "registerComponent",
+    value: function registerComponent(component) {
+      var componentFactory = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
+
+      if (!componentFactory) {
+        if (typeof component === 'string') {
+          componentFactory = new ComponentTagFactory(component);
+        } else if (component.prototype instanceof ComponentBase) {
+          componentFactory = new ComponentClassFactory(component);
+        } else if (typeof component === 'function') {
+          componentFactory = new ComponentFunctionFactory(component);
+        } else {
+          throw new Error('Cannot find factory for component type.');
+        }
+      }
+
+      var componentManager = new ComponentManager(componentFactory);
+
+      this._componentManagers.set(component, componentManager);
+
+      return componentManager;
+    }
+  }, {
+    key: "unregisterComponent",
+    value: function unregisterComponent(component) {
+      this._componentManagers["delete"](component);
+    }
+    /**
+     * Creates an entity.
+     * @param  {...any} components Any components to be assigned to the created entity.
+     * @returns {Number} The id of the entity created.
+     */
+
+  }, {
     key: "create",
     value: function create() {
       var entity = this._nextEntityID++;
@@ -1599,6 +1954,11 @@ function () {
 
       return entity;
     }
+    /**
+     * Destroys an entity and all its components.
+     * @param {Number} entity The id of the entity to be destroyed.
+     */
+
   }, {
     key: "destroy",
     value: function destroy(entity) {
@@ -1665,6 +2025,16 @@ function () {
 
       return true;
     }
+    /**
+     * Gets the component instances for the listed components. If only 1 component is passed in,
+     * then just the instance is returned. Otherwise, an array of all listed components, in the order
+     * provided, is returned instead (this allows easy spreading of values).
+     * @param {Number} entity The id of the entity for the components.
+     * @param {ComponentBase|Function|String} component The component type to get the instance for.
+     * @param  {...ComponentBase|Function|String} components Additional component types to get instances for.
+     * @returns {Object|Array<Object>}
+     */
+
   }, {
     key: "get",
     value: function get(entity, component) {
@@ -1686,17 +2056,25 @@ function () {
         return this._componentManagers.get(component).get(entity);
       }
     }
+    /**
+     * Assigns the component to the entity. Assumes component does not exist
+     * for the entity yet.
+     * @param {Number} entity The id of the entity to assign to.
+     * @param {ComponentBase|Function|String} component The component type to create.
+     * @param  {...any} args Additional args passed to the component to create.
+     * @returns {Object} The component instance assigned.
+     */
+
   }, {
     key: "assign",
     value: function assign(entity, component) {
       var _componentManager;
 
+      if (typeof entity !== 'number') throw new Error('Invalid entity handle - must be a number.');
       var componentManager;
 
       if (!this._componentManagers.has(component)) {
-        componentManager = new ComponentManager(component);
-
-        this._componentManagers.set(component, componentManager);
+        componentManager = this.registerComponent(component);
       } else {
         componentManager = this._componentManagers.get(component);
       }
@@ -1707,31 +2085,76 @@ function () {
 
       return (_componentManager = componentManager).add.apply(_componentManager, [entity].concat(args));
     }
+    /**
+     * Changes the component for the entity. Assumes component has already been
+     * assigned to the entity.
+     * @param {Number} entity The id of the entity to change.
+     * @param {ComponentBase|Function|String} component The component type to change.
+     * @param  {...any} args Additional args passed to the component to change.
+     * @returns {Object} The component instance changed.
+     */
+
+  }, {
+    key: "change",
+    value: function change(entity, component) {
+      if (typeof entity !== 'number') throw new Error('Invalid entity handle - must be a number.'); // Due to assumption, this will NEVER be null.
+
+      var componentManager = this._componentManagers.get(component);
+
+      for (var _len6 = arguments.length, args = new Array(_len6 > 2 ? _len6 - 2 : 0), _key6 = 2; _key6 < _len6; _key6++) {
+        args[_key6 - 2] = arguments[_key6];
+      }
+
+      return componentManager.change.apply(componentManager, [entity].concat(args));
+    }
+    /**
+     * Removes the listed components from the entity. If component does not exist
+     * for the entity, it is ignored.
+     * @param {Number} entity The id of the entity to remove from.
+     * @param  {...any} components The component types to remove.
+     */
+
   }, {
     key: "remove",
     value: function remove(entity) {
-      for (var _len6 = arguments.length, components = new Array(_len6 > 1 ? _len6 - 1 : 0), _key6 = 1; _key6 < _len6; _key6++) {
-        components[_key6 - 1] = arguments[_key6];
+      for (var _len7 = arguments.length, components = new Array(_len7 > 1 ? _len7 - 1 : 0), _key7 = 1; _key7 < _len7; _key7++) {
+        components[_key7 - 1] = arguments[_key7];
       }
 
       for (var _i4 = 0, _components4 = components; _i4 < _components4.length; _i4++) {
         var c = _components4[_i4];
 
-        this._componentManagers.get(c).remove(entity);
+        if (this._componentManagers.has(c)) {
+          var componentManager = this._componentManagers.get(c);
+
+          if (componentManager.has(entity)) {
+            componentManager.remove(entity);
+          }
+        }
       }
     }
+    /**
+     * Clears all instances of the listed component type. If none are supplied, then all are removed.
+     * If the component has no instances, it is skipped.
+     * @param {...ComponentBase|Function|String} components Component types to be cleared.
+     */
+
   }, {
     key: "clear",
     value: function clear() {
-      if (this.components.length > 0) {
-        for (var _len7 = arguments.length, components = new Array(_len7), _key7 = 0; _key7 < _len7; _key7++) {
-          components[_key7] = arguments[_key7];
-        }
+      for (var _len8 = arguments.length, components = new Array(_len8), _key8 = 0; _key8 < _len8; _key8++) {
+        components[_key8] = arguments[_key8];
+      }
 
+      if (components.length > 0) {
         for (var _i5 = 0, _components5 = components; _i5 < _components5.length; _i5++) {
           var c = _components5[_i5];
 
-          this._componentManagers.get(c).clear();
+          if (this._componentManagers.has(c)) {
+            var componentManager = this._componentManagers.get(c);
+
+            componentManager.clear();
+          }
         }
       } else {
         this._componentManagers.clear();
@@ -1746,35 +2169,208 @@ function () {
 
 var ENTITY_MANAGER = new EntityManager();
 /**
- * @param {Class} EntityClass A sub-class of EntityBase.
- * @returns {EntityBase} The created entity instance of passed-in class.
+ * Spawns an entity of the class type. This serves as the hybrid ECS / MVC entity.
+ * The returned value can be treated as the entity object itself and any manipulations
+ * should be handled through that object. Implementation-wise, the created instance is
+ * treated as a component (with fancy callbacks) and therefore can easily interoperate
+ * with other components while being able to own its data and logic. In other words,
+ * you can easily substitute a Component with a EntityClass for any component function,
+ * including entitites(), has(), etc.
+ * 
+ * NOTE: Because references to this instance may exist AFTER it has been destroyed, it
+ * is NOT recommended to destroy() or remove() "class" components from the manager.
+ * Instead, it should be done through the entity itself, and therefore the user will
+ * at least SEE the destruction and take action in removing it manually.
+ * 
+ * @param {Class<EntityBase>} EntityClass The class of the entity to create.
+ * @param  {...any} args Any additional arguments to pass to the entity's create().
+ * @returns {EntityBase} The handler component for the entity.
  */
 
 function spawn() {
   var EntityClass = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : EntityBase;
-  var result = new EntityClass(ENTITY_MANAGER);
-  return result.create();
-}
+  var entityID = ENTITY_MANAGER.create();
 
-function keys() {
-  return ENTITY_MANAGER.entities.apply(ENTITY_MANAGER, arguments);
-}
-
-function component(entity, component) {
-  for (var _len = arguments.length, components = new Array(_len > 2 ? _len - 2 : 0), _key = 2; _key < _len; _key++) {
-    components[_key - 2] = arguments[_key];
+  for (var _len = arguments.length, args = new Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+    args[_key - 1] = arguments[_key];
   }
 
-  return ENTITY_MANAGER.get.apply(ENTITY_MANAGER, [entity, component].concat(components));
+  return ENTITY_MANAGER.assign.apply(ENTITY_MANAGER, [entityID, EntityClass, ENTITY_MANAGER, entityID].concat(args));
+}
+
+function entities() {
+  for (var _len2 = arguments.length, components = new Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+    components[_key2] = arguments[_key2];
+  }
+
+  return _defineProperty({
+    view: new EntityView(ENTITY_MANAGER, function (entity) {
+      return ENTITY_MANAGER.has.apply(ENTITY_MANAGER, [entity, EntityBase].concat(components));
+    })
+  }, Symbol.iterator, function () {
+    return {
+      iterator: this.view[Symbol.iterator](),
+      next: function next() {
+        var result = this.iterator.next();
+
+        if (!result.done) {
+          return {
+            value: ENTITY_MANAGER.get(result.value, EntityBase),
+            done: false
+          };
+        } else {
+          return {
+            done: true
+          };
+        }
+      }
+    };
+  });
+}
+
+function components() {
+  for (var _len3 = arguments.length, components = new Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
+    components[_key3] = arguments[_key3];
+  }
+
+  return _defineProperty({
+    view: new EntityView(ENTITY_MANAGER, function (entity) {
+      return ENTITY_MANAGER.has.apply(ENTITY_MANAGER, [entity].concat(components));
+    })
+  }, Symbol.iterator, function () {
+    return {
+      iterator: this.view[Symbol.iterator](),
+      next: function next() {
+        var result = this.iterator.next();
+
+        if (!result.done) {
+          return {
+            value: ENTITY_MANAGER.get.apply(ENTITY_MANAGER, [result.value].concat(components)),
+            done: false
+          };
+        } else {
+          return {
+            done: true
+          };
+        }
+      }
+    };
+  });
 }
 
 var EntityModule = /*#__PURE__*/Object.freeze({
     ENTITY_MANAGER: ENTITY_MANAGER,
     EntityBase: EntityBase,
     spawn: spawn,
-    keys: keys,
-    component: component
+    entities: entities,
+    components: components
 });
+
+var TweenManager =
+/*#__PURE__*/
+function () {
+  function TweenManager() {
+    _classCallCheck(this, TweenManager);
+
+    this.tweens = new Map();
+    this.cachedTweens = new Set();
+    this.useCache = false;
+  }
+
+  _createClass(TweenManager, [{
+    key: "add",
+    value: function add(tween) {
+      if (this.useCache) {
+        this.cachedTweens.add(tween);
+      } else {
+        this.tweens.set(tween.id, tween);
+      }
+    }
+  }, {
+    key: "remove",
+    value: function remove(tween) {
+      if (this.cachedTweens.has(tween)) {
+        this.cachedTweens["delete"](tween);
+      } else {
+        this.tweens["delete"](tween.id);
+      }
+    }
+  }, {
+    key: "clear",
+    value: function clear() {
+      this.tweens.clear();
+      this.cachedTweens.clear();
+    }
+  }, {
+    key: "update",
+    value: function update(time) {
+      var preserve = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+
+      do {
+        var _iteratorNormalCompletion = true;
+        var _didIteratorError = false;
+        var _iteratorError = undefined;
+
+        try {
+          for (var _iterator = this.cachedTweens.values()[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+            var tween = _step.value;
+            this.add(tween);
+          }
+        } catch (err) {
+          _didIteratorError = true;
+          _iteratorError = err;
+        } finally {
+          try {
+            if (!_iteratorNormalCompletion && _iterator["return"] != null) {
+              _iterator["return"]();
+            }
+          } finally {
+            if (_didIteratorError) {
+              throw _iteratorError;
+            }
+          }
+        }
+
+        this.cachedTweens.clear();
+        this.useCache = true;
+        var _iteratorNormalCompletion2 = true;
+        var _didIteratorError2 = false;
+        var _iteratorError2 = undefined;
+
+        try {
+          for (var _iterator2 = this.tweens.keys()[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+            var tweenID = _step2.value;
+
+            var _tween = this.tweens.get(tweenID);
+
+            if (!_tween.update(time)) {
+              if (!preserve) {
+                this.tweens["delete"](tweenID);
+              }
+            }
+          }
+        } catch (err) {
+          _didIteratorError2 = true;
+          _iteratorError2 = err;
+        } finally {
+          try {
+            if (!_iteratorNormalCompletion2 && _iterator2["return"] != null) {
+              _iterator2["return"]();
+            }
+          } finally {
+            if (_didIteratorError2) {
+              throw _iteratorError2;
+            }
+          }
+        }
+
+        this.useCache = false;
+      } while (this.cachedTweens.size > 0);
+    }
+  }]);
+
+  return TweenManager;
+}();
 
 var EventableInstance = {
   on: function on(event, callback) {
@@ -1862,6 +2458,817 @@ var Eventable = {
   }
 };
 
+function getFunctionByName(name) {
+  switch (name) {
+    case 'linear':
+      return Linear.Both;
+
+    case 'quadratic':
+    case 'quadratic-both':
+    case 'quadratic-in-out':
+      return Quadratic.Both;
+
+    case 'quadratic-in':
+      return Quadratic.In;
+
+    case 'quadratic-out':
+      return Quadratic.Out;
+
+    case 'cubic':
+    case 'cubic-both':
+    case 'cubic-in-out':
+      return Cubic.Both;
+
+    case 'cubic-in':
+      return Cubic.In;
+
+    case 'cubic-out':
+      return Cubic.Out;
+
+    case 'sinusoidal':
+    case 'sinusoidal-both':
+    case 'sinusoidal-in-out':
+      return Sinusoidal.Both;
+
+    case 'sinusoidal-in':
+      return Sinusoidal.In;
+
+    case 'sinusoidal-out':
+      return Sinusoidal.Out;
+
+    case 'exponential':
+    case 'exponential-both':
+    case 'exponential-in-out':
+      return Exponential.Both;
+
+    case 'exponential-in':
+      return Exponential.In;
+
+    case 'exponential-out':
+      return Exponential.Out;
+
+    case 'circular':
+    case 'circular-both':
+    case 'circular-in-out':
+      return Circular.Both;
+
+    case 'circular-in':
+      return Circular.In;
+
+    case 'circular-out':
+      return Circular.Out;
+
+    case 'elastic':
+    case 'elastic-both':
+    case 'elastic-in-out':
+      return Elastic.Both;
+
+    case 'elastic-in':
+      return Elastic.In;
+
+    case 'elastic-out':
+      return Elastic.Out;
+
+    case 'back':
+    case 'back-both':
+    case 'back-in-out':
+      return Back.Both;
+
+    case 'back-in':
+      return Back.In;
+
+    case 'back-out':
+      return Back.Out;
+
+    case 'bounce':
+    case 'bounce-both':
+    case 'bounce-in-out':
+      return Bounce.Both;
+
+    case 'bounce-in':
+      return Bounce.In;
+
+    case 'bounce-out':
+      return Bounce.Out;
+
+    default:
+      throw new Error("Unknown easing function name '".concat(name, "'."));
+  }
+}
+var Linear = {
+  Both: function Both(k) {
+    return k;
+  }
+};
+var Quadratic = {
+  In: function In(k) {
+    return k * k;
+  },
+  Out: function Out(k) {
+    return k * (2 - k);
+  },
+  Both: function Both(k) {
+    if ((k *= 2) < 1) {
+      return 0.5 * k * k;
+    } else {
+      return -0.5 * (--k * (k - 2) - 1);
+    }
+  }
+};
+var Cubic = {
+  In: function In(k) {
+    return k * k * k;
+  },
+  Out: function Out(k) {
+    return --k * k * k + 1;
+  },
+  Both: function Both(k) {
+    if ((k *= 2) < 1) {
+      return 0.5 * k * k * k;
+    } else {
+      return 0.5 * ((k -= 2) * k * k + 2);
+    }
+  }
+};
+var Sinusoidal = {
+  In: function In(k) {
+    return 1 - Math.cos(k * Math.PI / 2);
+  },
+  Out: function Out(k) {
+    return Math.sin(k * Math.PI / 2);
+  },
+  Both: function Both(k) {
+    return 0.5 * (1 - Math.cos(Math.PI * k));
+  }
+};
+var Exponential = {
+  In: function In(k) {
+    return k === 0 ? 0 : Math.pow(1024, k - 1);
+  },
+  Out: function Out(k) {
+    return k === 1 ? 1 : 1 - Math.pow(2, -10 * k);
+  },
+  Both: function Both(k) {
+    if (k === 0) return 0;
+    if (k === 1) return 1;
+
+    if ((k *= 2) < 1) {
+      return 0.5 * Math.pow(1024, k - 1);
+    } else {
+      return 0.5 * (-Math.pow(2, -10 * (k - 1)) + 2);
+    }
+  }
+};
+var Circular = {
+  In: function In(k) {
+    return 1 - Math.sqrt(1 - k * k);
+  },
+  Out: function Out(k) {
+    return Math.sqrt(1 - --k * k);
+  },
+  Both: function Both(k) {
+    if ((k *= 2) < 1) {
+      return -0.5 * (Math.sqrt(1 - k * k) - 1);
+    } else {
+      return 0.5 * (Math.sqrt(1 - (k -= 2) * k) + 1);
+    }
+  }
+};
+var Elastic = {
+  In: function In(k) {
+    if (k === 0) return 0;
+    if (k === 1) return 1;
+    return -Math.pow(2, 10 * (k - 1)) * Math.sin((k - 1.1) * 5 * Math.PI);
+  },
+  Out: function Out(k) {
+    if (k === 0) return 0;
+    if (k === 1) return 1;
+    return Math.pow(2, -10 * k) * Math.sin((k - 0.1) * 5 * Math.PI) + 1;
+  },
+  Both: function Both(k) {
+    if (k === 0) return 0;
+    if (k === 1) return 1;
+    k *= 2;
+
+    if (k < 1) {
+      return -0.5 * Math.pow(2, 10 * (k - 1)) * Math.sin((k - 1.1) * 5 * Math.PI);
+    } else {
+      return 0.5 * Math.pow(2, -10 * (k - 1)) * Math.sin((k - 1.1) * 5 * Math.PI) + 1;
+    }
+  }
+};
+var Back = {
+  In: function In(k) {
+    var s = 1.70158;
+    return k * k * ((s + 1) * k - s);
+  },
+  Out: function Out(k) {
+    var s = 1.70158;
+    return --k * k * ((s + 1) * k + s) + 1;
+  },
+  Both: function Both(k) {
+    var s = 1.70158 * 1.525;
+
+    if ((k *= 2) < 1) {
+      return 0.5 * (k * k * ((s + 1) * k - s));
+    } else {
+      return 0.5 * ((k -= 2) * k * ((s + 1) * k + s) + 2);
+    }
+  }
+};
+var Bounce = {
+  In: function In(k) {
+    return 1 - Bounce.Out(1 - k);
+  },
+  Out: function Out(k) {
+    if (k < 1 / 2.75) {
+      return 7.5625 * k * k;
+    } else if (k < 2 / 2.75) {
+      return 7.5625 * (k -= 1.5 / 2.75) * k + 0.75;
+    } else if (k < 2.5 / 2.75) {
+      return 7.5625 * (k -= 2.25 / 2.75) * k + 0.9375;
+    } else {
+      return 7.5625 * (k -= 2.625 / 2.75) * k + 0.984375;
+    }
+  },
+  Both: function Both(k) {
+    if (k < 0.5) {
+      return Bounce.In(k * 2) * 0.5;
+    } else {
+      return Bounce.Out(k * 2 - 1) * 0.5 + 0.5;
+    }
+  }
+};
+
+var Easing = /*#__PURE__*/Object.freeze({
+    getFunctionByName: getFunctionByName,
+    Linear: Linear,
+    Quadratic: Quadratic,
+    Cubic: Cubic,
+    Sinusoidal: Sinusoidal,
+    Exponential: Exponential,
+    Circular: Circular,
+    Elastic: Elastic,
+    Back: Back,
+    Bounce: Bounce
+});
+
+function getFunctionByName$1(name) {
+  switch (name) {
+    case 'linear':
+      return Linear$1;
+
+    case 'bezier':
+      return Bezier;
+
+    case 'catmullrom':
+      return CatmullRom;
+
+    default:
+      throw new Error("Unknown interpolation function name '".concat(name, "'."));
+  }
+}
+function Linear$1(v, k) {
+  var m = v.length - 1;
+  var f = m * k;
+  var i = Math.floor(f);
+  var fn = Lerp;
+
+  if (k < 0) {
+    return fn(v[0], v[1], f);
+  }
+
+  if (k > 1) {
+    return fn(v[m], v[m - 1], m - f);
+  }
+
+  return fn(v[i], v[i + 1 > m ? m : i + 1], f - i);
+}
+function Bezier(v, k) {
+  var b = 0;
+  var n = v.length - 1;
+  var pw = Math.pow;
+  var bn = Bernstein;
+
+  for (var i = 0; i <= n; i++) {
+    b += pw(1 - k, n - i) * pw(k, i) * v[i] * bn(n, i);
+  }
+
+  return b;
+}
+function CatmullRom(v, k) {
+  var m = v.length - 1;
+  var f = m * k;
+  var i = Math.floor(f);
+  var fn = CatmullRomHelper;
+
+  if (v[0] === v[m]) {
+    if (k < 0) {
+      i = Math.floor(f = (_readOnlyError("f"), m * (1 + k)));
+    }
+
+    return fn(v[(i - 1 + m) % m], v[i], v[(i + 1) % m], v[(i + 2) % m], f - i);
+  } else {
+    if (k < 0) {
+      return v[0] - (fn(v[0], v[0], v[1], v[1], -f) - v[0]);
+    }
+
+    if (k > 1) {
+      return v[m] - (fn(v[m], v[m], v[m - 1], v[m - 1], f - m) - v[m]);
+    }
+
+    return fn(v[i ? i - 1 : 0], v[i], v[m < i + 1 ? m : i + 1], v[m < i + 2 ? m : i + 2], f - i);
+  }
+}
+
+function Lerp(p0, p1, t) {
+  return (p1 - p0) * t + p0;
+}
+
+function Bernstein(n, i) {
+  var fc = Factorial;
+  return fc(n) / fc(i) / fc(n - i);
+}
+
+var factorialCache = [1];
+
+function Factorial(n) {
+  if (factorialCache[n]) return factorialCache[n];
+  var s = 1;
+
+  for (var i = n; i > 1; i--) {
+    s *= i;
+  }
+
+  factorialCache[n] = s;
+  return s;
+}
+
+function CatmullRomHelper(p0, p1, p2, p3, t) {
+  var v0 = (p2 - p0) * 0.5;
+  var v1 = (p3 - p1) * 0.5;
+  var t2 = t * t;
+  var t3 = t * t2;
+  return (2 * p1 - 2 * p2 + v0 + v1) * t3 + (-3 * p1 + 3 * p2 - 2 * v0 - v1) * t2 + v0 * t + p1;
+}
+
+var Interpolation = /*#__PURE__*/Object.freeze({
+    getFunctionByName: getFunctionByName$1,
+    Linear: Linear$1,
+    Bezier: Bezier,
+    CatmullRom: CatmullRom
+});
+
+var NEXT_ID = 1;
+
+var Tween =
+/*#__PURE__*/
+function () {
+  _createClass(Tween, null, [{
+    key: "now",
+    value: function now() {
+      return Date.now();
+    }
+  }]);
+
+  function Tween(target) {
+    _classCallCheck(this, Tween);
+
+    this.target = target;
+    this.id = NEXT_ID++;
+    this.active = false;
+    this.startTime = 0;
+    this.startProperties = {};
+    this.repeatProperties = {};
+    this.reversed = false;
+    this.endProperties = {};
+    this.nexts = [];
+    this.easingFunction = Linear.Both;
+    this.interpolationFunction = Linear$1;
+    this._duration = 1000;
+    this._startDelay = 0;
+    this._repeatDelay = 0;
+    this._repeat = 0;
+    this._yoyo = false;
+    this.firstUpdate = false;
+  }
+
+  _createClass(Tween, [{
+    key: "to",
+    value: function to(properties) {
+      var duration = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : undefined;
+      this.endProperties = Object.create(properties);
+      if (typeof duration !== 'undefined') this._duration = duration;
+      return this;
+    }
+  }, {
+    key: "next",
+    value: function next() {
+      for (var _len = arguments.length, tweens = new Array(_len), _key = 0; _key < _len; _key++) {
+        tweens[_key] = arguments[_key];
+      }
+
+      this.nexts = tweens;
+      return this;
+    }
+  }, {
+    key: "start",
+    value: function start() {
+      var time = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : undefined;
+
+      if (typeof time === 'undefined') {
+        this.startTime = Tween.now();
+      } else {
+        this.startTime = time;
+      }
+
+      this.startTime += this._startDelay;
+
+      for (var property in this.endProperties) {
+        // Can only tween properties that already exist.
+        if (!(property in this.target)) throw new Error('Cannot tween non-existent property.');
+        var targetProperty = this.target[property]; // Can only tween number properties.
+
+        if (typeof targetProperty !== 'number') throw new Error('Cannot tween non-number property.');
+        var endProperty = this.endProperties[property]; // Don't forget to include initial state when interpolating...
+
+        if (Array.isArray(endProperty)) {
+          this.endProperties[property] = [targetProperty].concat(_toConsumableArray(endProperty));
+        } else if (typeof endProperty !== 'function' && typeof endProperty !== 'number') {
+          throw new Error('Unable to tween unknown end property type.');
+        }
+
+        this.startProperties[property] = targetProperty;
+        this.repeatProperties[property] = this.startProperties[property];
+      }
+
+      this.active = true;
+      this.firstUpdate = true;
+      return this;
+    }
+  }, {
+    key: "stop",
+    value: function stop() {
+      var finish = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
+      if (!this.active) return this;
+      this.active = false;
+
+      if (finish) {
+        this.update(Infinity);
+      } else {
+        var _iteratorNormalCompletion = true;
+        var _didIteratorError = false;
+        var _iteratorError = undefined;
+
+        try {
+          for (var _iterator = this.nexts[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+            var next = _step.value;
+            next.stop();
+          }
+        } catch (err) {
+          _didIteratorError = true;
+          _iteratorError = err;
+        } finally {
+          try {
+            if (!_iteratorNormalCompletion && _iterator["return"] != null) {
+              _iterator["return"]();
+            }
+          } finally {
+            if (_didIteratorError) {
+              throw _iteratorError;
+            }
+          }
+        }
+      }
+
+      return this;
+    }
+  }, {
+    key: "update",
+    value: function update() {
+      var time = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : Tween.now();
+      if (time < this.startTime) return true;
+
+      if (this.firstUpdate) {
+        this.firstUpdate = false;
+        this.emit('start', this.target);
+      }
+
+      var elapsed = this._duration > 0 ? Math.min((time - this.startTime) / this._duration, 1) : 1;
+      var progress = this.easingFunction(elapsed);
+
+      for (var property in this.endProperties) {
+        if (!(property in this.startProperties)) continue;
+        var start = this.startProperties[property];
+        var end = this.endProperties[property];
+        this.target[property] = this.getTweenValue(start, end, progress);
+      }
+
+      this.emit('update', this.target, elapsed);
+
+      if (elapsed >= 1) {
+        if (this._repeat > 0) {
+          if (Number.isFinite(this._repeat)) --this._repeat;
+
+          for (var _property in this.repeatProperties) {
+            // Reverse the start and end states for repeat yoyos.
+            if (this._yoyo) {
+              var repeatValue = this.repeatProperties[_property];
+              this.repeatProperties[_property] = this.endProperties[_property];
+              this.endProperties[_property] = repeatValue; // This would only happen on the return of the yoyo, where the start was the new endpoint.
+
+              if (typeof this.repeatProperties[_property] === 'function') {
+                // Therefore, we can safely assume 2 things:
+                // - The repeat and end properties were swapped, since repeat values can only be initially set as numbers.
+                // - The respective end property must be a number, since start properties are assigned repeat values after swap and start properties can only be numbers.
+                // Set start properties as the EVALUATED repeat properties.
+                // This way we can just use repeat properties as storage for the yoyo function until it is swapped again.
+                this.startProperties[_property] = this.repeatProperties[_property].call(null, this.endProperties[_property]);
+                continue;
+              }
+            } // If it's a dynamic end value, update the start state to the cumulative state.
+            // But yoyo should not be cumulative, hence the else...
+            else if (typeof this.endProperties[_property] === 'function') {
+                this.repeatProperties[_property] += this.endProperties[_property].call(null, this.repeatProperties[_property]);
+              } // Set start properties as repeat properties...
+
+
+            this.startProperties[_property] = this.repeatProperties[_property];
+          }
+
+          if (this._yoyo) {
+            this.reversed = !this.reversed;
+          }
+
+          if (this._repeatDelay) {
+            this.startTime = time + this._repeatDelay;
+          } else {
+            this.startTime = time + this._startDelay;
+          }
+
+          this.emit('repeat', this.target);
+          return true;
+        } else {
+          this.active = false;
+          this.emit('complete', this.target);
+          var _iteratorNormalCompletion2 = true;
+          var _didIteratorError2 = false;
+          var _iteratorError2 = undefined;
+
+          try {
+            for (var _iterator2 = this.nexts[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+              var next = _step2.value;
+              next.start(this.startTime + this._duration);
+            }
+          } catch (err) {
+            _didIteratorError2 = true;
+            _iteratorError2 = err;
+          } finally {
+            try {
+              if (!_iteratorNormalCompletion2 && _iterator2["return"] != null) {
+                _iterator2["return"]();
+              }
+            } finally {
+              if (_didIteratorError2) {
+                throw _iteratorError2;
+              }
+            }
+          }
+
+          return false;
+        }
+      }
+
+      return true;
+    }
+  }, {
+    key: "getTweenValue",
+    value: function getTweenValue(start, end, progress) {
+      var result;
+
+      if (Array.isArray(end)) {
+        result = this.interpolationFunction(end, progress);
+      } else if (typeof end === 'function') {
+        result = end.call(null, start);
+      } else {
+        result = end;
+      }
+
+      if (typeof result === 'number') {
+        return start + (result - start) * progress;
+      } else {
+        throw new Error('Unable to tween unknown end property type.');
+      }
+    }
+  }, {
+    key: "ease",
+    value: function ease(func) {
+      if (typeof func === 'string') {
+        this.easingFunction = getFunctionByName(func);
+      } else {
+        this.easingFunction = func;
+      }
+
+      return this;
+    }
+  }, {
+    key: "interpolate",
+    value: function interpolate(func) {
+      if (typeof func === 'string') {
+        this.interpolationFunction = getFunctionByName$1(func);
+      } else {
+        this.interpolationFunction = func;
+      }
+
+      return this;
+    }
+  }, {
+    key: "repeat",
+    value: function repeat() {
+      var count = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : Infinity;
+      var repeatDelay = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : undefined;
+      this._repeat = count;
+      if (typeof repeatDelay !== 'undefined') this._repeatDelay = repeatDelay;
+      return this;
+    }
+  }, {
+    key: "delay",
+    value: function delay() {
+      var time = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 1000;
+      var repeatDelay = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : undefined;
+      this._startDelay = time;
+      if (typeof repeatDelay === 'undefined') this._repeatDelay = repeatDelay;
+      return this;
+    }
+  }, {
+    key: "yoyo",
+    value: function yoyo() {
+      var value = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : true;
+      this._yoyo = value;
+      if (this._repeat <= 0) this._repeat = 1;
+      return this;
+    }
+  }, {
+    key: "setDuration",
+    value: function setDuration(value) {
+      this._duration = value;
+      return this;
+    }
+  }, {
+    key: "setRepeatDelay",
+    value: function setRepeatDelay(time) {
+      this._repeatDelay = time;
+      return this;
+    }
+  }]);
+
+  return Tween;
+}();
+
+Eventable.mixin(Tween);
+
+var TWEEN_MANAGER = new TweenManager();
+
+function create(target, result) {
+  var delay = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
+  var duration = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : undefined;
+  // In order to start, tween must know at least the target, result, and start delay.
+  var tween = new Tween(target).to(result, duration).delay(delay);
+  TWEEN_MANAGER.add(tween);
+  return tween;
+}
+
+var TweenModule = /*#__PURE__*/Object.freeze({
+    TWEEN_MANAGER: TWEEN_MANAGER,
+    Easing: Easing,
+    Interpolation: Interpolation,
+    create: create
+});
+
+/**
+ * Generates a uuidv4.
+ * 
+ * @returns {String} the universally unique id
+ */
+function uuid() {
+  return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, function (c) {
+    return (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16);
+  });
+}
+/**
+ * Interpolates, or lerps, between 2 values by the specified amount, dt.
+ * 
+ * @param {Number} a the initial value
+ * @param {Number} b the final value
+ * @param {Number} dt the amount changed
+ * @returns {Number} the interpolated value
+ */
+
+function lerp(a, b, dt) {
+  return a * (1 - dt) + b * dt;
+}
+/**
+ * Generates a number hash for the string. For an empty string, it will return 0.
+ * 
+ * @param {String} [value=''] the string to hash
+ * @returns {Number} a hash that uniquely identifies the string
+ */
+
+function stringHash() {
+  var value = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '';
+  var hash = 0;
+
+  for (var i = 0, len = value.length; i < len; i++) {
+    hash = Math.imul(31, hash) + value.charCodeAt(i) | 0;
+  }
+
+  return hash;
+}
+/**
+ * Calculates the directional vector for the passed-in points.
+ * 
+ * @param {Number} x1 the x component of the source point
+ * @param {Number} y1 the y component of the source point
+ * @param {Number} x2 the x component of the destination point
+ * @param {Number} y2 the y component of the destination point
+ * @param {Number} [magnitude=1] the magnitude, or length, of the vector
+ * @param {Number} [angleOffset=0] additional angle offset from the calculated direction vector
+ * @param {Object} [dst={x: 0, y: 0}] the result
+ * @returns {Object} dst
+ */
+
+function getDirectionalVector(x1, y1, x2, y2) {
+  var magnitude = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 1;
+  var angleOffset = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : 0;
+  var dst = arguments.length > 6 && arguments[6] !== undefined ? arguments[6] : [0, 0];
+  var dx = x2 - x1;
+  var dy = y2 - y1;
+  var angle = Math.atan2(dy, dx) + angleOffset;
+  dst[0] = Math.cos(angle) * magnitude;
+  dst[1] = Math.sin(angle) * magnitude;
+  return dst;
+}
+/**
+ * Calculates the midpoint between the passed-in points.
+ * 
+ * @param {Number} x1 the x component of the source point
+ * @param {Number} y1 the y component of the source point
+ * @param {Number} x2 the x component of the destination point
+ * @param {Number} y2 the y component of the destination point
+ * @param {Object} [dst] the result
+ * @returns {Object} dst
+ */
+
+function getMidPoint(x1, y1, x2, y2) {
+  var dst = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : [0, 0];
+  dst[0] = x1 + (x2 - x1) / 2;
+  dst[1] = y1 + (y2 - y1) / 2;
+  return dst;
+}
+function randomRange(min, max) {
+  return Math.random() * (max - min) + min;
+}
+function choose(items) {
+  return items[Math.floor(Math.random() * items.length)];
+}
+function distanceSqu(x1, y1, x2, y2) {
+  var dx = x2 - x1;
+  var dy = y2 - y1;
+  return dx * dx + dy * dy;
+}
+function distance(x1, y1, x2, y2) {
+  var dx = x2 - x1;
+  var dy = y2 - y1;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
+var MathHelper = /*#__PURE__*/Object.freeze({
+    uuid: uuid,
+    lerp: lerp,
+    stringHash: stringHash,
+    getDirectionalVector: getDirectionalVector,
+    getMidPoint: getMidPoint,
+    randomRange: randomRange,
+    choose: choose,
+    distanceSqu: distanceSqu,
+    distance: distance
+});
+
+function randomColor() {
+  var letters = '0123456789ABCDEF';
+  var color = '#';
+
+  for (var i = 0; i < 6; i++) {
+    color += letters[Math.floor(Math.random() * 16)];
+  }
+
+  return color;
+}
+
+var ColorHelper = /*#__PURE__*/Object.freeze({
+    randomColor: randomColor
+});
+
 var GameLoop =
 /*#__PURE__*/
 function () {
@@ -1916,9 +3323,14 @@ GAME_LOOP.on('update', onGameUpdate);
 
 function onGameUpdate() {
   INPUT_MANAGER.poll();
+  TWEEN_MANAGER.update();
 }
 
+exports.Color = ColorHelper;
 exports.Display = DisplayModule;
 exports.Entity = EntityModule;
+exports.Eventable = Eventable;
 exports.Game = GAME_LOOP;
 exports.Input = InputModule;
+exports.Math = MathHelper;
+exports.Tween = TweenModule;
