@@ -3,7 +3,7 @@ class ComponentFactory
     constructor() {}
     
     create(...args) { return {}; }
-    update(instance, ...args) {}
+    change(instance, ...args) {}
     destroy(instance) {}
 }
 

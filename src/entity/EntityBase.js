@@ -23,9 +23,9 @@ class EntityBase extends ComponentBase
     }
 
     /** @override */
-    update(...args)
+    change(...args)
     {
-        this.onUpdate(...args);
+        this.onChange(...args);
         return this;
     }
 
@@ -105,7 +105,7 @@ class EntityBase extends ComponentBase
     }
 
     onCreate(...args) {}
-    onUpdate(...args) {}
+    onChange(...args) {}
     onDestroy() { return false; }
 }
 

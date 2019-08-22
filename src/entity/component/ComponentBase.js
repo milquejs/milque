@@ -13,11 +13,11 @@ class ComponentBase
     }
 
     /**
-     * Updates the component instance for the provided args.
+     * Changes the component instance for the provided args.
      * @param  {...any} args 
      * @returns {this} For method chaining.
      */
-    update(...args)
+    change(...args)
     {
         return this;
     }

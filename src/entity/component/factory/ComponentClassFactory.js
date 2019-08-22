@@ -29,9 +29,9 @@ class ComponentClassFactory extends ComponentFactory
     }
 
     /** @override */
-    update(instance, ...args)
+    change(instance, ...args)
     {
-        instance.update(...args);
+        instance.change(...args);
     }
 
     /** @override */

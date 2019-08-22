@@ -33,17 +33,17 @@ class ComponentManager
     }
 
     /**
-     * Updates the component for the entity. Assumes component has already
+     * Changes the component for the entity. Assumes component has already
      * been assigned to the entity.
-     * @param {Number} entity The id of the entity to update for.
-     * @param  {...any} args Update arguments passed to the component handler.
-     * @returns {Object} The updated component instance.
+     * @param {Number} entity The id of the entity to change for.
+     * @param  {...any} args Change arguments passed to the component handler.
+     * @returns {Object} The changed component instance.
      */
-    update(entity, ...args)
+    change(entity, ...args)
     {
         // Due to assumption, this will NEVER be null.
         const component = this.components.get(entity);
-        this.factory.update(component, ...args);
+        this.factory.change(component, ...args);
         return component;
     }
 

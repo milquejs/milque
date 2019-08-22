@@ -156,20 +156,20 @@ class EntityManager
     }
 
     /**
-     * Updates the component for the entity. Assumes component has already been
+     * Changes the component for the entity. Assumes component has already been
      * assigned to the entity.
-     * @param {Number} entity The id of the entity to update.
-     * @param {ComponentBase|Function|String} component The component type to update.
-     * @param  {...any} args Additional args passed to the component to update.
-     * @returns {Object} The component instance updated.
+     * @param {Number} entity The id of the entity to change.
+     * @param {ComponentBase|Function|String} component The component type to change.
+     * @param  {...any} args Additional args passed to the component to change.
+     * @returns {Object} The component instance changed.
      */
-    update(entity, component, ...args)
+    change(entity, component, ...args)
     {
         if (typeof entity !== 'number') throw new Error('Invalid entity handle - must be a number.');
 
         // Due to assumption, this will NEVER be null.
         const componentManager = this._componentManagers.get(component);
-        return componentManager.update(entity, ...args);
+        return componentManager.change(entity, ...args);
     }
 
     /**

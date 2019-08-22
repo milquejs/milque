@@ -16,7 +16,7 @@ class ComponentFunctionFactory extends ComponentFactory
     }
 
     /** @override */
-    update(instance, ...args)
+    change(instance, ...args)
     {
         const target = this.componentHandler(...args);
         for(const key of Object.keys(target))
