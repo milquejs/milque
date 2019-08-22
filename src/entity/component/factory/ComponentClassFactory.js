@@ -6,16 +6,26 @@ class ComponentClassFactory extends ComponentFactory
     {
         super();
 
+        this._cache = [];
+
         this.componentClass = componentClass;
     }
 
     /** @override */
     create(...args)
     {
-        const ComponentClass = this.componentClass;
-        const result = new ComponentClass();
-        result.create(...args);
-        return result;
+        let instance;
+        if (this._cache.length > 0)
+        {
+            instance = this._cache.shift();
+        }
+        else
+        {
+            const ComponentClass = this.componentClass;
+            instance = new ComponentClass();
+        }
+        instance.create(...args);
+        return instance;
     }
 
     /** @override */
@@ -31,6 +41,7 @@ class ComponentClassFactory extends ComponentFactory
         if (result)
         {
             // Instance can be cached :D
+            this._cache.push(result);
         }
     }
 }
