@@ -2,6 +2,7 @@ Milque.Display.attach(document.getElementById('display1'));
 const ctx = Milque.Display.VIEW.canvas.getContext('2d');
 
 const TAG_BALL = 'ball';
+const TAG_TEXT = 'text';
 const BALL_SPEED = 3; // 3 or 20
 const BALL_SPEED_RANGE = [-BALL_SPEED, BALL_SPEED];
 const BALL_SIZE = 64;
@@ -21,15 +22,16 @@ function Ball(x = 0, y = 0, w = 16, h = 16, dx = BALL_SPEED, dy = BALL_SPEED)
     return entity;
 }
 
-function TextSuccess(x = 0, y = 0, text = 'Boo', textSize = 16, textAlign = 'center')
+function Text(x = 0, y = 0, text = 'Boo', textSize = 16, textAlign = 'center')
 {
-    const entity = Milque.Entity.spawn();
+    const entity = Milque.Entity.spawn().tag(TAG_TEXT);
     entity.x = x;
     entity.y = y;
     entity.text = text;
     entity.textSize = textSize;
     entity.textAlign = textAlign;
     entity.color = '#FFFFFF';
+    entity.visible = true;
     return entity;
 }
 
@@ -41,9 +43,15 @@ function MainScene()
         Milque.Math.choose(BALL_SPEED_RANGE),
         Milque.Math.choose(BALL_SPEED_RANGE));
 
-    this.textSuccess = TextSuccess(Milque.Display.width() / 2, Milque.Display.height() / 2, 'CORNER BALL!', SUCCESS_SIZE);
+    this.textScore = Text(Milque.Display.width() / 2, Milque.Display.height() / 2, () => this.score, 16);
+    this.textScore.color = '#222222';
+    this.textScore.visible = true;
+    this.textSuccess = Text(Milque.Display.width() / 2, Milque.Display.height() / 2, 'CORNER BALL!', SUCCESS_SIZE);
+    this.textSuccess.visible = false;
+
     this.successTime = 0;
     this.successBall = null;
+    this.score = 0;
 
     Milque.Game.on('update', () => {
         Milque.Display.clear();
@@ -54,18 +62,36 @@ function MainScene()
 
             // Flash text color
             this.textSuccess.color = Milque.Color.randomColor();
-
-            const scale = Math.abs(Math.sin(this.successTime / 10)) * this.textSuccess.textSize;
-            ctx.font = scale + 'px monospace';
-            ctx.textAlign = this.textSuccess.textAlign;
-            ctx.textBaseline = 'middle';
-            ctx.fillStyle = this.textSuccess.color;
-            ctx.fillText(this.textSuccess.text, this.textSuccess.x, this.textSuccess.y);
-
+            this.textSuccess.textSize = Math.abs(Math.sin(this.successTime / 10)) * SUCCESS_SIZE;
+            
             // Flash ball color
             for(const ball of Milque.Entity.entities(TAG_BALL))
             {
                 ball.color = Milque.Color.randomColor();
+            }
+        }
+        else
+        {
+            this.textSuccess.visible = false;
+            this.textScore.visible = true;
+        }
+
+        for(const text of Milque.Entity.entities(TAG_TEXT))
+        {
+            if (text.visible)
+            {
+                ctx.font = text.textSize + 'px monospace';
+                ctx.textAlign = text.textAlign;
+                ctx.textBaseline = text.textAlign === 'center' ? 'middle' : 'top';
+                ctx.fillStyle = text.color;
+                if (typeof text.text === 'function')
+                {
+                    ctx.fillText(text.text(), text.x, text.y);
+                }
+                else
+                {
+                    ctx.fillText(text.text, text.x, text.y);
+                }
             }
         }
 
@@ -89,6 +115,9 @@ function MainScene()
             {
                 // Start success dance.
                 this.successTime = MAX_SUCCESS_TIME;
+                this.textSuccess.visible = true;
+                this.textScore.visible = false;
+                ++this.score;
             }
             else if (xFlag || yFlag)
             {
