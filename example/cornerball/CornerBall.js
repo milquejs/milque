@@ -1,3 +1,9 @@
+/**
+ * Inspired by Jim and Pam.
+ * This uses the basic set of Milque tools. In theory, all future
+ * versions should still be able to support this.
+ */
+
 Milque.Display.attach(document.getElementById('display1'));
 const ctx = Milque.Display.VIEW.canvas.getContext('2d');
 
