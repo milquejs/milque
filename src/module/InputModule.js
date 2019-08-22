@@ -17,47 +17,66 @@ INPUT_MANAGER.addDevice(MOUSE);
 
 function Action(name, ...eventKeys)
 {
-    const input = new ActionInput(name, ...eventKeys);
-    INPUT_MANAGER.getContext().mapping.register(input);
-    return {
-        input,
+    const result = {
+        input: null,
+        attach(...eventKeys)
+        {
+            if (this.input) throw new Error('Already attached input to source.');
+            this.input = new ActionInput(name, ...eventKeys);
+            INPUT_MANAGER.getContext().mapping.register(this.input);
+            return this;
+        },
         get(consume = true)
         {
-            const inputState = INPUT_MANAGER.currentState;
-            if (inputState.hasAction(this.input.name))
+            if (this.input)
             {
-                return inputState.getAction(this.input.name, consume);
+                const inputState = INPUT_MANAGER.currentState;
+                if (inputState.hasAction(this.input.name))
+                {
+                    return inputState.getAction(this.input.name, consume);
+                }
             }
             return false;
         }
     };
+
+    if (eventKeys.length > 0)
+    {
+        result.attach(...eventKeys);
+    }
+    
+    return result;
 }
 
 function State(name, ...downUpEventKeys)
 {
-    const inputs = [];
-    for(const downUpEventKey of downUpEventKeys)
-    {
-        let downEventKey;
-        let upEventKey;
-        if (Array.isArray(downUpEventKey))
+    const result = {
+        inputs: null,
+        attach(...downUpEventKeys)
         {
-            downEventKey = downUpEventKey[0];
-            upEventKey = downUpEventKey[1];
-        }
-        else
-        {
-            const [sourceName, key] = InputMapping.fromEventKey(downUpEventKey);
-            downEventKey = InputMapping.toEventKey(sourceName, key, 'down');
-            upEventKey = InputMapping.toEventKey(sourceName, key, 'up');
-        }
-        const input = new StateInput(name, downEventKey, upEventKey);
-        INPUT_MANAGER.getContext().mapping.register(input);
-        inputs.push(input);
-    }
-
-    return {
-        inputs,
+            if (this.inputs) throw new Error('Already attached input to source.');
+            this.inputs = [];
+            for(const downUpEventKey of downUpEventKeys)
+            {
+                let downEventKey;
+                let upEventKey;
+                if (Array.isArray(downUpEventKey))
+                {
+                    downEventKey = downUpEventKey[0];
+                    upEventKey = downUpEventKey[1];
+                }
+                else
+                {
+                    const [sourceName, key] = InputMapping.fromEventKey(downUpEventKey);
+                    downEventKey = InputMapping.toEventKey(sourceName, key, 'down');
+                    upEventKey = InputMapping.toEventKey(sourceName, key, 'up');
+                }
+                const input = new StateInput(name, downEventKey, upEventKey);
+                INPUT_MANAGER.getContext().mapping.register(input);
+                this.inputs.push(input);
+            }
+            return this;
+        },
         get(consume = true)
         {
             const inputState = INPUT_MANAGER.currentState;
@@ -68,14 +87,26 @@ function State(name, ...downUpEventKeys)
             return false;
         }
     };
+
+    if (downUpEventKeys.length > 0)
+    {
+        result.attach(...downUpEventKeys);
+    }
+
+    return result;
 }
 
 function Range(name, eventKey, min = 0, max = 1)
 {
-    const input = new RangeInput(name, eventKey, min, max);
-    INPUT_MANAGER.getContext().mapping.register(input);
-    return {
-        input,
+    const result = {
+        input: null,
+        attach(eventKey, min = 0, max = 1)
+        {
+            if (this.input) throw new Error('Already attached input to source.');
+            this.input = new RangeInput(name, eventKey, min, max);
+            INPUT_MANAGER.getContext().mapping.register(this.input);
+            return this;
+        },
         get(consume = true)
         {
             const inputState = INPUT_MANAGER.currentState;
@@ -86,6 +117,13 @@ function Range(name, eventKey, min = 0, max = 1)
             return 0;
         }
     };
+
+    if (eventKey)
+    {
+        result.attach(eventKey, min, max);
+    }
+
+    return result;
 }
 
 export {

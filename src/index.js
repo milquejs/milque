@@ -5,7 +5,6 @@ import * as TweenModule from './module/TweenModule.js';
 import * as MathHelper from './util/MathHelper.js';
 import * as ColorHelper from './util/ColorHelper.js';
 import Eventable from './util/Eventable.js';
-
 import GameLoop from './GameLoop.js';
 
 const GAME_LOOP = new GameLoop();
