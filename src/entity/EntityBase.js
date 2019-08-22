@@ -41,6 +41,13 @@ class EntityBase extends ComponentBase
         return result;
     }
 
+    /**
+     * If the component does not exist for the entity, it will assign
+     * a new instance of the component. Otherwise, it will update the
+     * component instance based on the arguments passed-in.
+     * @param {ComponentBase|Function} component The component to add/upate for this entity.
+     * @param  {...any} args Any additional args to pass to component.
+     */
     component(component, ...args)
     {
         if (this.entityManager.has(this.entityID, component))
@@ -53,9 +60,22 @@ class EntityBase extends ComponentBase
             for(const key of Object.keys(instance))
             {
                 const propDescriptor = Object.getOwnPropertyDescriptor(this, key);
-                // Initialize property if already defined.
-                if (propDescriptor.value) instance[key] = value;
 
+                // Initialize property if already defined.
+                if (propDescriptor && propDescriptor.value) instance[key] = value;
+
+                /**
+                 * This is important. On a macro level, this let's the programmer
+                 * to focus less on the data structure of the program by allowing
+                 * them to initially, arbitrarily decide where to store the data:
+                 * either on the entity handler itself for ease of use or separated
+                 * by components. The programmer can then easily refactor the
+                 * properties, once there is a better understanding of the program's
+                 * design and features, into modular components when needed. Since
+                 * access of both kinds are the same, this process is really easy.
+                 * The difference is only in how they are created, which is usually
+                 * referenced only once.
+                 */
                 Object.defineProperty(this, key, {
                     get() { return instance[key]; },
                     set(value) { instance[key] = value; },
