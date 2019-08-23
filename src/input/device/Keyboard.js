@@ -27,12 +27,12 @@ class Keyboard extends InputDevice
     onKeyDown(e)
     {
         if (e.repeat) return;
-        this.dispatchEvent('input', e.key, 'down', true);
+        this.dispatchInput(e.key, 'down', true);
     }
 
     onKeyUp(e)
     {
-        this.dispatchEvent('input', e.key, 'up', true);
+        this.dispatchInput(e.key, 'up', true);
     }
 }
 

@@ -49,19 +49,19 @@ class Mouse extends InputDevice
     {
         if (this.allowCursorLock && !this.hasPointerLock()) return;
 
-        this.dispatchEvent('input', 'move', 'x', e.movementX);
-        this.dispatchEvent('input', 'move', 'y', e.movementY);
+        this.dispatchInput('move', 'x', e.movementX);
+        this.dispatchInput('move', 'y', e.movementY);
 
         if (this.element instanceof Element)
         {
             const rect = this.element.getBoundingClientRect();
-            this.dispatchEvent('input', 'pos', 'x', e.clientX - rect.left);
-            this.dispatchEvent('input', 'pos', 'y', e.clientY - rect.top);
+            this.dispatchInput('pos', 'x', e.clientX - rect.left);
+            this.dispatchInput('pos', 'y', e.clientY - rect.top);
         }
         else
         {
-            this.dispatchEvent('input', 'pos', 'x', e.pageX);
-            this.dispatchEvent('input', 'pos', 'y', e.pageY);
+            this.dispatchInput('pos', 'x', e.pageX);
+            this.dispatchInput('pos', 'y', e.pageY);
         }
     }
 
@@ -77,7 +77,7 @@ class Mouse extends InputDevice
         this._down = true;
         document.addEventListener('mouseup', this.onMouseUp, false);
 
-        this.dispatchEvent('input', e.button, 'down', true, e.clientX, e.clientY);
+        this.dispatchInput(e.button, 'down', true, e.clientX, e.clientY);
     }
 
     onMouseUp(e)
@@ -87,7 +87,7 @@ class Mouse extends InputDevice
         document.removeEventListener('mouseup', this.onMouseUp);
         this._down = false;
         
-        this.dispatchEvent('input', e.button, 'up', true, e.clientX, e.clientY);
+        this.dispatchInput(e.button, 'up', true, e.clientX, e.clientY);
     }
 
     hasPointerLock()

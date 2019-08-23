@@ -3,47 +3,32 @@ class InputDevice
     constructor(name)
     {
         this.name = name;
+        this.inputListeners = [];
+
         this.listeners = new Map();
     }
 
     delete()
     {
+        this.inputListeners.length = 0;
         this.listeners.clear();
     }
 
-    addEventListener(event, listener)
+    addInputListener(listener)
     {
-        if (this.listeners.has(event))
-        {
-            this.listeners.get(event).push(listener);
-        }
-        else
-        {
-            this.listeners.set(event, [listener]);
-        }
+        this.inputListeners.push(listener);
     }
 
-    removeEventListener(event, listener)
+    removeInputListener(listener)
     {
-        if (this.listeners.has(event))
-        {
-            const listeners = this.listeners.get(event);
-            const index = listener.indexOf(listener);
-            if (index >= 0)
-            {
-                listeners.splice(index, 1);
-            }
-        }
+        this.inputListeners.splice(this.inputListeners.indexOf(listener), 1);
     }
 
-    dispatchEvent(event, inputKey, inputEvent, inputValue, ...args)
+    dispatchInput(inputKey, inputEvent, inputValue, ...args)
     {
-        if (this.listeners.has(event))
+        for(const inputListener of this.inputListeners)
         {
-            for(const listener of this.listeners.get(event))
-            {
-                listener.call(null, this, inputKey, inputEvent, inputValue, ...args);
-            }
+            inputListener.call(null, this, inputKey, inputEvent, inputValue, ...args);
         }
     }
 }

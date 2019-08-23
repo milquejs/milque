@@ -39,12 +39,12 @@ class InputManager
     {
         // TODO: What if multiple of the same TYPE of input device?
         this.devices[inputDevice.name] = inputDevice;
-        inputDevice.addEventListener('input', this.onInputEvent);
+        inputDevice.addInputListener(this.onInputEvent);
     }
 
     removeDevice(inputDevice)
     {
-        inputDevice.removeEventListener('input', this.onInputEvent);
+        inputDevice.removeInputListener(this.onInputEvent);
         delete this.devices[inputDevice.name];
     }
 
@@ -58,7 +58,7 @@ class InputManager
         for(const key of Object.keys(this.devices))
         {
             const inputDevice = this.devices[key];
-            inputDevice.removeEventListener('input', this.onInputEvent);
+            inputDevice.removeInputListener(this.onInputEvent);
             delete this.devices[key];
         }
     }

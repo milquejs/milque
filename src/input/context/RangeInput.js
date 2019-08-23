@@ -2,29 +2,32 @@ import Input from './Input.js';
 
 class RangeInput extends Input
 {
-    constructor(name, eventKey, min, max)
+    constructor(name, eventKey, fromMin, fromMax, toMin = 0, toMax = 1)
     {
         super(name, eventKey);
 
-        if (typeof max !== 'number' || typeof min !== 'number')
+        if (typeof fromMax !== 'number' || typeof fromMin !== 'number' || typeof toMax !== 'number' || typeof toMin !== 'number')
         {
             throw new Error('Range bounds for input not specified');
         }
     
-        if (max < min)
+        if (fromMax < fromMin || toMax < toMin)
         {
             throw new Error('Max range must be greater than min range');
         }
 
-        this.min = min;
-        this.max = max;
-
-        const normal = max - min;
-        if (normal == 0)
+        if (fromMax === fromMin || toMax === toMin)
         {
             throw new Error('Range of input cannot be zero');
         }
-        this.normal = normal;
+
+        this.fromMin = fromMin;
+        this.fromMax = fromMax;
+        this.fromNormal = fromMax - fromMin;
+
+        this.toMin = toMin;
+        this.toMax = toMax;
+        this.toNormal = toMax - toMin;
     }
 
     /** @override */
@@ -39,7 +42,7 @@ class RangeInput extends Input
 
     normalize(value)
     {
-      return (value - this.min) / this.normal;
+      return ((value - this.fromMin) / this.fromNormal) * this.toNormal + this.toMin;
     }
 }
 

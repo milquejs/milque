@@ -1,3 +1,4 @@
+import MathHelper from '../util/MathHelper.js';
 import InputManager from '../input/InputManager.js';
 
 import InputMapping from '../input/InputMapping.js';
@@ -15,14 +16,15 @@ const MOUSE = new Mouse(window, false);
 INPUT_MANAGER.addDevice(KEYBOARD);
 INPUT_MANAGER.addDevice(MOUSE);
 
-function Action(name, ...eventKeys)
+function Action(name = MathHelper.uuid(), ...args)
 {
     const result = {
+        name,
         input: null,
         attach(...eventKeys)
         {
             if (this.input) throw new Error('Already attached input to source.');
-            this.input = new ActionInput(name, ...eventKeys);
+            this.input = new ActionInput(this.name, ...eventKeys);
             INPUT_MANAGER.getContext().mapping.register(this.input);
             return this;
         },
@@ -40,17 +42,18 @@ function Action(name, ...eventKeys)
         }
     };
 
-    if (eventKeys.length > 0)
+    if (args.length > 0)
     {
-        result.attach(...eventKeys);
+        result.attach(...args);
     }
     
     return result;
 }
 
-function State(name, ...downUpEventKeys)
+function State(name = MathHelper.uuid(), ...args)
 {
     const result = {
+        name,
         inputs: null,
         attach(...downUpEventKeys)
         {
@@ -71,7 +74,7 @@ function State(name, ...downUpEventKeys)
                     downEventKey = InputMapping.toEventKey(sourceName, key, 'down');
                     upEventKey = InputMapping.toEventKey(sourceName, key, 'up');
                 }
-                const input = new StateInput(name, downEventKey, upEventKey);
+                const input = new StateInput(this.name, downEventKey, upEventKey);
                 INPUT_MANAGER.getContext().mapping.register(input);
                 this.inputs.push(input);
             }
@@ -88,22 +91,23 @@ function State(name, ...downUpEventKeys)
         }
     };
 
-    if (downUpEventKeys.length > 0)
+    if (args.length > 0)
     {
-        result.attach(...downUpEventKeys);
+        result.attach(...args);
     }
 
     return result;
 }
 
-function Range(name, eventKey, min = 0, max = 1)
+function Range(name = MathHelper.uuid(), ...args)
 {
     const result = {
+        name,
         input: null,
-        attach(eventKey, min = 0, max = 1)
+        attach(eventKey, fromMin = 0, fromMax = 1, toMin = fromMin, toMax = fromMax)
         {
             if (this.input) throw new Error('Already attached input to source.');
-            this.input = new RangeInput(name, eventKey, min, max);
+            this.input = new RangeInput(this.name, eventKey, min, max, toMin, toMax);
             INPUT_MANAGER.getContext().mapping.register(this.input);
             return this;
         },
@@ -118,9 +122,9 @@ function Range(name, eventKey, min = 0, max = 1)
         }
     };
 
-    if (eventKey)
+    if (args.length > 0)
     {
-        result.attach(eventKey, min, max);
+        result.attach(...args);
     }
 
     return result;
