@@ -12,8 +12,6 @@ const GAME = Eventable.create();
 const GAME_LOOP = new GameLoop();
 GAME_LOOP.on('update', onGameUpdate);
 
-const RENDER_CONTEXT = DisplayModule.VIEW.canvas.getContext('2d');
-
 function onGameUpdate()
 {
     InputModule.INPUT_MANAGER.poll();
@@ -22,10 +20,6 @@ function onGameUpdate()
     TweenModule.TWEEN_MANAGER.update();
     GAME.emit('update');
     GAME.emit('postupdate');
-
-    GAME.emit('prerender', RENDER_CONTEXT);
-    GAME.emit('render', RENDER_CONTEXT);
-    GAME.emit('postrender', RENDER_CONTEXT);
 }
 
 function play()

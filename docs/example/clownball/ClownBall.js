@@ -9,6 +9,7 @@ const ctx = Milque.Display.VIEW.canvas.getContext('2d');
 
 const TAG_BALL = 'ball';
 const TAG_TEXT = 'text';
+const TAG_PARTICLE = 'particle';
 const BALL_SPEED = 3; // 3 or 20
 const BALL_SPEED_RANGE = [-BALL_SPEED, BALL_SPEED];
 const BALL_SIZE = 64;
@@ -31,6 +32,11 @@ function Motion(dx = 0, dy = 0)
 function DieOverTime(life = 100)
 {
     return { life, maxLife: life };
+}
+
+function Rainbow()
+{
+    return { color: Milque.Color.randomColor() };
 }
 
 function Collidable(body)
@@ -71,6 +77,23 @@ function Text(x = 0, y = 0, text = 'Boo', textSize = 16, textAlign = 'center')
     return entity;
 }
 
+function UpdatePositionWithMotion()
+{
+    for(const [pos, mot] of Milque.Entity.components(Position, Motion))
+    {
+        pos.x += mot.dx;
+        pos.y += mot.dy;
+    }
+}
+
+function UpdateRainbow()
+{
+    for(const rai of Milque.Entity.components(Rainbow))
+    {
+        rai.color = Milque.Color.randomColor();
+    }
+}
+
 function KeepCollidableUpdated()
 {
     for(const [pos, col] of Milque.Entity.components(Position, Collidable))
@@ -108,6 +131,25 @@ function giveBallLife(ball)
     // Change color on wall hit.
     ball.color = Milque.Color.randomColor();
     ball.life = ball.maxLife = Milque.Math.randomRange(MIN_LIFE, MAX_LIFE);
+}
+
+function explode(x, y, amount = 100, life = 100, emitRadius = 16, minSpeed = 1, maxSpeed = 2, minSize = 8, maxSize = 16)
+{
+    for(let i = 0; i < amount; ++i)
+    {
+        const angle = Milque.Math.randomRange(0, Math.PI * 2);
+        const dist = Milque.Math.randomRange(0, emitRadius);
+        const dx = Math.cos(angle);
+        const dy = Math.sin(angle);
+        const speed = Milque.Math.randomRange(minSpeed, maxSpeed);
+        const entity = Milque.Entity.spawn()
+            .tag(TAG_PARTICLE)
+            .component(Position, x + dx * dist, y + dy * dist)
+            .component(Motion, dx * speed, dy * speed)
+            .component(DieOverTime, 100)
+            .component(Rainbow);
+        entity.size = Milque.Math.randomRange(minSize, maxSize);
+    }
 }
 
 function MainScene()
@@ -158,6 +200,7 @@ function MainScene()
                     scene.textSuccess.text = 'GOTT\'EM!';
                     doScore(1, 30);
                     splitBall(ball);
+                    explode(ball.x, ball.y, 50, 100, 16, 0.1, 2);
                     break;
                 }
             }
@@ -202,6 +245,9 @@ function MainScene()
             }
         }
 
+        UpdatePositionWithMotion();
+        UpdateRainbow();
+
         for(const ball of Milque.Entity.entities(TAG_BALL))
         {
             --ball.life;
@@ -210,9 +256,6 @@ function MainScene()
                 ball.destroy();
                 continue;
             }
-
-            ball.x += ball.dx;
-            ball.y += ball.dy;
 
             let xFlag = false;
             if (ball.x < 0) { ball.x = 0; xFlag = true; }
@@ -244,6 +287,20 @@ function MainScene()
             const color = lightenColor(ball.color, lifeRatio - 1);
             ctx.fillStyle = color;
             ctx.fillRect(ball.x - ball.w / 2, ball.y - ball.h / 2, ball.w, ball.h);
+        }
+
+        for(const particle of Milque.Entity.entities(TAG_PARTICLE))
+        {
+            --particle.life;
+            if (particle.life <= 0)
+            {
+                particle.destroy();
+                continue;
+            }
+
+            const lifeRatio = particle.life / particle.maxLife;
+            ctx.fillStyle = particle.color;
+            ctx.fillRect(particle.x, particle.y, particle.size * lifeRatio, particle.size * lifeRatio);
         }
 
         // Draw bounding boxes
