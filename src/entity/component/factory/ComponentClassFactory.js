@@ -2,46 +2,45 @@ import ComponentFactory from './ComponentFactory.js';
 
 class ComponentClassFactory extends ComponentFactory
 {
-    constructor(componentClass)
+    constructor(handlerClass)
     {
         super();
 
-        this._cache = [];
-
-        this.componentClass = componentClass;
+        this.handler = new handlerClass();
+        this._cached = [];
     }
 
     /** @override */
     create(...args)
     {
         let instance;
-        if (this._cache.length > 0)
+        if (this._cached.length > 0)
         {
-            instance = this._cache.shift();
+            instance = this._cached.shift();
         }
         else
         {
-            const ComponentClass = this.componentClass;
-            instance = new ComponentClass();
+            instance = {};
         }
-        instance.create(...args);
-        return instance;
+
+        return this.handler.onCreate(instance, ...args);
     }
 
     /** @override */
     change(instance, ...args)
     {
-        instance.change(...args);
+        this.handler.onChange(instance, ...args);
     }
 
     /** @override */
     destroy(instance)
     {
-        const result = instance.destroy();
+        const result = this.handler.onDestroy(instance);
+        
+        // See if instance can be cached...
         if (result)
         {
-            // Instance can be cached :D
-            this._cache.push(result);
+            this._cached.push(instance);
         }
     }
 }

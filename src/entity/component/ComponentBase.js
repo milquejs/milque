@@ -4,31 +4,46 @@ class ComponentBase
 
     /**
      * Creates the component instance. Must also support no args.
-     * @param  {...any} args Any additional arguments.
-     * @returns {this} For method chaining.
+     * @param  {...any} args Any additional arguments to initialize with.
+     * @returns {Object} The component instance.
      */
-    create(...args)
+    onCreate(instance, ...args)
     {
-        return this;
+        if (instance)
+        {
+            const keys = Object.keys(instance);
+            for(let i = 0; i < keys.length; ++i)
+            {
+                instance[keys[i]] = args[i];
+            }
+            return instance;
+        }
+        else
+        {
+            return {};
+        }
     }
 
     /**
      * Changes the component instance for the provided args.
-     * @param  {...any} args 
-     * @returns {this} For method chaining.
+     * @param  {...any} args Any additional arguments to change for.
      */
-    change(...args)
+    onChange(instance, ...args)
     {
-        return this;
+        const keys = Object.keys(instance);
+        for(let i = 0; i < keys.length; ++i)
+        {
+            instance[keys[i]] = args[i];
+        }
     }
 
     /**
      * Destroys the component instance.
-     * @returns {Boolean} True if instance can be cached and re-used.
+     * @returns {Object} The instance to cache, null if not cacheable.
      */
-    destroy()
+    onDestroy(instance)
     {
-        return false;
+        return true;
     }
 }
 

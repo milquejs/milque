@@ -1,44 +1,28 @@
-import ComponentBase from './component/ComponentBase.js';
+import ComponentInstanceBase from './component/ComponentInstanceBase.js';
 
-class EntityBase extends ComponentBase
+class EntityBase extends ComponentInstanceBase
 {
-    constructor()
+    constructor(entityManager, entityID, ...args)
     {
         super();
-        this.entityManager = null;
-        this.entityID = -1;
-    }
-
-    /**
-     * @override
-     * @param {EntityManager} entityManager The entity manager that owns this entity.
-     * @param {Number} entityID The id of the represented entity.
-     */
-    create(entityManager, entityID, ...args)
-    {
         this.entityManager = entityManager;
         this.entityID = entityID;
-        this.onCreate(...args);
-        return this;
     }
+    
+    /** @override */
+    onChange(...args) {}
 
     /** @override */
-    change(...args)
+    onDestroy()
     {
-        this.onChange(...args);
-        return this;
+        this.entityManager.destroy(this.entityID, {
+            exclude: [this.constructor]
+        });
     }
 
-    /**
-     * @override
-     * @returns {Boolean} True if instance can be cached and re-used.
-     */
     destroy()
     {
-        const result = this.onDestroy();
-        this.entityManager.destroy(this.entityID, this.constructor);
-        this.entityID = -1;
-        return result;
+        this.entityManager.destroy(this.entityID);
     }
 
     /**
@@ -123,10 +107,6 @@ class EntityBase extends ComponentBase
     {
         return this.entityManager.get(this.entityID, component, ...components);
     }
-
-    onCreate(...args) {}
-    onChange(...args) {}
-    onDestroy() { return false; }
 }
 
 export default EntityBase;

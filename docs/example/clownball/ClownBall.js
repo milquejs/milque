@@ -33,31 +33,15 @@ function DieOverTime(life = 100)
     return { life, maxLife: life };
 }
 
-class Collidable extends Milque.Entity.ComponentBase
+function Collidable(body)
 {
-    constructor() { super(); }
-
-    /** @override */
-    create(body)
-    {
-        this.body = body;
-        return this;
-    }
-
-    /** @override */
-    change(body)
-    {
-        this.body = body;
-        return this;
-    }
-
-    /** @override */
-    destroy()
-    {
-        Milque.Collision.COLLISION_MANAGER.remove(this.body);
-        return false;
-    }
+    return { body };
 }
+Collidable.onDestroy = function (instance) {
+    Milque.Collision.COLLISION_MANAGER.remove(instance.body);
+    instance.body = null;
+    return true;
+};
 
 function Ball(x = 0, y = 0, w = 16, h = 16, dx = BALL_SPEED, dy = BALL_SPEED)
 {
@@ -252,8 +236,8 @@ function MainScene()
                 giveBallLife(ball);
 
                 // Loose some velocity each time you hit a wall.
-                ball.dx *= 0.99;
-                ball.dy *= 0.99;
+                ball.dx *= 0.95;
+                ball.dy *= 0.95;
             }
 
             const lifeRatio = ball.life / ball.maxLife;

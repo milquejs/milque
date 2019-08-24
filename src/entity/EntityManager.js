@@ -2,9 +2,11 @@ import EntityView from './EntityView.js';
 
 import ComponentManager from './component/ComponentManager.js';
 import ComponentBase from './component/ComponentBase.js';
+import ComponentInstanceBase from './component/ComponentInstanceBase.js';
 import ComponentTagFactory from './component/factory/ComponentTagFactory.js';
-import ComponentFunctionFactory from './component/factory/ComponentFunctionFactory.js';
 import ComponentClassFactory from './component/factory/ComponentClassFactory.js';
+import ComponentClassInstanceFactory from './component/factory/ComponentClassInstanceFactory.js';
+import ComponentFunctionFactory from './component/factory/ComponentFunctionFactory';
 
 class EntityManager
 {
@@ -19,6 +21,7 @@ class EntityManager
     {
         if (!componentFactory)
         {
+            // It's a tag component.
             if (typeof component === 'string')
             {
                 componentFactory = new ComponentTagFactory(component);
@@ -26,6 +29,10 @@ class EntityManager
             else if (component.prototype instanceof ComponentBase)
             {
                 componentFactory = new ComponentClassFactory(component);
+            }
+            else if (component.prototype instanceof ComponentInstanceBase)
+            {
+                componentFactory = new ComponentClassInstanceFactory(component);
             }
             else if (typeof component === 'function')
             {
@@ -66,20 +73,34 @@ class EntityManager
     /**
      * Destroys an entity and all its components.
      * @param {Number} entity The id of the entity to be destroyed.
-     * @param {Component} retainComponent If specified, will retain the component for the entity (used to stop infinite recursion)
+     * @param {Object} opts Any additional options.
+     * @param {Array} opts.exclude Will not remove specified components. This
+     * is usually used to delay destruction of a component type until later.
+     * @param {Boolean} opts.persist If true, will NOT remove entity from entity
+     * list.
      */
-    destroy(entity, retainComponent = null)
+    destroy(entity, opts = {})
     {
         for(const componentType of this._componentManagers.keys())
         {
-            if (componentType === retainComponent) continue;
             const componentManager = this._componentManagers.get(componentType);
             if (componentManager.has(entity))
             {
-                componentManager.remove(entity);
+                if (opts.exclude && opts.exclude.includes(componentType))
+                {
+                    continue;
+                }
+                else
+                {
+                    componentManager.remove(entity);
+                }
             }
         }
-        this._entities.delete(entity);
+
+        if (!opts.persist)
+        {
+            this._entities.delete(entity);
+        }
     }
 
     entities(...components)
