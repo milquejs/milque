@@ -285,6 +285,115 @@ function _nonIterableRest() {
   throw new TypeError("Invalid attempt to destructure non-iterable instance");
 }
 
+/**
+ * Generates a uuidv4.
+ * 
+ * @returns {String} the universally unique id
+ */
+function uuid() {
+  return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, function (c) {
+    return (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16);
+  });
+}
+/**
+ * Interpolates, or lerps, between 2 values by the specified amount, dt.
+ * 
+ * @param {Number} a the initial value
+ * @param {Number} b the final value
+ * @param {Number} dt the amount changed
+ * @returns {Number} the interpolated value
+ */
+
+function lerp(a, b, dt) {
+  return a * (1 - dt) + b * dt;
+}
+/**
+ * Generates a number hash for the string. For an empty string, it will return 0.
+ * 
+ * @param {String} [value=''] the string to hash
+ * @returns {Number} a hash that uniquely identifies the string
+ */
+
+function stringHash() {
+  var value = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '';
+  var hash = 0;
+
+  for (var i = 0, len = value.length; i < len; i++) {
+    hash = Math.imul(31, hash) + value.charCodeAt(i) | 0;
+  }
+
+  return hash;
+}
+/**
+ * Calculates the directional vector for the passed-in points.
+ * 
+ * @param {Number} x1 the x component of the source point
+ * @param {Number} y1 the y component of the source point
+ * @param {Number} x2 the x component of the destination point
+ * @param {Number} y2 the y component of the destination point
+ * @param {Number} [magnitude=1] the magnitude, or length, of the vector
+ * @param {Number} [angleOffset=0] additional angle offset from the calculated direction vector
+ * @param {Object} [dst={x: 0, y: 0}] the result
+ * @returns {Object} dst
+ */
+
+function getDirectionalVector(x1, y1, x2, y2) {
+  var magnitude = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 1;
+  var angleOffset = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : 0;
+  var dst = arguments.length > 6 && arguments[6] !== undefined ? arguments[6] : [0, 0];
+  var dx = x2 - x1;
+  var dy = y2 - y1;
+  var angle = Math.atan2(dy, dx) + angleOffset;
+  dst[0] = Math.cos(angle) * magnitude;
+  dst[1] = Math.sin(angle) * magnitude;
+  return dst;
+}
+/**
+ * Calculates the midpoint between the passed-in points.
+ * 
+ * @param {Number} x1 the x component of the source point
+ * @param {Number} y1 the y component of the source point
+ * @param {Number} x2 the x component of the destination point
+ * @param {Number} y2 the y component of the destination point
+ * @param {Object} [dst] the result
+ * @returns {Object} dst
+ */
+
+function getMidPoint(x1, y1, x2, y2) {
+  var dst = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : [0, 0];
+  dst[0] = x1 + (x2 - x1) / 2;
+  dst[1] = y1 + (y2 - y1) / 2;
+  return dst;
+}
+function randomRange(min, max) {
+  return Math.random() * (max - min) + min;
+}
+function choose(items) {
+  return items[Math.floor(Math.random() * items.length)];
+}
+function distanceSqu(x1, y1, x2, y2) {
+  var dx = x2 - x1;
+  var dy = y2 - y1;
+  return dx * dx + dy * dy;
+}
+function distance(x1, y1, x2, y2) {
+  var dx = x2 - x1;
+  var dy = y2 - y1;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
+var MathHelper = /*#__PURE__*/Object.freeze({
+    uuid: uuid,
+    lerp: lerp,
+    stringHash: stringHash,
+    getDirectionalVector: getDirectionalVector,
+    getMidPoint: getMidPoint,
+    randomRange: randomRange,
+    choose: choose,
+    distanceSqu: distanceSqu,
+    distance: distance
+});
+
 var InputState =
 /*#__PURE__*/
 function () {
@@ -679,30 +788,34 @@ var RangeInput =
 function (_Input) {
   _inherits(RangeInput, _Input);
 
-  function RangeInput(name, eventKey, min, max) {
+  function RangeInput(name, eventKey, fromMin, fromMax) {
     var _this;
+
+    var toMin = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 0;
+    var toMax = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : 1;
 
     _classCallCheck(this, RangeInput);
 
     _this = _possibleConstructorReturn(this, _getPrototypeOf(RangeInput).call(this, name, eventKey));
 
-    if (typeof max !== 'number' || typeof min !== 'number') {
+    if (typeof fromMax !== 'number' || typeof fromMin !== 'number' || typeof toMax !== 'number' || typeof toMin !== 'number') {
       throw new Error('Range bounds for input not specified');
     }
 
-    if (max < min) {
+    if (fromMax < fromMin || toMax < toMin) {
       throw new Error('Max range must be greater than min range');
     }
 
-    _this.min = min;
-    _this.max = max;
-    var normal = max - min;
-
-    if (normal == 0) {
+    if (fromMax === fromMin || toMax === toMin) {
       throw new Error('Range of input cannot be zero');
     }
 
-    _this.normal = normal;
+    _this.fromMin = fromMin;
+    _this.fromMax = fromMax;
+    _this.fromNormal = fromMax - fromMin;
+    _this.toMin = toMin;
+    _this.toMax = toMax;
+    _this.toNormal = toMax - toMin;
     return _this;
   }
   /** @override */
@@ -720,7 +833,7 @@ function (_Input) {
   }, {
     key: "normalize",
     value: function normalize(value) {
-      return (value - this.min) / this.normal;
+      return (value - this.fromMin) / this.fromNormal * this.toNormal + this.toMin;
     }
   }]);
 
@@ -761,12 +874,12 @@ function () {
     value: function addDevice(inputDevice) {
       // TODO: What if multiple of the same TYPE of input device?
       this.devices[inputDevice.name] = inputDevice;
-      inputDevice.addEventListener('input', this.onInputEvent);
+      inputDevice.addInputListener(this.onInputEvent);
     }
   }, {
     key: "removeDevice",
     value: function removeDevice(inputDevice) {
-      inputDevice.removeEventListener('input', this.onInputEvent);
+      inputDevice.removeInputListener(this.onInputEvent);
       delete this.devices[inputDevice.name];
     }
   }, {
@@ -780,7 +893,7 @@ function () {
       for (var _i = 0, _Object$keys = Object.keys(this.devices); _i < _Object$keys.length; _i++) {
         var key = _Object$keys[_i];
         var inputDevice = this.devices[key];
-        inputDevice.removeEventListener('input', this.onInputEvent);
+        inputDevice.removeInputListener(this.onInputEvent);
         delete this.devices[key];
       }
     }
@@ -989,64 +1102,53 @@ function () {
     _classCallCheck(this, InputDevice);
 
     this.name = name;
+    this.inputListeners = [];
     this.listeners = new Map();
   }
 
   _createClass(InputDevice, [{
     key: "delete",
     value: function _delete() {
+      this.inputListeners.length = 0;
       this.listeners.clear();
     }
   }, {
-    key: "addEventListener",
-    value: function addEventListener(event, listener) {
-      if (this.listeners.has(event)) {
-        this.listeners.get(event).push(listener);
-      } else {
-        this.listeners.set(event, [listener]);
-      }
+    key: "addInputListener",
+    value: function addInputListener(listener) {
+      this.inputListeners.push(listener);
     }
   }, {
-    key: "removeEventListener",
-    value: function removeEventListener(event, listener) {
-      if (this.listeners.has(event)) {
-        var listeners = this.listeners.get(event);
-        var index = listener.indexOf(listener);
-
-        if (index >= 0) {
-          listeners.splice(index, 1);
-        }
-      }
+    key: "removeInputListener",
+    value: function removeInputListener(listener) {
+      this.inputListeners.splice(this.inputListeners.indexOf(listener), 1);
     }
   }, {
-    key: "dispatchEvent",
-    value: function dispatchEvent(event, inputKey, inputEvent, inputValue) {
-      if (this.listeners.has(event)) {
-        for (var _len = arguments.length, args = new Array(_len > 4 ? _len - 4 : 0), _key = 4; _key < _len; _key++) {
-          args[_key - 4] = arguments[_key];
+    key: "dispatchInput",
+    value: function dispatchInput(inputKey, inputEvent, inputValue) {
+      for (var _len = arguments.length, args = new Array(_len > 3 ? _len - 3 : 0), _key = 3; _key < _len; _key++) {
+        args[_key - 3] = arguments[_key];
+      }
+
+      var _iteratorNormalCompletion = true;
+      var _didIteratorError = false;
+      var _iteratorError = undefined;
+
+      try {
+        for (var _iterator = this.inputListeners[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+          var inputListener = _step.value;
+          inputListener.call.apply(inputListener, [null, this, inputKey, inputEvent, inputValue].concat(args));
         }
-
-        var _iteratorNormalCompletion = true;
-        var _didIteratorError = false;
-        var _iteratorError = undefined;
-
+      } catch (err) {
+        _didIteratorError = true;
+        _iteratorError = err;
+      } finally {
         try {
-          for (var _iterator = this.listeners.get(event)[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-            var listener = _step.value;
-            listener.call.apply(listener, [null, this, inputKey, inputEvent, inputValue].concat(args));
+          if (!_iteratorNormalCompletion && _iterator["return"] != null) {
+            _iterator["return"]();
           }
-        } catch (err) {
-          _didIteratorError = true;
-          _iteratorError = err;
         } finally {
-          try {
-            if (!_iteratorNormalCompletion && _iterator["return"] != null) {
-              _iterator["return"]();
-            }
-          } finally {
-            if (_didIteratorError) {
-              throw _iteratorError;
-            }
+          if (_didIteratorError) {
+            throw _iteratorError;
           }
         }
       }
@@ -1089,12 +1191,12 @@ function (_InputDevice) {
     key: "onKeyDown",
     value: function onKeyDown(e) {
       if (e.repeat) return;
-      this.dispatchEvent('input', e.key, 'down', true);
+      this.dispatchInput(e.key, 'down', true);
     }
   }, {
     key: "onKeyUp",
     value: function onKeyUp(e) {
-      this.dispatchEvent('input', e.key, 'up', true);
+      this.dispatchInput(e.key, 'up', true);
     }
   }]);
 
@@ -1154,16 +1256,16 @@ function (_InputDevice) {
     key: "onMouseMove",
     value: function onMouseMove(e) {
       if (this.allowCursorLock && !this.hasPointerLock()) return;
-      this.dispatchEvent('input', 'move', 'x', e.movementX);
-      this.dispatchEvent('input', 'move', 'y', e.movementY);
+      this.dispatchInput('move', 'x', e.movementX);
+      this.dispatchInput('move', 'y', e.movementY);
 
       if (this.element instanceof Element) {
         var rect = this.element.getBoundingClientRect();
-        this.dispatchEvent('input', 'pos', 'x', e.clientX - rect.left);
-        this.dispatchEvent('input', 'pos', 'y', e.clientY - rect.top);
+        this.dispatchInput('pos', 'x', e.clientX - rect.left);
+        this.dispatchInput('pos', 'y', e.clientY - rect.top);
       } else {
-        this.dispatchEvent('input', 'pos', 'x', e.pageX);
-        this.dispatchEvent('input', 'pos', 'y', e.pageY);
+        this.dispatchInput('pos', 'x', e.pageX);
+        this.dispatchInput('pos', 'y', e.pageY);
       }
     }
   }, {
@@ -1177,7 +1279,7 @@ function (_InputDevice) {
 
       this._down = true;
       document.addEventListener('mouseup', this.onMouseUp, false);
-      this.dispatchEvent('input', e.button, 'down', true, e.clientX, e.clientY);
+      this.dispatchInput(e.button, 'down', true, e.clientX, e.clientY);
     }
   }, {
     key: "onMouseUp",
@@ -1185,7 +1287,7 @@ function (_InputDevice) {
       if (this.allowCursorLock && !this.hasPointerLock()) return;
       document.removeEventListener('mouseup', this.onMouseUp);
       this._down = false;
-      this.dispatchEvent('input', e.button, 'up', true, e.clientX, e.clientY);
+      this.dispatchInput(e.button, 'up', true, e.clientX, e.clientY);
     }
   }, {
     key: "hasPointerLock",
@@ -1203,8 +1305,10 @@ var MOUSE = new Mouse(window, false);
 INPUT_MANAGER.addDevice(KEYBOARD);
 INPUT_MANAGER.addDevice(MOUSE);
 
-function Action(name) {
+function Action() {
+  var name = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : uuid();
   var result = {
+    name: name,
     input: null,
     attach: function attach() {
       if (this.input) throw new Error('Already attached input to source.');
@@ -1213,7 +1317,7 @@ function Action(name) {
         eventKeys[_key2] = arguments[_key2];
       }
 
-      this.input = _construct(ActionInput, [name].concat(eventKeys));
+      this.input = _construct(ActionInput, [this.name].concat(eventKeys));
       INPUT_MANAGER.getContext().mapping.register(this.input);
       return this;
     },
@@ -1232,19 +1336,21 @@ function Action(name) {
     }
   };
 
-  for (var _len = arguments.length, eventKeys = new Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
-    eventKeys[_key - 1] = arguments[_key];
+  for (var _len = arguments.length, args = new Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+    args[_key - 1] = arguments[_key];
   }
 
-  if (eventKeys.length > 0) {
-    result.attach.apply(result, eventKeys);
+  if (args.length > 0) {
+    result.attach.apply(result, args);
   }
 
   return result;
 }
 
-function State(name) {
+function State() {
+  var name = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : uuid();
   var result = {
+    name: name,
     inputs: null,
     attach: function attach() {
       if (this.inputs) throw new Error('Already attached input to source.');
@@ -1272,7 +1378,7 @@ function State(name) {
           upEventKey = InputMapping.toEventKey(sourceName, key, 'up');
         }
 
-        var input = new StateInput(name, downEventKey, upEventKey);
+        var input = new StateInput(this.name, downEventKey, upEventKey);
         INPUT_MANAGER.getContext().mapping.register(input);
         this.inputs.push(input);
       }
@@ -1291,27 +1397,29 @@ function State(name) {
     }
   };
 
-  for (var _len3 = arguments.length, downUpEventKeys = new Array(_len3 > 1 ? _len3 - 1 : 0), _key3 = 1; _key3 < _len3; _key3++) {
-    downUpEventKeys[_key3 - 1] = arguments[_key3];
+  for (var _len3 = arguments.length, args = new Array(_len3 > 1 ? _len3 - 1 : 0), _key3 = 1; _key3 < _len3; _key3++) {
+    args[_key3 - 1] = arguments[_key3];
   }
 
-  if (downUpEventKeys.length > 0) {
-    result.attach.apply(result, downUpEventKeys);
+  if (args.length > 0) {
+    result.attach.apply(result, args);
   }
 
   return result;
 }
 
-function Range(name, eventKey) {
-  var min = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
-  var max = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 1;
+function Range() {
+  var name = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : uuid();
   var result = {
+    name: name,
     input: null,
     attach: function attach(eventKey) {
-      var min = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
-      var max = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 1;
+      var fromMin = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+      var fromMax = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 1;
+      var toMin = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : fromMin;
+      var toMax = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : fromMax;
       if (this.input) throw new Error('Already attached input to source.');
-      this.input = new RangeInput(name, eventKey, min, max);
+      this.input = new RangeInput(this.name, eventKey, fromMin, fromMax, toMin, toMax);
       INPUT_MANAGER.getContext().mapping.register(this.input);
       return this;
     },
@@ -1327,8 +1435,12 @@ function Range(name, eventKey) {
     }
   };
 
-  if (eventKey) {
-    result.attach(eventKey, min, max);
+  for (var _len5 = arguments.length, args = new Array(_len5 > 1 ? _len5 - 1 : 0), _key5 = 1; _key5 < _len5; _key5++) {
+    args[_key5 - 1] = arguments[_key5];
+  }
+
+  if (args.length > 0) {
+    result.attach.apply(result, args);
   }
 
   return result;
@@ -1439,10 +1551,18 @@ function (_ComponentBase) {
     key: "destroy",
     value: function destroy() {
       var result = this.onDestroy();
-      this.entityManager.destroy(this.entityID);
+      this.entityManager.destroy(this.entityID, this.constructor);
       this.entityID = -1;
       return result;
     }
+    /**
+     * If the component does not exist for the entity, it will assign
+     * a new instance of the component. Otherwise, it will update the
+     * component instance based on the arguments passed-in.
+     * @param {ComponentBase|Function} component The component to add/upate for this entity.
+     * @param  {...any} args Any additional args to pass to component.
+     */
+
   }, {
     key: "component",
     value: function component(_component) {
@@ -1466,7 +1586,20 @@ function (_ComponentBase) {
             var key = _Object$keys[_i];
             var propDescriptor = Object.getOwnPropertyDescriptor(_this2, key); // Initialize property if already defined.
 
-            if (propDescriptor.value) instance[key] = value;
+            if (propDescriptor && propDescriptor.value) instance[key] = value;
+            /**
+             * This is important. On a macro level, this let's the programmer
+             * to focus less on the data structure of the program by allowing
+             * them to initially, arbitrarily decide where to store the data:
+             * either on the entity handler itself for ease of use or separated
+             * by components. The programmer can then easily refactor the
+             * properties, once there is a better understanding of the program's
+             * design and features, into modular components when needed. Since
+             * access of both kinds are the same, this process is really easy.
+             * The difference is only in how they are created, which is usually
+             * referenced only once.
+             */
+
             Object.defineProperty(_this2, key, {
               get: function get() {
                 return instance[key];
@@ -1957,18 +2090,23 @@ function () {
     /**
      * Destroys an entity and all its components.
      * @param {Number} entity The id of the entity to be destroyed.
+     * @param {Component} retainComponent If specified, will retain the component for the entity (used to stop infinite recursion)
      */
 
   }, {
     key: "destroy",
     value: function destroy(entity) {
+      var retainComponent = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
       var _iteratorNormalCompletion = true;
       var _didIteratorError = false;
       var _iteratorError = undefined;
 
       try {
-        for (var _iterator = this._componentManagers.values()[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-          var componentManager = _step.value;
+        for (var _iterator = this._componentManagers.keys()[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+          var componentType = _step.value;
+          if (componentType === retainComponent) continue;
+
+          var componentManager = this._componentManagers.get(componentType);
 
           if (componentManager.has(entity)) {
             componentManager.remove(entity);
@@ -2007,6 +2145,8 @@ function () {
   }, {
     key: "has",
     value: function has(entity) {
+      if (!this._entities.has(entity)) return false;
+
       for (var _len3 = arguments.length, components = new Array(_len3 > 1 ? _len3 - 1 : 0), _key3 = 1; _key3 < _len3; _key3++) {
         components[_key3 - 1] = arguments[_key3];
       }
@@ -2260,6 +2400,7 @@ function components() {
 
 var EntityModule = /*#__PURE__*/Object.freeze({
     ENTITY_MANAGER: ENTITY_MANAGER,
+    ComponentBase: ComponentBase,
     EntityBase: EntityBase,
     spawn: spawn,
     entities: entities,
@@ -3145,115 +3286,6 @@ var TweenModule = /*#__PURE__*/Object.freeze({
     create: create
 });
 
-/**
- * Generates a uuidv4.
- * 
- * @returns {String} the universally unique id
- */
-function uuid() {
-  return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, function (c) {
-    return (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16);
-  });
-}
-/**
- * Interpolates, or lerps, between 2 values by the specified amount, dt.
- * 
- * @param {Number} a the initial value
- * @param {Number} b the final value
- * @param {Number} dt the amount changed
- * @returns {Number} the interpolated value
- */
-
-function lerp(a, b, dt) {
-  return a * (1 - dt) + b * dt;
-}
-/**
- * Generates a number hash for the string. For an empty string, it will return 0.
- * 
- * @param {String} [value=''] the string to hash
- * @returns {Number} a hash that uniquely identifies the string
- */
-
-function stringHash() {
-  var value = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '';
-  var hash = 0;
-
-  for (var i = 0, len = value.length; i < len; i++) {
-    hash = Math.imul(31, hash) + value.charCodeAt(i) | 0;
-  }
-
-  return hash;
-}
-/**
- * Calculates the directional vector for the passed-in points.
- * 
- * @param {Number} x1 the x component of the source point
- * @param {Number} y1 the y component of the source point
- * @param {Number} x2 the x component of the destination point
- * @param {Number} y2 the y component of the destination point
- * @param {Number} [magnitude=1] the magnitude, or length, of the vector
- * @param {Number} [angleOffset=0] additional angle offset from the calculated direction vector
- * @param {Object} [dst={x: 0, y: 0}] the result
- * @returns {Object} dst
- */
-
-function getDirectionalVector(x1, y1, x2, y2) {
-  var magnitude = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 1;
-  var angleOffset = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : 0;
-  var dst = arguments.length > 6 && arguments[6] !== undefined ? arguments[6] : [0, 0];
-  var dx = x2 - x1;
-  var dy = y2 - y1;
-  var angle = Math.atan2(dy, dx) + angleOffset;
-  dst[0] = Math.cos(angle) * magnitude;
-  dst[1] = Math.sin(angle) * magnitude;
-  return dst;
-}
-/**
- * Calculates the midpoint between the passed-in points.
- * 
- * @param {Number} x1 the x component of the source point
- * @param {Number} y1 the y component of the source point
- * @param {Number} x2 the x component of the destination point
- * @param {Number} y2 the y component of the destination point
- * @param {Object} [dst] the result
- * @returns {Object} dst
- */
-
-function getMidPoint(x1, y1, x2, y2) {
-  var dst = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : [0, 0];
-  dst[0] = x1 + (x2 - x1) / 2;
-  dst[1] = y1 + (y2 - y1) / 2;
-  return dst;
-}
-function randomRange(min, max) {
-  return Math.random() * (max - min) + min;
-}
-function choose(items) {
-  return items[Math.floor(Math.random() * items.length)];
-}
-function distanceSqu(x1, y1, x2, y2) {
-  var dx = x2 - x1;
-  var dy = y2 - y1;
-  return dx * dx + dy * dy;
-}
-function distance(x1, y1, x2, y2) {
-  var dx = x2 - x1;
-  var dy = y2 - y1;
-  return Math.sqrt(dx * dx + dy * dy);
-}
-
-var MathHelper = /*#__PURE__*/Object.freeze({
-    uuid: uuid,
-    lerp: lerp,
-    stringHash: stringHash,
-    getDirectionalVector: getDirectionalVector,
-    getMidPoint: getMidPoint,
-    randomRange: randomRange,
-    choose: choose,
-    distanceSqu: distanceSqu,
-    distance: distance
-});
-
 function randomColor() {
   var letters = '0123456789ABCDEF';
   var color = '#';
@@ -3267,6 +3299,1489 @@ function randomColor() {
 
 var ColorHelper = /*#__PURE__*/Object.freeze({
     randomColor: randomColor
+});
+
+/**
+ * @private
+ */
+var branch_pool = [];
+/**
+ * A branch within a BVH
+ * @class
+ * @private
+ */
+
+var BVHBranch =
+/*#__PURE__*/
+function () {
+  /**
+   * @constructor
+   */
+  function BVHBranch() {
+    _classCallCheck(this, BVHBranch);
+
+    /** @private */
+    this._bvh_parent = null;
+    /** @private */
+
+    this._bvh_branch = true;
+    /** @private */
+
+    this._bvh_left = null;
+    /** @private */
+
+    this._bvh_right = null;
+    /** @private */
+
+    this._bvh_sort = 0;
+    /** @private */
+
+    this._bvh_min_x = 0;
+    /** @private */
+
+    this._bvh_min_y = 0;
+    /** @private */
+
+    this._bvh_max_x = 0;
+    /** @private */
+
+    this._bvh_max_y = 0;
+  }
+  /**
+   * Returns a branch from the branch pool or creates a new branch
+   * @returns {BVHBranch}
+   */
+
+
+  _createClass(BVHBranch, null, [{
+    key: "getBranch",
+    value: function getBranch() {
+      if (branch_pool.length) {
+        return branch_pool.pop();
+      }
+
+      return new BVHBranch();
+    }
+    /**
+     * Releases a branch back into the branch pool
+     * @param {BVHBranch} branch The branch to release
+     */
+
+  }, {
+    key: "releaseBranch",
+    value: function releaseBranch(branch) {
+      branch_pool.push(branch);
+    }
+    /**
+     * Sorting callback used to sort branches by deepest first
+     * @param {BVHBranch} a The first branch
+     * @param {BVHBranch} b The second branch
+     * @returns {Number}
+     */
+
+  }, {
+    key: "sortBranches",
+    value: function sortBranches(a, b) {
+      return a.sort > b.sort ? -1 : 1;
+    }
+  }]);
+
+  return BVHBranch;
+}();
+
+/**
+ * A Bounding Volume Hierarchy (BVH) used to find potential collisions quickly
+ * @class
+ * @private
+ */
+
+var BVH =
+/*#__PURE__*/
+function () {
+  /**
+   * @constructor
+   */
+  function BVH() {
+    _classCallCheck(this, BVH);
+
+    /** @private */
+    this._hierarchy = null;
+    /** @private */
+
+    this._bodies = [];
+    /** @private */
+
+    this._dirty_branches = [];
+  }
+  /**
+   * Inserts a body into the BVH
+   * @param {Circle|Polygon|Point} body The body to insert
+   * @param {Boolean} [updating = false] Set to true if the body already exists in the BVH (used internally when updating the body's position)
+   */
+
+
+  _createClass(BVH, [{
+    key: "insert",
+    value: function insert(body) {
+      var updating = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+
+      if (!updating) {
+        var bvh = body._bvh;
+
+        if (bvh && bvh !== this) {
+          throw new Error('Body belongs to another collision system');
+        }
+
+        body._bvh = this;
+
+        this._bodies.push(body);
+      }
+
+      var polygon = body._polygon;
+      var body_x = body.x;
+      var body_y = body.y;
+
+      if (polygon) {
+        if (body._dirty_coords || body.x !== body._x || body.y !== body._y || body.angle !== body._angle || body.scale_x !== body._scale_x || body.scale_y !== body._scale_y) {
+          body._calculateCoords();
+        }
+      }
+
+      var padding = body._bvh_padding;
+      var radius = polygon ? 0 : body.radius * body.scale;
+      var body_min_x = (polygon ? body._min_x : body_x - radius) - padding;
+      var body_min_y = (polygon ? body._min_y : body_y - radius) - padding;
+      var body_max_x = (polygon ? body._max_x : body_x + radius) + padding;
+      var body_max_y = (polygon ? body._max_y : body_y + radius) + padding;
+      body._bvh_min_x = body_min_x;
+      body._bvh_min_y = body_min_y;
+      body._bvh_max_x = body_max_x;
+      body._bvh_max_y = body_max_y;
+      var current = this._hierarchy;
+      var sort = 0;
+
+      if (!current) {
+        this._hierarchy = body;
+      } else {
+        while (true) {
+          // Branch
+          if (current._bvh_branch) {
+            var left = current._bvh_left;
+            var left_min_y = left._bvh_min_y;
+            var left_max_x = left._bvh_max_x;
+            var left_max_y = left._bvh_max_y;
+            var left_new_min_x = body_min_x < left._bvh_min_x ? body_min_x : left._bvh_min_x;
+            var left_new_min_y = body_min_y < left_min_y ? body_min_y : left_min_y;
+            var left_new_max_x = body_max_x > left_max_x ? body_max_x : left_max_x;
+            var left_new_max_y = body_max_y > left_max_y ? body_max_y : left_max_y;
+            var left_volume = (left_max_x - left._bvh_min_x) * (left_max_y - left_min_y);
+            var left_new_volume = (left_new_max_x - left_new_min_x) * (left_new_max_y - left_new_min_y);
+            var left_difference = left_new_volume - left_volume;
+            var right = current._bvh_right;
+            var right_min_x = right._bvh_min_x;
+            var right_min_y = right._bvh_min_y;
+            var right_max_x = right._bvh_max_x;
+            var right_max_y = right._bvh_max_y;
+            var right_new_min_x = body_min_x < right_min_x ? body_min_x : right_min_x;
+            var right_new_min_y = body_min_y < right_min_y ? body_min_y : right_min_y;
+            var right_new_max_x = body_max_x > right_max_x ? body_max_x : right_max_x;
+            var right_new_max_y = body_max_y > right_max_y ? body_max_y : right_max_y;
+            var right_volume = (right_max_x - right_min_x) * (right_max_y - right_min_y);
+            var right_new_volume = (right_new_max_x - right_new_min_x) * (right_new_max_y - right_new_min_y);
+            var right_difference = right_new_volume - right_volume;
+            current._bvh_sort = sort++;
+            current._bvh_min_x = left_new_min_x < right_new_min_x ? left_new_min_x : right_new_min_x;
+            current._bvh_min_y = left_new_min_y < right_new_min_y ? left_new_min_y : right_new_min_y;
+            current._bvh_max_x = left_new_max_x > right_new_max_x ? left_new_max_x : right_new_max_x;
+            current._bvh_max_y = left_new_max_y > right_new_max_y ? left_new_max_y : right_new_max_y;
+            current = left_difference <= right_difference ? left : right;
+          } // Leaf
+          else {
+              var grandparent = current._bvh_parent;
+              var parent_min_x = current._bvh_min_x;
+              var parent_min_y = current._bvh_min_y;
+              var parent_max_x = current._bvh_max_x;
+              var parent_max_y = current._bvh_max_y;
+              var new_parent = current._bvh_parent = body._bvh_parent = BVHBranch.getBranch();
+              new_parent._bvh_parent = grandparent;
+              new_parent._bvh_left = current;
+              new_parent._bvh_right = body;
+              new_parent._bvh_sort = sort++;
+              new_parent._bvh_min_x = body_min_x < parent_min_x ? body_min_x : parent_min_x;
+              new_parent._bvh_min_y = body_min_y < parent_min_y ? body_min_y : parent_min_y;
+              new_parent._bvh_max_x = body_max_x > parent_max_x ? body_max_x : parent_max_x;
+              new_parent._bvh_max_y = body_max_y > parent_max_y ? body_max_y : parent_max_y;
+
+              if (!grandparent) {
+                this._hierarchy = new_parent;
+              } else if (grandparent._bvh_left === current) {
+                grandparent._bvh_left = new_parent;
+              } else {
+                grandparent._bvh_right = new_parent;
+              }
+
+              break;
+            }
+        }
+      }
+    }
+    /**
+     * Removes a body from the BVH
+     * @param {Circle|Polygon|Point} body The body to remove
+     * @param {Boolean} [updating = false] Set to true if this is a temporary removal (used internally when updating the body's position)
+     */
+
+  }, {
+    key: "remove",
+    value: function remove(body) {
+      var updating = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+
+      if (!updating) {
+        var bvh = body._bvh;
+
+        if (bvh && bvh !== this) {
+          throw new Error('Body belongs to another collision system');
+        }
+
+        body._bvh = null;
+
+        this._bodies.splice(this._bodies.indexOf(body), 1);
+      }
+
+      if (this._hierarchy === body) {
+        this._hierarchy = null;
+        return;
+      }
+
+      var parent = body._bvh_parent;
+      var grandparent = parent._bvh_parent;
+      var parent_left = parent._bvh_left;
+      var sibling = parent_left === body ? parent._bvh_right : parent_left;
+      sibling._bvh_parent = grandparent;
+
+      if (sibling._bvh_branch) {
+        sibling._bvh_sort = parent._bvh_sort;
+      }
+
+      if (grandparent) {
+        if (grandparent._bvh_left === parent) {
+          grandparent._bvh_left = sibling;
+        } else {
+          grandparent._bvh_right = sibling;
+        }
+
+        var branch = grandparent;
+
+        while (branch) {
+          var left = branch._bvh_left;
+          var left_min_x = left._bvh_min_x;
+          var left_min_y = left._bvh_min_y;
+          var left_max_x = left._bvh_max_x;
+          var left_max_y = left._bvh_max_y;
+          var right = branch._bvh_right;
+          var right_min_x = right._bvh_min_x;
+          var right_min_y = right._bvh_min_y;
+          var right_max_x = right._bvh_max_x;
+          var right_max_y = right._bvh_max_y;
+          branch._bvh_min_x = left_min_x < right_min_x ? left_min_x : right_min_x;
+          branch._bvh_min_y = left_min_y < right_min_y ? left_min_y : right_min_y;
+          branch._bvh_max_x = left_max_x > right_max_x ? left_max_x : right_max_x;
+          branch._bvh_max_y = left_max_y > right_max_y ? left_max_y : right_max_y;
+          branch = branch._bvh_parent;
+        }
+      } else {
+        this._hierarchy = sibling;
+      }
+
+      BVHBranch.releaseBranch(parent);
+    }
+    /**
+     * Updates the BVH. Moved bodies are removed/inserted.
+     */
+
+  }, {
+    key: "update",
+    value: function update() {
+      var bodies = this._bodies;
+      var count = bodies.length;
+
+      for (var i = 0; i < count; ++i) {
+        var body = bodies[i];
+        var update = false;
+
+        if (!update && body.padding !== body._bvh_padding) {
+          body._bvh_padding = body.padding;
+          update = true;
+        }
+
+        if (!update) {
+          var polygon = body._polygon;
+
+          if (polygon) {
+            if (body._dirty_coords || body.x !== body._x || body.y !== body._y || body.angle !== body._angle || body.scale_x !== body._scale_x || body.scale_y !== body._scale_y) {
+              body._calculateCoords();
+            }
+          }
+
+          var x = body.x;
+          var y = body.y;
+          var radius = polygon ? 0 : body.radius * body.scale;
+          var min_x = polygon ? body._min_x : x - radius;
+          var min_y = polygon ? body._min_y : y - radius;
+          var max_x = polygon ? body._max_x : x + radius;
+          var max_y = polygon ? body._max_y : y + radius;
+          update = min_x < body._bvh_min_x || min_y < body._bvh_min_y || max_x > body._bvh_max_x || max_y > body._bvh_max_y;
+        }
+
+        if (update) {
+          this.remove(body, true);
+          this.insert(body, true);
+        }
+      }
+    }
+    /**
+     * Returns a list of potential collisions for a body
+     * @param {Circle|Polygon|Point} body The body to test
+     * @returns {Array<Body>}
+     */
+
+  }, {
+    key: "potentials",
+    value: function potentials(body) {
+      var results = [];
+      var min_x = body._bvh_min_x;
+      var min_y = body._bvh_min_y;
+      var max_x = body._bvh_max_x;
+      var max_y = body._bvh_max_y;
+      var current = this._hierarchy;
+      var traverse_left = true;
+
+      if (!current || !current._bvh_branch) {
+        return results;
+      }
+
+      while (current) {
+        if (traverse_left) {
+          traverse_left = false;
+          var left = current._bvh_branch ? current._bvh_left : null;
+
+          while (left && left._bvh_max_x >= min_x && left._bvh_max_y >= min_y && left._bvh_min_x <= max_x && left._bvh_min_y <= max_y) {
+            current = left;
+            left = current._bvh_branch ? current._bvh_left : null;
+          }
+        }
+
+        var branch = current._bvh_branch;
+        var right = branch ? current._bvh_right : null;
+
+        if (right && right._bvh_max_x > min_x && right._bvh_max_y > min_y && right._bvh_min_x < max_x && right._bvh_min_y < max_y) {
+          current = right;
+          traverse_left = true;
+        } else {
+          if (!branch && current !== body) {
+            results.push(current);
+          }
+
+          var parent = current._bvh_parent;
+
+          if (parent) {
+            while (parent && parent._bvh_right === current) {
+              current = parent;
+              parent = current._bvh_parent;
+            }
+
+            current = parent;
+          } else {
+            break;
+          }
+        }
+      }
+
+      return results;
+    }
+    /**
+     * Draws the bodies within the BVH to a CanvasRenderingContext2D's current path
+     * @param {CanvasRenderingContext2D} context The context to draw to
+     */
+
+  }, {
+    key: "draw",
+    value: function draw(context) {
+      var bodies = this._bodies;
+      var count = bodies.length;
+
+      for (var i = 0; i < count; ++i) {
+        bodies[i].draw(context);
+      }
+    }
+    /**
+     * Draws the BVH to a CanvasRenderingContext2D's current path. This is useful for testing out different padding values for bodies.
+     * @param {CanvasRenderingContext2D} context The context to draw to
+     */
+
+  }, {
+    key: "drawBVH",
+    value: function drawBVH(context) {
+      var current = this._hierarchy;
+      var traverse_left = true;
+
+      while (current) {
+        if (traverse_left) {
+          traverse_left = false;
+          var left = current._bvh_branch ? current._bvh_left : null;
+
+          while (left) {
+            current = left;
+            left = current._bvh_branch ? current._bvh_left : null;
+          }
+        }
+
+        var branch = current._bvh_branch;
+        var min_x = current._bvh_min_x;
+        var min_y = current._bvh_min_y;
+        var max_x = current._bvh_max_x;
+        var max_y = current._bvh_max_y;
+        var right = branch ? current._bvh_right : null;
+        context.moveTo(min_x, min_y);
+        context.lineTo(max_x, min_y);
+        context.lineTo(max_x, max_y);
+        context.lineTo(min_x, max_y);
+        context.lineTo(min_x, min_y);
+
+        if (right) {
+          current = right;
+          traverse_left = true;
+        } else {
+          var parent = current._bvh_parent;
+
+          if (parent) {
+            while (parent && parent._bvh_right === current) {
+              current = parent;
+              parent = current._bvh_parent;
+            }
+
+            current = parent;
+          } else {
+            break;
+          }
+        }
+      }
+    }
+  }]);
+
+  return BVH;
+}();
+
+/**
+ * Determines if two bodies are colliding using the Separating Axis Theorem
+ * @private
+ * @param {Circle|Polygon|Point} a The source body to test
+ * @param {Circle|Polygon|Point} b The target body to test against
+ * @param {Result} [result = null] A Result object on which to store information about the collision
+ * @param {Boolean} [aabb = true] Set to false to skip the AABB test (useful if you use your own collision heuristic)
+ * @returns {Boolean}
+ */
+function SAT(a, b) {
+  var result = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
+  var aabb = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : true;
+  var a_polygon = a._polygon;
+  var b_polygon = b._polygon;
+  var collision = false;
+
+  if (result) {
+    result.a = a;
+    result.b = b;
+    result.a_in_b = true;
+    result.b_in_a = true;
+    result.overlap = null;
+    result.overlap_x = 0;
+    result.overlap_y = 0;
+  }
+
+  if (a_polygon) {
+    if (a._dirty_coords || a.x !== a._x || a.y !== a._y || a.angle !== a._angle || a.scale_x !== a._scale_x || a.scale_y !== a._scale_y) {
+      a._calculateCoords();
+    }
+  }
+
+  if (b_polygon) {
+    if (b._dirty_coords || b.x !== b._x || b.y !== b._y || b.angle !== b._angle || b.scale_x !== b._scale_x || b.scale_y !== b._scale_y) {
+      b._calculateCoords();
+    }
+  }
+
+  if (!aabb || aabbAABB(a, b)) {
+    if (a_polygon && a._dirty_normals) {
+      a._calculateNormals();
+    }
+
+    if (b_polygon && b._dirty_normals) {
+      b._calculateNormals();
+    }
+
+    collision = a_polygon && b_polygon ? polygonPolygon(a, b, result) : a_polygon ? polygonCircle(a, b, result, false) : b_polygon ? polygonCircle(b, a, result, true) : circleCircle(a, b, result);
+  }
+
+  if (result) {
+    result.collision = collision;
+  }
+
+  return collision;
+}
+/**
+ * Determines if two bodies' axis aligned bounding boxes are colliding
+ * @param {Circle|Polygon|Point} a The source body to test
+ * @param {Circle|Polygon|Point} b The target body to test against
+ */
+
+function aabbAABB(a, b) {
+  var a_polygon = a._polygon;
+  var a_x = a_polygon ? 0 : a.x;
+  var a_y = a_polygon ? 0 : a.y;
+  var a_radius = a_polygon ? 0 : a.radius * a.scale;
+  var a_min_x = a_polygon ? a._min_x : a_x - a_radius;
+  var a_min_y = a_polygon ? a._min_y : a_y - a_radius;
+  var a_max_x = a_polygon ? a._max_x : a_x + a_radius;
+  var a_max_y = a_polygon ? a._max_y : a_y + a_radius;
+  var b_polygon = b._polygon;
+  var b_x = b_polygon ? 0 : b.x;
+  var b_y = b_polygon ? 0 : b.y;
+  var b_radius = b_polygon ? 0 : b.radius * b.scale;
+  var b_min_x = b_polygon ? b._min_x : b_x - b_radius;
+  var b_min_y = b_polygon ? b._min_y : b_y - b_radius;
+  var b_max_x = b_polygon ? b._max_x : b_x + b_radius;
+  var b_max_y = b_polygon ? b._max_y : b_y + b_radius;
+  return a_min_x < b_max_x && a_min_y < b_max_y && a_max_x > b_min_x && a_max_y > b_min_y;
+}
+/**
+ * Determines if two polygons are colliding
+ * @param {Polygon} a The source polygon to test
+ * @param {Polygon} b The target polygon to test against
+ * @param {Result} [result = null] A Result object on which to store information about the collision
+ * @returns {Boolean}
+ */
+
+
+function polygonPolygon(a, b) {
+  var result = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
+  var a_count = a._coords.length;
+  var b_count = b._coords.length; // Handle points specially
+
+  if (a_count === 2 && b_count === 2) {
+    var _a_coords = a._coords;
+    var _b_coords = b._coords;
+
+    if (result) {
+      result.overlap = 0;
+    }
+
+    return _a_coords[0] === _b_coords[0] && _a_coords[1] === _b_coords[1];
+  }
+
+  var a_coords = a._coords;
+  var b_coords = b._coords;
+  var a_normals = a._normals;
+  var b_normals = b._normals;
+
+  if (a_count > 2) {
+    for (var ix = 0, iy = 1; ix < a_count; ix += 2, iy += 2) {
+      if (separatingAxis(a_coords, b_coords, a_normals[ix], a_normals[iy], result)) {
+        return false;
+      }
+    }
+  }
+
+  if (b_count > 2) {
+    for (var _ix = 0, _iy = 1; _ix < b_count; _ix += 2, _iy += 2) {
+      if (separatingAxis(a_coords, b_coords, b_normals[_ix], b_normals[_iy], result)) {
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+/**
+ * Determines if a polygon and a circle are colliding
+ * @param {Polygon} a The source polygon to test
+ * @param {Circle} b The target circle to test against
+ * @param {Result} [result = null] A Result object on which to store information about the collision
+ * @param {Boolean} [reverse = false] Set to true to reverse a and b in the result parameter when testing circle->polygon instead of polygon->circle
+ * @returns {Boolean}
+ */
+
+
+function polygonCircle(a, b) {
+  var result = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
+  var reverse = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : false;
+  var a_coords = a._coords;
+  var a_edges = a._edges;
+  var a_normals = a._normals;
+  var b_x = b.x;
+  var b_y = b.y;
+  var b_radius = b.radius * b.scale;
+  var b_radius2 = b_radius * 2;
+  var radius_squared = b_radius * b_radius;
+  var count = a_coords.length;
+  var a_in_b = true;
+  var b_in_a = true;
+  var overlap = null;
+  var overlap_x = 0;
+  var overlap_y = 0; // Handle points specially
+
+  if (count === 2) {
+    var coord_x = b_x - a_coords[0];
+    var coord_y = b_y - a_coords[1];
+    var length_squared = coord_x * coord_x + coord_y * coord_y;
+
+    if (length_squared > radius_squared) {
+      return false;
+    }
+
+    if (result) {
+      var length = Math.sqrt(length_squared);
+      overlap = b_radius - length;
+      overlap_x = coord_x / length;
+      overlap_y = coord_y / length;
+      b_in_a = false;
+    }
+  } else {
+    for (var ix = 0, iy = 1; ix < count; ix += 2, iy += 2) {
+      var _coord_x = b_x - a_coords[ix];
+
+      var _coord_y = b_y - a_coords[iy];
+
+      var edge_x = a_edges[ix];
+      var edge_y = a_edges[iy];
+      var dot = _coord_x * edge_x + _coord_y * edge_y;
+      var region = dot < 0 ? -1 : dot > edge_x * edge_x + edge_y * edge_y ? 1 : 0;
+      var tmp_overlapping = false;
+      var tmp_overlap = 0;
+      var tmp_overlap_x = 0;
+      var tmp_overlap_y = 0;
+
+      if (result && a_in_b && _coord_x * _coord_x + _coord_y * _coord_y > radius_squared) {
+        a_in_b = false;
+      }
+
+      if (region) {
+        var left = region === -1;
+        var other_x = left ? ix === 0 ? count - 2 : ix - 2 : ix === count - 2 ? 0 : ix + 2;
+        var other_y = other_x + 1;
+        var coord2_x = b_x - a_coords[other_x];
+        var coord2_y = b_y - a_coords[other_y];
+        var edge2_x = a_edges[other_x];
+        var edge2_y = a_edges[other_y];
+        var dot2 = coord2_x * edge2_x + coord2_y * edge2_y;
+        var region2 = dot2 < 0 ? -1 : dot2 > edge2_x * edge2_x + edge2_y * edge2_y ? 1 : 0;
+
+        if (region2 === -region) {
+          var target_x = left ? _coord_x : coord2_x;
+          var target_y = left ? _coord_y : coord2_y;
+
+          var _length_squared = target_x * target_x + target_y * target_y;
+
+          if (_length_squared > radius_squared) {
+            return false;
+          }
+
+          if (result) {
+            var _length = Math.sqrt(_length_squared);
+
+            tmp_overlapping = true;
+            tmp_overlap = b_radius - _length;
+            tmp_overlap_x = target_x / _length;
+            tmp_overlap_y = target_y / _length;
+            b_in_a = false;
+          }
+        }
+      } else {
+        var normal_x = a_normals[ix];
+        var normal_y = a_normals[iy];
+
+        var _length2 = _coord_x * normal_x + _coord_y * normal_y;
+
+        var absolute_length = _length2 < 0 ? -_length2 : _length2;
+
+        if (_length2 > 0 && absolute_length > b_radius) {
+          return false;
+        }
+
+        if (result) {
+          tmp_overlapping = true;
+          tmp_overlap = b_radius - _length2;
+          tmp_overlap_x = normal_x;
+          tmp_overlap_y = normal_y;
+
+          if (b_in_a && _length2 >= 0 || tmp_overlap < b_radius2) {
+            b_in_a = false;
+          }
+        }
+      }
+
+      if (tmp_overlapping && (overlap === null || overlap > tmp_overlap)) {
+        overlap = tmp_overlap;
+        overlap_x = tmp_overlap_x;
+        overlap_y = tmp_overlap_y;
+      }
+    }
+  }
+
+  if (result) {
+    result.a_in_b = reverse ? b_in_a : a_in_b;
+    result.b_in_a = reverse ? a_in_b : b_in_a;
+    result.overlap = overlap;
+    result.overlap_x = reverse ? -overlap_x : overlap_x;
+    result.overlap_y = reverse ? -overlap_y : overlap_y;
+  }
+
+  return true;
+}
+/**
+ * Determines if two circles are colliding
+ * @param {Circle} a The source circle to test
+ * @param {Circle} b The target circle to test against
+ * @param {Result} [result = null] A Result object on which to store information about the collision
+ * @returns {Boolean}
+ */
+
+
+function circleCircle(a, b) {
+  var result = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
+  var a_radius = a.radius * a.scale;
+  var b_radius = b.radius * b.scale;
+  var difference_x = b.x - a.x;
+  var difference_y = b.y - a.y;
+  var radius_sum = a_radius + b_radius;
+  var length_squared = difference_x * difference_x + difference_y * difference_y;
+
+  if (length_squared > radius_sum * radius_sum) {
+    return false;
+  }
+
+  if (result) {
+    var length = Math.sqrt(length_squared);
+    result.a_in_b = a_radius <= b_radius && length <= b_radius - a_radius;
+    result.b_in_a = b_radius <= a_radius && length <= a_radius - b_radius;
+    result.overlap = radius_sum - length;
+    result.overlap_x = difference_x / length;
+    result.overlap_y = difference_y / length;
+  }
+
+  return true;
+}
+/**
+ * Determines if two polygons are separated by an axis
+ * @param {Array<Number[]>} a_coords The coordinates of the polygon to test
+ * @param {Array<Number[]>} b_coords The coordinates of the polygon to test against
+ * @param {Number} x The X direction of the axis
+ * @param {Number} y The Y direction of the axis
+ * @param {Result} [result = null] A Result object on which to store information about the collision
+ * @returns {Boolean}
+ */
+
+
+function separatingAxis(a_coords, b_coords, x, y) {
+  var result = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : null;
+  var a_count = a_coords.length;
+  var b_count = b_coords.length;
+
+  if (!a_count || !b_count) {
+    return true;
+  }
+
+  var a_start = null;
+  var a_end = null;
+  var b_start = null;
+  var b_end = null;
+
+  for (var ix = 0, iy = 1; ix < a_count; ix += 2, iy += 2) {
+    var dot = a_coords[ix] * x + a_coords[iy] * y;
+
+    if (a_start === null || a_start > dot) {
+      a_start = dot;
+    }
+
+    if (a_end === null || a_end < dot) {
+      a_end = dot;
+    }
+  }
+
+  for (var _ix2 = 0, _iy2 = 1; _ix2 < b_count; _ix2 += 2, _iy2 += 2) {
+    var _dot = b_coords[_ix2] * x + b_coords[_iy2] * y;
+
+    if (b_start === null || b_start > _dot) {
+      b_start = _dot;
+    }
+
+    if (b_end === null || b_end < _dot) {
+      b_end = _dot;
+    }
+  }
+
+  if (a_start > b_end || a_end < b_start) {
+    return true;
+  }
+
+  if (result) {
+    var overlap = 0;
+
+    if (a_start < b_start) {
+      result.a_in_b = false;
+
+      if (a_end < b_end) {
+        overlap = a_end - b_start;
+        result.b_in_a = false;
+      } else {
+        var option1 = a_end - b_start;
+        var option2 = b_end - a_start;
+        overlap = option1 < option2 ? option1 : -option2;
+      }
+    } else {
+      result.b_in_a = false;
+
+      if (a_end > b_end) {
+        overlap = a_start - b_end;
+        result.a_in_b = false;
+      } else {
+        var _option = a_end - b_start;
+
+        var _option2 = b_end - a_start;
+
+        overlap = _option < _option2 ? _option : -_option2;
+      }
+    }
+
+    var current_overlap = result.overlap;
+    var absolute_overlap = overlap < 0 ? -overlap : overlap;
+
+    if (current_overlap === null || current_overlap > absolute_overlap) {
+      var sign = overlap < 0 ? -1 : 1;
+      result.overlap = absolute_overlap;
+      result.overlap_x = x * sign;
+      result.overlap_y = y * sign;
+    }
+  }
+
+  return false;
+}
+
+/**
+ * The base class for bodies used to detect collisions
+ */
+
+var Body =
+/*#__PURE__*/
+function () {
+  /**
+   * @param {Number} [x = 0] The starting X coordinate
+   * @param {Number} [y = 0] The starting Y coordinate
+   * @param {Number} [padding = 0] The amount to pad the bounding volume when testing for potential collisions
+   */
+  function Body() {
+    var x = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 0;
+    var y = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+    var padding = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
+
+    _classCallCheck(this, Body);
+
+    /**
+     * @desc The X coordinate of the body
+     * @type {Number}
+     */
+    this.x = x;
+    /**
+     * @desc The Y coordinate of the body
+     * @type {Number}
+     */
+
+    this.y = y;
+    /**
+     * @desc The amount to pad the bounding volume when testing for potential collisions
+     * @type {Number}
+     */
+
+    this.padding = padding;
+    /** @private */
+
+    this._circle = false;
+    /** @private */
+
+    this._polygon = false;
+    /** @private */
+
+    this._point = false;
+    /** @private */
+
+    this._bvh = null;
+    /** @private */
+
+    this._bvh_parent = null;
+    /** @private */
+
+    this._bvh_branch = false;
+    /** @private */
+
+    this._bvh_padding = padding;
+    /** @private */
+
+    this._bvh_min_x = 0;
+    /** @private */
+
+    this._bvh_min_y = 0;
+    /** @private */
+
+    this._bvh_max_x = 0;
+    /** @private */
+
+    this._bvh_max_y = 0;
+  }
+  /**
+   * Determines if the body is colliding with another body
+   * @param {Circle|Polygon|Point} target The target body to test against
+   * @param {Result} [result = null] A Result object on which to store information about the collision
+   * @param {Boolean} [aabb = true] Set to false to skip the AABB test (useful if you use your own potential collision heuristic)
+   * @returns {Boolean}
+   */
+
+
+  _createClass(Body, [{
+    key: "collides",
+    value: function collides(target) {
+      var result = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
+      var aabb = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : true;
+      return SAT(this, target, result, aabb);
+    }
+    /**
+     * Gets a list of potential collisions.
+     * @returns {Array<Body>} A list of potential collisions.
+     */
+
+  }, {
+    key: "potentials",
+    value: function potentials() {
+      var bvh = this._bvh;
+
+      if (bvh === null) {
+        throw new Error('Body does not belong to a collision system');
+      }
+
+      return bvh.potentials(this);
+    }
+    /**
+     * Removes the body from its current collision system.
+     */
+
+  }, {
+    key: "remove",
+    value: function remove() {
+      var bvh = this._bvh;
+
+      if (bvh) {
+        bvh.remove(this, false);
+      }
+    }
+  }]);
+
+  return Body;
+}();
+
+/**
+ * A circle used to detect collisions
+ */
+
+var Circle =
+/*#__PURE__*/
+function (_Body) {
+  _inherits(Circle, _Body);
+
+  /**
+   * @param {Number} [x = 0] The starting X coordinate
+   * @param {Number} [y = 0] The starting Y coordinate
+   * @param {Number} [radius = 0] The radius
+   * @param {Number} [scale = 1] The scale
+   * @param {Number} [padding = 0] The amount to pad the bounding volume when testing for potential collisions
+   */
+  function Circle() {
+    var _this;
+
+    var x = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 0;
+    var y = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+    var radius = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
+    var scale = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 1;
+    var padding = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 0;
+
+    _classCallCheck(this, Circle);
+
+    _this = _possibleConstructorReturn(this, _getPrototypeOf(Circle).call(this, x, y, padding));
+    /**
+     * @desc
+     * @type {Number}
+     */
+
+    _this.radius = radius;
+    /**
+     * @desc
+     * @type {Number}
+     */
+
+    _this.scale = scale;
+    return _this;
+  }
+  /**
+   * Draws the circle to a CanvasRenderingContext2D's current path
+   * @param {CanvasRenderingContext2D} context The context to add the arc to
+   */
+
+
+  _createClass(Circle, [{
+    key: "draw",
+    value: function draw(context) {
+      var x = this.x;
+      var y = this.y;
+      var radius = this.radius * this.scale;
+      context.moveTo(x + radius, y);
+      context.arc(x, y, radius, 0, Math.PI * 2);
+    }
+  }]);
+
+  return Circle;
+}(Body);
+
+/**
+ * A polygon used to detect collisions
+ * @class
+ */
+
+var Polygon =
+/*#__PURE__*/
+function (_Body) {
+  _inherits(Polygon, _Body);
+
+  /**
+   * @constructor
+   * @param {Number} [x = 0] The starting X coordinate
+   * @param {Number} [y = 0] The starting Y coordinate
+   * @param {Array<Number[]>} [points = []] An array of coordinate pairs making up the polygon - [[x1, y1], [x2, y2], ...]
+   * @param {Number} [angle = 0] The starting rotation in radians
+   * @param {Number} [scale_x = 1] The starting scale along the X axis
+   * @param {Number} [scale_y = 1] The starting scale long the Y axis
+   * @param {Number} [padding = 0] The amount to pad the bounding volume when testing for potential collisions
+   */
+  function Polygon() {
+    var _this;
+
+    var x = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 0;
+    var y = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+    var points = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : [];
+    var angle = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0;
+    var scale_x = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 1;
+    var scale_y = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : 1;
+    var padding = arguments.length > 6 && arguments[6] !== undefined ? arguments[6] : 0;
+
+    _classCallCheck(this, Polygon);
+
+    _this = _possibleConstructorReturn(this, _getPrototypeOf(Polygon).call(this, x, y, padding));
+    /**
+     * @desc The angle of the body in radians
+     * @type {Number}
+     */
+
+    _this.angle = angle;
+    /**
+     * @desc The scale of the body along the X axis
+     * @type {Number}
+     */
+
+    _this.scale_x = scale_x;
+    /**
+     * @desc The scale of the body along the Y axis
+     * @type {Number}
+     */
+
+    _this.scale_y = scale_y;
+    /** @private */
+
+    _this._polygon = true;
+    /** @private */
+
+    _this._x = x;
+    /** @private */
+
+    _this._y = y;
+    /** @private */
+
+    _this._angle = angle;
+    /** @private */
+
+    _this._scale_x = scale_x;
+    /** @private */
+
+    _this._scale_y = scale_y;
+    /** @private */
+
+    _this._min_x = 0;
+    /** @private */
+
+    _this._min_y = 0;
+    /** @private */
+
+    _this._max_x = 0;
+    /** @private */
+
+    _this._max_y = 0;
+    /** @private */
+
+    _this._points = null;
+    /** @private */
+
+    _this._coords = null;
+    /** @private */
+
+    _this._edges = null;
+    /** @private */
+
+    _this._normals = null;
+    /** @private */
+
+    _this._dirty_coords = true;
+    /** @private */
+
+    _this._dirty_normals = true;
+    Polygon.prototype.setPoints.call(_assertThisInitialized(_this), points);
+    return _this;
+  }
+  /**
+   * Draws the polygon to a CanvasRenderingContext2D's current path
+   * @param {CanvasRenderingContext2D} context The context to add the shape to
+   */
+
+
+  _createClass(Polygon, [{
+    key: "draw",
+    value: function draw(context) {
+      if (this._dirty_coords || this.x !== this._x || this.y !== this._y || this.angle !== this._angle || this.scale_x !== this._scale_x || this.scale_y !== this._scale_y) {
+        this._calculateCoords();
+      }
+
+      var coords = this._coords;
+
+      if (coords.length === 2) {
+        context.moveTo(coords[0], coords[1]);
+        context.arc(coords[0], coords[1], 1, 0, Math.PI * 2);
+      } else {
+        context.moveTo(coords[0], coords[1]);
+
+        for (var i = 2; i < coords.length; i += 2) {
+          context.lineTo(coords[i], coords[i + 1]);
+        }
+
+        if (coords.length > 4) {
+          context.lineTo(coords[0], coords[1]);
+        }
+      }
+    }
+    /**
+     * Sets the points making up the polygon. It's important to use this function when changing the polygon's shape to ensure internal data is also updated.
+     * @param {Array<Number[]>} new_points An array of coordinate pairs making up the polygon - [[x1, y1], [x2, y2], ...]
+     */
+
+  }, {
+    key: "setPoints",
+    value: function setPoints(new_points) {
+      var count = new_points.length;
+      this._points = new Float64Array(count * 2);
+      this._coords = new Float64Array(count * 2);
+      this._edges = new Float64Array(count * 2);
+      this._normals = new Float64Array(count * 2);
+      var points = this._points;
+
+      for (var i = 0, ix = 0, iy = 1; i < count; ++i, ix += 2, iy += 2) {
+        var new_point = new_points[i];
+        points[ix] = new_point[0];
+        points[iy] = new_point[1];
+      }
+
+      this._dirty_coords = true;
+    }
+    /**
+     * Calculates and caches the polygon's world coordinates based on its points, angle, and scale
+     */
+
+  }, {
+    key: "_calculateCoords",
+    value: function _calculateCoords() {
+      var x = this.x;
+      var y = this.y;
+      var angle = this.angle;
+      var scale_x = this.scale_x;
+      var scale_y = this.scale_y;
+      var points = this._points;
+      var coords = this._coords;
+      var count = points.length;
+      var min_x;
+      var max_x;
+      var min_y;
+      var max_y;
+
+      for (var ix = 0, iy = 1; ix < count; ix += 2, iy += 2) {
+        var coord_x = points[ix] * scale_x;
+        var coord_y = points[iy] * scale_y;
+
+        if (angle) {
+          var cos = Math.cos(angle);
+          var sin = Math.sin(angle);
+          var tmp_x = coord_x;
+          var tmp_y = coord_y;
+          coord_x = tmp_x * cos - tmp_y * sin;
+          coord_y = tmp_x * sin + tmp_y * cos;
+        }
+
+        coord_x += x;
+        coord_y += y;
+        coords[ix] = coord_x;
+        coords[iy] = coord_y;
+
+        if (ix === 0) {
+          min_x = max_x = coord_x;
+          min_y = max_y = coord_y;
+        } else {
+          if (coord_x < min_x) {
+            min_x = coord_x;
+          } else if (coord_x > max_x) {
+            max_x = coord_x;
+          }
+
+          if (coord_y < min_y) {
+            min_y = coord_y;
+          } else if (coord_y > max_y) {
+            max_y = coord_y;
+          }
+        }
+      }
+
+      this._x = x;
+      this._y = y;
+      this._angle = angle;
+      this._scale_x = scale_x;
+      this._scale_y = scale_y;
+      this._min_x = min_x;
+      this._min_y = min_y;
+      this._max_x = max_x;
+      this._max_y = max_y;
+      this._dirty_coords = false;
+      this._dirty_normals = true;
+    }
+    /**
+     * Calculates the normals and edges of the polygon's sides
+     */
+
+  }, {
+    key: "_calculateNormals",
+    value: function _calculateNormals() {
+      var coords = this._coords;
+      var edges = this._edges;
+      var normals = this._normals;
+      var count = coords.length;
+
+      for (var ix = 0, iy = 1; ix < count; ix += 2, iy += 2) {
+        var next = ix + 2 < count ? ix + 2 : 0;
+        var x = coords[next] - coords[ix];
+        var y = coords[next + 1] - coords[iy];
+        var length = x || y ? Math.sqrt(x * x + y * y) : 0;
+        edges[ix] = x;
+        edges[iy] = y;
+        normals[ix] = length ? y / length : 0;
+        normals[iy] = length ? -x / length : 0;
+      }
+
+      this._dirty_normals = false;
+    }
+  }]);
+
+  return Polygon;
+}(Body);
+
+/**
+ * A point used to detect collisions.
+ */
+
+var Point =
+/*#__PURE__*/
+function (_Polygon) {
+  _inherits(Point, _Polygon);
+
+  /**
+   * @param {Number} [x = 0] The starting X coordinate
+   * @param {Number} [y = 0] The starting Y coordinate
+   * @param {Number} [padding = 0] The amount to pad the bounding volume when testing for potential collisions
+   */
+  function Point() {
+    var _this;
+
+    var x = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 0;
+    var y = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+    var padding = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
+
+    _classCallCheck(this, Point);
+
+    _this = _possibleConstructorReturn(this, _getPrototypeOf(Point).call(this, x, y, [[0, 0]], 0, 1, 1, padding));
+    /** @private */
+
+    _this._point = true;
+    return _this;
+  }
+  /** @override */
+
+
+  _createClass(Point, [{
+    key: "setPoints",
+    value: function setPoints() {
+      throw new Error("Cannt set points for a single point.");
+    }
+  }]);
+
+  return Point;
+}(Polygon);
+
+var BOX_POINTS = [[-0.5, -0.5], [-0.5, 0.5], [0.5, 0.5], [0.5, -0.5]];
+
+var CollisionManager =
+/*#__PURE__*/
+function () {
+  function CollisionManager() {
+    var broadPhase = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : null;
+    var narrowPhase = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
+
+    _classCallCheck(this, CollisionManager);
+
+    this.broadPhase = broadPhase || new BVH();
+    this.narrowPhase = narrowPhase;
+  }
+
+  _createClass(CollisionManager, [{
+    key: "addCircle",
+    value: function addCircle() {
+      var x = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 0;
+      var y = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+      var radius = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
+      var scale = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 1;
+      var padding = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 0;
+      var body = new Circle(x, y, radius, scale, padding);
+      this.broadPhase.insert(body);
+      return body;
+    }
+  }, {
+    key: "addBox",
+    value: function addBox() {
+      var x = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 0;
+      var y = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+      var width = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
+      var height = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0;
+      var angle = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 0;
+      var scale = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : 1;
+      var padding = arguments.length > 6 && arguments[6] !== undefined ? arguments[6] : 0;
+      var body = new Polygon(x, y, BOX_POINTS, angle, width * scale, height * scale, padding);
+      this.broadPhase.insert(body);
+      return body;
+    }
+  }, {
+    key: "addPolygon",
+    value: function addPolygon() {
+      var x = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 0;
+      var y = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+      var points = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : [[0, 0]];
+      var angle = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0;
+      var scale_x = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 1;
+      var scale_y = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : 1;
+      var padding = arguments.length > 6 && arguments[6] !== undefined ? arguments[6] : 0;
+      var body = new Polygon(x, y, points, angle, scale_x, scale_y, padding);
+      this.broadPhase.insert(body);
+      return body;
+    }
+  }, {
+    key: "addPoint",
+    value: function addPoint() {
+      var x = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 0;
+      var y = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+      var padding = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
+      var body = new Point(x, y, padding);
+      this.broadPhase.insert(body);
+      return body;
+    }
+  }, {
+    key: "add",
+    value: function add() {
+      for (var _len = arguments.length, bodies = new Array(_len), _key = 0; _key < _len; _key++) {
+        bodies[_key] = arguments[_key];
+      }
+
+      for (var _i = 0, _bodies = bodies; _i < _bodies.length; _i++) {
+        var body = _bodies[_i];
+        this.broadPhase.insert(body, false);
+      }
+
+      return this;
+    }
+  }, {
+    key: "remove",
+    value: function remove() {
+      for (var _len2 = arguments.length, bodies = new Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+        bodies[_key2] = arguments[_key2];
+      }
+
+      for (var _i2 = 0, _bodies2 = bodies; _i2 < _bodies2.length; _i2++) {
+        var body = _bodies2[_i2];
+        this.broadPhase.remove(body, false);
+      }
+
+      return this;
+    }
+  }, {
+    key: "update",
+    value: function update() {
+      this.broadPhase.update(); // this.narrowPhase.update();
+
+      return this;
+    }
+  }, {
+    key: "potentials",
+    value: function potentials(body) {
+      return this.broadPhase.potentials(body);
+    }
+  }, {
+    key: "collides",
+    value: function collides(body, target) {
+      var result = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
+      return SAT(body, target, result, true);
+    }
+  }]);
+
+  return CollisionManager;
+}();
+
+var COLLISION_MANAGER = new CollisionManager();
+
+function overlap(x, y, w, h, otherX, otherY, otherW, otherH) {
+  return x + w >= otherX && otherX + otherW >= x && y + h >= otherY && otherY + otherH >= y;
+}
+
+function draw() {
+  var ctx = VIEW.canvas.getContext('2d');
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.beginPath();
+  COLLISION_MANAGER.broadPhase.draw(ctx);
+  ctx.stroke();
+  ctx.strokeStyle = '#00FF00';
+  ctx.beginPath();
+  COLLISION_MANAGER.broadPhase.drawBVH(ctx);
+  ctx.stroke();
+}
+
+var CollisionModule = /*#__PURE__*/Object.freeze({
+    COLLISION_MANAGER: COLLISION_MANAGER,
+    overlap: overlap,
+    draw: draw
 });
 
 var GameLoop =
@@ -3324,8 +4839,10 @@ GAME_LOOP.on('update', onGameUpdate);
 function onGameUpdate() {
   INPUT_MANAGER.poll();
   TWEEN_MANAGER.update();
+  COLLISION_MANAGER.update();
 }
 
+exports.Collision = CollisionModule;
 exports.Color = ColorHelper;
 exports.Display = DisplayModule;
 exports.Entity = EntityModule;
