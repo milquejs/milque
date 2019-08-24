@@ -1465,97 +1465,107 @@
       }
       /**
        * Creates the component instance. Must also support no args.
-       * @param  {...any} args Any additional arguments.
-       * @returns {this} For method chaining.
+       * @param  {...any} args Any additional arguments to initialize with.
+       * @returns {Object} The component instance.
        */
 
 
       _createClass(ComponentBase, [{
-        key: "create",
-        value: function create() {
-          return this;
+        key: "onCreate",
+        value: function onCreate(instance) {
+          if (instance) {
+            var keys = Object.keys(instance);
+
+            for (var i = 0; i < keys.length; ++i) {
+              instance[keys[i]] = i + 1 < 1 || arguments.length <= i + 1 ? undefined : arguments[i + 1];
+            }
+
+            return instance;
+          } else {
+            return {};
+          }
         }
         /**
          * Changes the component instance for the provided args.
-         * @param  {...any} args 
-         * @returns {this} For method chaining.
+         * @param  {...any} args Any additional arguments to change for.
          */
 
       }, {
-        key: "change",
-        value: function change() {
-          return this;
+        key: "onChange",
+        value: function onChange(instance) {
+          var keys = Object.keys(instance);
+
+          for (var i = 0; i < keys.length; ++i) {
+            instance[keys[i]] = i + 1 < 1 || arguments.length <= i + 1 ? undefined : arguments[i + 1];
+          }
         }
         /**
          * Destroys the component instance.
-         * @returns {Boolean} True if instance can be cached and re-used.
+         * @returns {Object} The instance to cache, null if not cacheable.
          */
 
       }, {
-        key: "destroy",
-        value: function destroy() {
-          return false;
+        key: "onDestroy",
+        value: function onDestroy(instance) {
+          return true;
         }
       }]);
 
       return ComponentBase;
     }();
 
+    var ComponentInstanceBase =
+    /*#__PURE__*/
+    function () {
+      function ComponentInstanceBase() {
+        _classCallCheck(this, ComponentInstanceBase);
+      }
+
+      _createClass(ComponentInstanceBase, [{
+        key: "onChange",
+        value: function onChange() {}
+      }, {
+        key: "onDestroy",
+        value: function onDestroy() {}
+      }]);
+
+      return ComponentInstanceBase;
+    }();
+
     var EntityBase =
     /*#__PURE__*/
-    function (_ComponentBase) {
-      _inherits(EntityBase, _ComponentBase);
+    function (_ComponentInstanceBas) {
+      _inherits(EntityBase, _ComponentInstanceBas);
 
-      function EntityBase() {
+      function EntityBase(entityManager, entityID) {
         var _this;
 
         _classCallCheck(this, EntityBase);
 
         _this = _possibleConstructorReturn(this, _getPrototypeOf(EntityBase).call(this));
-        _this.entityManager = null;
-        _this.entityID = -1;
+        _this.entityManager = entityManager;
+        _this.entityID = entityID;
         return _this;
       }
-      /**
-       * @override
-       * @param {EntityManager} entityManager The entity manager that owns this entity.
-       * @param {Number} entityID The id of the represented entity.
-       */
+      /** @override */
 
 
       _createClass(EntityBase, [{
-        key: "create",
-        value: function create(entityManager, entityID) {
-          this.entityManager = entityManager;
-          this.entityID = entityID;
-
-          for (var _len = arguments.length, args = new Array(_len > 2 ? _len - 2 : 0), _key = 2; _key < _len; _key++) {
-            args[_key - 2] = arguments[_key];
-          }
-
-          this.onCreate.apply(this, args);
-          return this;
-        }
+        key: "onChange",
+        value: function onChange() {}
         /** @override */
 
       }, {
-        key: "change",
-        value: function change() {
-          this.onChange.apply(this, arguments);
-          return this;
+        key: "onDestroy",
+        value: function onDestroy() {
+          this.entityManager.destroy(this.entityID, {
+            exclude: [this.constructor]
+          });
         }
-        /**
-         * @override
-         * @returns {Boolean} True if instance can be cached and re-used.
-         */
-
       }, {
         key: "destroy",
         value: function destroy() {
-          var result = this.onDestroy();
-          this.entityManager.destroy(this.entityID, this.constructor);
-          this.entityID = -1;
-          return result;
+          this.entityManager.destroy(this.entityID);
         }
         /**
          * If the component does not exist for the entity, it will assign
@@ -1570,8 +1580,8 @@
         value: function component(_component) {
           var _this2 = this;
 
-          for (var _len2 = arguments.length, args = new Array(_len2 > 1 ? _len2 - 1 : 0), _key2 = 1; _key2 < _len2; _key2++) {
-            args[_key2 - 1] = arguments[_key2];
+          for (var _len = arguments.length, args = new Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+            args[_key - 1] = arguments[_key];
           }
 
           if (this.entityManager.has(this.entityID, _component)) {
@@ -1639,8 +1649,8 @@
         value: function remove() {
           var _this$entityManager2;
 
-          for (var _len3 = arguments.length, components = new Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
-            components[_key3] = arguments[_key3];
+          for (var _len2 = arguments.length, components = new Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+            components[_key2] = arguments[_key2];
           }
 
           for (var _i2 = 0, _components = components; _i2 < _components.length; _i2++) {
@@ -1662,8 +1672,8 @@
         value: function has() {
           var _this$entityManager3;
 
-          for (var _len4 = arguments.length, components = new Array(_len4), _key4 = 0; _key4 < _len4; _key4++) {
-            components[_key4] = arguments[_key4];
+          for (var _len3 = arguments.length, components = new Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
+            components[_key3] = arguments[_key3];
           }
 
           return (_this$entityManager3 = this.entityManager).has.apply(_this$entityManager3, [this.entityID].concat(components));
@@ -1673,27 +1683,16 @@
         value: function get(component) {
           var _this$entityManager4;
 
-          for (var _len5 = arguments.length, components = new Array(_len5 > 1 ? _len5 - 1 : 0), _key5 = 1; _key5 < _len5; _key5++) {
-            components[_key5 - 1] = arguments[_key5];
+          for (var _len4 = arguments.length, components = new Array(_len4 > 1 ? _len4 - 1 : 0), _key4 = 1; _key4 < _len4; _key4++) {
+            components[_key4 - 1] = arguments[_key4];
           }
 
           return (_this$entityManager4 = this.entityManager).get.apply(_this$entityManager4, [this.entityID, component].concat(components));
         }
-      }, {
-        key: "onCreate",
-        value: function onCreate() {}
-      }, {
-        key: "onChange",
-        value: function onChange() {}
-      }, {
-        key: "onDestroy",
-        value: function onDestroy() {
-          return false;
-        }
       }]);
 
       return EntityBase;
-    }(ComponentBase);
+    }(ComponentInstanceBase);
 
     var EntityView =
     /*#__PURE__*/
@@ -1913,68 +1912,19 @@
       return ComponentTagFactory;
     }(ComponentFactory);
 
-    var ComponentFunctionFactory =
-    /*#__PURE__*/
-    function (_ComponentFactory) {
-      _inherits(ComponentFunctionFactory, _ComponentFactory);
-
-      function ComponentFunctionFactory(componentHandler) {
-        var _this;
-
-        _classCallCheck(this, ComponentFunctionFactory);
-
-        _this = _possibleConstructorReturn(this, _getPrototypeOf(ComponentFunctionFactory).call(this));
-        _this.componentHandler = componentHandler;
-        return _this;
-      }
-      /** @override */
-
-
-      _createClass(ComponentFunctionFactory, [{
-        key: "create",
-        value: function create() {
-          return this.componentHandler.apply(this, arguments);
-        }
-        /** @override */
-
-      }, {
-        key: "change",
-        value: function change(instance) {
-          for (var _len = arguments.length, args = new Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
-            args[_key - 1] = arguments[_key];
-          }
-
-          var target = this.componentHandler.apply(this, args);
-
-          for (var _i = 0, _Object$keys = Object.keys(target); _i < _Object$keys.length; _i++) {
-            var key = _Object$keys[_i];
-            instance[key] = target[key];
-          }
-        }
-        /** @override */
-
-      }, {
-        key: "destroy",
-        value: function destroy(instance) {// Instance can always be cached :D
-        }
-      }]);
-
-      return ComponentFunctionFactory;
-    }(ComponentFactory);
-
     var ComponentClassFactory =
     /*#__PURE__*/
     function (_ComponentFactory) {
       _inherits(ComponentClassFactory, _ComponentFactory);
 
-      function ComponentClassFactory(componentClass) {
+      function ComponentClassFactory(handlerClass) {
         var _this;
 
         _classCallCheck(this, ComponentClassFactory);
 
         _this = _possibleConstructorReturn(this, _getPrototypeOf(ComponentClassFactory).call(this));
-        _this._cache = [];
-        _this.componentClass = componentClass;
+        _this.handler = new handlerClass();
+        _this._cached = [];
         return _this;
       }
       /** @override */
@@ -1983,18 +1933,148 @@
       _createClass(ComponentClassFactory, [{
         key: "create",
         value: function create() {
-          var _instance;
+          var _this$handler;
 
           var instance;
 
-          if (this._cache.length > 0) {
-            instance = this._cache.shift();
+          if (this._cached.length > 0) {
+            instance = this._cached.shift();
           } else {
-            var ComponentClass = this.componentClass;
-            instance = new ComponentClass();
+            instance = {};
           }
 
-          (_instance = instance).create.apply(_instance, arguments);
+          for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+            args[_key] = arguments[_key];
+          }
+
+          return (_this$handler = this.handler).onCreate.apply(_this$handler, [instance].concat(args));
+        }
+        /** @override */
+
+      }, {
+        key: "change",
+        value: function change(instance) {
+          var _this$handler2;
+
+          for (var _len2 = arguments.length, args = new Array(_len2 > 1 ? _len2 - 1 : 0), _key2 = 1; _key2 < _len2; _key2++) {
+            args[_key2 - 1] = arguments[_key2];
+          }
+
+          (_this$handler2 = this.handler).onChange.apply(_this$handler2, [instance].concat(args));
+        }
+        /** @override */
+
+      }, {
+        key: "destroy",
+        value: function destroy(instance) {
+          var result = this.handler.onDestroy(instance); // See if instance can be cached...
+
+          if (result) {
+            this._cached.push(instance);
+          }
+        }
+      }]);
+
+      return ComponentClassFactory;
+    }(ComponentFactory);
+
+    var ComponentClassInstanceFactory =
+    /*#__PURE__*/
+    function (_ComponentFactory) {
+      _inherits(ComponentClassInstanceFactory, _ComponentFactory);
+
+      function ComponentClassInstanceFactory(instanceClass) {
+        var _this;
+
+        _classCallCheck(this, ComponentClassInstanceFactory);
+
+        _this = _possibleConstructorReturn(this, _getPrototypeOf(ComponentClassInstanceFactory).call(this));
+        _this.instanceClass = instanceClass;
+        return _this;
+      }
+      /** @override */
+
+
+      _createClass(ComponentClassInstanceFactory, [{
+        key: "create",
+        value: function create() {
+          var instanceClass = this.instanceClass;
+
+          for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+            args[_key] = arguments[_key];
+          }
+
+          return _construct(instanceClass, args);
+        }
+        /** @override */
+
+      }, {
+        key: "change",
+        value: function change(instance) {
+          for (var _len2 = arguments.length, args = new Array(_len2 > 1 ? _len2 - 1 : 0), _key2 = 1; _key2 < _len2; _key2++) {
+            args[_key2 - 1] = arguments[_key2];
+          }
+
+          instance.onChange.apply(instance, args);
+        }
+        /** @override */
+
+      }, {
+        key: "destroy",
+        value: function destroy(instance) {
+          instance.onDestroy();
+        }
+      }]);
+
+      return ComponentClassInstanceFactory;
+    }(ComponentFactory);
+
+    var ComponentFunctionFactory =
+    /*#__PURE__*/
+    function (_ComponentFactory) {
+      _inherits(ComponentFunctionFactory, _ComponentFactory);
+
+      function ComponentFunctionFactory(handlerFunction) {
+        var _this;
+
+        _classCallCheck(this, ComponentFunctionFactory);
+
+        _this = _possibleConstructorReturn(this, _getPrototypeOf(ComponentFunctionFactory).call(this));
+        _this.handler = handlerFunction;
+        _this._cached = [];
+        return _this;
+      }
+      /** @override */
+
+
+      _createClass(ComponentFunctionFactory, [{
+        key: "create",
+        value: function create() {
+          var instance;
+
+          for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+            args[_key] = arguments[_key];
+          }
+
+          if (this._cached.length > 0) {
+            instance = this._cached.shift();
+
+            if (typeof this.handler.onRecreate === 'function') {
+              var _this$handler$onRecre;
+
+              (_this$handler$onRecre = this.handler.onRecreate).call.apply(_this$handler$onRecre, [this.handler, instance].concat(args));
+            } else {
+              var keys = Object.keys(instance);
+
+              for (var i = 0; i < keys.length; ++i) {
+                instance[keys[i]] = args[i];
+              }
+            }
+          } else {
+            var _this$handler;
+
+            instance = (_this$handler = this.handler).call.apply(_this$handler, [this.handler].concat(args));
+          }
 
           return instance;
         }
@@ -2003,27 +2083,39 @@
       }, {
         key: "change",
         value: function change(instance) {
-          for (var _len = arguments.length, args = new Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
-            args[_key - 1] = arguments[_key];
+          for (var _len2 = arguments.length, args = new Array(_len2 > 1 ? _len2 - 1 : 0), _key2 = 1; _key2 < _len2; _key2++) {
+            args[_key2 - 1] = arguments[_key2];
           }
 
-          instance.change.apply(instance, args);
+          if (typeof this.handler.onChange === 'function') {
+            var _this$handler$onChang;
+
+            (_this$handler$onChang = this.handler.onChange).call.apply(_this$handler$onChang, [this.handler, instance].concat(args));
+          } else {
+            var keys = Object.keys(instance);
+            var length = Math.min(args.length, keys.length);
+
+            for (var i = 0; i < length; ++i) {
+              instance[keys[i]] = args[i];
+            }
+          }
         }
         /** @override */
 
       }, {
         key: "destroy",
         value: function destroy(instance) {
-          var result = instance.destroy();
+          if (typeof this.handler.onDestroy === 'function') {
+            var result = this.handler.onDestroy.call(this.handler, instance); // See if instance can be cached...
 
-          if (result) {
-            // Instance can be cached :D
-            this._cache.push(result);
+            if (result) {
+              this._cached.push(instance);
+            }
           }
         }
       }]);
 
-      return ComponentClassFactory;
+      return ComponentFunctionFactory;
     }(ComponentFactory);
 
     var EntityManager =
@@ -2043,10 +2135,13 @@
           var componentFactory = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
 
           if (!componentFactory) {
+            // It's a tag component.
             if (typeof component === 'string') {
               componentFactory = new ComponentTagFactory(component);
             } else if (component.prototype instanceof ComponentBase) {
               componentFactory = new ComponentClassFactory(component);
+            } else if (component.prototype instanceof ComponentInstanceBase) {
+              componentFactory = new ComponentClassInstanceFactory(component);
             } else if (typeof component === 'function') {
               componentFactory = new ComponentFunctionFactory(component);
             } else {
@@ -2092,13 +2187,17 @@
         /**
          * Destroys an entity and all its components.
          * @param {Number} entity The id of the entity to be destroyed.
-         * @param {Component} retainComponent If specified, will retain the component for the entity (used to stop infinite recursion)
+         * @param {Object} opts Any additional options.
+         * @param {Array} opts.exclude Will not remove specified components. This
+         * is usually used to delay destruction of a component type until later.
+         * @param {Boolean} opts.persist If true, will NOT remove entity from entity
+         * list.
          */
 
       }, {
         key: "destroy",
         value: function destroy(entity) {
-          var retainComponent = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
+          var opts = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
           var _iteratorNormalCompletion = true;
           var _didIteratorError = false;
           var _iteratorError = undefined;
@@ -2106,12 +2205,15 @@
           try {
             for (var _iterator = this._componentManagers.keys()[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
               var componentType = _step.value;
-              if (componentType === retainComponent) continue;
 
               var componentManager = this._componentManagers.get(componentType);
 
               if (componentManager.has(entity)) {
-                componentManager.remove(entity);
+                if (opts.exclude && opts.exclude.includes(componentType)) {
+                  continue;
+                } else {
+                  componentManager.remove(entity);
+                }
               }
             }
           } catch (err) {
@@ -2129,7 +2231,9 @@
             }
           }
 
-          this._entities["delete"](entity);
+          if (!opts.persist) {
+            this._entities["delete"](entity);
+          }
         }
       }, {
         key: "entities",
@@ -4835,13 +4939,21 @@
 
     Eventable.mixin(GameLoop);
 
+    var GAME = Eventable.create();
     var GAME_LOOP = new GameLoop();
     GAME_LOOP.on('update', onGameUpdate);
 
     function onGameUpdate() {
       INPUT_MANAGER.poll();
-      TWEEN_MANAGER.update();
+      GAME.emit('preupdate');
       COLLISION_MANAGER.update();
+      TWEEN_MANAGER.update();
+      GAME.emit('update');
+      GAME.emit('postupdate');
+    }
+
+    function play() {
+      GAME_LOOP.start();
     }
 
     exports.Collision = CollisionModule;
@@ -4849,10 +4961,11 @@
     exports.Display = DisplayModule;
     exports.Entity = EntityModule;
     exports.Eventable = Eventable;
-    exports.Game = GAME_LOOP;
+    exports.Game = GAME;
     exports.Input = InputModule;
     exports.Math = MathHelper;
     exports.Tween = TweenModule;
+    exports.play = play;
 
     Object.defineProperty(exports, '__esModule', { value: true });
 
