@@ -36,7 +36,7 @@ class EntityBase extends ComponentBase
     destroy()
     {
         const result = this.onDestroy();
-        this.entityManager.destroy(this.entityID);
+        this.entityManager.destroy(this.entityID, this.constructor);
         this.entityID = -1;
         return result;
     }

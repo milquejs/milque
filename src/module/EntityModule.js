@@ -1,3 +1,4 @@
+import ComponentBase from '../entity/component/ComponentBase.js';
 import EntityBase from '../entity/EntityBase.js';
 import EntityManager from '../entity/EntityManager.js';
 import EntityView from '../entity/EntityView.js';
@@ -86,6 +87,7 @@ function components(...components)
 
 export {
     ENTITY_MANAGER,
+    ComponentBase,
     EntityBase,
     spawn,
     entities,

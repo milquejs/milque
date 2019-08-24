@@ -66,11 +66,14 @@ class EntityManager
     /**
      * Destroys an entity and all its components.
      * @param {Number} entity The id of the entity to be destroyed.
+     * @param {Component} retainComponent If specified, will retain the component for the entity (used to stop infinite recursion)
      */
-    destroy(entity)
+    destroy(entity, retainComponent = null)
     {
-        for(const componentManager of this._componentManagers.values())
+        for(const componentType of this._componentManagers.keys())
         {
+            if (componentType === retainComponent) continue;
+            const componentManager = this._componentManagers.get(componentType);
             if (componentManager.has(entity))
             {
                 componentManager.remove(entity);
@@ -86,6 +89,8 @@ class EntityManager
 
     has(entity, ...components)
     {
+        if (!this._entities.has(entity)) return false;
+        
         for(const component of components)
         {
             if (this._componentManagers.has(component))

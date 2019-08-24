@@ -1,4 +1,4 @@
-import MathHelper from '../util/MathHelper.js';
+import * as MathHelper from '../util/MathHelper.js';
 import InputManager from '../input/InputManager.js';
 
 import InputMapping from '../input/InputMapping.js';
@@ -107,7 +107,7 @@ function Range(name = MathHelper.uuid(), ...args)
         attach(eventKey, fromMin = 0, fromMax = 1, toMin = fromMin, toMax = fromMax)
         {
             if (this.input) throw new Error('Already attached input to source.');
-            this.input = new RangeInput(this.name, eventKey, min, max, toMin, toMax);
+            this.input = new RangeInput(this.name, eventKey, fromMin, fromMax, toMin, toMax);
             INPUT_MANAGER.getContext().mapping.register(this.input);
             return this;
         },
