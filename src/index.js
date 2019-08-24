@@ -8,18 +8,33 @@ import * as CollisionModule from './module/CollisionModule.js';
 import Eventable from './util/Eventable.js';
 import GameLoop from './GameLoop.js';
 
+const GAME = Eventable.create();
 const GAME_LOOP = new GameLoop();
 GAME_LOOP.on('update', onGameUpdate);
+
+const RENDER_CONTEXT = DisplayModule.VIEW.canvas.getContext('2d');
 
 function onGameUpdate()
 {
     InputModule.INPUT_MANAGER.poll();
-    TweenModule.TWEEN_MANAGER.update();
+    GAME.emit('preupdate');
     CollisionModule.COLLISION_MANAGER.update();
+    TweenModule.TWEEN_MANAGER.update();
+    GAME.emit('update');
+    GAME.emit('postupdate');
+
+    GAME.emit('prerender', RENDER_CONTEXT);
+    GAME.emit('render', RENDER_CONTEXT);
+    GAME.emit('postrender', RENDER_CONTEXT);
+}
+
+function play()
+{
+    GAME_LOOP.start();
 }
 
 export {
-    GAME_LOOP as Game,
+    GAME as Game,
     DisplayModule as Display,
     InputModule as Input,
     EntityModule as Entity,
@@ -28,4 +43,5 @@ export {
     MathHelper as Math,
     ColorHelper as Color,
     Eventable,
+    play
 };

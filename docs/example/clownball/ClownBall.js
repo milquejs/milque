@@ -254,4 +254,4 @@ function MainScene()
 // TODO: This should be called automatically in the future...
 MainScene();
 
-Milque.Game.start();
+Milque.play();
