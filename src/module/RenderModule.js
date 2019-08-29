@@ -5,6 +5,7 @@ import * as VertexArray from '../render/VertexArray.js';
 import SceneGraph from '../render/scenegraph/SceneGraph.js';
 import SceneNode from '../render/scenegraph/SceneNode.js';
 import * as Transform from '../render/scenegraph/Transform.js';
+import * as Draw from '../render/Draw.js';
 
 export {
     Buffer,
@@ -13,5 +14,6 @@ export {
     VertexArray,
     SceneGraph,
     SceneNode,
-    Transform
+    Transform,
+    Draw
 };
