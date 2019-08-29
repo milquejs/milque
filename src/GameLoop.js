@@ -7,6 +7,7 @@ class GameLoop
         this.handle = 0;
         this.ticks = 0;
 
+        this._prevtime = 0;
         this._running = false;
 
         this.run = this.run.bind(this);
@@ -21,6 +22,7 @@ class GameLoop
     {
         this.emit('start');
         this.handle = requestAnimationFrame(this.run);
+        this._prevtime = performance.now();
         this._running = true;
         this.ticks = 0;
         return this;
@@ -35,11 +37,13 @@ class GameLoop
         return this;
     }
 
-    run()
+    run(now)
     {
         this.handle = requestAnimationFrame(this.run);
-        this.emit('update');
-
+        const dt = now - this._prevtime;
+        this.emit('update', dt);
+        
+        this._prevtime = now;
         ++this.ticks;
     }
 }
