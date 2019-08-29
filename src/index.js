@@ -5,6 +5,7 @@ import * as TweenModule from './module/TweenModule.js';
 import * as MathHelper from './util/MathHelper.js';
 import * as ColorHelper from './util/ColorHelper.js';
 import * as CollisionModule from './module/CollisionModule.js';
+import * as RenderModule from './module/RenderModule.js';
 import Eventable from './util/Eventable.js';
 import GameLoop from './GameLoop.js';
 
@@ -12,13 +13,13 @@ const GAME = Eventable.create();
 const GAME_LOOP = new GameLoop();
 GAME_LOOP.on('update', onGameUpdate);
 
-function onGameUpdate()
+function onGameUpdate(dt)
 {
     InputModule.INPUT_MANAGER.poll();
     GAME.emit('preupdate');
     CollisionModule.COLLISION_MANAGER.update();
     TweenModule.TWEEN_MANAGER.update();
-    GAME.emit('update');
+    GAME.emit('update', dt * 0.01);
     GAME.emit('postupdate');
 }
 
@@ -34,6 +35,7 @@ export {
     EntityModule as Entity,
     TweenModule as Tween,
     CollisionModule as Collision,
+    RenderModule as Render,
     MathHelper as Math,
     ColorHelper as Color,
     Eventable,
