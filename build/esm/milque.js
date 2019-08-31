@@ -4892,6 +4892,7 @@ function () {
 
     this.handle = 0;
     this.ticks = 0;
+    this._prevtime = 0;
     this._running = false;
     this.run = this.run.bind(this);
   }
@@ -4906,6 +4907,7 @@ function () {
     value: function start() {
       this.emit('start');
       this.handle = requestAnimationFrame(this.run);
+      this._prevtime = performance.now();
       this._running = true;
       this.ticks = 0;
       return this;
@@ -4921,9 +4923,11 @@ function () {
     }
   }, {
     key: "run",
-    value: function run() {
+    value: function run(now) {
       this.handle = requestAnimationFrame(this.run);
-      this.emit('update');
+      var dt = now - this._prevtime;
+      this.emit('update', dt);
+      this._prevtime = now;
       ++this.ticks;
     }
   }]);
@@ -4937,12 +4941,12 @@ var GAME = Eventable.create();
 var GAME_LOOP = new GameLoop();
 GAME_LOOP.on('update', onGameUpdate);
 
-function onGameUpdate() {
+function onGameUpdate(dt) {
   INPUT_MANAGER.poll();
   GAME.emit('preupdate');
   COLLISION_MANAGER.update();
   TWEEN_MANAGER.update();
-  GAME.emit('update');
+  GAME.emit('update', dt * 0.01);
   GAME.emit('postupdate');
 }
 

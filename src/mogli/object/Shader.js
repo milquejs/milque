@@ -1,49 +1,45 @@
-export class ShaderProgramInfo
+export function createShaderProgramInfo(gl, vertexShaderSource, fragmentShaderSource, sharedAttributeLayout = [])
 {
-    constructor(gl, vertexShaderSource, fragmentShaderSource, sharedAttributes = [])
-    {
-        const vertexShaderHandle = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
-        const fragmentShaderHandle = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
-        const programHandle = createShaderProgram(gl, vertexShaderHandle, fragmentShaderHandle, sharedAttributes);
+    const vertexShaderHandle = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
+    const fragmentShaderHandle = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
+    const programHandle = createShaderProgram(gl, vertexShaderHandle, fragmentShaderHandle, sharedAttributeLayout);
 
-        // Don't forget to clean up the shaders! It's no longer needed...
-        gl.detachShader(programHandle, vertexShaderHandle);
-        gl.detachShader(programHandle, fragmentShaderHandle);
-        gl.deleteShader(vertexShaderHandle);
-        gl.deleteShader(fragmentShaderHandle);
+    // Don't forget to clean up the shaders! It's no longer needed...
+    gl.detachShader(programHandle, vertexShaderHandle);
+    gl.detachShader(programHandle, fragmentShaderHandle);
+    gl.deleteShader(vertexShaderHandle);
+    gl.deleteShader(fragmentShaderHandle);
 
-        // But do keep around the program :P
-        this.handle = programHandle;
-        this._gl = gl;
-        this._uniforms = createShaderProgramUniformSetters(gl, programHandle);
-        this._attributes = createShaderProgramAttributeSetters(gl, programHandle);
-    }
-
-    uniform(name, value)
-    {
-        // If the uniform exists, since it may have been optimized away by the compiler :(
-        if (name in this._uniforms)
+    // But do keep around the program :P
+    return {
+        handle: programHandle,
+        _gl: gl,
+        uniforms: createShaderProgramUniformSetters(gl, programHandle),
+        attributes: createShaderProgramAttributeSetters(gl, programHandle),
+        uniform(name, value)
         {
-            this._uniforms[name](this._gl, value);
-        }
-        return this;
-    }
-
-    attribute(name, bufferInfo)
-    {
-        // If the attribute exists, since it may have been optimized away by the compiler :(
-        if (name in this._attributes)
+            // If the uniform exists, since it may have been optimized away by the compiler :(
+            if (name in this.uniforms)
+            {
+                this.uniforms[name](this._gl, value);
+            }
+            return this;
+        },
+        attribute(name, bufferInfo)
         {
-            this._attributes[name](this._gl, bufferInfo);
+            // If the attribute exists, since it may have been optimized away by the compiler :(
+            if (name in this.attributes)
+            {
+                this.attributes[name](this._gl, bufferInfo);
+            }
+            return this;
+        },
+        elementAttribute(bufferInfo)
+        {
+            this._gl.bindBuffer(this._gl.ELEMENT_ARRAY_BUFFER, bufferInfo);
+            return this;
         }
-        return this;
-    }
-
-    elementBuffer(bufferInfo)
-    {
-        this._gl.bindBuffer(this._gl.ELEMENT_ARRAY_BUFFER, bufferInfo);
-        return this;
-    }
+    };
 }
 
 export function createShader(gl, type, source)
@@ -60,7 +56,7 @@ export function createShader(gl, type, source)
     return shaderHandle;
 }
 
-export function createShaderProgram(gl, vertexShaderHandle, fragmentShaderHandle, sharedAttributes = [])
+export function createShaderProgram(gl, vertexShaderHandle, fragmentShaderHandle, sharedAttributeLayout = [])
 {
     const programHandle = gl.createProgram();
     gl.attachShader(programHandle, vertexShaderHandle);
@@ -68,9 +64,9 @@ export function createShaderProgram(gl, vertexShaderHandle, fragmentShaderHandle
 
     // Bind the attribute locations, (either this or use 'layout(location = ?)' in the shader)
     // NOTE: Unfortunately, this must happen before program linking to take effect.
-    for(let i = 0; i < sharedAttributes.length; ++i)
+    for(let i = 0; i < sharedAttributeLayout.length; ++i)
     {
-        gl.bindAttribLocation(programHandle, i, sharedAttributes[i]);
+        gl.bindAttribLocation(programHandle, i, sharedAttributeLayout[i]);
     }
 
     gl.linkProgram(programHandle);

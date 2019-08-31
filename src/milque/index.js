@@ -5,7 +5,6 @@ import * as TweenModule from './module/TweenModule.js';
 import * as MathHelper from './util/MathHelper.js';
 import * as ColorHelper from './util/ColorHelper.js';
 import * as CollisionModule from './module/CollisionModule.js';
-import * as RenderModule from './module/RenderModule.js';
 import Eventable from './util/Eventable.js';
 import GameLoop from './GameLoop.js';
 
@@ -35,7 +34,6 @@ export {
     EntityModule as Entity,
     TweenModule as Tween,
     CollisionModule as Collision,
-    RenderModule as Render,
     MathHelper as Math,
     ColorHelper as Color,
     Eventable,

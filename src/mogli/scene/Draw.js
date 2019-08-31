@@ -9,26 +9,6 @@ export function createDrawInfo(programInfo, vertexArrayInfo, uniforms, drawArray
     };
 }
 
-/*
-export function createDrawLayer(layerName)
-{
-    return {
-        name: layerName,
-        _drawInfos: [],
-        add(drawInfo)
-        {
-            this._drawInfos.push(drawInfo);
-            return this;
-        },
-        remove(drawInfo)
-        {
-            this._drawInfos.splice(this._drawInfos.indexOf(drawInfo), 1);
-            return this;
-        }
-    };
-}
-*/
-
 export function draw(gl, drawInfos)
 {
     for(const drawInfo of drawInfos)

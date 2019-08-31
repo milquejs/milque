@@ -6,51 +6,60 @@ import clear from 'rollup-plugin-clear';
 
 import pkg from './package.json';
 
-const input = './src/index.js';
-const name = 'Milque';
-
 export default [
-    {
-        input,
-        output: {
-            file: pkg.browser,
-            format: 'umd',
-            name
-        },
-        plugins: [
-            clear({ targets: ['build'] }),
-            resolve(),
-            commonjs(),
-            babel({ exclude: 'node_modules/**' }),
-        ]
-    },
-    {
-        input,
-        output: {
-            file: pkg.browser.substring(0, pkg.browser.lastIndexOf('.')) + '.min.js',
-            format: 'umd',
-            name
-        },
-        plugins: [
-            clear({ targets: ['build'] }),
-            resolve(),
-            commonjs(),
-            babel({ exclude: 'node_modules/**' }),
-            terser()
-        ]
-    },
-    {
-        input,
-        output: [
-            { file: pkg.main, format: 'cjs' },
-            { file: pkg.module, format: 'es' },
-        ],
-        external: [
-            'gl-matrix'
-        ],
-        plugins: [
-            clear({ targets: ['build'] }),
-            babel({ exclude: 'node_modules/**' }),
-        ]
-    }
+    ...createBuildConfig('Milque', './src/milque/index.js', pkg),
+    ...createBuildConfig('Mogli', './src/mogli/index.js', {
+        main: 'build/cjs/mogli.js',
+        module: 'build/esm/mogli.js',
+        browser: 'build/mogli.js',
+    }),
 ];
+
+function createBuildConfig(name, input, opts)
+{
+    return [
+        {
+            input,
+            output: {
+                file: opts.browser,
+                format: 'umd',
+                name
+            },
+            plugins: [
+                clear({ targets: ['build'] }),
+                resolve(),
+                commonjs(),
+                babel({ exclude: 'node_modules/**' }),
+            ]
+        },
+        {
+            input,
+            output: {
+                file: opts.browser.substring(0, opts.browser.lastIndexOf('.')) + '.min.js',
+                format: 'umd',
+                name
+            },
+            plugins: [
+                clear({ targets: ['build'] }),
+                resolve(),
+                commonjs(),
+                babel({ exclude: 'node_modules/**' }),
+                terser()
+            ]
+        },
+        {
+            input,
+            output: [
+                { file: opts.main, format: 'cjs' },
+                { file: opts.module, format: 'es' },
+            ],
+            external: [
+                'gl-matrix'
+            ],
+            plugins: [
+                clear({ targets: ['build'] }),
+                babel({ exclude: 'node_modules/**' }),
+            ]
+        }
+    ];    
+}
