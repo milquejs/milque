@@ -1,11 +1,17 @@
 class InputDevice
 {
-    constructor(name)
+    constructor()
     {
-        this.name = name;
+        this.name = 'input';
         this.inputListeners = [];
 
         this.listeners = new Map();
+    }
+
+    setName(name)
+    {
+        this.name = name;
+        return this;
     }
 
     delete()

@@ -4,7 +4,7 @@ class Keyboard extends InputDevice
 {
     constructor(element)
     {
-        super('key');
+        super();
 
         this.element = element;
 

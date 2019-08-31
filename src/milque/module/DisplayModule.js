@@ -1,46 +1,72 @@
-const VIEWS = new Map();
-const VIEW = { id: null, canvas: null };
+import Eventable from '../util/Eventable.js';
+
+let CURRENT_VIEW = null;
+const DISPLAY_MANAGER = {
+    VIEWS: new Map()
+};
+Eventable.assign(DISPLAY_MANAGER);
+
+function createView(viewID, canvasElement)
+{
+    const view = {
+        id: viewID,
+        canvas: canvasElement
+    };
+    return view;
+}
+
+function createCanvas(width, height)
+{
+    const canvasElement = document.createElement('canvas');
+    canvasElement.setAttribute('width', width);
+    canvasElement.setAttribute('height', height);
+    document.body.appendChild(canvasElement);
+    return canvasElement;
+}
 
 function attach(canvasElement, viewID = null)
 {
+    let view;
+
     // Attaching an alternative view...
     if (viewID)
     {
-        VIEWS.set(viewID, canvasElement);
+        view = createView(viewID, canvasElement);
+        DISPLAY_MANAGER.VIEWS.set(viewID, view);
 
-        if (!VIEW.canvas)
-        {
-            bind(viewID);
-        }
+        // Bind it if there are none bound yet...
+        if (!CURRENT_VIEW) bind(viewID);
     }
     // Attaching a main view...
     else
     {
-        if (!canvasElement)
-        {
-            canvasElement = document.createElement('canvas');
-            canvasElement.setAttribute('width', 640);
-            canvasElement.setAttribute('height', 480);
-            document.body.appendChild(canvasElement);
-        }
+        if (!canvasElement) canvasElement = createCanvas(640, 480);
 
-        VIEWS.set(null, canvasElement);
+        view = createView(null, canvasElement);
+        DISPLAY_MANAGER.VIEWS.set(null, view);
+
+        // Always bind a default canvas...
         bind(null);
     }
+
+    // Setup the view
+    DISPLAY_MANAGER.emit('attach', viewID, view);
 }
 
 function detach(viewID)
 {
-    VIEWS.delete(viewID);
+    const view = DISPLAY_MANAGER.VIEWS.get(viewID);
+    DISPLAY_MANAGER.emit('detach', viewID, view);
+    DISPLAY_MANAGER.VIEWS.delete(viewID);
 }
 
 function bind(viewID = null)
 {
-    if (VIEWS.has(viewID))
+    if (DISPLAY_MANAGER.VIEWS.has(viewID))
     {
-        const canvasElement = VIEWS.get(viewID);
-        VIEW.id = viewID;
-        VIEW.canvas = canvasElement;
+        if (CURRENT_VIEW) unbind();
+        CURRENT_VIEW = DISPLAY_MANAGER.VIEWS.get(viewID);
+        DISPLAY_MANAGER.emit('bind', viewID, CURRENT_VIEW);
     }
     else
     {
@@ -50,29 +76,33 @@ function bind(viewID = null)
 
 function unbind()
 {
-    VIEW.id = null;
-    VIEW.canvas = null;
+    if (CURRENT_VIEW)
+    {
+        DISPLAY_MANAGER.emit('unbind', CURRENT_VIEW.id, CURRENT_VIEW);
+        CURRENT_VIEW = null;
+    }
 }
 
 function width()
 {
-    return VIEW.canvas.width;
+    return CURRENT_VIEW.canvas.width;
 }
 
 function height()
 {
-    return VIEW.canvas.height;
+    return CURRENT_VIEW.canvas.height;
 }
 
 function clear(color = '#000000')
 {
-    const ctx = VIEW.canvas.getContext('2d');
+    const ctx = CURRENT_VIEW.canvas.getContext('2d');
     ctx.fillStyle = color;
     ctx.fillRect(0, 0, width(), height());
 }
 
 export {
-    VIEW as VIEW,
+    DISPLAY_MANAGER,
+    CURRENT_VIEW as VIEW,
     attach,
     detach,
     bind,

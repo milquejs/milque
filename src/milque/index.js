@@ -5,12 +5,30 @@ import * as TweenModule from './module/TweenModule.js';
 import * as MathHelper from './util/MathHelper.js';
 import * as ColorHelper from './util/ColorHelper.js';
 import * as CollisionModule from './module/CollisionModule.js';
+import * as ControllerModule from './module/ControllerModule.js';
 import Eventable from './util/Eventable.js';
 import GameLoop from './GameLoop.js';
 
 const GAME = Eventable.create();
 const GAME_LOOP = new GameLoop();
 GAME_LOOP.on('update', onGameUpdate);
+
+const KEYBOARD = new InputModule.Keyboard(window);
+InputModule.INPUT_MANAGER.addDevice('key', KEYBOARD);
+
+DisplayModule.DISPLAY_MANAGER.on('attach', onViewAttach);
+DisplayModule.DISPLAY_MANAGER.on('detach', onViewDetach);
+function onViewAttach(viewID, view)
+{
+    view.mouse = new InputModule.Mouse(view.canvas, false);
+    if (!viewID) viewID = 'mouse';
+    InputModule.INPUT_MANAGER.addDevice(viewID, view.mouse);
+}
+function onViewDetach(viewID, view)
+{
+    if (!viewID) viewID = 'mouse';
+    InputModule.INPUT_MANAGER.removeDevice(viewID, view.mouse);
+}
 
 function onGameUpdate(dt)
 {
@@ -34,6 +52,7 @@ export {
     EntityModule as Entity,
     TweenModule as Tween,
     CollisionModule as Collision,
+    ControllerModule as Controller,
     MathHelper as Math,
     ColorHelper as Color,
     Eventable,

@@ -35,37 +35,53 @@ class InputManager
         this.onInputEvent = this.onInputEvent.bind(this);
     }
 
-    addDevice(inputDevice)
+    addDevice(name, inputDevice)
     {
-        // TODO: What if multiple of the same TYPE of input device?
-        this.devices[inputDevice.name] = inputDevice;
+        if (name in this.devices && Array.isArray(this.devices[name]))
+        {
+            this.devices[name].push(inputDevice);
+        }
+        else
+        {
+            this.devices[name] = [inputDevice];
+        }
+        inputDevice.setName(name);
         inputDevice.addInputListener(this.onInputEvent);
     }
 
-    removeDevice(inputDevice)
+    removeDevice(name, inputDevice)
     {
+        if (name in this.devices && Array.isArray(this.devices[name]))
+        {
+            if (this.devices[name].length <= 1)
+            {
+                delete this.devices[name];
+            }
+            else
+            {
+                const index = this.devices[name].indexOf(inputDevice);
+                this.devices[name].splice(index, 1);
+            }
+        }
         inputDevice.removeInputListener(this.onInputEvent);
-        delete this.devices[inputDevice.name];
     }
 
-    getDevice(inputDevice)
+    getDevices(name)
     {
-        return this.devices[inputDevice.name];
+        return this.devices[name];
     }
 
     clearDevices()
     {
         for(const key of Object.keys(this.devices))
         {
-            const inputDevice = this.devices[key];
-            inputDevice.removeInputListener(this.onInputEvent);
+            const inputDevices = this.devices[key];
+            for(const inputDevice of inputDevices)
+            {
+                inputDevice.removeInputListener(this.onInputEvent);
+            }
             delete this.devices[key];
         }
-    }
-
-    getDevices()
-    {
-        return Object.values(this.devices);
     }
 
     /**

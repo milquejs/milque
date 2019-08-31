@@ -11,11 +11,6 @@ import Mouse from '../input/device/Mouse.js';
 
 const INPUT_MANAGER = new InputManager();
 
-const KEYBOARD = new Keyboard(window);
-const MOUSE = new Mouse(window, false);
-INPUT_MANAGER.addDevice(KEYBOARD);
-INPUT_MANAGER.addDevice(MOUSE);
-
 function Action(name = MathHelper.uuid(), ...args)
 {
     const result = {
@@ -132,8 +127,8 @@ function Range(name = MathHelper.uuid(), ...args)
 
 export {
     INPUT_MANAGER,
-    KEYBOARD,
-    MOUSE,
+    Keyboard,
+    Mouse,
     Action,
     State,
     Range,

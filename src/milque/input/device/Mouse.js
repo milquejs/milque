@@ -4,7 +4,7 @@ class Mouse extends InputDevice
 {
     constructor(element, allowCursorLock = false)
     {
-        super('mouse');
+        super();
 
         this.element = element;
         this.allowCursorLock = allowCursorLock;
@@ -51,12 +51,11 @@ class Mouse extends InputDevice
 
         this.dispatchInput('move', 'x', e.movementX);
         this.dispatchInput('move', 'y', e.movementY);
-
         if (this.element instanceof Element)
         {
             const rect = this.element.getBoundingClientRect();
-            this.dispatchInput('pos', 'x', e.clientX - rect.left);
-            this.dispatchInput('pos', 'y', e.clientY - rect.top);
+            this.dispatchInput('pos', 'x', e.pageX - rect.left);
+            this.dispatchInput('pos', 'y', e.pageY - rect.top);
         }
         else
         {
