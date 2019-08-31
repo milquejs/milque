@@ -1,14 +1,18 @@
 import * as InputModule from './InputModule.js';
 
-export function Pointer(x = 'mouse[pos]:x', y = 'mouse[pos]:y', press = 'mouse[0]:down', release = 'mouse[0]:up')
+export function Pointer(x = 'mouse[pos]:x', y = 'mouse[pos]:y', press = 'mouse[0]:down', release = 'mouse[0]:up', dx = 'mouse[move]:x', dy = 'mouse[move]:y')
 {
     return {
         _x: InputModule.Range().attach(x),
         _y: InputModule.Range().attach(y),
+        _dx: InputModule.Range().attach(dx),
+        _dy: InputModule.Range().attach(dy),
         _down: InputModule.State().attach([press, release]),
         get x() { return this._x.get(false); },
         get y() { return this._y.get(false); },
-        get down() { return this._down.get(true); }
+        get down() { return this._down.get(true); },
+        get dx() { return this._dx.get(false); },
+        get dy() { return this._dy.get(false); }
     };
 }
 

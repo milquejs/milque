@@ -74,6 +74,46 @@ void main()
 
 function MainScene()
 {
+    const pointer = Milque.Controller.Pointer();
+    const mover = Milque.Controller.Mover();
+
+    const camera = {
+        transform: Mogli.Transform.create(),
+        _cameraMatrix: mat4.create(),
+        _viewMatrix: mat4.create(),
+        _forwardVector: vec3.create(),
+        _rightVector: vec3.create(),
+        getCameraMatrix()
+        {
+            return Mogli.Transform.getTransformationMatrix(this.transform, this._cameraMatrix);
+        },
+        getViewMatrix()
+        {
+            return mat4.invert(this._viewMatrix, this._cameraMatrix);
+        },
+        getForwardVector()
+        {
+            this._forwardVector[0] = -this._viewMatrix[2];
+            this._forwardVector[1] = -this._viewMatrix[6];
+            this._forwardVector[2] = -this._viewMatrix[10];
+            return this._forwardVector;
+        },
+        getRightVector()
+        {
+            this._rightVector[0] = this._viewMatrix[0];
+            this._rightVector[1] = this._viewMatrix[4];
+            this._rightVector[2] = this._viewMatrix[8];
+            return this._rightVector;
+        },
+        update()
+        {
+            this.getCameraMatrix();
+            this.getViewMatrix();
+            this.getForwardVector();
+        }
+    };
+    camera.transform.translation[2] = 2;
+
     const sharedAttributeLayout = [
         'a_position',
         'a_texcoord',
@@ -100,14 +140,14 @@ function MainScene()
     }
 
     const projection = mat4.perspective(mat4.create(), 1, gl.canvas.clientWidth / gl.canvas.clientHeight, 1, 2000);
-    const camera = mat4.targetTo(mat4.create(), [1, 1.5, 2], [0, 0, 0], [0, 1, 0]);
-    const view = mat4.invert(mat4.create(), camera);
+    const cameraMatrix = camera.getCameraMatrix();
+    const viewMatrix = camera.getViewMatrix();
 
     const drawInfos = [];
     const transform = Mogli.Transform.create();
     const drawInfo = Mogli.createDrawInfo(program, vertexArrayF, {
         u_projection: projection,
-        u_view: view,
+        u_view: viewMatrix,
         get u_model()
         {
             if (!this.__u_model) this.__u_model = mat4.create();
@@ -142,6 +182,26 @@ function MainScene()
     // UPDATING...
     Milque.Game.on('update', (dt) => {
         quat.rotateY(transform.rotation, transform.rotation, 0.2 * dt);
+
+        quat.rotateY(camera.transform.rotation, camera.transform.rotation, (-pointer.dx / 100) * dt);
+        const moveSpeed = 0.1;
+        if (mover.up)
+        {
+            vec3.scaleAndAdd(camera.transform.translation, camera.transform.translation, camera.getForwardVector(), moveSpeed);
+        }
+        if (mover.down)
+        {
+            vec3.scaleAndAdd(camera.transform.translation, camera.transform.translation, camera.getForwardVector(), -moveSpeed);
+        }
+        if (mover.left)
+        {
+            vec3.scaleAndAdd(camera.transform.translation, camera.transform.translation, camera.getRightVector(), -moveSpeed);
+        }
+        if (mover.right)
+        {
+            vec3.scaleAndAdd(camera.transform.translation, camera.transform.translation, camera.getRightVector(), moveSpeed);
+        }
+        camera.update();
     });
 
     // RENDERING...

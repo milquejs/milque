@@ -2,74 +2,179 @@
 
 Object.defineProperty(exports, '__esModule', { value: true });
 
-var VIEWS = new Map();
-var VIEW = {
-  id: null,
-  canvas: null
+var EventableInstance = {
+  on: function on(event, callback) {
+    var handle = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : callback;
+    var callbacks;
+
+    if (!this.__events.has(event)) {
+      callbacks = new Map();
+
+      this.__events.set(event, callbacks);
+    } else {
+      callbacks = this.__events.get(event);
+    }
+
+    if (!callbacks.has(handle)) {
+      callbacks.set(handle, callback);
+    } else {
+      throw new Error("Found callback for event '".concat(event, "' with the same handle '").concat(handle, "'."));
+    }
+
+    return this;
+  },
+  off: function off(event, handle) {
+    if (this.__events.has(event)) {
+      var callbacks = this.__events.get(event);
+
+      if (callbacks.has(handle)) {
+        callbacks["delete"](handle);
+      } else {
+        throw new Error("Unable to find callback for event '".concat(event, "' with handle '").concat(handle, "'."));
+      }
+    } else {
+      throw new Error("Unable to find event '".concat(event, "'."));
+    }
+
+    return this;
+  },
+  once: function once(event, callback) {
+    var _this = this;
+
+    var handle = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : callback;
+
+    var func = function func() {
+      _this.off(event, handle);
+
+      callback.apply(void 0, arguments);
+    };
+
+    return this.on(event, func, handle);
+  },
+  emit: function emit(event) {
+    if (this.__events.has(event)) {
+      var callbacks = Array.from(this.__events.get(event).values());
+
+      for (var _len = arguments.length, args = new Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+        args[_key - 1] = arguments[_key];
+      }
+
+      for (var _i = 0, _callbacks = callbacks; _i < _callbacks.length; _i++) {
+        var callback = _callbacks[_i];
+        callback.apply(void 0, args);
+      }
+    } else {
+      this.__events.set(event, new Map());
+    }
+
+    return this;
+  }
 };
+var Eventable = {
+  create: function create() {
+    var result = Object.create(EventableInstance);
+    result.__events = new Map();
+    return result;
+  },
+  assign: function assign(dst) {
+    var result = Object.assign(dst, EventableInstance);
+    result.__events = new Map();
+    return result;
+  },
+  mixin: function mixin(targetClass) {
+    var targetPrototype = targetClass.prototype;
+    Object.assign(targetPrototype, EventableInstance);
+    targetPrototype.__events = new Map();
+  }
+};
+
+var CURRENT_VIEW = null;
+var DISPLAY_MANAGER = {
+  VIEWS: new Map()
+};
+Eventable.assign(DISPLAY_MANAGER);
+
+function createView(viewID, canvasElement) {
+  var view = {
+    id: viewID,
+    canvas: canvasElement
+  };
+  return view;
+}
+
+function createCanvas(width, height) {
+  var canvasElement = document.createElement('canvas');
+  canvasElement.setAttribute('width', width);
+  canvasElement.setAttribute('height', height);
+  document.body.appendChild(canvasElement);
+  return canvasElement;
+}
 
 function attach(canvasElement) {
   var viewID = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
+  var view; // Attaching an alternative view...
 
-  // Attaching an alternative view...
   if (viewID) {
-    VIEWS.set(viewID, canvasElement);
+    view = createView(viewID, canvasElement);
+    DISPLAY_MANAGER.VIEWS.set(viewID, view); // Bind it if there are none bound yet...
 
-    if (!VIEW.canvas) {
-      bind(viewID);
-    }
+    if (!CURRENT_VIEW) bind(viewID);
   } // Attaching a main view...
   else {
-      if (!canvasElement) {
-        canvasElement = document.createElement('canvas');
-        canvasElement.setAttribute('width', 640);
-        canvasElement.setAttribute('height', 480);
-        document.body.appendChild(canvasElement);
-      }
+      if (!canvasElement) canvasElement = createCanvas(640, 480);
+      view = createView(null, canvasElement);
+      DISPLAY_MANAGER.VIEWS.set(null, view); // Always bind a default canvas...
 
-      VIEWS.set(null, canvasElement);
       bind(null);
-    }
+    } // Setup the view
+
+
+  DISPLAY_MANAGER.emit('attach', viewID, view);
 }
 
 function detach(viewID) {
-  VIEWS["delete"](viewID);
+  var view = DISPLAY_MANAGER.VIEWS.get(viewID);
+  DISPLAY_MANAGER.emit('detach', viewID, view);
+  DISPLAY_MANAGER.VIEWS["delete"](viewID);
 }
 
 function bind() {
   var viewID = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : null;
 
-  if (VIEWS.has(viewID)) {
-    var canvasElement = VIEWS.get(viewID);
-    VIEW.id = viewID;
-    VIEW.canvas = canvasElement;
+  if (DISPLAY_MANAGER.VIEWS.has(viewID)) {
+    if (CURRENT_VIEW) unbind();
+    CURRENT_VIEW = DISPLAY_MANAGER.VIEWS.get(viewID);
+    DISPLAY_MANAGER.emit('bind', viewID, CURRENT_VIEW);
   } else {
     unbind();
   }
 }
 
 function unbind() {
-  VIEW.id = null;
-  VIEW.canvas = null;
+  if (CURRENT_VIEW) {
+    DISPLAY_MANAGER.emit('unbind', CURRENT_VIEW.id, CURRENT_VIEW);
+    CURRENT_VIEW = null;
+  }
 }
 
 function width() {
-  return VIEW.canvas.width;
+  return CURRENT_VIEW.canvas.width;
 }
 
 function height() {
-  return VIEW.canvas.height;
+  return CURRENT_VIEW.canvas.height;
 }
 
 function clear() {
   var color = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '#000000';
-  var ctx = VIEW.canvas.getContext('2d');
+  var ctx = CURRENT_VIEW.canvas.getContext('2d');
   ctx.fillStyle = color;
   ctx.fillRect(0, 0, width(), height());
 }
 
 var DisplayModule = /*#__PURE__*/Object.freeze({
-    VIEW: VIEW,
+    DISPLAY_MANAGER: DISPLAY_MANAGER,
+    get VIEW () { return CURRENT_VIEW; },
     attach: attach,
     detach: detach,
     bind: bind,
@@ -871,36 +976,67 @@ function () {
 
   _createClass(InputManager, [{
     key: "addDevice",
-    value: function addDevice(inputDevice) {
-      // TODO: What if multiple of the same TYPE of input device?
-      this.devices[inputDevice.name] = inputDevice;
+    value: function addDevice(name, inputDevice) {
+      if (name in this.devices && Array.isArray(this.devices[name])) {
+        this.devices[name].push(inputDevice);
+      } else {
+        this.devices[name] = [inputDevice];
+      }
+
+      inputDevice.setName(name);
       inputDevice.addInputListener(this.onInputEvent);
     }
   }, {
     key: "removeDevice",
-    value: function removeDevice(inputDevice) {
+    value: function removeDevice(name, inputDevice) {
+      if (name in this.devices && Array.isArray(this.devices[name])) {
+        if (this.devices[name].length <= 1) {
+          delete this.devices[name];
+        } else {
+          var index = this.devices[name].indexOf(inputDevice);
+          this.devices[name].splice(index, 1);
+        }
+      }
+
       inputDevice.removeInputListener(this.onInputEvent);
-      delete this.devices[inputDevice.name];
     }
   }, {
-    key: "getDevice",
-    value: function getDevice(inputDevice) {
-      return this.devices[inputDevice.name];
+    key: "getDevices",
+    value: function getDevices(name) {
+      return this.devices[name];
     }
   }, {
     key: "clearDevices",
     value: function clearDevices() {
       for (var _i = 0, _Object$keys = Object.keys(this.devices); _i < _Object$keys.length; _i++) {
         var key = _Object$keys[_i];
-        var inputDevice = this.devices[key];
-        inputDevice.removeInputListener(this.onInputEvent);
+        var inputDevices = this.devices[key];
+        var _iteratorNormalCompletion = true;
+        var _didIteratorError = false;
+        var _iteratorError = undefined;
+
+        try {
+          for (var _iterator = inputDevices[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+            var inputDevice = _step.value;
+            inputDevice.removeInputListener(this.onInputEvent);
+          }
+        } catch (err) {
+          _didIteratorError = true;
+          _iteratorError = err;
+        } finally {
+          try {
+            if (!_iteratorNormalCompletion && _iterator["return"] != null) {
+              _iterator["return"]();
+            }
+          } finally {
+            if (_didIteratorError) {
+              throw _iteratorError;
+            }
+          }
+        }
+
         delete this.devices[key];
       }
-    }
-  }, {
-    key: "getDevices",
-    value: function getDevices() {
-      return Object.values(this.devices);
     }
     /**
      * For each update loop: poll first, update second.
@@ -921,28 +1057,28 @@ function () {
     key: "propagateActiveStateInputs",
     value: function propagateActiveStateInputs() {
       var dst = this.currentState;
-      var _iteratorNormalCompletion = true;
-      var _didIteratorError = false;
-      var _iteratorError = undefined;
+      var _iteratorNormalCompletion2 = true;
+      var _didIteratorError2 = false;
+      var _iteratorError2 = undefined;
 
       try {
-        for (var _iterator = this.contexts.values()[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-          var context = _step.value;
+        for (var _iterator2 = this.contexts.values()[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+          var context = _step2.value;
           if (context.disabled) continue;
-          var _iteratorNormalCompletion2 = true;
-          var _didIteratorError2 = false;
-          var _iteratorError2 = undefined;
+          var _iteratorNormalCompletion3 = true;
+          var _didIteratorError3 = false;
+          var _iteratorError3 = undefined;
 
           try {
-            for (var _iterator2 = context.mapping.values()[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-              var mappedInputs = _step2.value;
-              var _iteratorNormalCompletion3 = true;
-              var _didIteratorError3 = false;
-              var _iteratorError3 = undefined;
+            for (var _iterator3 = context.mapping.values()[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
+              var mappedInputs = _step3.value;
+              var _iteratorNormalCompletion4 = true;
+              var _didIteratorError4 = false;
+              var _iteratorError4 = undefined;
 
               try {
-                for (var _iterator3 = mappedInputs[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
-                  var mappedInput = _step3.value;
+                for (var _iterator4 = mappedInputs[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
+                  var mappedInput = _step4.value;
 
                   if (mappedInput instanceof StateInput) {
                     if (mappedInput.active) {
@@ -954,46 +1090,46 @@ function () {
                   }
                 }
               } catch (err) {
-                _didIteratorError3 = true;
-                _iteratorError3 = err;
+                _didIteratorError4 = true;
+                _iteratorError4 = err;
               } finally {
                 try {
-                  if (!_iteratorNormalCompletion3 && _iterator3["return"] != null) {
-                    _iterator3["return"]();
+                  if (!_iteratorNormalCompletion4 && _iterator4["return"] != null) {
+                    _iterator4["return"]();
                   }
                 } finally {
-                  if (_didIteratorError3) {
-                    throw _iteratorError3;
+                  if (_didIteratorError4) {
+                    throw _iteratorError4;
                   }
                 }
               }
             }
           } catch (err) {
-            _didIteratorError2 = true;
-            _iteratorError2 = err;
+            _didIteratorError3 = true;
+            _iteratorError3 = err;
           } finally {
             try {
-              if (!_iteratorNormalCompletion2 && _iterator2["return"] != null) {
-                _iterator2["return"]();
+              if (!_iteratorNormalCompletion3 && _iterator3["return"] != null) {
+                _iterator3["return"]();
               }
             } finally {
-              if (_didIteratorError2) {
-                throw _iteratorError2;
+              if (_didIteratorError3) {
+                throw _iteratorError3;
               }
             }
           }
         }
       } catch (err) {
-        _didIteratorError = true;
-        _iteratorError = err;
+        _didIteratorError2 = true;
+        _iteratorError2 = err;
       } finally {
         try {
-          if (!_iteratorNormalCompletion && _iterator["return"] != null) {
-            _iterator["return"]();
+          if (!_iteratorNormalCompletion2 && _iterator2["return"] != null) {
+            _iterator2["return"]();
           }
         } finally {
-          if (_didIteratorError) {
-            throw _iteratorError;
+          if (_didIteratorError2) {
+            throw _iteratorError2;
           }
         }
       }
@@ -1009,21 +1145,21 @@ function () {
         args[_key - 4] = arguments[_key];
       }
 
-      var _iteratorNormalCompletion4 = true;
-      var _didIteratorError4 = false;
-      var _iteratorError4 = undefined;
+      var _iteratorNormalCompletion5 = true;
+      var _didIteratorError5 = false;
+      var _iteratorError5 = undefined;
 
       try {
-        for (var _iterator4 = this.contexts.values()[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
-          var context = _step4.value;
+        for (var _iterator5 = this.contexts.values()[Symbol.iterator](), _step5; !(_iteratorNormalCompletion5 = (_step5 = _iterator5.next()).done); _iteratorNormalCompletion5 = true) {
+          var context = _step5.value;
           if (context.disabled) continue;
-          var _iteratorNormalCompletion5 = true;
-          var _didIteratorError5 = false;
-          var _iteratorError5 = undefined;
+          var _iteratorNormalCompletion6 = true;
+          var _didIteratorError6 = false;
+          var _iteratorError6 = undefined;
 
           try {
-            for (var _iterator5 = context.mapping.get(eventKey)[Symbol.iterator](), _step5; !(_iteratorNormalCompletion5 = (_step5 = _iterator5.next()).done); _iteratorNormalCompletion5 = true) {
-              var mappedInput = _step5.value;
+            for (var _iterator6 = context.mapping.get(eventKey)[Symbol.iterator](), _step6; !(_iteratorNormalCompletion6 = (_step6 = _iterator6.next()).done); _iteratorNormalCompletion6 = true) {
+              var mappedInput = _step6.value;
               var result = mappedInput.update.apply(mappedInput, [source, key, event, value].concat(args));
 
               if (result !== null) {
@@ -1041,31 +1177,31 @@ function () {
               }
             }
           } catch (err) {
-            _didIteratorError5 = true;
-            _iteratorError5 = err;
+            _didIteratorError6 = true;
+            _iteratorError6 = err;
           } finally {
             try {
-              if (!_iteratorNormalCompletion5 && _iterator5["return"] != null) {
-                _iterator5["return"]();
+              if (!_iteratorNormalCompletion6 && _iterator6["return"] != null) {
+                _iterator6["return"]();
               }
             } finally {
-              if (_didIteratorError5) {
-                throw _iteratorError5;
+              if (_didIteratorError6) {
+                throw _iteratorError6;
               }
             }
           }
         }
       } catch (err) {
-        _didIteratorError4 = true;
-        _iteratorError4 = err;
+        _didIteratorError5 = true;
+        _iteratorError5 = err;
       } finally {
         try {
-          if (!_iteratorNormalCompletion4 && _iterator4["return"] != null) {
-            _iterator4["return"]();
+          if (!_iteratorNormalCompletion5 && _iterator5["return"] != null) {
+            _iterator5["return"]();
           }
         } finally {
-          if (_didIteratorError4) {
-            throw _iteratorError4;
+          if (_didIteratorError5) {
+            throw _iteratorError5;
           }
         }
       }
@@ -1098,15 +1234,21 @@ function () {
 var InputDevice =
 /*#__PURE__*/
 function () {
-  function InputDevice(name) {
+  function InputDevice() {
     _classCallCheck(this, InputDevice);
 
-    this.name = name;
+    this.name = 'input';
     this.inputListeners = [];
     this.listeners = new Map();
   }
 
   _createClass(InputDevice, [{
+    key: "setName",
+    value: function setName(name) {
+      this.name = name;
+      return this;
+    }
+  }, {
     key: "delete",
     value: function _delete() {
       this.inputListeners.length = 0;
@@ -1168,7 +1310,7 @@ function (_InputDevice) {
 
     _classCallCheck(this, Keyboard);
 
-    _this = _possibleConstructorReturn(this, _getPrototypeOf(Keyboard).call(this, 'key'));
+    _this = _possibleConstructorReturn(this, _getPrototypeOf(Keyboard).call(this));
     _this.element = element;
     _this.onKeyDown = _this.onKeyDown.bind(_assertThisInitialized(_this));
     _this.onKeyUp = _this.onKeyUp.bind(_assertThisInitialized(_this));
@@ -1215,7 +1357,7 @@ function (_InputDevice) {
 
     _classCallCheck(this, Mouse);
 
-    _this = _possibleConstructorReturn(this, _getPrototypeOf(Mouse).call(this, 'mouse'));
+    _this = _possibleConstructorReturn(this, _getPrototypeOf(Mouse).call(this));
     _this.element = element;
     _this.allowCursorLock = allowCursorLock;
     _this.onMouseMove = _this.onMouseMove.bind(_assertThisInitialized(_this));
@@ -1261,8 +1403,8 @@ function (_InputDevice) {
 
       if (this.element instanceof Element) {
         var rect = this.element.getBoundingClientRect();
-        this.dispatchInput('pos', 'x', e.clientX - rect.left);
-        this.dispatchInput('pos', 'y', e.clientY - rect.top);
+        this.dispatchInput('pos', 'x', e.pageX - rect.left);
+        this.dispatchInput('pos', 'y', e.pageY - rect.top);
       } else {
         this.dispatchInput('pos', 'x', e.pageX);
         this.dispatchInput('pos', 'y', e.pageY);
@@ -1300,10 +1442,6 @@ function (_InputDevice) {
 }(InputDevice);
 
 var INPUT_MANAGER = new InputManager();
-var KEYBOARD = new Keyboard(window);
-var MOUSE = new Mouse(window, false);
-INPUT_MANAGER.addDevice(KEYBOARD);
-INPUT_MANAGER.addDevice(MOUSE);
 
 function Action() {
   var name = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : uuid();
@@ -1448,8 +1586,8 @@ function Range() {
 
 var InputModule = /*#__PURE__*/Object.freeze({
     INPUT_MANAGER: INPUT_MANAGER,
-    KEYBOARD: KEYBOARD,
-    MOUSE: MOUSE,
+    Keyboard: Keyboard,
+    Mouse: Mouse,
     Action: Action,
     State: State,
     Range: Range
@@ -2616,92 +2754,6 @@ function () {
 
   return TweenManager;
 }();
-
-var EventableInstance = {
-  on: function on(event, callback) {
-    var handle = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : callback;
-    var callbacks;
-
-    if (!this.__events.has(event)) {
-      callbacks = new Map();
-
-      this.__events.set(event, callbacks);
-    } else {
-      callbacks = this.__events.get(event);
-    }
-
-    if (!callbacks.has(handle)) {
-      callbacks.set(handle, callback);
-    } else {
-      throw new Error("Found callback for event '".concat(event, "' with the same handle '").concat(handle, "'."));
-    }
-
-    return this;
-  },
-  off: function off(event, handle) {
-    if (this.__events.has(event)) {
-      var callbacks = this.__events.get(event);
-
-      if (callbacks.has(handle)) {
-        callbacks["delete"](handle);
-      } else {
-        throw new Error("Unable to find callback for event '".concat(event, "' with handle '").concat(handle, "'."));
-      }
-    } else {
-      throw new Error("Unable to find event '".concat(event, "'."));
-    }
-
-    return this;
-  },
-  once: function once(event, callback) {
-    var _this = this;
-
-    var handle = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : callback;
-
-    var func = function func() {
-      _this.off(event, handle);
-
-      callback.apply(void 0, arguments);
-    };
-
-    return this.on(event, func, handle);
-  },
-  emit: function emit(event) {
-    if (this.__events.has(event)) {
-      var callbacks = Array.from(this.__events.get(event).values());
-
-      for (var _len = arguments.length, args = new Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
-        args[_key - 1] = arguments[_key];
-      }
-
-      for (var _i = 0, _callbacks = callbacks; _i < _callbacks.length; _i++) {
-        var callback = _callbacks[_i];
-        callback.apply(void 0, args);
-      }
-    } else {
-      this.__events.set(event, new Map());
-    }
-
-    return this;
-  }
-};
-var Eventable = {
-  create: function create() {
-    var result = Object.create(EventableInstance);
-    result.__events = new Map();
-    return result;
-  },
-  assign: function assign(dst) {
-    var result = Object.assign(dst, EventableInstance);
-    result.__events = new Map();
-    return result;
-  },
-  mixin: function mixin(targetClass) {
-    var targetPrototype = targetClass.prototype;
-    Object.assign(targetPrototype, EventableInstance);
-    targetPrototype.__events = new Map();
-  }
-};
 
 function getFunctionByName(name) {
   switch (name) {
@@ -4871,7 +4923,7 @@ function overlap(x, y, w, h, otherX, otherY, otherW, otherH) {
 }
 
 function draw() {
-  var ctx = VIEW.canvas.getContext('2d');
+  var ctx = CURRENT_VIEW.canvas.getContext('2d');
   ctx.strokeStyle = '#FFFFFF';
   ctx.beginPath();
   COLLISION_MANAGER.broadPhase.draw(ctx);
@@ -4886,6 +4938,77 @@ var CollisionModule = /*#__PURE__*/Object.freeze({
     COLLISION_MANAGER: COLLISION_MANAGER,
     overlap: overlap,
     draw: draw
+});
+
+function Pointer() {
+  var x = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 'mouse[pos]:x';
+  var y = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'mouse[pos]:y';
+  var press = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 'mouse[0]:down';
+  var release = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 'mouse[0]:up';
+  var dx = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 'mouse[move]:x';
+  var dy = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : 'mouse[move]:y';
+  return {
+    _x: Range().attach(x),
+    _y: Range().attach(y),
+    _dx: Range().attach(dx),
+    _dy: Range().attach(dy),
+    _down: State().attach([press, release]),
+
+    get x() {
+      return this._x.get(false);
+    },
+
+    get y() {
+      return this._y.get(false);
+    },
+
+    get down() {
+      return this._down.get(true);
+    },
+
+    get dx() {
+      return this._dx.get(false);
+    },
+
+    get dy() {
+      return this._dy.get(false);
+    }
+
+  };
+}
+function Mover() {
+  var up = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 'key[w]';
+  var left = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'key[a]';
+  var down = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 'key[s]';
+  var right = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 'key[d]';
+  return {
+    _up: State().attach(up),
+    _left: State().attach(left),
+    _down: State().attach(down),
+    _right: State().attach(right),
+
+    get up() {
+      return this._up.get(false);
+    },
+
+    get left() {
+      return this._left.get(false);
+    },
+
+    get down() {
+      return this._down.get(false);
+    },
+
+    get right() {
+      return this._right.get(false);
+    }
+
+  };
+}
+
+var ControllerModule = /*#__PURE__*/Object.freeze({
+    Pointer: Pointer,
+    Mover: Mover
 });
 
 var GameLoop =
@@ -4944,6 +5067,21 @@ Eventable.mixin(GameLoop);
 var GAME = Eventable.create();
 var GAME_LOOP = new GameLoop();
 GAME_LOOP.on('update', onGameUpdate);
+var KEYBOARD = new Keyboard(window);
+INPUT_MANAGER.addDevice('key', KEYBOARD);
+DISPLAY_MANAGER.on('attach', onViewAttach);
+DISPLAY_MANAGER.on('detach', onViewDetach);
+
+function onViewAttach(viewID, view) {
+  view.mouse = new Mouse(view.canvas, false);
+  if (!viewID) viewID = 'mouse';
+  INPUT_MANAGER.addDevice(viewID, view.mouse);
+}
+
+function onViewDetach(viewID, view) {
+  if (!viewID) viewID = 'mouse';
+  INPUT_MANAGER.removeDevice(viewID, view.mouse);
+}
 
 function onGameUpdate(dt) {
   INPUT_MANAGER.poll();
@@ -4960,6 +5098,7 @@ function play() {
 
 exports.Collision = CollisionModule;
 exports.Color = ColorHelper;
+exports.Controller = ControllerModule;
 exports.Display = DisplayModule;
 exports.Entity = EntityModule;
 exports.Eventable = Eventable;

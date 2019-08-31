@@ -37,6 +37,12 @@ class Mouse extends InputDevice
         super.delete();
     }
 
+    setCursorLock(cursorLock)
+    {
+        this.allowCursorLock = cursorLock;
+        return this;
+    }
+
     onMouseClick(e)
     {
         if (this.allowCursorLock)
