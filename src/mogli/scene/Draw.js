@@ -9,7 +9,7 @@ export function createDrawInfo(programInfo, vertexArrayInfo, uniforms, drawArray
     };
 }
 
-export function draw(gl, drawInfos)
+export function draw(gl, drawInfos, sharedUniforms = {})
 {
     for(const drawInfo of drawInfos)
     {
@@ -19,13 +19,19 @@ export function draw(gl, drawInfos)
         const drawArrayOffset = drawInfo.drawArrayOffset;
         const drawMode = drawInfo.drawMode || gl.TRIANGLES;
 
-        // Prepare program
+        // Prepare program...
         gl.useProgram(programInfo.handle);
 
-        // Prepare vertex array
+        // Prepare vertex array...
         gl.bindVertexArray(vertexArrayInfo.handle);
 
-        // Prepare uniforms
+        // Prepare shared uniforms...
+        for(const [name, value] of Object.entries(sharedUniforms))
+        {
+            programInfo.uniform(name, value);
+        }
+
+        // Prepare uniforms...
         for(const [name, value] of Object.entries(uniforms))
         {
             programInfo.uniform(name, value);

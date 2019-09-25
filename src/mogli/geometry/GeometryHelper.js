@@ -82,12 +82,7 @@ export function joinGeometry(...geometries)
         texcoord.push(...geometry.texcoord);
         normal.push(...geometry.normal);
         color.push(...geometry.color);
-
-        for(let i = 0; i < geometry.indices.length; ++i)
-        {
-            const index = geometry.indices[i];
-            indices.push(index + indexCount);
-        }
+        indices.push(...geometry.indices.map((value) => value + indexCount));
 
         indexCount += geometry.position.length / 3;
     }
