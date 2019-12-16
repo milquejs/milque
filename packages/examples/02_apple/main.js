@@ -1,187 +1,301 @@
-const CANVAS = document.createElement('canvas');
-const CTX = CANVAS.getContext('2d');
-document.body.appendChild(CANVAS);
+const canvas = document.createElement('canvas');
+const ctx = canvas.getContext('2d');
+// canvas.style = 'width: 100%; image-rendering: pixelated;';
+document.body.appendChild(canvas);
 let prevFrameTime;
+let scene;
 
 function main()
 {
-    document.addEventListener('keydown', onKeyDown);
-    document.addEventListener('keyup', onKeyUp);
-
-    load();
+    scene.load();
     run(prevFrameTime = performance.now());
 }
 
 function run(now)
 {
     requestAnimationFrame(run);
-    const dt = now - prevFrameTime;
-    update(dt);
-    render(CTX);
+    let dt = now - prevFrameTime;
+    prevFrameTime = now;
+    scene.update(dt);
+    scene.render(ctx);
 }
 
-const GRAVITY = 0.1;
-const MAX_VELOCITY_X = 1;
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
+const TILE_REGISTRY = new Map();
+TILE_REGISTRY.set(0, 'gray');
+TILE_REGISTRY.set(1, 'dodgerblue');
+
+const GRAVITY = 1;
 const MAX_VELOCITY_Y = 1;
 
-const PLAYER_FRICTION_X = 0.1;
-const TILE_SIZE = 16;
+scene = {
+    load()
+    {
+        this.left = 0;
+        this.right = 0;
+        this.up = 0;
+        this.down = 0;
 
-let world = {};
+        document.addEventListener('keydown', this.onKeyDown.bind(this));
+        document.addEventListener('keyup', this.onKeyUp.bind(this));
 
-function BoxFactory(entity, x, y, w, h)
+        this.player = {
+            x: canvas.width / 2, y: canvas.height / 2,
+            dx: 0, dy: 0,
+        };
+
+        this.tileMap = createTileMap(16, 8);
+        fillTileMap(this.tileMap, 1);
+        strokeTileMap(this.tileMap, 0);
+    },
+    update(dt)
+    {
+        const xControl = this.right - this.left;
+        const yControl = this.down - this.up;
+
+        // Move the player
+        this.player.dx += xControl;
+        this.player.dy += yControl;
+        this.player.dx *= 0.8;
+
+        // Apply motion to the player
+        applyGravity(this.player, GRAVITY, MAX_VELOCITY_Y);
+        applyMotion(this.player);
+    },
+    render(ctx)
+    {
+        ctx.fillStyle = 'black';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // TileMap
+        const TILE_SIZE = 16;
+        const TILE_OFFSET_X = TILE_SIZE;
+        const TILE_OFFSET_Y = TILE_SIZE / 2;
+        for(let y = 0; y < this.tileMap.height; ++y)
+        {
+            for(let x = 0; x < this.tileMap.width; ++x)
+            {
+                let id = this.tileMap[x + y * this.tileMap.width] || 0;
+                ctx.fillStyle = TILE_REGISTRY.get(id);
+                ctx.fillRect(TILE_OFFSET_X + x * (TILE_SIZE + 1), TILE_OFFSET_Y + y * (TILE_SIZE + 1), TILE_SIZE, TILE_SIZE);
+            }
+        }
+
+        // Player
+        drawBox(ctx, this.player.x, this.player.y, 0, 16, 16);
+    },
+    onKeyDown(e)
+    {
+        switch(e.key)
+        {
+            case 'ArrowUp':
+            case 'w':
+                this.up = 1;
+                break;
+            case 'ArrowDown':
+            case 's':
+                this.down = 1;
+                break;
+            case 'ArrowLeft':
+            case 'a':
+                this.left = 1;
+                break;
+            case 'ArrowRight':
+            case 'd':
+                this.right = 1;
+                break;
+        }
+    },
+    onKeyUp(e)
+    {
+        switch(e.key)
+        {
+            case 'ArrowUp':
+            case 'w':
+                this.up = 0;
+                break;
+            case 'ArrowDown':
+            case 's':
+                this.down = 0;
+                break;
+            case 'ArrowLeft':
+            case 'a':
+                this.left = 0;
+                break;
+            case 'ArrowRight':
+            case 'd':
+                this.right = 0;
+                break;
+        }
+    }
+};
+
+function createCollisionBody()
 {
-    return Object.assign(entity, {
-        x, y,
-        width: w, height: h
-    });
+    return {
+        x: 0,
+        y: 0,
+        dx: 0,
+        dy: 0,
+        radius: 0
+    };
 }
 
-function load()
+function findCollisions(collisionBodies)
 {
-    world.input = {
-        left: 0,
-        right: 0,
-        up: 0,
-        down: 0,
-    };
-    world.player = {
-        x: 0, y: 0,
-        dx: 0, dy: 0
-    };
-
-    world.tilemap = {
-        tiles: new Array(16 * 8),
-        width: 16,
-        height: 8,
-    };
-    for(let i = 0; i < world.tilemap.tiles.length; ++i)
+    let dst = [];
+    for(let target of collisionBodies)
     {
-        world.tilemap.tiles[i] = Math.round(Math.random());
+        for(let other of collisionBodies)
+        {
+            let result = testIntersection(target, other);
+            if (result)
+            {
+                dst.push(result);
+            }
+        }
+    }
+    return dst;
+}
+
+function testIntersection(collisionBodyA, collisionBodyB)
+{
+    switch(collisionBodyA.shape + ':' + collisionBodyB.shape)
+    {
+        case 'circle:circle':
+            return {};
+        case 'box:box':
+            return {};
+        case 'circle:box':
+        case 'box:circle':
+            return {};
+        default:
+            throw new Error('Unsupported collision type pair.');
     }
 }
 
-function update(dt)
+function testCircleCircle(a, b)
 {
-    const hmoveControl = world.input.right - world.input.left;
-    const vmoveControl = world.input.down - world.input.up;
-    world.player.dx += hmoveControl;
-    world.player.dy += vmoveControl;
-    world.player.dx *= 1 - PLAYER_FRICTION_X;
-
-    // applyCollisionResolution(world, world.player);
-    applyGravity(world, world.player, GRAVITY);
-    applyMotion(world, world.player);
+    let dx = (a.x - b.x);
+    let dy = (a.y - b.y);
+    let dist = Math.sqrt(dx * dx + dy * dy);
+    let radius = a.radius + b.radius;
+    if (dist <= radius)
+    {
+        // Find the normal
+        let rad = Math.atan2(dy, dx);
+        return {
+            normal: { x: Math.cos(-rad), y: Math.sin(-rad) },
+            delta: (radius - dist) / 2
+        };
+    }
+    else
+    {
+        return null;
+    }
 }
 
-function render(ctx)
-{
-    ctx.fillStyle = 'black';
-    ctx.fillRect(0, 0, CANVAS.width, CANVAS.height);
-
-    // TileMap
-    drawTileMap(ctx, 0, 0, world.tilemap);
-
-    // Player
-    drawBox(ctx, world.player.x, world.player.y);
-}
-
-function testRectangleIntersection(a, b)
+function testBoxBox(a, b)
 {
 
 }
 
-function applyCollisionResolution(world, entity)
+function testCircleBox(a, b)
 {
 
 }
 
-function applyGravity(world, entity, gravity)
+function applyMotion(entity, inverseFriction = 1)
 {
-    entity.dy += gravity;
-}
-
-function applyMotion(world, entity)
-{
-    if (entity.dx > MAX_VELOCITY_X) entity.dx = MAX_VELOCITY_X;
-    if (entity.dx < -MAX_VELOCITY_X) entity.dx = -MAX_VELOCITY_X;
-    if (entity.dy > MAX_VELOCITY_Y) entity.dy = MAX_VELOCITY_Y;
-    if (entity.dy < -MAX_VELOCITY_Y) entity.dy = -MAX_VELOCITY_Y;
+    entity.dx *= inverseFriction;
+    entity.dy *= inverseFriction;
     entity.x += entity.dx;
     entity.y += entity.dy;
 }
 
-function drawTileMap(ctx, offsetX, offsetY, tilemap)
+function applyGravity(entity, gravity, maxVelocity)
 {
-    ctx.translate(offsetX, offsetY);
-    for(let x = 0; x < tilemap.width; ++x)
-    {
-        for(let y = 0; y < tilemap.height; ++y)
-        {
-            ctx.fillStyle = 'slategray';
-            ctx.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE - 1, TILE_SIZE - 1);
-        }
-    }
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    entity.dy += gravity;
+    if (entity.dy > maxVelocity) entity.dy = maxVelocity;
 }
 
-function drawBox(ctx, x = 0, y = 0, rotation = 0, width = 16, height = 16, color = 'white')
+function drawBox(ctx, x, y, radians, width, height = width, color = 'white')
 {
     ctx.translate(x, y);
-    ctx.rotate(rotation);
+    ctx.rotate(radians);
     ctx.fillStyle = color;
     ctx.fillRect(-width / 2, -height / 2, width, height);
     ctx.setTransform(1, 0, 0, 1, 0, 0);
 }
 
-function onKeyDown(e)
+function drawCircle(ctx, x, y, radians, radius, color = 'white')
 {
-    switch(e.key)
+    ctx.translate(x, y);
+    ctx.rotate(radians);
+    ctx.beginPath();
+    ctx.fillStyle = color;
+    ctx.arc(0, 0, radius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+}
+
+function createTileMap(width, height = width)
+{
+    const result = new Array(width * height);
+    result.width = width;
+    result.height = height;
+    return result;
+}
+
+function strokeTileMap(tileMap, value, x = 0, y = 0, w = tileMap.width, h = tileMap.height)
+{
+    const tileMapWidth = tileMap.width;
+    for(let i = 0; i < w; ++i)
     {
-        case 'ArrowUp':
-        case 'w':
-            world.input.up = 1;
-            break;
-        case 'ArrowDown':
-        case 's':
-            world.input.down = 1;
-            break;
-        case 'ArrowLeft':
-        case 'a':
-            world.input.left = 1;
-            break;
-        case 'ArrowRight':
-        case 'd':
-            world.input.right = 1;
-            break;
-        default:
-            console.log(e.key);
+        tileMap[(x + i) + y * tileMapWidth] = value;
+        tileMap[(x + i) + (y + h - 1) * tileMapWidth] = value;
+    }
+    for(let i = 0; i < h; ++i)
+    {
+        tileMap[x + (y + i) * tileMapWidth] = value;
+        tileMap[(x + w - 1) + (y + i) * tileMapWidth] = value;
     }
 }
 
-function onKeyUp(e)
+function fillTileMap(tileMap, value, x = 0, y = 0, w = tileMap.width, h = tileMap.height)
 {
-    switch(e.key)
+    const tileMapWidth = tileMap.width;
+    for(let i = 0; i < h; ++i)
     {
-        case 'ArrowUp':
-        case 'w':
-            world.input.up = 0;
-            break;
-        case 'ArrowDown':
-        case 's':
-            world.input.down = 0;
-            break;
-        case 'ArrowLeft':
-        case 'a':
-            world.input.left = 0;
-            break;
-        case 'ArrowRight':
-        case 'd':
-            world.input.right = 0;
-            break;
-        default:
-            console.log(e.key);
+        for(let j = 0; j < w; ++j)
+        {
+            tileMap[(x + j) + (y + i) * tileMapWidth] = value;
+        }
     }
 }
+
+function forEachTile(tileMap, callback, x = 0, y = 0, w = tileMap.width, h = tileMap.height)
+{
+    for(let i = 0; i < h; ++i)
+    {
+        for(let j = 0; j < w; ++j)
+        {
+            callback.call(null, tileMap, x + j, y + i);
+        }
+    }
+}
+
+function setTile(tileMap, value, x, y)
+{
+    tileMap[x + y * tileMap.width] = value;
+}
+
+function getTile(tileMap, x, y)
+{
+    return tileMap[x + y * tileMap.width];
+}
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 main();

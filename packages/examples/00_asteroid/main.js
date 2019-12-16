@@ -5,12 +5,12 @@ document.body.appendChild(canvas);
 const audioContext = new AudioContext();
 
 const sounds = {
-    start: createSound('start.wav'),
-    dead: createSound('dead.wav'),
-    pop: createSound('blop.wav'),
-    music: createSound('music.wav', true),
-    shoot: createSound('click.wav'),
-    boom: createSound('boom.wav'),
+    start: createSound('../res/space/start.wav'),
+    dead: createSound('../res/space/dead.wav'),
+    pop: createSound('../res/space/blop.wav'),
+    music: createSound('../res/space/music.wav', true),
+    shoot: createSound('../res/space/click.wav'),
+    boom: createSound('../res/space/boom.wav'),
 };
 
 let prevFrameTime = 0;

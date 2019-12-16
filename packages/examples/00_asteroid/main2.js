@@ -2,29 +2,21 @@ import * as Sound from './Sound.js';
 import * as Input from './Input.js';
 import * as Random from './Random.js';
 import * as Canvas from './Canvas.js';
+import GameLoop from './GameLoop.js';
 
 Canvas.init();
 Sound.init();
 Input.init();
 
-let prevFrameTime = 0;
 let mainScene = { start, update, render };
-
-function main()
-{
-    mainScene.start();
-    run(prevFrameTime = performance.now());
-}
-
-function run(now)
-{
-    requestAnimationFrame(run);
-    const dt = now - prevFrameTime;
-    prevFrameTime = now;
+GameLoop.on('start', () => {
+    mainScene.start()
+});
+GameLoop.on('update', (dt) => {
     mainScene.update(dt);
     mainScene.render(Canvas.getContext());
     Input.poll();
-}
+});
 
 const PLAYER_RADIUS = 5;
 const SMALL_ASTEROID_RADIUS = 4;
@@ -73,12 +65,12 @@ const BULLET_COLOR = 'gold';
 let SHOW_COLLISION = false;
 
 const sounds = {
-    start: Sound.createSound('start.wav'),
-    dead: Sound.createSound('dead.wav'),
-    pop: Sound.createSound('blop.wav'),
-    music: Sound.createSound('music.wav', true),
-    shoot: Sound.createSound('click.wav'),
-    boom: Sound.createSound('boom.wav'),
+    start: Sound.createSound('../res/space/start.wav'),
+    dead: Sound.createSound('../res/space/dead.wav'),
+    pop: Sound.createSound('../res/space/boop.wav'),
+    music: Sound.createSound('../res/space/music.wav', true),
+    shoot: Sound.createSound('../res/space/click.wav'),
+    boom: Sound.createSound('../res/space/boom.wav'),
 };
 
 const inputs = {
@@ -750,4 +742,4 @@ function createEntityClass(entityFactory)
     };
 }
 
-main();
+GameLoop.start();
