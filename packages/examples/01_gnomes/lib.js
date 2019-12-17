@@ -1,7 +1,3 @@
-const canvas = document.createElement('canvas');
-const ctx = canvas.getContext('2d');
-canvas.style = 'width: 100%; image-rendering: pixelated;';
-document.body.appendChild(canvas);
 const audioContext = new AudioContext();
 let SHOW_COLLISION = false;
 
@@ -35,10 +31,10 @@ function withinRadius(from, to, radius)
 
 function wrapAround(position, width, height)
 {
-    if (position.x < -width) position.x = canvas.width;
-    if (position.y < -height) position.y = canvas.height;
-    if (position.x > canvas.width + width / 2) position.x = -width;
-    if (position.y > canvas.height + height / 2) position.y = -height;
+    if (position.x < -width) position.x = Display.getWidth();
+    if (position.y < -height) position.y = Display.getHeight();
+    if (position.x > Display.getWidth() + width / 2) position.x = -width;
+    if (position.y > Display.getHeight() + height / 2) position.y = -height;
 }
 
 function createSound(filepath, loop = false)

@@ -6,6 +6,7 @@ import * as Bullets from './Bullets.js';
 import * as Particles from './Particles.js';
 import * as Player from './Player.js';
 import * as PowerUps from './PowerUps.js';
+import * as Display from './Display.js';
 
 let animationFrameHandle;
 let prevFrameTime;
@@ -23,7 +24,7 @@ function run(now)
     const dt = now - prevFrameTime;
     prevFrameTime = now;
     scene.update(dt);
-    scene.render(ctx);
+    scene.render(Display.getContext());
 }
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
@@ -31,11 +32,8 @@ function run(now)
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 const ASTEROID_SPAWN_INIT_COUNT = 1;
-
 const INSTRUCTION_HINT_TEXT = '[ wasd_ ]';
-
 const FLASH_TIME_STEP = 0.1;
-
 const POWER_UP_SPAWN_CHANCE = 0.7;
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
@@ -138,7 +136,7 @@ function render(ctx)
 {
     // Draw background
     ctx.fillStyle = 'black';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillRect(0, 0, Display.getWidth(), Display.getHeight());
 
     // Draw starfield
     Starfield.render(ctx, this);
@@ -148,7 +146,7 @@ function render(ctx)
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.font = '16px sans-serif';
-    ctx.fillText(this.hint, canvas.width / 2, canvas.height / 2 - 32);
+    ctx.fillText(this.hint, Display.getWidth() / 2, Display.getHeight() / 2 - 32);
 
     // Draw score
     if (this.flashScore > 0)
@@ -161,7 +159,7 @@ function render(ctx)
         ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
     }
     ctx.font = '48px sans-serif';
-    ctx.fillText('= ' + String(this.score).padStart(2, '0') + ' =', canvas.width / 2, canvas.height / 2);
+    ctx.fillText('= ' + String(this.score).padStart(2, '0') + ' =', Display.getWidth() / 2, Display.getHeight() / 2);
     if (this.flashHighScore > 0)
     {
         ctx.fillStyle = `rgba(255, 255, 255, ${this.flashHighScore + 0.2})`;
@@ -172,13 +170,13 @@ function render(ctx)
         ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
     }
     ctx.font = '16px sans-serif';
-    ctx.fillText(String(this.highScore).padStart(2, '0'), canvas.width / 2, canvas.height / 2 + 32);
+    ctx.fillText(String(this.highScore).padStart(2, '0'), Display.getWidth() / 2, Display.getHeight() / 2 + 32);
 
     // Draw timer
     ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
     ctx.font = '24px sans-serif';
     ctx.textAlign = 'right';
-    ctx.fillText(Math.ceil(this.asteroidSpawner.spawnTicks / 1000), canvas.width, canvas.height - 12);
+    ctx.fillText(Math.ceil(this.asteroidSpawner.spawnTicks / 1000), Display.getWidth(), Display.getHeight() - 12);
 
     Asteroids.render(ctx, this);
     PowerUps.render(ctx, this);
@@ -192,8 +190,8 @@ function nextLevel(scene)
     scene.bullets.length = 0;
     scene.asteroids.length = 0;
     scene.particles.length = 0;
-    scene.player.x = canvas.width / 2;
-    scene.player.y = canvas.height / 2;
+    scene.player.x = Display.getWidth() / 2;
+    scene.player.y = Display.getHeight() / 2;
     scene.player.dx = 0;
     scene.player.dy = 0;
     scene.level++;

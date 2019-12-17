@@ -1,4 +1,5 @@
 import * as Random from './Random.js';
+import * as Display from './Display.js';
 
 /**
  * What I learned:
@@ -8,19 +9,24 @@ import * as Random from './Random.js';
  * just expose an interface for the engine to connect to.
  */
 
+const STAR_SIZE_RANGE = [2, 4];
+const STAR_SPEED_RANGE = [-1, -0.3];
+
 export function create()
 {
     let result = {
         x: [],
         y: [],
         size: [],
+        speed: [],
         length: 0
     };
     for(let i = 0; i < 30; ++i)
     {
-        result.x.push(Random.randomRange(0, canvas.width));
-        result.y.push(Random.randomRange(0, canvas.height));
-        result.size.push(Random.randomRange(2, 4));
+        result.x.push(Random.randomRange(0, Display.getWidth()));
+        result.y.push(Random.randomRange(0, Display.getHeight()));
+        result.size.push(Random.randomRange(...STAR_SIZE_RANGE));
+        result.speed.push(Random.randomRange(...STAR_SPEED_RANGE));
         result.length++;
     }
     return result;
@@ -28,7 +34,7 @@ export function create()
 
 export function update(dt, scene)
 {
-    updateStarfield(scene.starfield, -1);
+    updateStarfield(scene.starfield);
 }
 
 export function render(ctx, scene)
@@ -48,30 +54,30 @@ function updateStarfield(starfield, dx = 1, dy = 0)
     {
         if (dx)
         {
-            starfield.x[i] += dx;
+            starfield.x[i] += dx * starfield.speed[i];
             if (starfield.x[i] < 0)
             {
-                starfield.x[i] = canvas.width;
-                starfield.y[i] = Random.randomRange(0, canvas.height);
+                starfield.x[i] = Display.getWidth();
+                starfield.y[i] = Random.randomRange(0, Display.getHeight());
             }
-            else if (starfield.x[i] > canvas.width)
+            else if (starfield.x[i] > Display.getWidth())
             {
                 starfield.x[i] = 0;
-                starfield.y[i] = Random.randomRange(0, canvas.height);
+                starfield.y[i] = Random.randomRange(0, Display.getHeight());
             }
         }
 
         if (dy)
         {
-            starfield.y[i] += dy;
+            starfield.y[i] += dy * starfield.speed[i];
             if (starfield.y[i] < 0)
             {
-                starfield.x[i] = Random.randomRange(0, canvas.width);
-                starfield.y[i] = canvas.height;
+                starfield.x[i] = Random.randomRange(0, Display.getWidth());
+                starfield.y[i] = Display.getHeight();
             }
-            else if (starfield.y[i] > canvas.height)
+            else if (starfield.y[i] > Display.getHeight())
             {
-                starfield.x[i] = Random.randomRange(0, canvas.width);
+                starfield.x[i] = Random.randomRange(0, Display.getWidth());
                 starfield.y[i] = 0;
             }
         }

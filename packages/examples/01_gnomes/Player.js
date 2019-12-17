@@ -1,6 +1,7 @@
 import * as Random from './Random.js';
 import * as Bullets from './Bullets.js';
 import * as Particles from './Particles.js';
+import * as Display from './Display.js';
 
 export const PLAYER_MOVE_PARTICLE_OFFSET_RANGE = [-2, 2];
 export const PLAYER_MOVE_PARTICLE_DAMP_FACTOR = 1.5;
@@ -23,8 +24,8 @@ export function create(scene)
 {
     return {
         scene,
-        x: canvas.width / 2,
-        y: canvas.height / 2,
+        x: Display.getWidth() / 2,
+        y: Display.getHeight() / 2,
         rotation: 0,
         dx: 0,
         dy: 0,

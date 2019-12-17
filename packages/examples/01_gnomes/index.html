@@ -6,6 +6,11 @@
     </head>
     <body>
         <script src="./lib.js"></script>
+        <script type="module">
+            import * as Display from './Display.js';
+            Display.createCanvas();
+            globalThis.Display = Display;
+        </script>
         <script src="./main.js" type="module"></script>
     </body>
 </html>

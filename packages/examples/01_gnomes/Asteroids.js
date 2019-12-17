@@ -1,7 +1,7 @@
 import * as Random from './Random.js';
 import * as Particles from './Particles.js';
 import * as Player from './Player.js';
-import * as Constants from './Constants.js';
+import * as Display from './Display.js';
 
 const ASTEROID_SPAWN_RATE = [3000, 10000];
 const MAX_ASTEROID_COUNT = 100;
@@ -10,10 +10,10 @@ export const SMALL_ASTEROID_RADIUS = 4;
 export const ASTEROID_RADIUS = 8;
 export const ASTEROID_SPEED = 1;
 export const ASTEROID_SPAWN_RANGES = [
-    [-ASTEROID_RADIUS, -ASTEROID_RADIUS, ASTEROID_RADIUS * 2 + canvas.width, ASTEROID_RADIUS],
-    [-ASTEROID_RADIUS, 0, ASTEROID_RADIUS, canvas.height],
-    [-ASTEROID_RADIUS, canvas.height, ASTEROID_RADIUS * 2 + canvas.width, ASTEROID_RADIUS],
-    [canvas.width, 0, ASTEROID_RADIUS, canvas.height],
+    [-ASTEROID_RADIUS, -ASTEROID_RADIUS, ASTEROID_RADIUS * 2 + Display.getWidth(), ASTEROID_RADIUS],
+    [-ASTEROID_RADIUS, 0, ASTEROID_RADIUS, Display.getHeight()],
+    [-ASTEROID_RADIUS, Display.getHeight(), ASTEROID_RADIUS * 2 + Display.getWidth(), ASTEROID_RADIUS],
+    [Display.getWidth(), 0, ASTEROID_RADIUS, Display.getHeight()],
 ];
 export const ASTEROID_EXPLODE_PARTICLE_COLORS = [ 'blue', 'blue', 'blue', 'dodgerblue', 'gray', 'darkgray', 'yellow' ];
 export const ASTEROID_BREAK_DAMP_FACTOR = 0.1;
