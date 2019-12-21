@@ -6,6 +6,7 @@ import * as Bullets from './Bullets.js';
 import * as Particles from './Particles.js';
 import * as Player from './Player.js';
 import * as PowerUps from './PowerUps.js';
+import * as PlayerControls from './PlayerControls.js';
 
 import * as Display from './Display.js';
 import * as GameLoop from './GameLoop.js';
@@ -17,8 +18,9 @@ let scene = { start, update, render };
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-const ANY = Input.createInput('*');
-const DEBUG = Input.createInput('\\');
+const CONTEXT = Input.createContext();
+const ANY = CONTEXT.createInput('*');
+const DEBUG = CONTEXT.createInput('\\');
 
 const ASTEROID_SPAWN_INIT_COUNT = 1;
 const INSTRUCTION_HINT_TEXT = '[ wasd_ ]';
@@ -88,6 +90,9 @@ function start()
     this.gameStart = true;
     this.gameWait = true;
     this.hint = INSTRUCTION_HINT_TEXT;
+
+    CONTEXT.toggle(true);
+    PlayerControls.CONTEXT.toggle(true);
 }
 
 function update(dt)
