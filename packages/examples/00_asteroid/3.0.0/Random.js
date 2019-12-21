@@ -1,14 +1,24 @@
-export function random()
+import { SimpleRandomGenerator } from './SimpleRandomGenerator.js';
+import { RandomGenerator } from './RandomGenerator.js';
+
+const DEFAULT_RNG = new RandomGenerator();
+
+export function createRandom(seed = 0)
 {
-    return ((this && this._random) || Math).random();
+    return new SimpleRandomGenerator(seed);
 }
 
-export function randomChoose(choices)
+export function random()
 {
-    return choices[Math.floor(random.call(this) * choices.length)];
+    return DEFAULT_RNG.random();
 }
 
 export function randomRange(min, max)
 {
-    return random.call(this) * (max - min) + min;
+    return DEFAULT_RNG.randomRange(min, max);
+}
+
+export function randomChoose(choices)
+{
+    return DEFAULT_RNG.randomChoose(choices);
 }

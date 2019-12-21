@@ -1,4 +1,4 @@
-import { Keyboard, Mouse } from './input/InputDevices.js';
+import { Keyboard, Mouse } from './InputDevices.js';
 
 export const KEYBOARD = new Keyboard().setEventHandler(handleEvent);
 export const MOUSE = new Mouse().setEventHandler(handleEvent);
