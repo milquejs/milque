@@ -1,17 +1,9 @@
+import { Keyboard, Mouse } from './input/InputDevices.js';
+
+export const KEYBOARD = new Keyboard().setEventHandler(handleEvent);
+export const MOUSE = new Mouse().setEventHandler(handleEvent);
+
 let inputs = [];
-
-export function init()
-{
-    document.addEventListener('keydown', onKeyDown);
-    document.addEventListener('keyup', onKeyUp);
-
-    window.addEventListener('gamepadconnected', e => {
-        // TODO: Not yet implemented...
-    });
-    window.addEventListener('gamepaddisconnected', e => {
-        // TODO: Not yet implemented...
-    });
-}
 
 export function clear()
 {
@@ -30,8 +22,12 @@ export function createInput(key, onChange = undefined)
     return result;
 }
 
-export function handleEvent(key, value)
+export function handleEvent(eventKey, value)
 {
+    const key = eventKey.substring(eventKey.indexOf('[') + 1, eventKey.indexOf(']'));
+    const mode = eventKey.substring(eventKey.indexOf('.') + 1);
+    value = mode === 'down' || mode === 'repeat';
+
     for(let input of inputs)
     {
         if (input.key.includes(key) || input.key.includes('*'))
@@ -45,14 +41,4 @@ export function handleEvent(key, value)
             }
         }
     }
-}
-
-function onKeyDown(e)
-{
-    handleEvent(e.key, true);
-}
-
-function onKeyUp(e)
-{
-    handleEvent(e.key, false);
 }

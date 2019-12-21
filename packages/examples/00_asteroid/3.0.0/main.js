@@ -17,8 +17,6 @@ let scene = { start, update, render };
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-Input.init();
-
 const ANY = Input.createInput('*');
 const DEBUG = Input.createInput('\\');
 
