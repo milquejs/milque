@@ -91,8 +91,8 @@ function start()
     this.gameWait = true;
     this.hint = INSTRUCTION_HINT_TEXT;
 
-    CONTEXT.toggle(true);
-    PlayerControls.CONTEXT.toggle(true);
+    CONTEXT.enable();
+    PlayerControls.CONTEXT.enable();
 }
 
 function update(dt)

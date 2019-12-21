@@ -19,13 +19,13 @@ export function createContext()
 {
     return {
         inputs: [],
+        active: false,
         createInput(...keys)
         {
             let result = { key: keys, value: false, prev: false, context: this };
             this.inputs.push(result);
             return result;
         },
-        active: false,
         toggle(force = undefined)
         {
             if (typeof force === 'undefined') force = !this.active;
@@ -41,6 +41,16 @@ export function createContext()
             {
                 contexts.splice(contexts.indexOf(this), 1);
             }
+            return this;
+        },
+        enable()
+        {
+            this.toggle(true);
+            return this;
+        },
+        disable()
+        {
+            this.toggle(false);
             return this;
         }
     };
