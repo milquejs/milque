@@ -4,12 +4,12 @@ import * as Particles from './Particles.js';
 import * as Display from './Display.js';
 import * as PlayerControls from './PlayerControls.js';
 
+import * as FlashAnimation from './FlashAnimation.js';
+
 export const PLAYER_MOVE_PARTICLE_OFFSET_RANGE = [-2, 2];
 export const PLAYER_MOVE_PARTICLE_DAMP_FACTOR = 1.5;
 export const MIN_PLAYER_MOVE_PARTICLE_LIFE_RATIO = 0.1;
 export const MAX_PLAYER_MOVE_PARTICLE_LIFE_RATIO = 0.4;
-
-const FLASH_TIME_STEP = 0.1;
 
 export const PLAYER_EXPLODE_PARTICLE_COLORS = [ 'red', 'red', 'red', 'yellow', 'orange' ];
 export const PLAYER_RADIUS = 5;
@@ -23,7 +23,7 @@ const PLAYER_MOVE_PARTICLE_COLORS = [ 'gray', 'darkgray', 'lightgray' ];
 
 export function create(scene)
 {
-    return {
+    let result = {
         scene,
         x: Display.getWidth() / 2,
         y: Display.getHeight() / 2,
@@ -37,11 +37,13 @@ export function create(scene)
         down: 0,
         cooldown: 0,
         powerMode: 0,
+        shootFlash: FlashAnimation.create(),
         shoot()
         {
             Bullets.shootFromPlayer(this);
         }
     };
+    return result;
 }
 
 export function update(dt, scene)
@@ -75,7 +77,7 @@ export function update(dt, scene)
     if (fireControl)
     {
         scene.player.shoot();
-        scene.flashShootDelta = 1;
+        FlashAnimation.play(scene.player.shootFlash);
     }
 
     // Whether to spawn thruster particles
@@ -100,17 +102,20 @@ export function render(ctx, scene)
         let xOffset = -1;
         let yOffset = 0;
         let sizeOffset = 0;
-        if (scene.flashShootDelta > 0)
+
+        FlashAnimation.update(scene.player.shootFlash);
+        let flashValue = FlashAnimation.getFlashValue(scene.player.shootFlash);
+        if (flashValue > 0)
         {
-            ctx.fillStyle = `rgb(${200 * scene.flashShootDelta + 55 * Math.sin(performance.now() / (PLAYER_SHOOT_COOLDOWN * 2))}, 0, 0)`;
-            scene.flashShootDelta -= FLASH_TIME_STEP;
-            sizeOffset = scene.flashShootDelta * 2;
-            xOffset = scene.flashShootDelta;
+            ctx.fillStyle = `rgb(${200 * flashValue + 55 * Math.sin(performance.now() / (PLAYER_SHOOT_COOLDOWN * 2))}, 0, 0)`;
+            sizeOffset = flashValue * 2;
+            xOffset = flashValue;
         }
         else
         {
             ctx.fillStyle = 'black';
         }
+        
         ctx.fillRect(-size - sizeOffset / 2 + xOffset, -(size / 4) - sizeOffset / 2 + yOffset, size + sizeOffset, size / 2 + sizeOffset);
         ctx.setTransform(1, 0, 0, 1, 0, 0);
     }

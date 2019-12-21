@@ -7,6 +7,7 @@ import * as Particles from './Particles.js';
 import * as Player from './Player.js';
 import * as PowerUps from './PowerUps.js';
 import * as PlayerControls from './PlayerControls.js';
+import * as FlashAnimation from './FlashAnimation.js';
 
 import * as Display from './Display.js';
 import * as GameLoop from './GameLoop.js';
@@ -24,7 +25,6 @@ const DEBUG = CONTEXT.createInput('\\');
 
 const ASTEROID_SPAWN_INIT_COUNT = 1;
 const INSTRUCTION_HINT_TEXT = '[ wasd_ ]';
-const FLASH_TIME_STEP = 0.1;
 const POWER_UP_SPAWN_CHANCE = 0.7;
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
@@ -45,9 +45,9 @@ function start()
     this.level = 0;
     this.score = 0;
     this.highScore = Number(localStorage.getItem('highscore'));
-    this.flashScoreDelta = 0;
-    this.flashHighScoreDelta = 0;
-    this.flashShootDelta = 0;
+
+    this.scoreFlash = FlashAnimation.create();
+    this.highScoreFlash = FlashAnimation.create();
 
     this.player = Player.create(this);
     this.starfield = Starfield.create();
@@ -108,7 +108,7 @@ function update(dt)
             {
                 this.sounds.music.play();
                 this.score = 0;
-                this.flashScore = true;
+                FlashAnimation.play(this.scoreFlash);
                 this.level = 0;
                 this.gameStart = false;
                 this.player.powerMode = 0;
@@ -166,10 +166,11 @@ function render(ctx)
     ctx.fillText(this.hint, Display.getWidth() / 2, Display.getHeight() / 2 - 32);
 
     // Draw score
-    if (this.flashScore > 0)
+    FlashAnimation.update(this.scoreFlash);
+    let flashValue = FlashAnimation.getFlashValue(this.scoreFlash);
+    if (flashValue > 0)
     {
-        ctx.fillStyle = `rgba(255, 255, 255, ${this.flashScore + 0.2})`;
-        this.flashScore -= FLASH_TIME_STEP;
+        ctx.fillStyle = `rgba(255, 255, 255, ${flashValue + 0.2})`;
     }
     else
     {
@@ -177,10 +178,11 @@ function render(ctx)
     }
     ctx.font = '48px sans-serif';
     ctx.fillText('= ' + String(this.score).padStart(2, '0') + ' =', Display.getWidth() / 2, Display.getHeight() / 2);
-    if (this.flashHighScore > 0)
+    FlashAnimation.update(this.highScoreFlash);
+    flashValue = FlashAnimation.getFlashValue(this.highScoreFlash);
+    if (flashValue > 0)
     {
-        ctx.fillStyle = `rgba(255, 255, 255, ${this.flashHighScore + 0.2})`;
-        this.flashHighScore -= FLASH_TIME_STEP;
+        ctx.fillStyle = `rgba(255, 255, 255, ${flashValue + 0.2})`;
     }
     else
     {

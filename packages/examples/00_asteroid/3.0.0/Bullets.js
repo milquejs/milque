@@ -2,6 +2,7 @@ import * as Random from './Random.js';
 import * as Asteroids from './Asteroids.js';
 import * as Particles from './Particles.js';
 import * as Player from './Player.js';
+import * as FlashAnimation from './FlashAnimation.js';
 
 export const BULLET_COLOR = 'gold';
 export const BULLET_RADIUS = 2;
@@ -51,11 +52,12 @@ export function update(dt, scene)
         {
             if (withinRadius(bullet, asteroid, asteroid.size))
             {
-                scene.flashScore = 1;
+                FlashAnimation.play(scene.scoreFlash);
+
                 scene.score++;
                 if (scene.score > scene.highScore)
                 {
-                    scene.flashHighScore = scene.score - scene.highScore;
+                    FlashAnimation.play(scene.highScoreFlash);
                     scene.highScore = scene.score;
                     localStorage.setItem('highscore', scene.highScore);
                 }
