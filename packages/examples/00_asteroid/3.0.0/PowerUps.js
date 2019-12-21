@@ -1,5 +1,6 @@
 import * as Player from './Player.js';
 import * as Particles from './Particles.js';
+import * as Random from './Random.js';
 
 const POWER_UP_RADIUS = 4;
 const POWER_UP_SPAWN_RATE = [10000, 30000];

@@ -2,6 +2,7 @@ import * as Random from './Random.js';
 import * as Bullets from './Bullets.js';
 import * as Particles from './Particles.js';
 import * as Display from './Display.js';
+import * as PlayerControls from './PlayerControls.js';
 
 export const PLAYER_MOVE_PARTICLE_OFFSET_RANGE = [-2, 2];
 export const PLAYER_MOVE_PARTICLE_DAMP_FACTOR = 1.5;
@@ -46,9 +47,9 @@ export function create(scene)
 export function update(dt, scene)
 {
     // Determine control
-    const rotControl = scene.player.right - scene.player.left;
-    const moveControl = scene.player.down - scene.player.up;
-    const fireControl = scene.player.fire;
+    const rotControl = PlayerControls.RIGHT.value - PlayerControls.LEFT.value;
+    const moveControl = PlayerControls.DOWN.value - PlayerControls.UP.value;
+    const fireControl = PlayerControls.FIRE.value;
 
     // Calculate velocity
     scene.player.dx += moveControl * Math.cos(scene.player.rotation) * PLAYER_MOVE_SPEED;

@@ -6,30 +6,21 @@ import * as Bullets from './Bullets.js';
 import * as Particles from './Particles.js';
 import * as Player from './Player.js';
 import * as PowerUps from './PowerUps.js';
-import * as Display from './Display.js';
 
-let animationFrameHandle;
-let prevFrameTime;
+import * as Display from './Display.js';
+import * as GameLoop from './GameLoop.js';
+import * as Input from './Input.js';
+
 let scene = { start, update, render };
 
-function main()
-{
-    scene.start();
-    run(prevFrameTime = 0);
-}
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-function run(now)
-{
-    animationFrameHandle = requestAnimationFrame(run);
-    const dt = now - prevFrameTime;
-    prevFrameTime = now;
-    scene.update(dt);
-    scene.render(Display.getContext());
-}
+Input.init();
 
-/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+const ANY = Input.createInput('*');
+const DEBUG = Input.createInput('\\');
 
 const ASTEROID_SPAWN_INIT_COUNT = 1;
 const INSTRUCTION_HINT_TEXT = '[ wasd_ ]';
@@ -43,13 +34,13 @@ const POWER_UP_SPAWN_CHANCE = 0.7;
 function start()
 {
     this.sounds = {
-        start: createSound('../res/space/start.wav'),
-        dead: createSound('../res/space/dead.wav'),
+        start: createSound('../res/start.wav'),
+        dead: createSound('../res/dead.wav'),
         // TODO: Boop doesn't load correctly due to encoding?
-        pop: createSound('../res/space/boop.wav'),
-        music: createSound('../res/space/music.wav', true),
-        shoot: createSound('../res/space/click.wav'),
-        boom: createSound('../res/space/boom.wav'),
+        pop: createSound('../res/boop.wav'),
+        music: createSound('../res/music.wav', true),
+        shoot: createSound('../res/click.wav'),
+        boom: createSound('../res/boom.wav'),
     };
     this.level = 0;
     this.score = 0;
@@ -99,13 +90,36 @@ function start()
     this.gameStart = true;
     this.gameWait = true;
     this.hint = INSTRUCTION_HINT_TEXT;
-
-    document.addEventListener('keydown', e => onKeyDown.call(this, e.key));
-    document.addEventListener('keyup', e => onKeyUp.call(this, e.key));
 }
 
 function update(dt)
 {
+    Input.poll();
+    
+    SHOW_COLLISION = DEBUG.value;
+    if (ANY.prev !== ANY.value && ANY.value)
+    {
+        if (this.gameWait)
+        {
+            if (this.gameStart)
+            {
+                this.sounds.music.play();
+                this.score = 0;
+                this.flashScore = true;
+                this.level = 0;
+                this.gameStart = false;
+                this.player.powerMode = 0;
+                this.powerUps.length = 0;
+                this.asteroidSpawner.reset();
+                this.powerUpSpawner.reset();
+            }
+            this.gameWait = false;
+            nextLevel(this);
+        }
+    }
+
+    this.render(Display.getContext());
+
     if (this.gamePause)
     {
         Particles.update(dt, this);
@@ -211,87 +225,8 @@ function nextLevel(scene)
     if (scene.sounds.music.isPaused()) scene.sounds.music.play();
 }
 
-function onKeyDown(key)
-{
-    if (this.gameWait)
-    {
-        if (this.gameStart)
-        {
-            this.sounds.music.play();
-            this.score = 0;
-            this.flashScore = true;
-            this.level = 0;
-            this.gameStart = false;
-            this.player.powerMode = 0;
-            this.powerUps.length = 0;
-            this.asteroidSpawner.reset();
-            this.powerUpSpawner.reset();
-        }
-        this.gameWait = false;
-        nextLevel(this);
-    }
-
-    switch(key)
-    {
-        case 'w':
-        case 'ArrowUp':
-            this.player.up = 1;
-            break;
-        case 's':
-        case 'ArrowDown':
-            this.player.down = 1;
-            break;
-        case 'a':
-        case 'ArrowLeft':
-            this.player.left = 1;
-            break;
-        case 'd':
-        case 'ArrowRight':
-            this.player.right = 1;
-            break;
-        case ' ':
-            this.player.fire = 1;
-            break;
-        case '\\':
-            break;
-        default:
-            console.log(key);
-    }
-}
-
-function onKeyUp(key)
-{
-    switch(key)
-    {
-        case 'w':
-        case 'ArrowUp':
-            this.player.up = 0;
-            break;
-        case 's':
-        case 'ArrowDown':
-            this.player.down = 0;
-            break;
-        case 'a':
-        case 'ArrowLeft':
-            this.player.left = 0;
-            break;
-        case 'd':
-        case 'ArrowRight':
-            this.player.right = 0;
-            break;
-        case ' ':
-            this.player.fire = 0;
-            break;
-        case '\\':
-            SHOW_COLLISION = !SHOW_COLLISION;
-            break;
-        default:
-            console.log(key);
-    }
-}
-
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-main();
+GameLoop.start(scene);

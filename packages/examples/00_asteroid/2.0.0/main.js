@@ -65,12 +65,12 @@ const BULLET_COLOR = 'gold';
 let SHOW_COLLISION = false;
 
 const sounds = {
-    start: Sound.createSound('../res/space/start.wav'),
-    dead: Sound.createSound('../res/space/dead.wav'),
-    pop: Sound.createSound('../res/space/boop.wav'),
-    music: Sound.createSound('../res/space/music.wav', true),
-    shoot: Sound.createSound('../res/space/click.wav'),
-    boom: Sound.createSound('../res/space/boom.wav'),
+    start: Sound.createSound('../res/start.wav'),
+    dead: Sound.createSound('../res/dead.wav'),
+    pop: Sound.createSound('../res/boop.wav'),
+    music: Sound.createSound('../res/music.wav', true),
+    shoot: Sound.createSound('../res/click.wav'),
+    boom: Sound.createSound('../res/boom.wav'),
 };
 
 const inputs = {
