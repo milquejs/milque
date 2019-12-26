@@ -3,10 +3,37 @@ export function randomHexColor()
     return '#' + Math.floor(Math.random() * 16777215).toString(16);
 }
 
+export function loadImage(url)
+{
+    let image = new Image();
+    image.src = url;
+    return image;
+}
+
+export function clampRange(value, min, max)
+{
+    if (value < min) return min;
+    if (value > max) return max;
+    return value;
+}
+
 export function clearScreen(ctx, width, height)
 {
     ctx.fillStyle = 'black';
     ctx.fillRect(0, 0, width, height);
+}
+
+export function drawText(ctx, text, x, y, radians = 0, fontSize = 16, color = 'white')
+{
+    ctx.translate(x, y);
+    if (radians) ctx.rotate(radians);
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = `${fontSize}px sans-serif`;
+    ctx.fillStyle = color;
+    ctx.fillText(text, 0, 0);
+    if (radians) ctx.rotate(-radians);
+    ctx.translate(-x, -y);
 }
 
 export function drawBox(ctx, x, y, radians, w, h = w, color = 'white')
@@ -15,7 +42,8 @@ export function drawBox(ctx, x, y, radians, w, h = w, color = 'white')
     if (radians) ctx.rotate(radians);
     ctx.fillStyle = color;
     ctx.fillRect(-w / 2, -h / 2, w, h);
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    if (radians) ctx.rotate(-radians);
+    ctx.translate(-x, -y);
 }
 
 export function intersectBox(a, b)

@@ -1,5 +1,30 @@
+/*
+
+What is good in Minesweeper?
+- Inherant scaling difficulty as the game progresses (less tiles)
+- Clean ruleset
+    - Deductive reasoning and arithmetic (best forms of logic for play)
+- Replay value (randomized maps)
+- Pure form
+
+deterministic, mostly.
+High risk / High reward? (sadly, only high risk)
+
+What is bad in minesweeper?
+- Doesn't have a progression Curve.
+- Don't have low risk options.
+- DONT LIKE TIMED TASKS!!!
+    - Hard ceiling
+- CANNOT BE IMPOSSIBLE TO WIN
+
+*/
+
+
 import * as Random from './util/Random.js';
 import * as Util from './lib.js';
+
+// Some of the bombs are treasures.
+// Either chance it, use a life, or use a scanner.
 
 export const TILE_SIZE = 16;
 export const TILE_OFFSET_X = TILE_SIZE / 2;
@@ -7,11 +32,15 @@ export const TILE_OFFSET_Y = TILE_SIZE / 2;
 export const CHUNK_WIDTH = 16;
 export const CHUNK_HEIGHT = 16;
 
+export const CHUNK_OFFSET_X = 32;
+export const CHUNK_OFFSET_Y = 32;
+
 const MINE_COUNT = 40;
 const CHUNK_RAND = Random.createRandom(Math.random());
 
-const TILE_IMAGE = Util.loadImage('./tile.png');
-const NUMS_IMAGE = Util.loadImage('./nums.png');
+const TILE_IMAGE = Util.loadImage('../res/tile.png');
+const NUMS_IMAGE = Util.loadImage('../res/nums.png');
+const MARK_IMAGE = Util.loadImage('../res/flag.png');
 
 export function renderChunk(view, chunk)
 {
@@ -19,6 +48,8 @@ export function renderChunk(view, chunk)
     ctx.fillStyle = '#777777';
     ctx.fillRect(0, 0, view.width, view.height);
     drawGrid(ctx, 0, 0, view.width, view.height, TILE_SIZE, TILE_SIZE);
+
+    ctx.translate(CHUNK_OFFSET_X, CHUNK_OFFSET_Y);
 
     for(let y = 0; y < CHUNK_HEIGHT; ++y)
     {
@@ -31,12 +62,18 @@ export function renderChunk(view, chunk)
             if (chunk.solids[tileIndex] > 0)
             {
                 ctx.drawImage(TILE_IMAGE, renderX - TILE_SIZE / 2, renderY - TILE_SIZE / 2, TILE_SIZE, TILE_SIZE);
+                if (chunk.marks[tileIndex] > 0)
+                {
+                    ctx.drawImage(MARK_IMAGE, renderX - TILE_SIZE / 2, renderY - TILE_SIZE / 2, TILE_SIZE, TILE_SIZE);
+                }
             }
             else
             {
                 if (chunk.tiles[tileIndex] > 0)
                 {
-                    Util.drawText(ctx, 'X', renderX, renderY, 0, 8, 'black');
+                    // ctx.drawImage(TILE_IMAGE, renderX - TILE_SIZE / 2, renderY - TILE_SIZE / 2, TILE_SIZE, TILE_SIZE);
+                    Util.drawBox(ctx, renderX, renderY, 0, TILE_SIZE, TILE_SIZE, 'rgba(0, 0, 0, 0.2)');
+                    Util.drawText(ctx, 'X', renderX, renderY, 0, 10, 'black');
                 }
                 else if (chunk.overlay[tileIndex] > 0)
                 {
@@ -48,6 +85,8 @@ export function renderChunk(view, chunk)
             // Util.drawText(ctx, chunk.regions[tileIndex], renderX, renderY, 0, 8, 'black');
         }
     }
+
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
 }
 
 export function createChunk()
@@ -56,8 +95,9 @@ export function createChunk()
     let result = {
         tiles: new Array(length),
         overlay: new Array(length),
-        solids: new Array(length),
         regions: new Array(length),
+        solids: new Array(length),
+        marks: new Array(length),
     };
     setupMap(result);
     return result;
@@ -71,6 +111,7 @@ export function setupMap(chunk)
         chunk.overlay[i] = 0;
         chunk.solids[i] = 1;
         chunk.regions[i] = 0;
+        chunk.marks[i] = 0;
     }
 
     for(let i = 0; i < MINE_COUNT; ++i)
@@ -211,15 +252,33 @@ function drawGrid(ctx, offsetX, offsetY, width, height, tileWidth, tileHeight)
     ctx.stroke();
 }
 
+export function markTile(chunk, tileX, tileY)
+{
+    let tileIndex = tileX + tileY * CHUNK_WIDTH;
+    if (chunk.solids[tileIndex] <= 0) return false;
+
+    if (chunk.marks[tileIndex] > 0)
+    {
+        chunk.marks[tileIndex] = 0;
+    }
+    else
+    {
+        chunk.marks[tileIndex] = 1;
+    }
+    return true;
+}
+
 export function digTiles(chunk, tileX, tileY)
 {
     let tileIndex = tileX + tileY * CHUNK_WIDTH;
-
+    if (chunk.solids[tileIndex] <= 0) return true;
+    if (chunk.marks[tileIndex] > 0) return true;
+    
     // Got the bad square :(
     if (chunk.tiles[tileIndex] > 0)
     {
         chunk.solids[tileIndex] = 0;
-        return;
+        return false;
     }
 
     let visited = new Set();
@@ -239,13 +298,15 @@ export function digTiles(chunk, tileX, tileY)
             let neighbors = getNeighbors(nextX, nextY);
             for(let neighbor of neighbors)
             {
-                if (!visited.has(neighbor))
+                if (!visited.has(neighbor) && chunk.marks[neighbor] <= 0)
                 {
                     unchecked.push(neighbor);
                 }
             }
         }
     }
+
+    return true;
 }
 
 export function getNeighbors(tileX, tileY)
