@@ -228,6 +228,11 @@ export class DisplayPort extends HTMLElement
         }
     }
 
+    drawBufferToCanvas(bufferContext, viewportOffsetX = 0, viewportOffsetY = 0, viewportWidth = this.width, viewportHeight = this.height)
+    {
+        this._canvasContext.drawImage(bufferContext.canvas, viewportOffsetX, viewportOffsetY, viewportWidth, viewportHeight);
+    }
+
     getCanvas() { return this._canvasElement; }
     getContext() { return this._canvasContext; }
 

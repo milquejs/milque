@@ -1,5 +1,3 @@
-import { DisplayPort } from './DisplayPort.js';
-
 var canvas;
 var context;
 
@@ -10,19 +8,10 @@ export function createCanvas(width = 320, height = width, parentElement = docume
     attachCanvas(canvasElement, width, height);
 }
 
-export function attachCanvas(canvasElement, width = 320, height = width)
+export function attachCanvas(canvasElement, canvasContext, width = 320, height = width)
 {
-    if (canvasElement instanceof DisplayPort)
-    {
-        canvas = canvasElement.getCanvas();
-        context = canvasElement.getContext();
-    }
-    else
-    {
-        canvas = canvasElement;
-        context = canvas.getContext('2d');
-    }
-
+    canvas = canvasElement;
+    context = canvasContext;
     canvas.width = width;
     canvas.height = height;
 }
