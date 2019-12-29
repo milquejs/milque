@@ -1,11 +1,20 @@
+/**
+ * @module DisplayPort
+ * @version 1.0
+ * 
+ * # Changelog
+ * ## 1.0
+ * - Created DisplayPort
+ */
+
 export const MODE_NONE = 'none';
 export const MODE_TOPLEFT = 'topleft';
 export const MODE_CENTER = 'center';
 export const MODE_FIT = 'fit';
 
 const INNER_HTML = `
-<label id="title">display-port</label>
-<label id="fps">00</label>
+<label class="hidden" id="title">display-port</label>
+<label class="hidden" id="fps">00</label>
 <canvas></canvas>`;
 const INNER_STYLE = `
 <style>
@@ -20,6 +29,7 @@ const INNER_STYLE = `
         height: 100%;
     }
     canvas {
+        background: #000000;
         margin: auto;
     }
     label {
@@ -35,10 +45,13 @@ const INNER_STYLE = `
         right: 0.5rem;
         top: 0.5rem;
     }
+    .hidden {
+        display: none;
+    }
     :host([debug]) div {
         outline: 8px dashed rgba(0, 0, 0, 0.4);
         outline-offset: -4px;
-        background-color: rgba(0, 0, 0, 0.2);
+        background-color: rgba(0, 0, 0, 0.1);
     }
     :host([mode="${MODE_NONE}"]) canvas, :host([mode="${MODE_TOPLEFT}"]) canvas {
         margin: 0;
@@ -61,7 +74,8 @@ export class DisplayPort extends HTMLElement
             'height',
             // NOTE: For debuggin purposes...
             'id',
-            'class'
+            'class',
+            'debug'
         ];
     }
 
@@ -119,6 +133,10 @@ export class DisplayPort extends HTMLElement
             case 'class':
                 this._titleElement.innerHTML = `display-port${this.className ? '.' + this.className : ''}${this.hasAttribute('id') ? '#' + this.getAttribute('id') : ''}`;
                 break;
+            case 'debug':
+                this._titleElement.classList.toggle('hidden', value);
+                this._fpsElement.classList.toggle('hidden', value);
+                break;
         }
     }
 
@@ -127,13 +145,6 @@ export class DisplayPort extends HTMLElement
         this._animationRequestHandle = requestAnimationFrame(this.update);
 
         this.updateCanvasSize();
-
-        let canvas = this._canvasElement;
-        let ctx = this._canvasContext;
-        ctx.save();
-        ctx.fillStyle = '#000000';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.restore();
 
         // NOTE: For debugging purposes...
         if (this.debug)
@@ -171,27 +182,8 @@ export class DisplayPort extends HTMLElement
 
         if (mode !== MODE_TOPLEFT)
         {
-            let flag = clientWidth < canvasWidth || clientHeight < canvasHeight;
+            let flag = clientWidth < canvasWidth || clientHeight < canvasHeight || mode === MODE_FIT;
             if (flag)
-            {
-                let aspectX = clientWidth * canvasHeight;
-                let aspectY = clientHeight * canvasWidth;
-    
-                let canvasDir = canvasWidth < canvasHeight;
-                let clientDir = clientWidth < clientHeight;
-    
-                if (canvasDir ^ clientDir)
-                {
-                    canvasWidth = clientWidth;
-                    canvasHeight = (clientWidth * canvasWidth * aspectY) / (clientHeight * aspectX);
-                }
-                else
-                {
-                    canvasHeight = clientHeight;
-                    canvasWidth = (clientHeight * canvasHeight * aspectX) / (clientWidth * aspectY);
-                }
-            }
-            else if (mode === MODE_FIT)
             {
                 let aspectX = clientWidth * canvasHeight;
                 let aspectY = clientHeight * canvasWidth;
