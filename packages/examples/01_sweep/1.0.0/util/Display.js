@@ -1,3 +1,5 @@
+import { DisplayPort } from '../DisplayPort.js';
+
 var canvas;
 var context;
 
@@ -10,15 +12,19 @@ export function createCanvas(width = 320, height = width, parentElement = docume
 
 export function attachCanvas(canvasElement, width = 320, height = width)
 {
-    canvas = canvasElement;
-    context = canvas.getContext('2d');
+    if (canvasElement instanceof DisplayPort)
+    {
+        canvas = canvasElement.getCanvas();
+        context = canvasElement.getContext();
+    }
+    else
+    {
+        canvas = canvasElement;
+        context = canvas.getContext('2d');
+    }
 
-    // NOTE: canvas.clientWidth MUST be the same as client.width...
-    // TODO: This needs to be enforced in the future when resizing somehow...
     canvas.width = width;
     canvas.height = height;
-    canvas.style = `image-rendering: pixelated`;
-    context.imageSmoothingEnabled = false;
 }
 
 export function drawBufferToScreen(ctx, viewportOffsetX = 0, viewportOffsetY = 0, viewportWidth = getClientWidth(), viewportHeight = getClientHeight())
