@@ -1,13 +1,16 @@
-import * as Display from './util/Display.js';
+import { Mouse } from './util/Mouse.js';
+import { Keyboard } from './util/Keyboard.js';
+
+export var KEYBOARD = new Keyboard();
+export var MOUSE = new Mouse();
 
 var inputs = [];
 
-document.addEventListener('mousemove', onMouseMove);
-document.addEventListener('mousedown', onMouseDown);
-document.addEventListener('mouseup', onMouseUp);
-document.addEventListener('contextmenu', onContextMenu);
-document.addEventListener('keydown', onKeyDown);
-document.addEventListener('keyup', onKeyUp);
+export function attachSource(element)
+{
+    KEYBOARD.setEventHandler(handleEvent).attach();
+    MOUSE.setEventHandler(handleEvent).attach(element.getCanvas());
+}
 
 export function createAction(input)
 {
@@ -59,21 +62,6 @@ export function createState(inputMap)
     return result;
 }
 
-export function consumeInput(input, next)
-{
-    switch(input)
-    {
-        case 'mouse[pos].x':
-        case 'mouse[pos].y':
-            return next;
-        case 'mouse[pos].dx':
-        case 'mouse[pos].dy':
-            return 0;
-        default:
-            return false;
-    }
-}
-
 export function handleEvent(input, value)
 {
     for(let i of inputs)
@@ -89,50 +77,17 @@ export function handleEvent(input, value)
     }
 }
 
-function onMouseDown(e)
+function consumeInput(input, next)
 {
-    e.preventDefault();
-    e.stopPropagation();
-
-    handleEvent(`mouse[${e.button}].down`, true);
-}
-
-function onMouseUp(e)
-{
-    e.preventDefault();
-    e.stopPropagation();
-
-    handleEvent(`mouse[${e.button}].up`, true);
-}
-
-function onMouseMove(e)
-{
-    const clientWidth = Display.getClientWidth();
-    const clientHeight = Display.getClientHeight();
-    handleEvent(`mouse[pos].x`, (e.pageX - Display.getClientOffsetX()) / clientWidth);
-    handleEvent(`mouse[pos].y`, (e.pageY - Display.getClientOffsetY()) / clientHeight);
-    handleEvent(`mouse[pos].dx`, e.movementX / clientWidth);
-    handleEvent(`mouse[pos].dy`, e.movementY / clientHeight);
-}
-
-function onContextMenu(e)
-{
-    e.preventDefault();
-    e.stopPropagation();
-}
-
-function onKeyDown(e)
-{
-    e.preventDefault();
-    e.stopPropagation();
-
-    handleEvent(`key[${e.key}].down`, true);
-}
-
-function onKeyUp(e)
-{
-    e.preventDefault();
-    e.stopPropagation();
-
-    handleEvent(`key[${e.key}].up`, true);
+    switch(input)
+    {
+        case 'mouse[pos].x':
+        case 'mouse[pos].y':
+            return next;
+        case 'mouse[pos].dx':
+        case 'mouse[pos].dy':
+            return 0;
+        default:
+            return false;
+    }
 }
