@@ -4,38 +4,25 @@ import * as Util from './lib.js';
 import * as Viewport from './util/Viewport.js';
 
 import * as Chunk from './Chunk.js';
+import * as Input from './Input.js';
 
 const MAX_HEALTH = 3;
 const HEALTH_X = 0;
 const HEALTH_Y = 0;
 
-let MOUSE_X = 0;
-let MOUSE_Y = 0;
-
-let MOUSE_LEFT_STATE = false;
-let MOUSE_LEFT_STATE_NEXT = false;
-
-let MOUSE_LEFT_DOWN = false;
-let MOUSE_LEFT_DOWN_NEXT = false;
-
-let MOUSE_LEFT_UP = false;
-let MOUSE_LEFT_UP_NEXT = false;
-
-let MOUSE_RIGHT_DOWN = false;
-let MOUSE_RIGHT_DOWN_NEXT = false;
-
-let MOUSE_RIGHT_UP = false;
-let MOUSE_RIGHT_UP_NEXT = false;
-
-let MOUSE_RIGHT_STATE = false;
-let MOUSE_RIGHT_STATE_NEXT = false;
-
-document.addEventListener('mousemove', onMouseMove);
-document.addEventListener('mousedown', onMouseDown);
-document.addEventListener('mouseup', onMouseUp);
-document.addEventListener('contextmenu', onContextMenu);
-document.addEventListener('keydown', onKeyDown);
-document.addEventListener('keyup', onKeyUp);
+let ACTIVE_ACTION = Input.createAction('mouse[0].down');
+let MARK_ACTION = Input.createAction('mouse[2].down');
+let RESTART_ACTION = Input.createAction('key[r].up');
+let MOUSE_X = Input.createRange('mouse[pos].x');
+let MOUSE_Y = Input.createRange('mouse[pos].y');
+let MOUSE_LEFT = Input.createState({
+    'mouse[0].up': 0,
+    'mouse[0].down': 1
+});
+let MOUSE_RIGHT = Input.createState({
+    'mouse[2].up': 0,
+    'mouse[2].down': 1
+});
 
 let MAIN_VIEW = Viewport.createView(320);
 
@@ -51,46 +38,46 @@ let game = {
     },
     poll()
     {
-        MOUSE_LEFT_DOWN = MOUSE_LEFT_DOWN_NEXT;
-        MOUSE_LEFT_DOWN_NEXT = false;
-
-        MOUSE_LEFT_UP = MOUSE_LEFT_UP_NEXT;
-        MOUSE_LEFT_UP_NEXT = false;
-
-        MOUSE_LEFT_STATE_NEXT = MOUSE_LEFT_DOWN ? true : MOUSE_LEFT_UP ? false : MOUSE_LEFT_STATE;
-        MOUSE_LEFT_STATE = MOUSE_LEFT_STATE_NEXT;
-
-        MOUSE_RIGHT_DOWN = MOUSE_RIGHT_DOWN_NEXT;
-        MOUSE_RIGHT_DOWN_NEXT = false;
-
-        MOUSE_RIGHT_UP = MOUSE_RIGHT_UP_NEXT;
-        MOUSE_RIGHT_UP_NEXT = false;
-
-        MOUSE_RIGHT_STATE_NEXT = MOUSE_RIGHT_DOWN ? true : MOUSE_RIGHT_UP ? false : MOUSE_RIGHT_STATE;
-        MOUSE_RIGHT_STATE = MOUSE_RIGHT_STATE_NEXT;
+        ACTIVE_ACTION.poll();
+        MARK_ACTION.poll();
+        RESTART_ACTION.poll();
+        MOUSE_X.poll();
+        MOUSE_Y.poll();
+        MOUSE_LEFT.poll();
+        MOUSE_RIGHT.poll();
     },
     update(dt)
     {
         this.poll();
         this.render(MAIN_VIEW);
 
+        // Check if restarting...
+        if (RESTART_ACTION.value)
+        {
+            restart(this);
+            return;
+        }
+
         // Do stuff...
         if (this.gameOver || this.gameWin)
         {
             // Do nothing...
-            if (MOUSE_LEFT_DOWN || MOUSE_RIGHT_DOWN)
+            if (ACTIVE_ACTION.value || MARK_ACTION.value)
             {
                 restart(this);
+                return;
             }
         }
         else
         {
             this.gameTime += dt;
 
-            if (MOUSE_LEFT_DOWN)
+            if (ACTIVE_ACTION.value)
             {
-                let mouseTileX = Util.clampRange(Math.floor((MOUSE_X - Chunk.CHUNK_OFFSET_X) / Chunk.TILE_SIZE), 0, Chunk.CHUNK_WIDTH - 1);
-                let mouseTileY = Util.clampRange(Math.floor((MOUSE_Y - Chunk.CHUNK_OFFSET_Y) / Chunk.TILE_SIZE), 0, Chunk.CHUNK_HEIGHT - 1);
+                let mouseX = MOUSE_X.value * MAIN_VIEW.width;
+                let mouseY = MOUSE_Y.value * MAIN_VIEW.height;
+                let mouseTileX = Util.clampRange(Math.floor((mouseX - Chunk.CHUNK_OFFSET_X) / Chunk.TILE_SIZE), 0, Chunk.CHUNK_WIDTH - 1);
+                let mouseTileY = Util.clampRange(Math.floor((mouseY - Chunk.CHUNK_OFFSET_Y) / Chunk.TILE_SIZE), 0, Chunk.CHUNK_HEIGHT - 1);
                 let result = Chunk.digTiles(this.chunk, mouseTileX, mouseTileY);
 
                 if (!result)
@@ -104,10 +91,12 @@ let game = {
                 }
             }
 
-            if (MOUSE_RIGHT_DOWN)
+            if (MARK_ACTION.value)
             {
-                let mouseTileX = Util.clampRange(Math.floor((MOUSE_X - Chunk.CHUNK_OFFSET_X) / Chunk.TILE_SIZE), 0, Chunk.CHUNK_WIDTH - 1);
-                let mouseTileY = Util.clampRange(Math.floor((MOUSE_Y - Chunk.CHUNK_OFFSET_Y) / Chunk.TILE_SIZE), 0, Chunk.CHUNK_HEIGHT - 1);
+                let mouseX = MOUSE_X.value * MAIN_VIEW.width;
+                let mouseY = MOUSE_Y.value * MAIN_VIEW.height;
+                let mouseTileX = Util.clampRange(Math.floor((mouseX - Chunk.CHUNK_OFFSET_X) / Chunk.TILE_SIZE), 0, Chunk.CHUNK_WIDTH - 1);
+                let mouseTileY = Util.clampRange(Math.floor((mouseY - Chunk.CHUNK_OFFSET_Y) / Chunk.TILE_SIZE), 0, Chunk.CHUNK_HEIGHT - 1);
                 Chunk.markTile(this.chunk, mouseTileX, mouseTileY);
             }
         }
@@ -119,8 +108,10 @@ let game = {
 
         Chunk.renderChunk(view, this.chunk);
 
-        let mouseTileX = Util.clampRange(Math.floor((MOUSE_X - Chunk.CHUNK_OFFSET_X) / Chunk.TILE_SIZE), 0, Chunk.CHUNK_WIDTH - 1);
-        let mouseTileY = Util.clampRange(Math.floor((MOUSE_Y - Chunk.CHUNK_OFFSET_Y) / Chunk.TILE_SIZE), 0, Chunk.CHUNK_HEIGHT - 1);
+        let mouseX = MOUSE_X.value * view.width;
+        let mouseY = MOUSE_Y.value * view.height;
+        let mouseTileX = Util.clampRange(Math.floor((mouseX - Chunk.CHUNK_OFFSET_X) / Chunk.TILE_SIZE), 0, Chunk.CHUNK_WIDTH - 1);
+        let mouseTileY = Util.clampRange(Math.floor((mouseY - Chunk.CHUNK_OFFSET_Y) / Chunk.TILE_SIZE), 0, Chunk.CHUNK_HEIGHT - 1);
         
         Util.drawBox(ctx,
             Chunk.CHUNK_OFFSET_X + Chunk.TILE_OFFSET_X + mouseTileX * Chunk.TILE_SIZE,
@@ -170,66 +161,6 @@ let game = {
 
         Display.drawBufferToScreen(view.context);
     }
-}
-
-function onMouseDown(e)
-{
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.button == 0)
-    {
-        MOUSE_LEFT_DOWN_NEXT = true;
-    }
-    else
-    {
-        MOUSE_RIGHT_DOWN_NEXT = true;
-    }
-}
-
-function onMouseUp(e)
-{
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.button == 0)
-    {
-        MOUSE_LEFT_UP_NEXT = true;
-    }
-    else
-    {
-        MOUSE_RIGHT_UP_NEXT = true;
-    }
-}
-
-function onMouseMove(e)
-{
-    const widthRatio = MAIN_VIEW.width / Display.getClientWidth();
-    const heightRatio = MAIN_VIEW.height / Display.getClientHeight();
-
-    MOUSE_X = (e.pageX - Display.getClientOffsetX()) * widthRatio;
-    MOUSE_Y = (e.pageY - Display.getClientOffsetY()) * heightRatio;
-}
-
-function onContextMenu(e)
-{
-    e.preventDefault();
-    e.stopPropagation();
-}
-
-function onKeyDown(e)
-{
-    e.preventDefault();
-    e.stopPropagation();
-
-    if (e.key === ' ') MOUSE_RIGHT_DOWN_NEXT = true;
-}
-
-function onKeyUp(e)
-{
-    e.preventDefault();
-    e.stopPropagation();
-
-    if (e.key === ' ') MOUSE_RIGHT_UP_NEXT = true;
-    if (e.key === 'r') restart(game);
 }
 
 function dealDamage(scene, damage)

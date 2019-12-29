@@ -15,6 +15,7 @@ export const MODE_FIT = 'fit';
 const INNER_HTML = `
 <label class="hidden" id="title">display-port</label>
 <label class="hidden" id="fps">00</label>
+<label class="hidden" id="dimension">0x0</label>
 <canvas></canvas>`;
 const INNER_STYLE = `
 <style>
@@ -44,6 +45,10 @@ const INNER_STYLE = `
     #fps {
         right: 0.5rem;
         top: 0.5rem;
+    }
+    #dimension {
+        left: 0.5rem;
+        bottom: 0.5rem;
     }
     .hidden {
         display: none;
@@ -92,6 +97,7 @@ export class DisplayPort extends HTMLElement
 
         this._titleElement = this.shadowRoot.querySelector('#title');
         this._fpsElement = this.shadowRoot.querySelector('#fps');
+        this._dimensionElement = this.shadowRoot.querySelector('#dimension');
 
         this._animationRequestHandle = 0;
         this._prevAnimationFrameTime = 0;
@@ -136,6 +142,7 @@ export class DisplayPort extends HTMLElement
             case 'debug':
                 this._titleElement.classList.toggle('hidden', value);
                 this._fpsElement.classList.toggle('hidden', value);
+                this._dimensionElement.classList.toggle('hidden', value);
                 break;
         }
     }
@@ -149,13 +156,17 @@ export class DisplayPort extends HTMLElement
         // NOTE: For debugging purposes...
         if (this.debug)
         {
+            // Update FPS...
             const dt = now - this._prevAnimationFrameTime;
             const frames = dt <= 0 ? '--' : String(Math.round(1000 / dt)).padStart(2, '0');
             this._prevAnimationFrameTime = now;
             this._fpsElement.innerText = frames;
+
+            // Update dimensions...
+            this._dimensionElement.innerText = `${this._width}x${this._height}|${this.shadowRoot.host.clientWidth}x${this.shadowRoot.host.clientHeight}`;
         }
 
-        this.dispatchEvent(new CustomEvent('frame', { detail: { now, context: ctx }, bubbles: false, composed: true }));
+        this.dispatchEvent(new CustomEvent('frame', { detail: { now, context: this._canvasContext }, bubbles: false, composed: true }));
     }
 
     pause()
