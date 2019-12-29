@@ -1,4 +1,4 @@
-import { DisplayPort } from '../DisplayPort.js';
+import { DisplayPort } from './DisplayPort.js';
 
 var canvas;
 var context;
