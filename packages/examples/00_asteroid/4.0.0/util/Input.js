@@ -2,30 +2,37 @@ import * as InputSource from './input/InputSource.js';
 import * as InputContext from './input/InputContext.js';
 
 var source = InputSource.createSource();
+var context = InputContext.createContext().attach(source);
+var nextInputNameId = 1;
 
 export function attachDisplay(element)
 {
     return source.attach(element);
 }
 
-export function createContext()
+export function createContext(priority = 0)
 {
-    return InputContext.createContext(source);
+    return InputContext.createContext().setPriority(priority).attach(source);
 }
 
-export function createAction(...eventKeyStrings)
+export function nextUniqueInputName()
 {
-    return source.createAction(...eventKeyStrings);
+    return `__input#${nextInputNameId++}`;
 }
 
-export function createRange(eventKeyString)
+export function registerAction(...eventKeyStrings)
 {
-    return source.createRange(eventKeyString);
+    return context.registerAction(nextUniqueInputName(), ...eventKeyStrings);
 }
 
-export function createState(eventKeyMap)
+export function registerRange(eventKeyString)
 {
-    return source.createState(eventKeyMap);
+    return context.registerRange(nextUniqueInputName(), eventKeyString);
+}
+
+export function registerState(eventKeyMap)
+{
+    return context.registerState(nextUniqueInputName(), eventKeyMap);
 }
 
 export function poll()

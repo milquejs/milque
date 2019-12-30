@@ -7,15 +7,8 @@ export class AbstractInput
         this.next = defaultValue;
     }
 
-    update(eventKey, value)
-    {
-        return false;
-    }
-
-    consume()
-    {
-        return this.next;
-    }
+    update(eventKey, value) { return false; }
+    consume() { return this.next; }
 
     poll()
     {

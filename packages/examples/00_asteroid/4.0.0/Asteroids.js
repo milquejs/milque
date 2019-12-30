@@ -162,5 +162,5 @@ function killPlayer(scene)
     Particles.explode(scene, scene.player.x, scene.player.y, 100, Random.randomChoose.bind(null, Player.PLAYER_EXPLODE_PARTICLE_COLORS));
     scene.sounds.dead.play();
     scene.sounds.boom.play();
-    setTimeout(() => scene.gameStart = scene.gameWait = true, 1000);
+    setTimeout(() => Lib.waitGame(scene, true), 1000);
 }

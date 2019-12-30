@@ -1,4 +1,5 @@
 import * as Views from './Views.js';
+import * as MainControls from './MainControls.js';
 
 let SHOW_COLLISION = false;
 
@@ -24,4 +25,12 @@ export function wrapAround(position, width, height)
     if (position.y < -height) position.y = Views.MAIN_VIEW.height;
     if (position.x > Views.MAIN_VIEW.width + width / 2) position.x = -width;
     if (position.y > Views.MAIN_VIEW.height + height / 2) position.y = -height;
+}
+
+export function waitGame(scene, isStart = false)
+{
+    scene.gamePause = true;
+    scene.gameWait = true;
+    if (isStart) scene.gameStart = true;
+    MainControls.CONTEXT.enable();
 }

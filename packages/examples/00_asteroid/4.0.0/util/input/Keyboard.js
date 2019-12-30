@@ -35,16 +35,20 @@ export class Keyboard
     {
         if (!this.eventHandler) return;
 
-        e.preventDefault();
-        e.stopPropagation();
-
+        let result;
         if (e.repeat)
         {
-            this.eventHandler.call(this, `key[${e.key}].repeat`, true);
+            result = this.eventHandler.call(this, `key[${e.key}].repeat`, true);
         }
         else
         {
-            this.eventHandler.call(this, `key[${e.key}].down`, true);
+            result = this.eventHandler.call(this, `key[${e.key}].down`, true);
+        }
+
+        if (result)
+        {
+            e.preventDefault();
+            e.stopPropagation();
         }
     }
 
@@ -52,9 +56,13 @@ export class Keyboard
     {
         if (!this.eventHandler) return;
 
-        e.preventDefault();
-        e.stopPropagation();
+        let result;
+        result = this.eventHandler.call(this, `key[${e.key}].up`, true);
         
-        this.eventHandler.call(this, `key[${e.key}].up`, true);
+        if (result)
+        {
+            e.preventDefault();
+            e.stopPropagation();
+        }
     }
 }

@@ -12,8 +12,6 @@ export class ActionInput extends AbstractInput
         {
             this.eventKeys.push(EventKey.parse(eventKeyString));
         }
-
-        console.log(this.eventKeys);
     }
 
     /** @override */

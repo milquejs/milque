@@ -39,11 +39,15 @@ export class Mouse
     onMouseDown(e)
     {
         if (!this.eventHandler) return;
-        
-        e.preventDefault();
-        e.stopPropagation();
-        
-        this.eventHandler.call(this, `mouse[${e.button}].down`, true);
+
+        let result;
+        result = this.eventHandler.call(this, `mouse[${e.button}].down`, true);
+
+        if (result)
+        {
+            e.preventDefault();
+            e.stopPropagation();
+        }
     }
 
     onMouseUp(e)
@@ -59,9 +63,6 @@ export class Mouse
     onMouseMove(e)
     {
         if (!this.eventHandler) return;
-
-        e.preventDefault();
-        e.stopPropagation();
 
         const clientCanvas = this.sourceElement;
         const clientWidth = clientCanvas.clientWidth;

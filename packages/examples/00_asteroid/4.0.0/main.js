@@ -14,16 +14,13 @@ import * as Player from './Player.js';
 import * as PowerUps from './PowerUps.js';
 import * as FlashAnimation from './FlashAnimation.js';
 import * as Views from './Views.js';
+import * as MainControls from './MainControls.js';
 
 let scene = { start, update, render };
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-
-const CONTEXT = Input.createContext();
-const ANY = CONTEXT.registerAction('anykey', 'key[].down');
-const DEBUG = CONTEXT.registerAction('debug', 'key[\\].up');
 
 const ASTEROID_SPAWN_INIT_COUNT = 1;
 const INSTRUCTION_HINT_TEXT = '[ wasd_ ]';
@@ -92,18 +89,20 @@ function start()
     this.gameStart = true;
     this.gameWait = true;
     this.hint = INSTRUCTION_HINT_TEXT;
+
+    MainControls.CONTEXT.enable();
 }
 
 function update(dt)
 {
     Input.poll();
 
-    if (DEBUG.value)
+    if (MainControls.DEBUG.value)
     {
         Lib.toggleShowCollision();
     }
     
-    if (ANY.value)
+    if (MainControls.ANY.value)
     {
         if (this.gameWait)
         {
@@ -119,6 +118,8 @@ function update(dt)
                 this.asteroidSpawner.reset();
                 this.powerUpSpawner.reset();
             }
+
+            MainControls.CONTEXT.disable();
             this.gameWait = false;
             nextLevel(this);
         }
@@ -148,7 +149,7 @@ function update(dt)
         this.gamePause = true;
         this.showPlayer = true;
         this.sounds.start.play();
-        setTimeout(() => this.gameWait = true, 1000);
+        setTimeout(() => Lib.waitGame(this), 1000);
     }
 }
 

@@ -1,15 +1,17 @@
+/**
+ * @module InputSource
+ * Can be used without InputContext.
+ */
+
 import { Mouse } from './Mouse.js';
 import { Keyboard } from './Keyboard.js';
 import { EventKey } from './EventKey.js';
-
-import { ActionInput } from './ActionInput.js';
-import { RangeInput } from './RangeInput.js';
-import { StateInput } from './StateInput.js';
+import { MAX_CONTEXT_PRIORITY, MIN_CONTEXT_PRIORITY } from './InputContext.js';
 
 export function createSource()
 {
     let result = {
-        inputs: new Set(),
+        _contexts: new Array(MAX_CONTEXT_PRIORITY - MIN_CONTEXT_PRIORITY),
         element: null,
         keyboard: new Keyboard(),
         mouse: new Mouse(),
@@ -27,47 +29,61 @@ export function createSource()
             this.mouse.detach();
             return this;
         },
-        createAction(...eventKeyStrings)
+        addContext(context)
         {
-            return this.addInput(new ActionInput(eventKeyStrings));
+            const priority = context.priority - MIN_CONTEXT_PRIORITY;
+            if (!this._contexts[priority]) this._contexts[priority] = [];
+            this._contexts[priority].push(context);
+            return this;
         },
-        createRange(eventKeyString)
+        removeContext(context)
         {
-            return this.addInput(new RangeInput(eventKeyString));
-        },
-        createState(eventKeyMap)
-        {
-            return this.addInput(new StateInput(eventKeyMap));
-        },
-        addInput(input)
-        {
-            this.inputs.add(input);
-            return input;
-        },
-        removeInput(input)
-        {
-            this.inputs.delete(input);
-            return input;
-        },
-        clearInputs()
-        {
-            this.inputs.clear();
+            const priority = context.priority - MIN_CONTEXT_PRIORITY;
+            let contexts = this._contexts[priority];
+            if (contexts)
+            {
+                contexts.splice(contexts.indexOf(context), 1);
+            }
             return this;
         },
         poll()
         {
-            for(let input of this.inputs)
+            for(let contexts of this._contexts)
             {
-                input.poll();
+                if (contexts)
+                {
+                    for(let context of contexts)
+                    {
+                        if (context.active)
+                        {
+                            context.poll();
+                        }
+                    }
+                }
             }
         },
         handleEvent(eventKeyString, value)
         {
             const eventKey = EventKey.parse(eventKeyString);
-            for(let input of this.inputs)
+            for(let contexts of this._contexts)
             {
-                input.update(eventKey, value);
+                if (contexts)
+                {
+                    for(let context of contexts)
+                    {
+                        if (context.active)
+                        {
+                            let result;
+                            result = context.update(eventKey, value);
+                            if (result)
+                            {
+                                return true;
+                            }
+                        }
+                    }
+                }
             }
+            return false;
         }
     };
     result.handleEvent = result.handleEvent.bind(result);
