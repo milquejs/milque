@@ -1,10 +1,9 @@
 /**
  * @module InputSource
- * Can be used without InputContext.
  */
 
-import { Mouse } from './Mouse.js';
-import { Keyboard } from './Keyboard.js';
+import { Mouse } from './devices/Mouse.js';
+import { Keyboard } from './devices/Keyboard.js';
 import { EventKey } from './EventKey.js';
 import { MAX_CONTEXT_PRIORITY, MIN_CONTEXT_PRIORITY } from './InputContext.js';
 

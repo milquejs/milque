@@ -1,6 +1,6 @@
-import { ActionInput } from './ActionInput.js';
-import { RangeInput } from './RangeInput.js';
-import { StateInput } from './StateInput.js';
+import { ActionInputAdapter } from './adapters/ActionInputAdapter.js';
+import { RangeInputAdapter } from './adapters/RangeInputAdapter.js';
+import { StateInputAdapter } from './adapters/StateInputAdapter.js';
 
 export const MIN_CONTEXT_PRIORITY = -100;
 export const MAX_CONTEXT_PRIORITY = 100;
@@ -11,9 +11,7 @@ export function createContext()
         _source: null,
         _priority: 0,
         _active: true,
-        actions: new Map(),
-        ranges: new Map(),
-        states: new Map(),
+        inputs: new Map(),
         get active() { return this._active; },
         get source() { return this._source; },
         get priority() { return this._priority; },
@@ -51,23 +49,22 @@ export function createContext()
             }
             return this;
         },
+        registerInput(name, adapter)
+        {
+            this.inputs.set(name, adapter);
+            return adapter;
+        },
         registerAction(name, ...eventKeyStrings)
         {
-            let result = new ActionInput(eventKeyStrings);
-            this.actions.set(name, result);
-            return result;
+            return this.registerInput(name, new ActionInputAdapter(eventKeyStrings));
         },
         registerRange(name, eventKeyString)
         {
-            let result = new RangeInput(eventKeyString);
-            this.ranges.set(name, result);
-            return result;
+            return this.registerInput(name, new RangeInputAdapter(eventKeyString));
         },
         registerState(name, eventKeyMap)
         {
-            let result = new StateInput(eventKeyMap);
-            this.states.set(name, result);
-            return result;
+            return this.registerInput(name, new StateInputAdapter(eventKeyMap));
         },
         toggle(force = undefined)
         {
@@ -79,37 +76,17 @@ export function createContext()
         disable() { return this.toggle(false); },
         poll()
         {
-            for(let action of this.actions.values())
+            for(let adapter of this.inputs.values())
             {
-                action.poll();
-            }
-
-            for(let range of this.ranges.values())
-            {
-                range.poll();
-            }
-
-            for(let state of this.states.values())
-            {
-                state.poll();
+                adapter.poll();
             }
         },
         update(eventKey, value)
         {
             let result;
-            for(let action of this.actions.values())
+            for(let adapter of this.inputs.values())
             {
-                result |= action.update(eventKey, value);
-            }
-
-            for(let range of this.ranges.values())
-            {
-                result |= range.update(eventKey, value);
-            }
-
-            for(let state of this.states.values())
-            {
-                result |= state.update(eventKey, value);
+                result |= adapter.update(eventKey, value);
             }
             return result;
         }

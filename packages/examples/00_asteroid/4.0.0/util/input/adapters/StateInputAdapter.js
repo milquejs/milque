@@ -1,7 +1,7 @@
-import { AbstractInput } from './AbstractInput.js';
-import { EventKey } from './EventKey.js';
+import { AbstractInputAdapter } from './AbstractInputAdapter.js';
+import { EventKey } from '../EventKey.js';
 
-export class StateInput extends AbstractInput
+export class StateInputAdapter extends AbstractInputAdapter
 {
     constructor(eventKeyMap)
     {

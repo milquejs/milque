@@ -1,4 +1,4 @@
-export class AbstractInput
+export class AbstractInputAdapter
 {
     constructor(defaultValue)
     {

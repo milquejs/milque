@@ -3,7 +3,6 @@ import * as InputContext from './input/InputContext.js';
 
 var source = InputSource.createSource();
 var context = InputContext.createContext().attach(source);
-var nextInputNameId = 1;
 
 export function attachDisplay(element)
 {
@@ -15,24 +14,24 @@ export function createContext(priority = 0)
     return InputContext.createContext().setPriority(priority).attach(source);
 }
 
-export function nextUniqueInputName()
+export function createInput(adapter)
 {
-    return `__input#${nextInputNameId++}`;
+    return context.registerInput(getNextInputName(), adapter);
 }
 
-export function registerAction(...eventKeyStrings)
+export function createAction(...eventKeyStrings)
 {
-    return context.registerAction(nextUniqueInputName(), ...eventKeyStrings);
+    return context.registerAction(getNextInputName(), ...eventKeyStrings);
 }
 
-export function registerRange(eventKeyString)
+export function createRange(eventKeyString)
 {
-    return context.registerRange(nextUniqueInputName(), eventKeyString);
+    return context.registerRange(getNextInputName(), eventKeyString);
 }
 
-export function registerState(eventKeyMap)
+export function createState(eventKeyMap)
 {
-    return context.registerState(nextUniqueInputName(), eventKeyMap);
+    return context.registerState(getNextInputName(), eventKeyMap);
 }
 
 export function poll()
@@ -43,4 +42,10 @@ export function poll()
 export function handleEvent(eventKeyString, value)
 {
     return source.handleEvent(eventKeyString, value);
+}
+
+var nextInputNameId = 1;
+function getNextInputName()
+{
+    return `__input#${nextInputNameId++}`;
 }
