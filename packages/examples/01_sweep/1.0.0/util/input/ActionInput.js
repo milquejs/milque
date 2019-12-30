@@ -1,4 +1,5 @@
 import { AbstractInput } from './AbstractInput.js';
+import { EventKey } from './EventKey.js';
 
 export class ActionInput extends AbstractInput
 {
@@ -6,7 +7,7 @@ export class ActionInput extends AbstractInput
     {
         super(false);
 
-        this.eventKey = eventKeyString;
+        this.eventKey = EventKey.parse(eventKeyString);
     }
 
     /** @override */
@@ -15,9 +16,12 @@ export class ActionInput extends AbstractInput
     /** @override */
     update(eventKey, value = true)
     {
-        if (eventKey === this.eventKey)
+        if (super.update(eventKey, value)) return true;
+        if (this.eventKey.matches(eventKey))
         {
             this.next = value;
+            return true;
         }
+        return false;
     }
 }

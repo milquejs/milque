@@ -1,4 +1,5 @@
 import { AbstractInput } from './AbstractInput.js';
+import { EventKey } from './EventKey.js';
 
 export class RangeInput extends AbstractInput
 {
@@ -6,13 +7,13 @@ export class RangeInput extends AbstractInput
     {
         super(0);
 
-        this.eventKey = eventKeyString;
+        this.eventKey = EventKey.parse(eventKeyString);
     }
 
     /** @override */
     consume()
     {
-        switch(this.eventKey)
+        switch(this.eventKey.string)
         {
             case 'mouse[pos].dx':
             case 'mouse[pos].dy':
@@ -27,9 +28,12 @@ export class RangeInput extends AbstractInput
     /** @override */
     update(eventKey, value = 1)
     {
-        if (eventKey === this.eventKey)
+        if (super.update(eventKey, value)) return true;
+        if (this.eventKey.matches(eventKey))
         {
             this.next = value;
+            return true;
         }
+        return false;
     }
 }

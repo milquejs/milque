@@ -1,5 +1,6 @@
 import { Mouse } from './Mouse.js';
 import { Keyboard } from './Keyboard.js';
+import { EventKey } from './EventKey.js';
 
 import { ActionInput } from './ActionInput.js';
 import { RangeInput } from './RangeInput.js';
@@ -62,9 +63,10 @@ export function createSource()
         },
         handleEvent(eventKeyString, value)
         {
+            const eventKey = EventKey.parse(eventKeyString);
             for(let input of this.inputs)
             {
-                input.update(eventKeyString, value);
+                input.update(eventKey, value);
             }
         }
     };

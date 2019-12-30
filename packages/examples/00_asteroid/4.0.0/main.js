@@ -11,11 +11,10 @@ import * as Bullets from './Bullets.js';
 import * as Particles from './Particles.js';
 import * as Player from './Player.js';
 import * as PowerUps from './PowerUps.js';
-import * as PlayerControls from './PlayerControls.js';
 import * as FlashAnimation from './FlashAnimation.js';
 import * as Views from './Views.js';
 
-import * as Input from './Input.js';
+import * as Input from './util/Input.js';
 
 let scene = { start, update, render };
 
@@ -24,8 +23,8 @@ let scene = { start, update, render };
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 const CONTEXT = Input.createContext();
-const ANY = CONTEXT.createInput('*');
-const DEBUG = CONTEXT.createInput('\\');
+const ANY = CONTEXT.registerAction('anykey', 'key[].down');
+const DEBUG = CONTEXT.registerAction('debug', 'key[\\].up');
 
 const ASTEROID_SPAWN_INIT_COUNT = 1;
 const INSTRUCTION_HINT_TEXT = '[ wasd_ ]';
@@ -94,17 +93,18 @@ function start()
     this.gameStart = true;
     this.gameWait = true;
     this.hint = INSTRUCTION_HINT_TEXT;
-
-    CONTEXT.enable();
-    PlayerControls.CONTEXT.enable();
 }
 
 function update(dt)
 {
     Input.poll();
-    Lib.toggleShowCollision(DEBUG.value);
+
+    if (DEBUG.value)
+    {
+        Lib.toggleShowCollision();
+    }
     
-    if (ANY.prev !== ANY.value && ANY.value)
+    if (ANY.value)
     {
         if (this.gameWait)
         {

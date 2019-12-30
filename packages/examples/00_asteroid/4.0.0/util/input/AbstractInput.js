@@ -9,7 +9,7 @@ export class AbstractInput
 
     update(eventKey, value)
     {
-        this.next = value;
+        return false;
     }
 
     consume()
