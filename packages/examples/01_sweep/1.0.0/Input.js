@@ -56,80 +56,132 @@ export function createContext()
 
 export function createAction(eventKeyString)
 {
-    const result = {
-        type: 'action',
-        input: eventKeyString,
-        value: false,
-        next: false,
-        poll()
-        {
-            this.value = this.next;
-            this.next = consumeInput(this.input, this.next);
-        }
-    };
+    let result = new ActionInput(eventKeyString);
     inputs.push(result);
     return result;
 }
 
 export function createRange(eventKeyString)
 {
-    const result = {
-        type: 'range',
-        input: eventKeyString,
-        value: 0,
-        next: 0,
-        poll()
-        {
-            this.value = this.next;
-            this.next = consumeInput(this.input, this.next);
-        }
-    };
+    let result = new RangeInput(eventKeyString);
     inputs.push(result);
     return result;
 }
 
 export function createState(eventKeyMap)
 {
-    const result = {
-        type: 'state',
-        inputs: eventKeyMap,
-        value: 0,
-        next: 0,
-        poll()
-        {
-            this.value = this.next;
-        }
-    };
+    let result = new StateInput(eventKeyMap);
     inputs.push(result);
     return result;
 }
 
-export function handleEvent(input, value)
+export function handleEvent(eventKeyString, value)
 {
     for(let i of inputs)
     {
-        if (i.type === 'state')
+        i.update(eventKeyString, value);
+    }
+}
+
+class Input
+{
+    constructor(defaultValue)
+    {
+        this.prev = defaultValue;
+        this.value = defaultValue;
+        this.next = defaultValue;
+    }
+
+    update(eventKey, value)
+    {
+        this.next = value;
+    }
+
+    consume()
+    {
+        return this.next;
+    }
+
+    poll()
+    {
+        this.prev = this.value;
+        this.value = this.next;
+        this.next = this.consume();
+        return this;
+    }
+}
+
+class ActionInput extends Input
+{
+    constructor(eventKeyString)
+    {
+        super(false);
+
+        this.eventKey = eventKeyString;
+    }
+
+    /** @override */
+    consume() { return false; }
+
+    /** @override */
+    update(eventKey, value = true)
+    {
+        if (eventKey === this.eventKey)
         {
-            if (input in i.inputs) i.next = i.inputs[input];
-        }
-        else
-        {
-            if (i.input === input) i.next = value;
+            this.next = value;
         }
     }
 }
 
-function consumeInput(input, next)
+class RangeInput extends Input
 {
-    switch(input)
+    constructor(eventKeyString)
     {
-        case 'mouse[pos].x':
-        case 'mouse[pos].y':
-            return next;
-        case 'mouse[pos].dx':
-        case 'mouse[pos].dy':
-            return 0;
-        default:
-            return false;
+        super(0);
+
+        this.eventKey = eventKeyString;
+    }
+
+    /** @override */
+    consume()
+    {
+        switch(this.eventKey)
+        {
+            case 'mouse[pos].dx':
+            case 'mouse[pos].dy':
+                return 0;
+            case 'mouse[pos].x':
+            case 'mouse[pos].y':
+            default:
+                return this.next;
+        }
+    }
+
+    /** @override */
+    update(eventKey, value = 1)
+    {
+        if (eventKey === this.eventKey)
+        {
+            this.next = value;
+        }
+    }
+}
+
+class StateInput extends Input
+{
+    constructor(eventKeyMap)
+    {
+        super(0);
+
+        this.eventKeys = eventKeyMap;
+    }
+
+    /** @override */
+    update(eventKey, value = true)
+    {
+        if (eventKey in this.eventKeys && value)
+        {
+            this.next = this.eventKeys[eventKey];
+        }
     }
 }
