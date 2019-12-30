@@ -1,16 +1,14 @@
 import * as GameLoop from './util/GameLoop.js';
 import * as Display from './util/Display.js';
-import * as Util from './lib.js';
 import * as Viewport from './util/Viewport.js';
 import * as Input from './util/Input.js';
 
 import * as Chunk from './Chunk.js';
+import * as Util from './lib.js';
 
 const MAX_HEALTH = 3;
 const HEALTH_X = 0;
 const HEALTH_Y = 0;
-
-const MAIN_DISPLAY = document.querySelector('#main');
 
 const MAIN_CONTEXT = Input.createContext();
 let ACTIVE_ACTION = MAIN_CONTEXT.registerAction('active', 'mouse[0].down');
@@ -18,14 +16,6 @@ let MARK_ACTION = MAIN_CONTEXT.registerAction('mark', 'mouse[2].down');
 let RESTART_ACTION = MAIN_CONTEXT.registerAction('restart', 'key[r].up');
 let MOUSE_X = MAIN_CONTEXT.registerRange('mousex', 'mouse[pos].x');
 let MOUSE_Y = MAIN_CONTEXT.registerRange('mousey', 'mouse[pos].y');
-let MOUSE_LEFT = MAIN_CONTEXT.registerState('mouseleft', {
-    'mouse[0].up': 0,
-    'mouse[0].down': 1
-});
-let MOUSE_RIGHT = MAIN_CONTEXT.registerState('mouseright', {
-    'mouse[2].up': 0,
-    'mouse[2].down': 1
-});
 
 let MAIN_VIEW = Viewport.createView(320);
 

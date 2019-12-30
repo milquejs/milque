@@ -18,7 +18,7 @@ export function createSource()
         {
             this.element = element;
             this.keyboard.attach();
-            this.mouse.attach(element.getCanvas());
+            this.mouse.attach(element);
             return this;
         },
         detach()

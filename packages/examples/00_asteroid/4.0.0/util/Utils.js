@@ -73,3 +73,8 @@ export function withinRadius(from, to, radius)
     const dy = from.y - to.y;
     return dx * dx + dy * dy <= radius * radius
 }
+
+export function onDOMLoaded(listener)
+{
+    window.addEventListener('DOMContentLoaded', listener);
+}

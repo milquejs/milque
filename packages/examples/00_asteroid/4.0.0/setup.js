@@ -1,8 +1,9 @@
+import * as Utils from './util/Utils.js';
 import * as Display from './util/Display.js';
 import * as Input from './util/Input.js';
 
-window.addEventListener('DOMContentLoaded', e => {
-    const mainElement = document.querySelector('#main');
-    Display.attachCanvas(mainElement.getCanvas(), mainElement.getContext());
-    Input.attachDisplay(mainElement);
+Utils.onDOMLoaded(() => {
+    const mainDisplay = document.querySelector('#main');
+    Display.attachCanvas(mainDisplay.getCanvas(), mainDisplay.getContext());
+    Input.attachCanvas(mainDisplay.getCanvas());
 });

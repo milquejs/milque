@@ -4,14 +4,14 @@ import * as InputContext from './input/InputContext.js';
 var source = InputSource.createSource();
 var context = InputContext.createContext().attach(source);
 
-export function attachDisplay(element)
+export function attachCanvas(canvasElement)
 {
-    return source.attach(element);
+    return source.attach(canvasElement);
 }
 
-export function createContext(priority = 0)
+export function createContext(priority = 0, active = true)
 {
-    return InputContext.createContext().setPriority(priority).attach(source);
+    return InputContext.createContext().setPriority(priority).toggle(active).attach(source);
 }
 
 export function createInput(adapter)
