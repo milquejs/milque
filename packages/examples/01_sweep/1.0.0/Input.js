@@ -12,11 +12,53 @@ export function attachSource(element)
     MOUSE.setEventHandler(handleEvent).attach(element.getCanvas());
 }
 
-export function createAction(input)
+export function createContext()
+{
+    return {
+        actions: new Map(),
+        ranges: new Map(),
+        states: new Map(),
+        registerAction(name, eventKeyString)
+        {
+            let result = createAction(eventKeyString);
+            this.actions.set(name, result);
+            return result;
+        },
+        registerRange(name, eventKeyString)
+        {
+            let result = createRange(eventKeyString);
+            this.ranges.set(name, result);
+            return result;
+        },
+        registerState(name, eventKeyMap)
+        {
+            let result = createState(eventKeyMap);
+            this.states.set(name, result);
+            return result;
+        },
+        poll()
+        {
+            for(let action of this.actions.values())
+            {
+                action.poll();
+            }
+            for(let range of this.ranges.values())
+            {
+                range.poll();
+            }
+            for(let state of this.states.values())
+            {
+                state.poll();
+            }
+        }
+    };
+}
+
+export function createAction(eventKeyString)
 {
     const result = {
         type: 'action',
-        input,
+        input: eventKeyString,
         value: false,
         next: false,
         poll()
@@ -29,11 +71,11 @@ export function createAction(input)
     return result;
 }
 
-export function createRange(input)
+export function createRange(eventKeyString)
 {
     const result = {
         type: 'range',
-        input,
+        input: eventKeyString,
         value: 0,
         next: 0,
         poll()
@@ -46,11 +88,11 @@ export function createRange(input)
     return result;
 }
 
-export function createState(inputMap)
+export function createState(eventKeyMap)
 {
     const result = {
         type: 'state',
-        inputs: inputMap,
+        inputs: eventKeyMap,
         value: 0,
         next: 0,
         poll()

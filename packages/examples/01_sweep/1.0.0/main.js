@@ -10,16 +10,19 @@ const MAX_HEALTH = 3;
 const HEALTH_X = 0;
 const HEALTH_Y = 0;
 
-let ACTIVE_ACTION = Input.createAction('mouse[0].down');
-let MARK_ACTION = Input.createAction('mouse[2].down');
-let RESTART_ACTION = Input.createAction('key[r].up');
-let MOUSE_X = Input.createRange('mouse[pos].x');
-let MOUSE_Y = Input.createRange('mouse[pos].y');
-let MOUSE_LEFT = Input.createState({
+const MAIN_DISPLAY = document.querySelector('#main');
+
+const MAIN_CONTEXT = Input.createContext();
+let ACTIVE_ACTION = MAIN_CONTEXT.registerAction('active', 'mouse[0].down');
+let MARK_ACTION = MAIN_CONTEXT.registerAction('mark', 'mouse[2].down');
+let RESTART_ACTION = MAIN_CONTEXT.registerAction('restart', 'key[r].up');
+let MOUSE_X = MAIN_CONTEXT.registerRange('mousex', 'mouse[pos].x');
+let MOUSE_Y = MAIN_CONTEXT.registerRange('mousey', 'mouse[pos].y');
+let MOUSE_LEFT = MAIN_CONTEXT.registerState('mouseleft', {
     'mouse[0].up': 0,
     'mouse[0].down': 1
 });
-let MOUSE_RIGHT = Input.createState({
+let MOUSE_RIGHT = MAIN_CONTEXT.registerState('mouseright', {
     'mouse[2].up': 0,
     'mouse[2].down': 1
 });
@@ -38,13 +41,7 @@ let game = {
     },
     poll()
     {
-        ACTIVE_ACTION.poll();
-        MARK_ACTION.poll();
-        RESTART_ACTION.poll();
-        MOUSE_X.poll();
-        MOUSE_Y.poll();
-        MOUSE_LEFT.poll();
-        MOUSE_RIGHT.poll();
+        MAIN_CONTEXT.poll();
     },
     update(dt)
     {
