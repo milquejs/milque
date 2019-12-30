@@ -1,4 +1,4 @@
-export class BaseInput
+export class AbstractInput
 {
     constructor(defaultValue)
     {

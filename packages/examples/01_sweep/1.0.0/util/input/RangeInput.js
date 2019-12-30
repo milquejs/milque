@@ -1,6 +1,6 @@
-import { BaseInput } from './BaseInput.js';
+import { AbstractInput } from './AbstractInput.js';
 
-export class RangeInput extends BaseInput
+export class RangeInput extends AbstractInput
 {
     constructor(eventKeyString)
     {

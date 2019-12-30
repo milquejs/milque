@@ -1,38 +1,39 @@
 import * as InputSource from './input/InputSource.js';
+import * as InputContext from './input/InputContext.js';
 
-var inputSource = InputSource.createInputSource();
+var source = InputSource.createSource();
 
 export function attachDisplay(element)
 {
-    return inputSource.attach(element);
+    return source.attach(element);
 }
 
 export function createContext()
 {
-    return InputSource.createContext(inputSource);
+    return InputContext.createContext(source);
 }
 
 export function createAction(eventKeyString)
 {
-    return inputSource.createAction(eventKeyString);
+    return source.createAction(eventKeyString);
 }
 
 export function createRange(eventKeyString)
 {
-    return inputSource.createRange(eventKeyString);
+    return source.createRange(eventKeyString);
 }
 
 export function createState(eventKeyMap)
 {
-    return inputSource.createState(eventKeyMap);
+    return source.createState(eventKeyMap);
 }
 
 export function poll()
 {
-    return inputSource.poll();
+    return source.poll();
 }
 
 export function handleEvent(eventKeyString, value)
 {
-    return inputSource.handleEvent(eventKeyString, value);
+    return source.handleEvent(eventKeyString, value);
 }

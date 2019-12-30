@@ -1,13 +1,14 @@
 import { Mouse } from './Mouse.js';
 import { Keyboard } from './Keyboard.js';
+
 import { ActionInput } from './ActionInput.js';
 import { RangeInput } from './RangeInput.js';
 import { StateInput } from './StateInput.js';
 
-export function createInputSource()
+export function createSource()
 {
     let result = {
-        inputs: [],
+        inputs: new Set(),
         element: null,
         keyboard: new Keyboard(),
         mouse: new Mouse(),
@@ -39,12 +40,17 @@ export function createInputSource()
         },
         addInput(input)
         {
-            this.inputs.push(input);
-            return this;
+            this.inputs.add(input);
+            return input;
         },
         removeInput(input)
         {
-            this.inputs.splice(this.inputs.indexOf(input), 1);
+            this.inputs.delete(input);
+            return input;
+        },
+        clearInputs()
+        {
+            this.inputs.clear();
             return this;
         },
         poll()
@@ -66,50 +72,4 @@ export function createInputSource()
     result.keyboard.setEventHandler(result.handleEvent);
     result.mouse.setEventHandler(result.handleEvent);
     return result;
-}
-
-export function createContext(inputSource)
-{
-    return {
-        inputSource,
-        actions: new Map(),
-        ranges: new Map(),
-        states: new Map(),
-        registerAction(name, eventKeyString)
-        {
-            let result = new ActionInput(eventKeyString);
-            this.inputSource.addInput(result);
-            this.actions.set(name, result);
-            return result;
-        },
-        registerRange(name, eventKeyString)
-        {
-            let result = new RangeInput(eventKeyString);
-            this.inputSource.addInput(result);
-            this.ranges.set(name, result);
-            return result;
-        },
-        registerState(name, eventKeyMap)
-        {
-            let result = new StateInput(eventKeyMap);
-            this.inputSource.addInput(result);
-            this.states.set(name, result);
-            return result;
-        },
-        poll()
-        {
-            for(let action of this.actions.values())
-            {
-                action.poll();
-            }
-            for(let range of this.ranges.values())
-            {
-                range.poll();
-            }
-            for(let state of this.states.values())
-            {
-                state.poll();
-            }
-        }
-    };
 }
