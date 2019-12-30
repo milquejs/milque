@@ -2,9 +2,9 @@ import * as GameLoop from './util/GameLoop.js';
 import * as Display from './util/Display.js';
 import * as Util from './lib.js';
 import * as Viewport from './util/Viewport.js';
+import * as Input from './util/Input.js';
 
 import * as Chunk from './Chunk.js';
-import * as Input from './Input.js';
 
 const MAX_HEALTH = 3;
 const HEALTH_X = 0;

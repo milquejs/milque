@@ -1,4 +1,4 @@
-import * as InputSource from './util/input/InputSource.js';
+import * as InputSource from './input/InputSource.js';
 
 var inputSource = InputSource.createInputSource();
 
