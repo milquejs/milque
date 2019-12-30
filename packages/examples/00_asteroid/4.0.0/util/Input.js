@@ -13,9 +13,9 @@ export function createContext()
     return InputContext.createContext(source);
 }
 
-export function createAction(eventKeyString)
+export function createAction(...eventKeyStrings)
 {
-    return source.createAction(eventKeyString);
+    return source.createAction(...eventKeyStrings);
 }
 
 export function createRange(eventKeyString)

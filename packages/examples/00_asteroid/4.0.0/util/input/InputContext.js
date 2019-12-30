@@ -5,9 +5,9 @@ export function createContext(inputSource)
         actions: new Map(),
         ranges: new Map(),
         states: new Map(),
-        registerAction(name, eventKeyString)
+        registerAction(name, ...eventKeyStrings)
         {
-            let result = this.inputSource.createAction(eventKeyString);
+            let result = this.inputSource.createAction(...eventKeyStrings);
             this.actions.set(name, result);
             return result;
         },

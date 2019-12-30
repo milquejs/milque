@@ -28,19 +28,19 @@ export class EventKey
         else mode = eventKeyString.substring(modeIndex + 1);
     
         return new EventKey(
-            eventKeyString,
             source,
             code,
             mode
         );
     }
 
-    constructor(string, source, code, mode)
+    constructor(source, code, mode)
     {
-        this.string = string;
         this.source = source;
         this.code = code;
         this.mode = mode;
+
+        this.string = `${this.source.toString()}[${this.code.toString()}].${this.mode.toString()}`;
     }
 
     matches(eventKey)

@@ -27,9 +27,9 @@ export function createSource()
             this.mouse.detach();
             return this;
         },
-        createAction(eventKeyString)
+        createAction(...eventKeyStrings)
         {
-            return this.addInput(new ActionInput(eventKeyString));
+            return this.addInput(new ActionInput(eventKeyStrings));
         },
         createRange(eventKeyString)
         {

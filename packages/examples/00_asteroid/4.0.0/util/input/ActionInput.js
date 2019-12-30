@@ -3,11 +3,17 @@ import { EventKey } from './EventKey.js';
 
 export class ActionInput extends AbstractInput
 {
-    constructor(eventKeyString)
+    constructor(eventKeyStrings)
     {
         super(false);
 
-        this.eventKey = EventKey.parse(eventKeyString);
+        this.eventKeys = [];
+        for(let eventKeyString of eventKeyStrings)
+        {
+            this.eventKeys.push(EventKey.parse(eventKeyString));
+        }
+
+        console.log(this.eventKeys);
     }
 
     /** @override */
@@ -17,10 +23,13 @@ export class ActionInput extends AbstractInput
     update(eventKey, value = true)
     {
         if (super.update(eventKey, value)) return true;
-        if (this.eventKey.matches(eventKey))
+        for(let targetEventKey of this.eventKeys)
         {
-            this.next = value;
-            return true;
+            if (targetEventKey.matches(eventKey))
+            {
+                this.next = value;
+                return true;
+            }
         }
         return false;
     }
