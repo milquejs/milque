@@ -39,13 +39,9 @@ let game = {
         this.gameWin = false;
         this.gameTime = 0;
     },
-    poll()
-    {
-        MAIN_CONTEXT.poll();
-    },
     update(dt)
     {
-        this.poll();
+        Input.poll();
         this.render(MAIN_VIEW);
 
         // Check if restarting...
