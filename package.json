@@ -4,7 +4,7 @@
   "description": "The monorepo for Milque.js",
   "main": "index.js",
   "scripts": {
-    "build": "npm run build --prefix packages/milque-core",
+    "build": "npm run build --prefix packages/core",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
