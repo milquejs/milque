@@ -1,8 +1,5 @@
-import * as GameLoop from './util/GameLoop.js';
-import * as Input from './util/Input.js';
-import * as Display from './util/Display.js';
-import * as Random from './util/Random.js';
-import * as Utils from './util/Utils.js';
+import Milque from '../../../core/build/esm/milque.js';
+const { GameLoop, Input, Display, Random, Utils } = Milque;
 
 import * as Views from './Views.js';
 import * as PlayerControls from './PlayerControls.js';

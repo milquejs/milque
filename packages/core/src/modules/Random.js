@@ -1,5 +1,5 @@
-import { SimpleRandomGenerator } from './SimpleRandomGenerator.js';
-import { RandomGenerator } from './RandomGenerator.js';
+import { SimpleRandomGenerator } from '../random/generators/SimpleRandomGenerator.js';
+import { RandomGenerator } from '../random/generators/RandomGenerator.js';
 
 const DEFAULT_RNG = new RandomGenerator();
 

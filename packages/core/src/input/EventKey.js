@@ -1,4 +1,4 @@
-export const ANY = Symbol('any');
+const ANY = Symbol('any');
 
 export class EventKey
 {
@@ -60,4 +60,7 @@ export class EventKey
 
     /** @override */
     toString() { return this.string; }
-}
+};
+
+// NOTE: Exported as a static variable of EventKey
+EventKey.ANY = ANY;
