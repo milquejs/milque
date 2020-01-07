@@ -5,20 +5,20 @@ import * as Random from './modules/Random.js';
 import * as Viewport from './modules/Viewport.js';
 import * as Utils from './modules/Utils.js';
 
-import * as DisplayModule from './display/index.js';
-import * as InputModule from './input/index.js';
-import * as RandomModule from './random/index.js';
-import * as UtilModule from './util/index.js';
+export * from './display/index.js';
+export * from './input/index.js';
+export * from './random/index.js';
+export * from './util/index.js';
 
-export default {
+export {
     Display,
     Audio,
     Input,
     Random,
     Viewport,
     Utils,
-    ...DisplayModule,
-    ...InputModule,
-    ...RandomModule,
-    ...UtilModule,
 };
+
+// NOTE: To allow both named and default imports
+import * as self from './index.js';
+export default self;

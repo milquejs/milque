@@ -1,5 +1,4 @@
-import Milque from '../../../core/build/esm/milque.js';
-const { Input, DoubleActionInputAdapter } = Milque;
+import { Input, DoubleActionInputAdapter } from '../../../core/build/esm/milque.js';
 
 export const CONTEXT = Input.createContext();
 export const UP = CONTEXT.registerState('forward', {

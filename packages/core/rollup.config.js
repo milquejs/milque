@@ -14,7 +14,8 @@ export default [
         output: {
             file: pkg.browser,
             format: 'umd',
-            name: PACKAGE_NAME
+            name: PACKAGE_NAME,
+            exports: 'named'
         },
         plugins: [
             clear({ targets: ['build'] }),
@@ -29,7 +30,8 @@ export default [
         output: {
             file: pkg.browser.substring(0, pkg.browser.lastIndexOf('.')) + '.min.js',
             format: 'umd',
-            name: PACKAGE_NAME
+            name: PACKAGE_NAME,
+            exports: 'named'
         },
         plugins: [
             clear({ targets: ['build'] }),

@@ -1,5 +1,4 @@
-import Milque from '../../../core/build/esm/milque.js';
-const { GameLoop, Input, Display, Random, Utils } = Milque;
+import { GameLoop, Input, Display, Random, Utils } from '../../../core/build/esm/milque.js';
 
 import * as Views from './Views.js';
 import * as PlayerControls from './PlayerControls.js';

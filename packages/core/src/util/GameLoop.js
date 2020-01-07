@@ -104,6 +104,8 @@ export function createGameLoop(context = {})
     result.animationFrameHandle = null;
     result.gameContext = context;
     result.frameTime = DEFAULT_FRAME_TIME;
+    result.started = false;
+    result.paused = false;
 
     /** Sets the frame time. Only changes dt; does NOT change how many times update() is called. */
     result.setFrameTime = function setFrameTime(dt)
@@ -127,7 +129,11 @@ export function createGameLoop(context = {})
     /** Starts the game loop. Calls run(). */
     result.start = function start()
     {
+        if (this.started) throw new Error('Loop already started.');
+
         this.prevFrameTime = 0;
+        this.started = true;
+
         if (typeof this.gameContext.start === 'function') this.gameContext.start.call(this.gameContext);
         this.emit('start');
 
@@ -138,12 +144,45 @@ export function createGameLoop(context = {})
     /** Stops the game loop. */
     result.stop = function stop()
     {
+        if (!this.started) throw new Error('Loop not yet started.');
+
         cancelAnimationFrame(this.animationFrameHandle);
         this.animationFrameHandle = null;
+        this.started = false;
 
         if (typeof this.gameContext.stop === 'function') this.gameContext.stop.call(this.gameContext);
         this.emit('stop');
     }
     .bind(result);
+
+    /** Pauses the game loop. */
+    result.pause = function pause()
+    {
+        if (!this.started || this.paused) return;
+
+        cancelAnimationFrame(this.animationFrameHandle);
+        this.animationFrameHandle = null;
+        this.paused = true;
+
+        if (typeof this.gameContext.pause === 'function') this.gameContext.pause.call(this.gameContext);
+        this.emit('pause');
+    }
+    .bind(result);
+
+    /** Resumes the game loop. */
+    result.resume = function resume()
+    {
+        if (!this.started || !this.pause) return;
+
+        this.prevFrameTime = 0;
+        this.paused = false;
+
+        if (typeof this.gameContext.resume === 'function') this.gameContext.resume.call(this.gameContext);
+        this.emit('resume');
+
+        this.run(0);
+    }
+    .bind(result);
+
     return result;
 }

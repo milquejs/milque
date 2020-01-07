@@ -1,4 +1,3 @@
-import Milque from '../../../core/build/esm/milque.js';
-const { Viewport } = Milque;
+import { Viewport } from '../../../core/build/esm/milque.js';
 
 export const WORLD_VIEW = Viewport.createView(640, 480);

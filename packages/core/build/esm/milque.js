@@ -1,3 +1,295 @@
+var self = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    get Display () { return Display; },
+    get Audio () { return Audio; },
+    get Input () { return Input; },
+    get Random () { return Random; },
+    get Viewport () { return Viewport; },
+    get Utils () { return Utils; },
+    get default () { return self; },
+    get MODE_NONE () { return MODE_NONE; },
+    get MODE_TOPLEFT () { return MODE_TOPLEFT; },
+    get MODE_CENTER () { return MODE_CENTER; },
+    get MODE_FIT () { return MODE_FIT; },
+    get DisplayPort () { return DisplayPort; },
+    get EventKey () { return EventKey; },
+    get MIN_CONTEXT_PRIORITY () { return MIN_CONTEXT_PRIORITY; },
+    get MAX_CONTEXT_PRIORITY () { return MAX_CONTEXT_PRIORITY; },
+    get createContext () { return createContext; },
+    get createSource () { return createSource; },
+    get AbstractInputAdapter () { return AbstractInputAdapter; },
+    get ActionInputAdapter () { return ActionInputAdapter; },
+    get DOUBLE_ACTION_TIME () { return DOUBLE_ACTION_TIME; },
+    get DoubleActionInputAdapter () { return DoubleActionInputAdapter; },
+    get RangeInputAdapter () { return RangeInputAdapter; },
+    get StateInputAdapter () { return StateInputAdapter; },
+    get Keyboard () { return Keyboard; },
+    get Mouse () { return Mouse; },
+    get RandomGenerator () { return RandomGenerator; },
+    get SimpleRandomGenerator () { return SimpleRandomGenerator; },
+    get Eventable () { return Eventable$1; },
+    get GameLoop () { return GameLoop; }
+});
+
+/**
+ * @module Utils
+ * @version 1.0.1
+ */
+function randomHexColor() {
+  return '#' + Math.floor(Math.random() * 16777215).toString(16);
+}
+function loadImage(url) {
+  var image = new Image();
+  image.src = url;
+  return image;
+}
+function clampRange(value, min, max) {
+  if (value < min) return min;
+  if (value > max) return max;
+  return value;
+}
+function clearScreen(ctx, width, height) {
+  ctx.fillStyle = 'black';
+  ctx.fillRect(0, 0, width, height);
+}
+function drawText(ctx, text, x, y) {
+  var radians = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 0;
+  var fontSize = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : 16;
+  var color = arguments.length > 6 && arguments[6] !== undefined ? arguments[6] : 'white';
+  ctx.translate(x, y);
+  if (radians) ctx.rotate(radians);
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = "".concat(fontSize, "px sans-serif");
+  ctx.fillStyle = color;
+  ctx.fillText(text, 0, 0);
+  if (radians) ctx.rotate(-radians);
+  ctx.translate(-x, -y);
+}
+function drawBox(ctx, x, y, radians, w) {
+  var h = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : w;
+  var color = arguments.length > 6 && arguments[6] !== undefined ? arguments[6] : 'white';
+  ctx.translate(x, y);
+  if (radians) ctx.rotate(radians);
+  ctx.fillStyle = color;
+  ctx.fillRect(-w / 2, -h / 2, w, h);
+  if (radians) ctx.rotate(-radians);
+  ctx.translate(-x, -y);
+}
+function intersectBox(a, b) {
+  return Math.abs(a.x - b.x) * 2 < a.width + b.width && Math.abs(a.y - b.y) * 2 < a.height + b.height;
+}
+function applyMotion(entity) {
+  var inverseFrictionX = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 1;
+  var inverseFrictionY = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : inverseFrictionX;
+
+  if (inverseFrictionX !== 1) {
+    entity.dx *= inverseFrictionX;
+  }
+
+  if (inverseFrictionY !== 1) {
+    entity.dy *= inverseFrictionY;
+  }
+
+  entity.x += entity.dx;
+  entity.y += entity.dy;
+}
+function withinRadius(from, to, radius) {
+  var dx = from.x - to.x;
+  var dy = from.y - to.y;
+  return dx * dx + dy * dy <= radius * radius;
+}
+function onDOMLoaded(listener) {
+  window.addEventListener('DOMContentLoaded', listener);
+}
+function lerp(a, b, dt) {
+  return a + (b - a) * dt;
+}
+function distance2D(from, to) {
+  var dx = to.x - from.x;
+  var dy = to.y - from.y;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+function direction2D(from, to) {
+  var dx = to.x - from.x;
+  var dy = to.y - from.y;
+  return Math.atan2(dy, dx);
+}
+function lookAt2D(radians, target, dt) {
+  var step = cycleRange(target - radians, -Math.PI, Math.PI);
+  return clampRange(radians + step, radians - dt, radians + dt);
+}
+function cycleRange(value, min, max) {
+  var range = max - min;
+  var result = (value - min) % range;
+  if (result < 0) result += range;
+  return result + min;
+}
+function drawCircle(ctx, x, y) {
+  var radius = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 16;
+  var color = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 'white';
+  var outline = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : false;
+  ctx.fillStyle = color;
+  ctx.strokeStyle = color;
+  ctx.beginPath();
+  ctx.arc(x, y, radius, 0, 2 * Math.PI);
+  if (outline) ctx.stroke();else ctx.fill();
+}
+
+var Utils = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    randomHexColor: randomHexColor,
+    loadImage: loadImage,
+    clampRange: clampRange,
+    clearScreen: clearScreen,
+    drawText: drawText,
+    drawBox: drawBox,
+    intersectBox: intersectBox,
+    applyMotion: applyMotion,
+    withinRadius: withinRadius,
+    onDOMLoaded: onDOMLoaded,
+    lerp: lerp,
+    distance2D: distance2D,
+    direction2D: direction2D,
+    lookAt2D: lookAt2D,
+    cycleRange: cycleRange,
+    drawCircle: drawCircle
+});
+
+/**
+ * @module Display
+ * @version 1.0.1
+ */
+var canvas;
+var context; // Default setup...
+
+onDOMLoaded(function () {
+  if (!canvas) {
+    var canvasElement = null;
+    var canvasContext = null; // Try resolve to <display-port> if exists...
+
+    var displayElement = document.querySelector('display-port');
+
+    if (displayElement) {
+      canvasElement = displayElement.getCanvas();
+      canvasContext = displayElement.getContext();
+    } // Otherwise, find a <canvas> element...
+    else {
+        canvasElement = document.querySelector('canvas');
+      }
+
+    if (canvasElement) {
+      if (!canvasContext) canvasContext = canvasElement.getContext('2d');
+      attachCanvas(canvasElement, canvasContext);
+    }
+  }
+});
+function createCanvas() {
+  var width = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 320;
+  var height = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : width;
+  var parentElement = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : document.body;
+  var canvasElement = document.createElement('canvas');
+  parentElement.appendChild(canvasElement);
+  attachCanvas(canvasElement, width, height);
+}
+function attachCanvas(canvasElement, canvasContext) {
+  var width = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 320;
+  var height = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : width;
+  canvas = canvasElement;
+  context = canvasContext;
+  canvas.width = width;
+  canvas.height = height;
+}
+function drawBufferToScreen(ctx) {
+  var viewportOffsetX = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+  var viewportOffsetY = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
+  var viewportWidth = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : getClientWidth();
+  var viewportHeight = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : getClientHeight();
+  getDrawContext().drawImage(ctx.canvas, viewportOffsetX, viewportOffsetY, viewportWidth, viewportHeight);
+}
+function getCanvas() {
+  return canvas;
+}
+function getDrawContext() {
+  return context;
+}
+function getClientWidth() {
+  return canvas.clientWidth;
+}
+function getClientHeight() {
+  return canvas.clientHeight;
+}
+function getClientOffsetX() {
+  return canvas.offsetLeft;
+}
+function getClientOffsetY() {
+  return canvas.offsetTop;
+}
+
+var Display = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    createCanvas: createCanvas,
+    attachCanvas: attachCanvas,
+    drawBufferToScreen: drawBufferToScreen,
+    getCanvas: getCanvas,
+    getDrawContext: getDrawContext,
+    getClientWidth: getClientWidth,
+    getClientHeight: getClientHeight,
+    getClientOffsetX: getClientOffsetX,
+    getClientOffsetY: getClientOffsetY
+});
+
+var audioContext = new AudioContext();
+function createSound(filepath) {
+  var loop = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+  var result = {
+    _playing: false,
+    _data: null,
+    _source: null,
+    play: function play() {
+      var _this = this;
+
+      if (!this._data) return;
+      if (this._source) this.destroy();
+      var source = audioContext.createBufferSource();
+      source.loop = loop;
+      source.buffer = this._data;
+      source.addEventListener('ended', function () {
+        _this._playing = false;
+      });
+      source.connect(audioContext.destination);
+      source.start(0);
+      this._source = source;
+      this._playing = true;
+    },
+    pause: function pause() {
+      this._source.stop();
+
+      this._playing = false;
+    },
+    destroy: function destroy() {
+      if (this._source) this._source.disconnect();
+      this._source = null;
+    },
+    isPaused: function isPaused() {
+      return !this._playing;
+    }
+  };
+  fetch(filepath).then(function (response) {
+    return response.arrayBuffer();
+  }).then(function (buffer) {
+    return audioContext.decodeAudioData(buffer);
+  }).then(function (data) {
+    return result._data = data;
+  });
+  return result;
+}
+
+var Audio = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    createSound: createSound
+});
+
 function _typeof(obj) {
   if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") {
     _typeof = function (obj) {
@@ -32,55 +324,6 @@ function _createClass(Constructor, protoProps, staticProps) {
   if (protoProps) _defineProperties(Constructor.prototype, protoProps);
   if (staticProps) _defineProperties(Constructor, staticProps);
   return Constructor;
-}
-
-function _defineProperty(obj, key, value) {
-  if (key in obj) {
-    Object.defineProperty(obj, key, {
-      value: value,
-      enumerable: true,
-      configurable: true,
-      writable: true
-    });
-  } else {
-    obj[key] = value;
-  }
-
-  return obj;
-}
-
-function ownKeys(object, enumerableOnly) {
-  var keys = Object.keys(object);
-
-  if (Object.getOwnPropertySymbols) {
-    var symbols = Object.getOwnPropertySymbols(object);
-    if (enumerableOnly) symbols = symbols.filter(function (sym) {
-      return Object.getOwnPropertyDescriptor(object, sym).enumerable;
-    });
-    keys.push.apply(keys, symbols);
-  }
-
-  return keys;
-}
-
-function _objectSpread2(target) {
-  for (var i = 1; i < arguments.length; i++) {
-    var source = arguments[i] != null ? arguments[i] : {};
-
-    if (i % 2) {
-      ownKeys(Object(source), true).forEach(function (key) {
-        _defineProperty(target, key, source[key]);
-      });
-    } else if (Object.getOwnPropertyDescriptors) {
-      Object.defineProperties(target, Object.getOwnPropertyDescriptors(source));
-    } else {
-      ownKeys(Object(source)).forEach(function (key) {
-        Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key));
-      });
-    }
-  }
-
-  return target;
 }
 
 function _inherits(subClass, superClass) {
@@ -197,265 +440,6 @@ function _possibleConstructorReturn(self, call) {
 
   return _assertThisInitialized(self);
 }
-
-/**
- * @module Utils
- * @version 1.0.1
- */
-function randomHexColor() {
-  return '#' + Math.floor(Math.random() * 16777215).toString(16);
-}
-function loadImage(url) {
-  var image = new Image();
-  image.src = url;
-  return image;
-}
-function clampRange(value, min, max) {
-  if (value < min) return min;
-  if (value > max) return max;
-  return value;
-}
-function clearScreen(ctx, width, height) {
-  ctx.fillStyle = 'black';
-  ctx.fillRect(0, 0, width, height);
-}
-function drawText(ctx, text, x, y) {
-  var radians = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 0;
-  var fontSize = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : 16;
-  var color = arguments.length > 6 && arguments[6] !== undefined ? arguments[6] : 'white';
-  ctx.translate(x, y);
-  if (radians) ctx.rotate(radians);
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.font = "".concat(fontSize, "px sans-serif");
-  ctx.fillStyle = color;
-  ctx.fillText(text, 0, 0);
-  if (radians) ctx.rotate(-radians);
-  ctx.translate(-x, -y);
-}
-function drawBox(ctx, x, y, radians, w) {
-  var h = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : w;
-  var color = arguments.length > 6 && arguments[6] !== undefined ? arguments[6] : 'white';
-  ctx.translate(x, y);
-  if (radians) ctx.rotate(radians);
-  ctx.fillStyle = color;
-  ctx.fillRect(-w / 2, -h / 2, w, h);
-  if (radians) ctx.rotate(-radians);
-  ctx.translate(-x, -y);
-}
-function intersectBox(a, b) {
-  return Math.abs(a.x - b.x) * 2 < a.width + b.width && Math.abs(a.y - b.y) * 2 < a.height + b.height;
-}
-function applyMotion(entity) {
-  var inverseFrictionX = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 1;
-  var inverseFrictionY = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : inverseFrictionX;
-
-  if (inverseFrictionX !== 1) {
-    entity.dx *= inverseFrictionX;
-  }
-
-  if (inverseFrictionY !== 1) {
-    entity.dy *= inverseFrictionY;
-  }
-
-  entity.x += entity.dx;
-  entity.y += entity.dy;
-}
-function withinRadius(from, to, radius) {
-  var dx = from.x - to.x;
-  var dy = from.y - to.y;
-  return dx * dx + dy * dy <= radius * radius;
-}
-function onDOMLoaded(listener) {
-  window.addEventListener('DOMContentLoaded', listener);
-}
-function lerp(a, b, dt) {
-  return a + (b - a) * dt;
-}
-function distance2D(from, to) {
-  var dx = to.x - from.x;
-  var dy = to.y - from.y;
-  return Math.sqrt(dx * dx + dy * dy);
-}
-function direction2D(from, to) {
-  var dx = to.x - from.x;
-  var dy = to.y - from.y;
-  return Math.atan2(dy, dx);
-}
-function lookAt2D(radians, target, dt) {
-  var step = cycleRange(target - radians, -Math.PI, Math.PI);
-  return clampRange(radians + step, radians - dt, radians + dt);
-}
-function cycleRange(value, min, max) {
-  var range = max - min;
-  var result = (value - min) % range;
-  if (result < 0) result += range;
-  return result + min;
-}
-function drawCircle(ctx, x, y) {
-  var radius = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 16;
-  var color = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 'white';
-  var outline = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : false;
-  ctx.fillStyle = color;
-  ctx.strokeStyle = color;
-  ctx.beginPath();
-  ctx.arc(x, y, radius, 0, 2 * Math.PI);
-  if (outline) ctx.stroke();else ctx.fill();
-}
-
-var Utils = /*#__PURE__*/Object.freeze({
-  __proto__: null,
-  randomHexColor: randomHexColor,
-  loadImage: loadImage,
-  clampRange: clampRange,
-  clearScreen: clearScreen,
-  drawText: drawText,
-  drawBox: drawBox,
-  intersectBox: intersectBox,
-  applyMotion: applyMotion,
-  withinRadius: withinRadius,
-  onDOMLoaded: onDOMLoaded,
-  lerp: lerp,
-  distance2D: distance2D,
-  direction2D: direction2D,
-  lookAt2D: lookAt2D,
-  cycleRange: cycleRange,
-  drawCircle: drawCircle
-});
-
-/**
- * @module Display
- * @version 1.0.1
- */
-var canvas;
-var context; // Default setup...
-
-onDOMLoaded(function () {
-  if (!canvas) {
-    var canvasElement = null;
-    var canvasContext = null; // Try resolve to <display-port> if exists...
-
-    var displayElement = document.querySelector('display-port');
-
-    if (displayElement) {
-      canvasElement = displayElement.getCanvas();
-      canvasContext = displayElement.getContext();
-    } // Otherwise, find a <canvas> element...
-    else {
-        canvasElement = document.querySelector('canvas');
-      }
-
-    if (canvasElement) {
-      if (!canvasContext) canvasContext = canvasElement.getContext('2d');
-      attachCanvas(canvasElement, canvasContext);
-    }
-  }
-});
-function createCanvas() {
-  var width = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 320;
-  var height = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : width;
-  var parentElement = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : document.body;
-  var canvasElement = document.createElement('canvas');
-  parentElement.appendChild(canvasElement);
-  attachCanvas(canvasElement, width, height);
-}
-function attachCanvas(canvasElement, canvasContext) {
-  var width = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 320;
-  var height = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : width;
-  canvas = canvasElement;
-  context = canvasContext;
-  canvas.width = width;
-  canvas.height = height;
-}
-function drawBufferToScreen(ctx) {
-  var viewportOffsetX = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
-  var viewportOffsetY = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
-  var viewportWidth = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : getClientWidth();
-  var viewportHeight = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : getClientHeight();
-  getDrawContext().drawImage(ctx.canvas, viewportOffsetX, viewportOffsetY, viewportWidth, viewportHeight);
-}
-function getCanvas() {
-  return canvas;
-}
-function getDrawContext() {
-  return context;
-}
-function getClientWidth() {
-  return canvas.clientWidth;
-}
-function getClientHeight() {
-  return canvas.clientHeight;
-}
-function getClientOffsetX() {
-  return canvas.offsetLeft;
-}
-function getClientOffsetY() {
-  return canvas.offsetTop;
-}
-
-var Display = /*#__PURE__*/Object.freeze({
-  __proto__: null,
-  createCanvas: createCanvas,
-  attachCanvas: attachCanvas,
-  drawBufferToScreen: drawBufferToScreen,
-  getCanvas: getCanvas,
-  getDrawContext: getDrawContext,
-  getClientWidth: getClientWidth,
-  getClientHeight: getClientHeight,
-  getClientOffsetX: getClientOffsetX,
-  getClientOffsetY: getClientOffsetY
-});
-
-var audioContext = new AudioContext();
-function createSound(filepath) {
-  var loop = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
-  var result = {
-    _playing: false,
-    _data: null,
-    _source: null,
-    play: function play() {
-      var _this = this;
-
-      if (!this._data) return;
-      if (this._source) this.destroy();
-      var source = audioContext.createBufferSource();
-      source.loop = loop;
-      source.buffer = this._data;
-      source.addEventListener('ended', function () {
-        _this._playing = false;
-      });
-      source.connect(audioContext.destination);
-      source.start(0);
-      this._source = source;
-      this._playing = true;
-    },
-    pause: function pause() {
-      this._source.stop();
-
-      this._playing = false;
-    },
-    destroy: function destroy() {
-      if (this._source) this._source.disconnect();
-      this._source = null;
-    },
-    isPaused: function isPaused() {
-      return !this._playing;
-    }
-  };
-  fetch(filepath).then(function (response) {
-    return response.arrayBuffer();
-  }).then(function (buffer) {
-    return audioContext.decodeAudioData(buffer);
-  }).then(function (data) {
-    return result._data = data;
-  });
-  return result;
-}
-
-var Audio = /*#__PURE__*/Object.freeze({
-  __proto__: null,
-  createSound: createSound
-});
 
 var Mouse =
 /*#__PURE__*/
@@ -1274,15 +1258,15 @@ function getNextInputName() {
 }
 
 var Input = /*#__PURE__*/Object.freeze({
-  __proto__: null,
-  attachCanvas: attachCanvas$1,
-  createContext: createContext$1,
-  createInput: createInput,
-  createAction: createAction,
-  createRange: createRange,
-  createState: createState,
-  poll: poll,
-  handleEvent: handleEvent
+    __proto__: null,
+    attachCanvas: attachCanvas$1,
+    createContext: createContext$1,
+    createInput: createInput,
+    createAction: createAction,
+    createRange: createRange,
+    createState: createState,
+    poll: poll,
+    handleEvent: handleEvent
 });
 
 var RandomGenerator =
@@ -1373,12 +1357,12 @@ function randomSign() {
 }
 
 var Random = /*#__PURE__*/Object.freeze({
-  __proto__: null,
-  createRandom: createRandom,
-  random: random,
-  randomRange: randomRange,
-  randomChoose: randomChoose,
-  randomSign: randomSign
+    __proto__: null,
+    createRandom: createRandom,
+    random: random,
+    randomRange: randomRange,
+    randomChoose: randomChoose,
+    randomSign: randomSign
 });
 
 function createView() {
@@ -1402,8 +1386,8 @@ function createView() {
 }
 
 var Viewport = /*#__PURE__*/Object.freeze({
-  __proto__: null,
-  createView: createView
+    __proto__: null,
+    createView: createView
 });
 
 /**
@@ -1655,17 +1639,6 @@ function (_HTMLElement) {
 }(_wrapNativeSuper(HTMLElement));
 window.customElements.define('display-port', DisplayPort);
 
-// components
-
-var DisplayModule = /*#__PURE__*/Object.freeze({
-  __proto__: null,
-  MODE_NONE: MODE_NONE,
-  MODE_TOPLEFT: MODE_TOPLEFT,
-  MODE_CENTER: MODE_CENTER,
-  MODE_FIT: MODE_FIT,
-  DisplayPort: DisplayPort
-});
-
 var DOUBLE_ACTION_TIME = 300;
 var DoubleActionInputAdapter =
 /*#__PURE__*/
@@ -1734,33 +1707,6 @@ function (_ActionInputAdapter) {
 
   return DoubleActionInputAdapter;
 }(ActionInputAdapter);
-
-
-
-var InputModule = /*#__PURE__*/Object.freeze({
-  __proto__: null,
-  EventKey: EventKey,
-  MIN_CONTEXT_PRIORITY: MIN_CONTEXT_PRIORITY,
-  MAX_CONTEXT_PRIORITY: MAX_CONTEXT_PRIORITY,
-  createContext: createContext,
-  createSource: createSource,
-  AbstractInputAdapter: AbstractInputAdapter,
-  ActionInputAdapter: ActionInputAdapter,
-  DOUBLE_ACTION_TIME: DOUBLE_ACTION_TIME,
-  DoubleActionInputAdapter: DoubleActionInputAdapter,
-  RangeInputAdapter: RangeInputAdapter,
-  StateInputAdapter: StateInputAdapter,
-  Keyboard: Keyboard,
-  Mouse: Mouse
-});
-
-// generators
-
-var RandomModule = /*#__PURE__*/Object.freeze({
-  __proto__: null,
-  RandomGenerator: RandomGenerator,
-  SimpleRandomGenerator: SimpleRandomGenerator
-});
 
 /**
  * @typedef Eventable
@@ -1949,11 +1895,11 @@ var Eventable = {
 };
 
 var Eventable$1 = /*#__PURE__*/Object.freeze({
-  __proto__: null,
-  create: create,
-  assign: assign,
-  mixin: mixin,
-  'default': Eventable
+    __proto__: null,
+    create: create,
+    assign: assign,
+    mixin: mixin,
+    'default': Eventable
 });
 
 var INSTANCES = new Map();
@@ -2030,6 +1976,8 @@ function createGameLoop() {
   result.animationFrameHandle = null;
   result.gameContext = context;
   result.frameTime = DEFAULT_FRAME_TIME;
+  result.started = false;
+  result.paused = false;
   /** Sets the frame time. Only changes dt; does NOT change how many times update() is called. */
 
   result.setFrameTime = function setFrameTime(dt) {
@@ -2050,7 +1998,9 @@ function createGameLoop() {
 
 
   result.start = function start() {
+    if (this.started) throw new Error('Loop already started.');
     this.prevFrameTime = 0;
+    this.started = true;
     if (typeof this.gameContext.start === 'function') this.gameContext.start.call(this.gameContext);
     this.emit('start');
     this.run(0);
@@ -2059,40 +2009,50 @@ function createGameLoop() {
 
 
   result.stop = function stop() {
+    if (!this.started) throw new Error('Loop not yet started.');
     cancelAnimationFrame(this.animationFrameHandle);
     this.animationFrameHandle = null;
+    this.started = false;
     if (typeof this.gameContext.stop === 'function') this.gameContext.stop.call(this.gameContext);
     this.emit('stop');
+  }.bind(result);
+  /** Pauses the game loop. */
+
+
+  result.pause = function pause() {
+    if (!this.started || this.paused) return;
+    cancelAnimationFrame(this.animationFrameHandle);
+    this.animationFrameHandle = null;
+    this.paused = true;
+    if (typeof this.gameContext.pause === 'function') this.gameContext.pause.call(this.gameContext);
+    this.emit('pause');
+  }.bind(result);
+  /** Resumes the game loop. */
+
+
+  result.resume = function resume() {
+    if (!this.started || !this.pause) return;
+    this.prevFrameTime = 0;
+    this.paused = false;
+    if (typeof this.gameContext.resume === 'function') this.gameContext.resume.call(this.gameContext);
+    this.emit('resume');
+    this.run(0);
   }.bind(result);
 
   return result;
 }
 
 var GameLoop = /*#__PURE__*/Object.freeze({
-  __proto__: null,
-  INSTANCES: INSTANCES,
-  DEFAULT_FRAME_TIME: DEFAULT_FRAME_TIME,
-  start: start,
-  stop: stop,
-  registerGameLoop: registerGameLoop,
-  createGameLoop: createGameLoop
+    __proto__: null,
+    INSTANCES: INSTANCES,
+    DEFAULT_FRAME_TIME: DEFAULT_FRAME_TIME,
+    start: start,
+    stop: stop,
+    registerGameLoop: registerGameLoop,
+    createGameLoop: createGameLoop
 });
 
 
 
-var UtilModule = /*#__PURE__*/Object.freeze({
-  __proto__: null,
-  Eventable: Eventable$1,
-  GameLoop: GameLoop
-});
-
-var index = _objectSpread2({
-  Display: Display,
-  Audio: Audio,
-  Input: Input,
-  Random: Random,
-  Viewport: Viewport,
-  Utils: Utils
-}, DisplayModule, {}, InputModule, {}, RandomModule, {}, UtilModule);
-
-export default index;
+export default self;
+export { AbstractInputAdapter, ActionInputAdapter, Audio, DOUBLE_ACTION_TIME, Display, DisplayPort, DoubleActionInputAdapter, EventKey, Eventable$1 as Eventable, GameLoop, Input, Keyboard, MAX_CONTEXT_PRIORITY, MIN_CONTEXT_PRIORITY, MODE_CENTER, MODE_FIT, MODE_NONE, MODE_TOPLEFT, Mouse, Random, RandomGenerator, RangeInputAdapter, SimpleRandomGenerator, StateInputAdapter, Utils, Viewport, createContext, createSource };
