@@ -33,7 +33,12 @@ var self = /*#__PURE__*/Object.freeze({
 
 /**
  * @module Utils
- * @version 1.0.1
+ * @version 1.0.2
+ * 
+ * # Changelog
+ * ## 1.0.2
+ * - Added outline parameter for drawBox()
+ * - Added uuid()
  */
 function randomHexColor() {
   return '#' + Math.floor(Math.random() * 16777215).toString(16);
@@ -69,10 +74,18 @@ function drawText(ctx, text, x, y) {
 function drawBox(ctx, x, y, radians, w) {
   var h = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : w;
   var color = arguments.length > 6 && arguments[6] !== undefined ? arguments[6] : 'white';
+  var outline = arguments.length > 7 && arguments[7] !== undefined ? arguments[7] : false;
   ctx.translate(x, y);
   if (radians) ctx.rotate(radians);
-  ctx.fillStyle = color;
-  ctx.fillRect(-w / 2, -h / 2, w, h);
+
+  if (!outline) {
+    ctx.fillStyle = color;
+    ctx.fillRect(-w / 2, -h / 2, w, h);
+  } else {
+    ctx.strokeStyle = color;
+    ctx.strokeRect(-w / 2, -h / 2, w, h);
+  }
+
   if (radians) ctx.rotate(-radians);
   ctx.translate(-x, -y);
 }
@@ -135,6 +148,18 @@ function drawCircle(ctx, x, y) {
   ctx.arc(x, y, radius, 0, 2 * Math.PI);
   if (outline) ctx.stroke();else ctx.fill();
 }
+/**
+ * Generates a uuid v4.
+ * 
+ * @param {number} a The placeholder (serves for recursion within function).
+ * @returns {string} The universally unique id.
+ */
+
+function uuid() {
+  var a = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : undefined;
+  // https://gist.github.com/jed/982883
+  return a ? (a ^ Math.random() * 16 >> a / 4).toString(16) : ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, uuid);
+}
 
 var Utils = /*#__PURE__*/Object.freeze({
     __proto__: null,
@@ -153,7 +178,8 @@ var Utils = /*#__PURE__*/Object.freeze({
     direction2D: direction2D,
     lookAt2D: lookAt2D,
     cycleRange: cycleRange,
-    drawCircle: drawCircle
+    drawCircle: drawCircle,
+    uuid: uuid
 });
 
 /**

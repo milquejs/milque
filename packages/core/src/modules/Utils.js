@@ -1,6 +1,11 @@
 /**
  * @module Utils
- * @version 1.0.1
+ * @version 1.0.2
+ * 
+ * # Changelog
+ * ## 1.0.2
+ * - Added outline parameter for drawBox()
+ * - Added uuid()
  */
 
 export function randomHexColor()
@@ -41,12 +46,20 @@ export function drawText(ctx, text, x, y, radians = 0, fontSize = 16, color = 'w
     ctx.translate(-x, -y);
 }
 
-export function drawBox(ctx, x, y, radians, w, h = w, color = 'white')
+export function drawBox(ctx, x, y, radians, w, h = w, color = 'white', outline = false)
 {
     ctx.translate(x, y);
     if (radians) ctx.rotate(radians);
-    ctx.fillStyle = color;
-    ctx.fillRect(-w / 2, -h / 2, w, h);
+    if (!outline)
+    {
+        ctx.fillStyle = color;
+        ctx.fillRect(-w / 2, -h / 2, w, h);
+    }
+    else
+    {
+        ctx.strokeStyle = color;
+        ctx.strokeRect(-w / 2, -h / 2, w, h);
+    }
     if (radians) ctx.rotate(-radians);
     ctx.translate(-x, -y);
 }
@@ -125,4 +138,16 @@ export function drawCircle(ctx, x, y, radius = 16, color = 'white', outline = fa
     ctx.arc(x, y, radius, 0, 2 * Math.PI);
     if (outline) ctx.stroke();
     else ctx.fill();
+}
+
+/**
+ * Generates a uuid v4.
+ * 
+ * @param {number} a The placeholder (serves for recursion within function).
+ * @returns {string} The universally unique id.
+ */
+export function uuid(a = undefined)
+{
+    // https://gist.github.com/jed/982883
+    return a?(a^Math.random()*16>>a/4).toString(16):([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,uuid);
 }
