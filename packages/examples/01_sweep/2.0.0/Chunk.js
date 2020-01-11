@@ -25,67 +25,11 @@ import { Random, Utils } from './milque.js';
 // Either chance it, use a life, or use a scanner.
 
 export const TILE_SIZE = 16;
-export const TILE_OFFSET_X = TILE_SIZE / 2;
-export const TILE_OFFSET_Y = TILE_SIZE / 2;
 export const CHUNK_WIDTH = 16;
 export const CHUNK_HEIGHT = 16;
 
-export const CHUNK_OFFSET_X = 32;
-export const CHUNK_OFFSET_Y = 32;
-
 const MINE_COUNT = 40;
 const CHUNK_RAND = Random.createRandom(Math.random());
-
-const TILE_IMAGE = Utils.loadImage('../res/tile.png');
-const NUMS_IMAGE = Utils.loadImage('../res/nums.png');
-const MARK_IMAGE = Utils.loadImage('../res/flag.png');
-
-export function renderChunk(view, chunk)
-{
-    let ctx = view.context;
-    ctx.fillStyle = '#777777';
-    ctx.fillRect(0, 0, view.width, view.height);
-    drawGrid(ctx, 0, 0, view.width, view.height, TILE_SIZE, TILE_SIZE);
-
-    ctx.translate(CHUNK_OFFSET_X, CHUNK_OFFSET_Y);
-
-    for(let y = 0; y < CHUNK_HEIGHT; ++y)
-    {
-        for(let x = 0; x < CHUNK_WIDTH; ++x)
-        {
-            let renderX = TILE_OFFSET_X + x * TILE_SIZE;
-            let renderY = TILE_OFFSET_Y + y * TILE_SIZE;
-            let tileIndex = x + y * CHUNK_WIDTH;
-
-            if (chunk.solids[tileIndex] > 0)
-            {
-                ctx.drawImage(TILE_IMAGE, renderX - TILE_SIZE / 2, renderY - TILE_SIZE / 2, TILE_SIZE, TILE_SIZE);
-                if (chunk.marks[tileIndex] > 0)
-                {
-                    ctx.drawImage(MARK_IMAGE, renderX - TILE_SIZE / 2, renderY - TILE_SIZE / 2, TILE_SIZE, TILE_SIZE);
-                }
-            }
-            else
-            {
-                if (chunk.tiles[tileIndex] > 0)
-                {
-                    // ctx.drawImage(TILE_IMAGE, renderX - TILE_SIZE / 2, renderY - TILE_SIZE / 2, TILE_SIZE, TILE_SIZE);
-                    Utils.drawBox(ctx, renderX, renderY, 0, TILE_SIZE, TILE_SIZE, 'rgba(0, 0, 0, 0.2)');
-                    Utils.drawText(ctx, 'X', renderX, renderY, 0, 10, 'black');
-                }
-                else if (chunk.overlay[tileIndex] > 0)
-                {
-                    let num = chunk.overlay[tileIndex] - 1;
-                    ctx.drawImage(NUMS_IMAGE, 32 * num, 0, 32, 32, renderX - TILE_SIZE / 2, renderY - TILE_SIZE / 2, TILE_SIZE, TILE_SIZE);
-                }
-            }
-
-            // Utils.drawText(ctx, chunk.regions[tileIndex], renderX, renderY, 0, 8, 'black');
-        }
-    }
-
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-}
 
 export function createChunk()
 {
@@ -228,26 +172,6 @@ function subRegionize(chunk, index, regionIndex, isSeparator)
     {
         return null;
     }
-}
-
-function drawGrid(ctx, offsetX, offsetY, width, height, tileWidth, tileHeight)
-{
-    ctx.strokeStyle = '#888888';
-    ctx.beginPath();
-
-    for(let y = 0; y < height; y += tileHeight)
-    {
-        ctx.moveTo(offsetX, y + offsetY);
-        ctx.lineTo(offsetX + width, y + offsetY);
-    }
-
-    for(let x = 0; x < width; x += tileWidth)
-    {
-        ctx.moveTo(x + offsetX, offsetY);
-        ctx.lineTo(x + offsetX, offsetY + height);
-    }
-
-    ctx.stroke();
 }
 
 export function markTile(chunk, tileX, tileY)

@@ -4,13 +4,15 @@ import * as MainScene from './MainScene.js';
 import * as Chunk from './Chunk.js';
 import * as PlayerControls from './PlayerControls.js';
 
+import * as ChunkRenderer from './ChunkRenderer.js';
+
 const HEALTH_X = 0;
 const HEALTH_Y = 0;
 const FRAMES_PER_SECOND = 60;
 
 export async function load()
 {
-
+    await ChunkRenderer.load();
 }
 
 export function unload()
@@ -22,24 +24,24 @@ export function onRender(view, world)
 {
     let ctx = view.context;
 
-    Chunk.renderChunk(view, world.chunk);
+    ChunkRenderer.onRender(view, world);
 
     let mouseX = PlayerControls.MOUSE_X.value * view.width;
     let mouseY = PlayerControls.MOUSE_Y.value * view.height;
-    let mouseTileX = Utils.clampRange(Math.floor((mouseX - Chunk.CHUNK_OFFSET_X) / Chunk.TILE_SIZE), 0, Chunk.CHUNK_WIDTH - 1);
-    let mouseTileY = Utils.clampRange(Math.floor((mouseY - Chunk.CHUNK_OFFSET_Y) / Chunk.TILE_SIZE), 0, Chunk.CHUNK_HEIGHT - 1);
+    let mouseTileX = Utils.clampRange(Math.floor((mouseX - ChunkRenderer.CHUNK_OFFSET_X) / Chunk.TILE_SIZE), 0, Chunk.CHUNK_WIDTH - 1);
+    let mouseTileY = Utils.clampRange(Math.floor((mouseY - ChunkRenderer.CHUNK_OFFSET_Y) / Chunk.TILE_SIZE), 0, Chunk.CHUNK_HEIGHT - 1);
     
     Utils.drawBox(ctx,
-        Chunk.CHUNK_OFFSET_X + Chunk.TILE_OFFSET_X + mouseTileX * Chunk.TILE_SIZE,
-        Chunk.CHUNK_OFFSET_Y + Chunk.TILE_OFFSET_Y + mouseTileY * Chunk.TILE_SIZE,
+        ChunkRenderer.CHUNK_OFFSET_X + ChunkRenderer.TILE_OFFSET_X + mouseTileX * Chunk.TILE_SIZE,
+        ChunkRenderer.CHUNK_OFFSET_Y + ChunkRenderer.TILE_OFFSET_Y + mouseTileY * Chunk.TILE_SIZE,
         0, Chunk.TILE_SIZE - 1, Chunk.TILE_SIZE - 1, 'rgba(0, 0, 0, 0.2)');
     
     // Draw shadow
     ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
-    ctx.fillRect(0, 0, view.width, Chunk.CHUNK_OFFSET_Y);
-    ctx.fillRect(0, view.height - Chunk.CHUNK_OFFSET_Y, view.width, Chunk.CHUNK_OFFSET_Y);
-    ctx.fillRect(0, Chunk.CHUNK_OFFSET_Y, Chunk.CHUNK_OFFSET_X, view.height - Chunk.CHUNK_OFFSET_Y * 2);
-    ctx.fillRect(view.width - Chunk.CHUNK_OFFSET_X, Chunk.CHUNK_OFFSET_Y, Chunk.CHUNK_OFFSET_X, view.height - Chunk.CHUNK_OFFSET_Y * 2);
+    ctx.fillRect(0, 0, view.width, ChunkRenderer.CHUNK_OFFSET_Y);
+    ctx.fillRect(0, view.height - ChunkRenderer.CHUNK_OFFSET_Y, view.width, ChunkRenderer.CHUNK_OFFSET_Y);
+    ctx.fillRect(0, ChunkRenderer.CHUNK_OFFSET_Y, ChunkRenderer.CHUNK_OFFSET_X, view.height - ChunkRenderer.CHUNK_OFFSET_Y * 2);
+    ctx.fillRect(view.width - ChunkRenderer.CHUNK_OFFSET_X, ChunkRenderer.CHUNK_OFFSET_Y, ChunkRenderer.CHUNK_OFFSET_X, view.height - ChunkRenderer.CHUNK_OFFSET_Y * 2);
     
     // Draw health
     for(let i = 0; i < MainScene.MAX_HEALTH; ++i)

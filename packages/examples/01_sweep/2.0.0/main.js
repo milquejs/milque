@@ -27,6 +27,11 @@ let game = {
 
         Display.drawBufferToScreen(view.context);
     }
-}
+};
 
-GameLoop.start(game);
+Promise.all([
+    MainRender.load(),
+    MainScene.load(),
+]).then(() => {
+    GameLoop.start(game);
+});

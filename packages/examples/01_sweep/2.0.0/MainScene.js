@@ -3,8 +3,12 @@ import { Utils } from './milque.js';
 import * as Chunk from './Chunk.js';
 import * as PlayerControls from './PlayerControls.js';
 import * as Views from './Views.js';
+import * as ChunkRenderer from './ChunkRenderer.js';
 
 export const MAX_HEALTH = 3;
+
+export async function load() {}
+export function unload() {}
 
 export function onStart()
 {
@@ -48,8 +52,8 @@ export function onUpdate(dt)
         {
             let mouseX = PlayerControls.MOUSE_X.value * Views.WORLD_VIEW.width;
             let mouseY = PlayerControls.MOUSE_Y.value * Views.WORLD_VIEW.height;
-            let mouseTileX = Utils.clampRange(Math.floor((mouseX - Chunk.CHUNK_OFFSET_X) / Chunk.TILE_SIZE), 0, Chunk.CHUNK_WIDTH - 1);
-            let mouseTileY = Utils.clampRange(Math.floor((mouseY - Chunk.CHUNK_OFFSET_Y) / Chunk.TILE_SIZE), 0, Chunk.CHUNK_HEIGHT - 1);
+            let mouseTileX = Utils.clampRange(Math.floor((mouseX - ChunkRenderer.CHUNK_OFFSET_X) / Chunk.TILE_SIZE), 0, Chunk.CHUNK_WIDTH - 1);
+            let mouseTileY = Utils.clampRange(Math.floor((mouseY - ChunkRenderer.CHUNK_OFFSET_Y) / Chunk.TILE_SIZE), 0, Chunk.CHUNK_HEIGHT - 1);
             let result = Chunk.digTiles(this.chunk, mouseTileX, mouseTileY);
 
             if (!result)
@@ -67,16 +71,11 @@ export function onUpdate(dt)
         {
             let mouseX = PlayerControls.MOUSE_X.value * Views.WORLD_VIEW.width;
             let mouseY = PlayerControls.MOUSE_Y.value * Views.WORLD_VIEW.height;
-            let mouseTileX = Utils.clampRange(Math.floor((mouseX - Chunk.CHUNK_OFFSET_X) / Chunk.TILE_SIZE), 0, Chunk.CHUNK_WIDTH - 1);
-            let mouseTileY = Utils.clampRange(Math.floor((mouseY - Chunk.CHUNK_OFFSET_Y) / Chunk.TILE_SIZE), 0, Chunk.CHUNK_HEIGHT - 1);
+            let mouseTileX = Utils.clampRange(Math.floor((mouseX - ChunkRenderer.CHUNK_OFFSET_X) / Chunk.TILE_SIZE), 0, Chunk.CHUNK_WIDTH - 1);
+            let mouseTileY = Utils.clampRange(Math.floor((mouseY - ChunkRenderer.CHUNK_OFFSET_Y) / Chunk.TILE_SIZE), 0, Chunk.CHUNK_HEIGHT - 1);
             Chunk.markTile(this.chunk, mouseTileX, mouseTileY);
         }
     }
-}
-
-export function onRender(view, world)
-{
-
 }
 
 function dealDamage(scene, damage)
