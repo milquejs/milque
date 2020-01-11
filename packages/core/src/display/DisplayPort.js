@@ -1,8 +1,14 @@
 /**
  * @module DisplayPort
- * @version 1.2
+ * @version 1.3
  * 
  * # Changelog
+ * ## 1.3
+ * - Changed "topleft" to "noscale"
+ * - Changed default size to 640 x 480
+ * - Changed "center" and "fit" to fill container instead of viewport
+ * - Added "full" property to override and fill viewport
+ * 
  * ## 1.2
  * - Moved default values to the top
  * 
@@ -13,14 +19,13 @@
  * - Created DisplayPort
  */
 
-export const MODE_NONE = 'none';
-export const MODE_TOPLEFT = 'topleft';
+export const MODE_NOSCALE = 'noscale';
 export const MODE_CENTER = 'center';
 export const MODE_FIT = 'fit';
 
 const DEFAULT_MODE = MODE_CENTER;
-const DEFAULT_WIDTH = 300;
-const DEFAULT_HEIGHT = 300;
+const DEFAULT_WIDTH = 640;
+const DEFAULT_HEIGHT = 480;
 
 const INNER_HTML = `
 <label class="hidden" id="title">display-port</label>
@@ -68,14 +73,21 @@ const INNER_STYLE = `
         outline-offset: -4px;
         background-color: rgba(0, 0, 0, 0.1);
     }
-    :host([mode="${MODE_NONE}"]) canvas, :host([mode="${MODE_TOPLEFT}"]) canvas {
+    :host([mode="${MODE_NOSCALE}"]) canvas {
         margin: 0;
         top: 0;
         left: 0;
     }
     :host([mode="${MODE_FIT}"]), :host([mode="${MODE_CENTER}"]) {
-        width: 100vw;
-        height: 100vh;
+        width: 100%;
+        height: 100%;
+    }
+    :host([full]) {
+        width: 100vw!important;
+        height: 100vh!important;
+    }
+    :host([disabled]) {
+        display: none;
     }
 </style>`;
 
@@ -87,10 +99,12 @@ export class DisplayPort extends HTMLElement
         return [
             'width',
             'height',
+            'disabled',
             // NOTE: For debuggin purposes...
+            'debug',
+            // ...listening for built-in attribs...
             'id',
             'class',
-            'debug'
         ];
     }
 
@@ -144,6 +158,17 @@ export class DisplayPort extends HTMLElement
             case 'height':
                 this._height = value;
                 break;
+            case 'disabled':
+                if (value)
+                {
+                    this.update(0);
+                    this.pause();
+                }
+                else
+                {
+                    this.resume();
+                }
+                break;
             // NOTE: For debugging purposes...
             case 'id':
             case 'class':
@@ -173,7 +198,14 @@ export class DisplayPort extends HTMLElement
             this._fpsElement.innerText = frames;
 
             // Update dimensions...
-            this._dimensionElement.innerText = `${this._width}x${this._height}|${this.shadowRoot.host.clientWidth}x${this.shadowRoot.host.clientHeight}`;
+            if (this.mode === MODE_NOSCALE)
+            {
+                this._dimensionElement.innerText = `${this._width}x${this._height}`;
+            }
+            else
+            {
+                this._dimensionElement.innerText = `${this._width}x${this._height}|${this.shadowRoot.host.clientWidth}x${this.shadowRoot.host.clientHeight}`;
+            }
         }
 
         this.dispatchEvent(new CustomEvent('frame', { detail: { now, context: this._canvasContext }, bubbles: false, composed: true }));
@@ -201,7 +233,7 @@ export class DisplayPort extends HTMLElement
 
         const mode = this.mode;
 
-        if (mode !== MODE_TOPLEFT)
+        if (mode !== MODE_NOSCALE)
         {
             let flag = clientWidth < canvasWidth || clientHeight < canvasHeight || mode === MODE_FIT;
             if (flag)
@@ -244,13 +276,16 @@ export class DisplayPort extends HTMLElement
     getContext() { return this._canvasContext; }
 
     get width() { return this._width; }
-    set width(value) { return this.setAttribute('width', value); }
+    set width(value) { this.setAttribute('width', value); }
 
     get height() { return this._height; }
-    set height(value) { return this.setAttribute('height', value); }
+    set height(value) { this.setAttribute('height', value); }
 
     get mode() { return this.getAttribute('mode'); }
-    set mode(value) { return this.setAttribute('mode', value); }
+    set mode(value) { this.setAttribute('mode', value); }
+
+    get disabled() { return this.hasAttribute('disabled'); }
+    set disabled(value) { if (value) this.setAttribute('disabled', ''); else this.removeAttribute('disabled'); }
 
     // NOTE: For debugging purposes...
     get debug() { return this.hasAttribute('debug'); }
