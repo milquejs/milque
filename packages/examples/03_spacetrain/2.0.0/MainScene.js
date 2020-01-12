@@ -4,6 +4,10 @@ import * as PlayerControls from './PlayerControls.js';
 const PLAYER_RADIUS = 8;
 const MAX_PLAYER_TRADE_COOLDOWN = 80;
 const MIN_PLAYER_TRADE_COOLDOWN = 15;
+const MAX_PLAYER_VELOCITY = 1;
+const PLAYER_SPEED = 0.1;
+const ORBIT_SPEED = 0.05;
+const ORBIT_VELOCITY = MAX_PLAYER_VELOCITY / 2;
 
 const ITEMS = ['fud', 'mat', 'wet', 'lux', 'gem'];
 
@@ -16,6 +20,7 @@ export function onStart()
     };
     this.player = {
         x: 0, y: 0,
+        dx: 0, dy: 0,
         money: 10,
         inventory: {}
     };
@@ -25,19 +30,63 @@ export function onStart()
 
     this.camera.target = this.player;
 
-    this.planets.push({
-        x: 100, y: 100,
+    spawnPlanet(this, 100, 100);
+
+    spawnTradePost(this, 50, 50);
+    spawnTradePost(this, 50, -50);
+    spawnTradePost(this, -50, -50);
+    spawnTradePost(this, -50, 50);
+}
+
+function spawnPlanet(world, x = 0, y = 0)
+{
+    let result = createPlanet(x, y);
+    world.planets.push(result);
+    return result;
+}
+
+function createPlanet(x, y)
+{
+    return {
+        x, y,
         activeTradeTarget: null,
         activeTradeTime: 0,
         activeTradeFactor: 0,
-    });
+    };
+}
 
-    this.tradePosts.push({
-        x: 50, y: 50,
-        trade: [12, -1, Random.randomChoose(ITEMS)],
-        tradeRadius: 32,
+function spawnTradePost(world, x = 0, y = 0, parent = null)
+{
+    let result = createTradePost(x, y, parent);
+    world.tradePosts.push(result);
+    return result;
+}
+
+function createTradePost(x, y, parent)
+{
+    let radius = Random.randomRange(4, 10);
+    return {
+        parent,
+        x, y,
+        radius,
+        trade: randomTrade(),
+        tradeRadius: radius * 8,
         tradeMode: 0,
-    });
+    };
+}
+
+function randomTrade()
+{
+    let sign = Random.randomSign();
+    let cost = Math.floor(Random.randomRange(1, 100));
+    let amt = Math.floor(Random.randomRange(1, 100));
+    let item = Random.randomChoose(ITEMS);
+    return createTrade(sign * cost, -sign * amt, item);
+}
+
+function createTrade(cost, amt, item)
+{
+    return [ cost, amt, item ];
 }
 
 export function onPreUpdate(dt) {}
@@ -49,8 +98,8 @@ export function onUpdate(dt)
     const fireControl = PlayerControls.FIRE.value;
     const actionControl = PlayerControls.ACTION.value;
 
-    this.player.x += xControl;
-    this.player.y += yControl;
+    this.player.dx += xControl * PLAYER_SPEED * dt;
+    this.player.dy += yControl * PLAYER_SPEED * dt;
 
     if (this.player.activeTradeTarget)
     {
@@ -58,38 +107,58 @@ export function onUpdate(dt)
         if (Utils.distance2D(this.player, tradePost) > tradePost.tradeRadius)
         {
             tradePost.tradeMode = 0;
-        }
-        else if (actionControl)
-        {
-            if (tradePost.tradeMode !== 2)
-            {
-                tradePost.tradeMode = 2;
-                this.player.activeTradeTime = 0;
-                this.player.activeTradeFactor = 0;
-            }
-            this.player.activeTradeTime += dt;
-            let tradeCooldown = ((MAX_PLAYER_TRADE_COOLDOWN - MIN_PLAYER_TRADE_COOLDOWN) * (1 - Utils.clampRange(this.player.activeTradeFactor / 5, 0, 1))) + MIN_PLAYER_TRADE_COOLDOWN;
-            if (this.player.activeTradeTime > tradeCooldown)
-            {
-                let inv = this.player.inventory;
-                let cost = tradePost.trade[0];
-                let amt = tradePost.trade[1];
-                let item = tradePost.trade[2];
-                if (this.player.money > -cost)
-                {
-                    if (!(item in inv)) inv[item] = 0;
-                    inv[item] += amt;
-                    this.player.money += cost;
-
-                    ++this.player.activeTradeFactor;
-                }
-
-                this.player.activeTradeTime = 0;
-            }
+            this.player.activeTradeTarget = null;
         }
         else
         {
-            tradePost.tradeMode = 1;
+            let dist = Utils.distance2D(this.player, tradePost);
+            let dx = ((this.player.x - tradePost.x) / dist);
+            let dy = ((this.player.y - tradePost.y) / dist);
+            let radians = Math.atan2(dy, dx) + 1;
+            let orbitRadius = tradePost.tradeRadius;
+            let orbitX = tradePost.x + Math.cos(radians) * orbitRadius;
+            let orbitY = tradePost.y + Math.sin(radians) * orbitRadius;
+            dist = Utils.distance2D(this.player, { x: orbitX, y: orbitY });
+            dx = (orbitX - this.player.x) / dist;
+            dy = (orbitY - this.player.y) / dist;
+
+            // Keep in orbit...
+            this.player.dx = Utils.lerp(this.player.dx, dx * ORBIT_VELOCITY, dt * ORBIT_SPEED);
+            this.player.dy = Utils.lerp(this.player.dy, dy * ORBIT_VELOCITY, dt * ORBIT_SPEED);
+
+            // Perform trading...
+            if (actionControl)
+            {
+                if (tradePost.tradeMode !== 2)
+                {
+                    tradePost.tradeMode = 2;
+                    this.player.activeTradeTime = 0;
+                    this.player.activeTradeFactor = 0;
+                }
+                this.player.activeTradeTime += dt;
+                let tradeCooldown = ((MAX_PLAYER_TRADE_COOLDOWN - MIN_PLAYER_TRADE_COOLDOWN) * (1 - Utils.clampRange(this.player.activeTradeFactor / 5, 0, 1))) + MIN_PLAYER_TRADE_COOLDOWN;
+                if (this.player.activeTradeTime > tradeCooldown)
+                {
+                    let inv = this.player.inventory;
+                    let cost = tradePost.trade[0];
+                    let amt = tradePost.trade[1];
+                    let item = tradePost.trade[2];
+                    if (this.player.money > -cost)
+                    {
+                        if (!(item in inv)) inv[item] = 0;
+                        inv[item] += amt;
+                        this.player.money += cost;
+
+                        ++this.player.activeTradeFactor;
+                    }
+
+                    this.player.activeTradeTime = 0;
+                }
+            }
+            else
+            {
+                tradePost.tradeMode = 1;
+            }
         }
     }
     else
@@ -103,6 +172,12 @@ export function onUpdate(dt)
             }
         }
     }
+
+    this.player.dx = Utils.clampRange(this.player.dx, -MAX_PLAYER_VELOCITY, MAX_PLAYER_VELOCITY);
+    this.player.dy = Utils.clampRange(this.player.dy, -MAX_PLAYER_VELOCITY, MAX_PLAYER_VELOCITY);
+
+    this.player.x += this.player.dx;
+    this.player.y += this.player.dy;
     
     if (this.camera.target)
     {
@@ -121,17 +196,10 @@ export function onRender(view, world)
     
     ctx.translate(cameraX, cameraY);
     {
-        Utils.drawBox(ctx, this.player.x, this.player.y, 0, PLAYER_RADIUS * 2, PLAYER_RADIUS * 2, 'green');
-
-        for(const planet of this.planets)
-        {
-            Utils.drawCircle(ctx, planet.x, planet.y, 8, 'green');
-        }
-        
         for(const tradePost of this.tradePosts)
         {
             Utils.drawCircle(ctx, tradePost.x, tradePost.y, tradePost.tradeRadius - PLAYER_RADIUS, 'lime', true);
-            Utils.drawBox(ctx, tradePost.x, tradePost.y, 0, 8, 8, 'green');
+            Utils.drawBox(ctx, tradePost.x, tradePost.y, 0, tradePost.radius * 2, tradePost.radius * 2, 'green');
             if (tradePost.tradeMode)
             {
                 Utils.drawText(ctx,
@@ -139,15 +207,23 @@ export function onRender(view, world)
                     tradePost.x, tradePost.y - 16, 0, 10);
             }
         }
+        
+        for(const planet of this.planets)
+        {
+            Utils.drawCircle(ctx, planet.x, planet.y, 8, 'green');
+        }
+
+        Utils.drawBox(ctx, this.player.x, this.player.y, 0, PLAYER_RADIUS * 2, PLAYER_RADIUS * 2, 'green');
     }
     ctx.translate(-cameraX, -cameraY);
 
+    let itemLine = 0;
     for(let itemName of Object.keys(this.player.inventory))
     {
         ctx.textAlign = 'left';
         ctx.textBaseline = 'bottom';
         ctx.fillStyle = '#FFFFFF';
-        ctx.fillText(`${this.player.inventory[itemName]} x ${itemName}`, 8, view.height - 8);
+        ctx.fillText(`${this.player.inventory[itemName]} x ${itemName}`, 8, view.height - 8 - 16 * itemLine++);
     }
 
     Utils.drawText(ctx, `\$${this.player.money}`, view.width - 16, view.height - 16);
