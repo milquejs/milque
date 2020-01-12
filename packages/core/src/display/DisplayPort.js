@@ -1,8 +1,11 @@
 /**
  * @module DisplayPort
- * @version 1.3
+ * @version 1.4
  * 
  * # Changelog
+ * ## 1.4
+ * - Added "stretch" mode
+ * 
  * ## 1.3
  * - Changed "topleft" to "noscale"
  * - Changed default size to 640 x 480
@@ -22,6 +25,7 @@
 export const MODE_NOSCALE = 'noscale';
 export const MODE_CENTER = 'center';
 export const MODE_FIT = 'fit';
+export const MODE_STRETCH = 'stretch';
 
 const DEFAULT_MODE = MODE_CENTER;
 const DEFAULT_WIDTH = 640;
@@ -78,7 +82,7 @@ const INNER_STYLE = `
         top: 0;
         left: 0;
     }
-    :host([mode="${MODE_FIT}"]), :host([mode="${MODE_CENTER}"]) {
+    :host([mode="${MODE_FIT}"]), :host([mode="${MODE_CENTER}"]), :host([mode="${MODE_STRETCH}"]) {
         width: 100%;
         height: 100%;
     }
@@ -233,7 +237,12 @@ export class DisplayPort extends HTMLElement
 
         const mode = this.mode;
 
-        if (mode !== MODE_NOSCALE)
+        if (mode === MODE_STRETCH)
+        {
+            canvasWidth = clientWidth;
+            canvasHeight = clientHeight;
+        }
+        else if (mode !== MODE_NOSCALE)
         {
             let flag = clientWidth < canvasWidth || clientHeight < canvasHeight || mode === MODE_FIT;
             if (flag)

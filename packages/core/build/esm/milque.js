@@ -10,6 +10,7 @@ var self = /*#__PURE__*/Object.freeze({
     get MODE_NOSCALE () { return MODE_NOSCALE; },
     get MODE_CENTER () { return MODE_CENTER; },
     get MODE_FIT () { return MODE_FIT; },
+    get MODE_STRETCH () { return MODE_STRETCH; },
     get DisplayPort () { return DisplayPort; },
     get EventKey () { return EventKey; },
     get MIN_CONTEXT_PRIORITY () { return MIN_CONTEXT_PRIORITY; },
@@ -1417,9 +1418,12 @@ var Viewport = /*#__PURE__*/Object.freeze({
 
 /**
  * @module DisplayPort
- * @version 1.3
+ * @version 1.4
  * 
  * # Changelog
+ * ## 1.4
+ * - Added "stretch" mode
+ * 
  * ## 1.3
  * - Changed "topleft" to "noscale"
  * - Changed default size to 640 x 480
@@ -1438,11 +1442,12 @@ var Viewport = /*#__PURE__*/Object.freeze({
 var MODE_NOSCALE = 'noscale';
 var MODE_CENTER = 'center';
 var MODE_FIT = 'fit';
+var MODE_STRETCH = 'stretch';
 var DEFAULT_MODE = MODE_CENTER;
 var DEFAULT_WIDTH = 640;
 var DEFAULT_HEIGHT = 480;
 var INNER_HTML = "\n<label class=\"hidden\" id=\"title\">display-port</label>\n<label class=\"hidden\" id=\"fps\">00</label>\n<label class=\"hidden\" id=\"dimension\">0x0</label>\n<canvas></canvas>";
-var INNER_STYLE = "\n<style>\n    :host {\n        display: inline-block;\n        color: #555555;\n    }\n    div {\n        display: flex;\n        position: relative;\n        width: 100%;\n        height: 100%;\n    }\n    canvas {\n        background: #000000;\n        margin: auto;\n    }\n    label {\n        font-family: monospace;\n        color: currentColor;\n        position: absolute;\n    }\n    #title {\n        left: 0.5rem;\n        top: 0.5rem;\n    }\n    #fps {\n        right: 0.5rem;\n        top: 0.5rem;\n    }\n    #dimension {\n        left: 0.5rem;\n        bottom: 0.5rem;\n    }\n    .hidden {\n        display: none;\n    }\n    :host([debug]) div {\n        outline: 8px dashed rgba(0, 0, 0, 0.4);\n        outline-offset: -4px;\n        background-color: rgba(0, 0, 0, 0.1);\n    }\n    :host([mode=\"".concat(MODE_NOSCALE, "\"]) canvas {\n        margin: 0;\n        top: 0;\n        left: 0;\n    }\n    :host([mode=\"").concat(MODE_FIT, "\"]), :host([mode=\"").concat(MODE_CENTER, "\"]) {\n        width: 100%;\n        height: 100%;\n    }\n    :host([full]) {\n        width: 100vw!important;\n        height: 100vh!important;\n    }\n</style>");
+var INNER_STYLE = "\n<style>\n    :host {\n        display: inline-block;\n        color: #555555;\n    }\n    div {\n        display: flex;\n        position: relative;\n        width: 100%;\n        height: 100%;\n    }\n    canvas {\n        background: #000000;\n        margin: auto;\n    }\n    label {\n        font-family: monospace;\n        color: currentColor;\n        position: absolute;\n    }\n    #title {\n        left: 0.5rem;\n        top: 0.5rem;\n    }\n    #fps {\n        right: 0.5rem;\n        top: 0.5rem;\n    }\n    #dimension {\n        left: 0.5rem;\n        bottom: 0.5rem;\n    }\n    .hidden {\n        display: none;\n    }\n    :host([debug]) div {\n        outline: 8px dashed rgba(0, 0, 0, 0.4);\n        outline-offset: -4px;\n        background-color: rgba(0, 0, 0, 0.1);\n    }\n    :host([mode=\"".concat(MODE_NOSCALE, "\"]) canvas {\n        margin: 0;\n        top: 0;\n        left: 0;\n    }\n    :host([mode=\"").concat(MODE_FIT, "\"]), :host([mode=\"").concat(MODE_CENTER, "\"]), :host([mode=\"").concat(MODE_STRETCH, "\"]) {\n        width: 100%;\n        height: 100%;\n    }\n    :host([full]) {\n        width: 100vw!important;\n        height: 100vh!important;\n    }\n    :host([disabled]) {\n        display: none;\n    }\n</style>");
 var DisplayPort =
 /*#__PURE__*/
 function (_HTMLElement) {
@@ -1453,8 +1458,9 @@ function (_HTMLElement) {
 
     /** @override */
     get: function get() {
-      return ['width', 'height', // NOTE: For debuggin purposes...
-      'id', 'class', 'debug'];
+      return ['width', 'height', 'disabled', // NOTE: For debuggin purposes...
+      'debug', // ...listening for built-in attribs...
+      'id', 'class'];
     }
   }]);
 
@@ -1513,6 +1519,16 @@ function (_HTMLElement) {
         case 'height':
           this._height = value;
           break;
+
+        case 'disabled':
+          if (value) {
+            this.update(0);
+            this.pause();
+          } else {
+            this.resume();
+          }
+
+          break;
         // NOTE: For debugging purposes...
 
         case 'id':
@@ -1543,7 +1559,11 @@ function (_HTMLElement) {
         this._prevAnimationFrameTime = now;
         this._fpsElement.innerText = frames; // Update dimensions...
 
-        this._dimensionElement.innerText = "".concat(this._width, "x").concat(this._height, "|").concat(this.shadowRoot.host.clientWidth, "x").concat(this.shadowRoot.host.clientHeight);
+        if (this.mode === MODE_NOSCALE) {
+          this._dimensionElement.innerText = "".concat(this._width, "x").concat(this._height);
+        } else {
+          this._dimensionElement.innerText = "".concat(this._width, "x").concat(this._height, "|").concat(this.shadowRoot.host.clientWidth, "x").concat(this.shadowRoot.host.clientHeight);
+        }
       }
 
       this.dispatchEvent(new CustomEvent('frame', {
@@ -1576,7 +1596,10 @@ function (_HTMLElement) {
       var canvasHeight = this._height;
       var mode = this.mode;
 
-      if (mode !== MODE_NOSCALE) {
+      if (mode === MODE_STRETCH) {
+        canvasWidth = clientWidth;
+        canvasHeight = clientHeight;
+      } else if (mode !== MODE_NOSCALE) {
         var flag = clientWidth < canvasWidth || clientHeight < canvasHeight || mode === MODE_FIT;
 
         if (flag) {
@@ -1636,7 +1659,7 @@ function (_HTMLElement) {
       return this._width;
     },
     set: function set(value) {
-      return this.setAttribute('width', value);
+      this.setAttribute('width', value);
     }
   }, {
     key: "height",
@@ -1644,7 +1667,7 @@ function (_HTMLElement) {
       return this._height;
     },
     set: function set(value) {
-      return this.setAttribute('height', value);
+      this.setAttribute('height', value);
     }
   }, {
     key: "mode",
@@ -1652,7 +1675,15 @@ function (_HTMLElement) {
       return this.getAttribute('mode');
     },
     set: function set(value) {
-      return this.setAttribute('mode', value);
+      this.setAttribute('mode', value);
+    }
+  }, {
+    key: "disabled",
+    get: function get() {
+      return this.hasAttribute('disabled');
+    },
+    set: function set(value) {
+      if (value) this.setAttribute('disabled', '');else this.removeAttribute('disabled');
     } // NOTE: For debugging purposes...
 
   }, {
@@ -2085,4 +2116,4 @@ var GameLoop = /*#__PURE__*/Object.freeze({
 
 
 export default self;
-export { AbstractInputAdapter, ActionInputAdapter, Audio, DOUBLE_ACTION_TIME, Display, DisplayPort, DoubleActionInputAdapter, EventKey, Eventable$1 as Eventable, GameLoop, Input, Keyboard, MAX_CONTEXT_PRIORITY, MIN_CONTEXT_PRIORITY, MODE_CENTER, MODE_FIT, MODE_NOSCALE, Mouse, Random, RandomGenerator, RangeInputAdapter, SimpleRandomGenerator, StateInputAdapter, Utils, Viewport, createContext, createSource };
+export { AbstractInputAdapter, ActionInputAdapter, Audio, DOUBLE_ACTION_TIME, Display, DisplayPort, DoubleActionInputAdapter, EventKey, Eventable$1 as Eventable, GameLoop, Input, Keyboard, MAX_CONTEXT_PRIORITY, MIN_CONTEXT_PRIORITY, MODE_CENTER, MODE_FIT, MODE_NOSCALE, MODE_STRETCH, Mouse, Random, RandomGenerator, RangeInputAdapter, SimpleRandomGenerator, StateInputAdapter, Utils, Viewport, createContext, createSource };
