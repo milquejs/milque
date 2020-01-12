@@ -1,37 +1,42 @@
-import { Utils } from './milque.js';
+import { Utils } from '../milque.js';
 
 import * as PlayerControls from './PlayerControls.js';
 
 export const PLAYER_MOVE_SPEED = 0.2;
 export const PLAYER_ROT_SPEED = 0.2;
+export const MIN_PLAYER_VELOCITY_X = 1;
+export const MIN_PLAYER_VELOCITY_Y = 1;
 export const MAX_PLAYER_VELOCITY_X = 3;
 export const MAX_PLAYER_VELOCITY_Y = 3;
 export const PLAYER_BRAKE_FRICTION = 0.1;
 export const INV_PLAYER_BRAKE_FRICTION = 1 - PLAYER_BRAKE_FRICTION;
 
-export async function load(assets)
-{
-    
-}
+export async function load() {}
+export function unload() {}
 
-export function create(world, x = 0, y = 0)
+export function spawn(world, ...args)
 {
-    let result = {
-        x,
-        y,
-        dx: 0,
-        dy: 0,
-        rotation: 0,
-        brakeMode: false,
-    };
+    let result = create(...args);
     world.players.push(result);
     return result;
 }
 
-export function onPreUpdate(dt, world, entities)
+export function destroy(world, entity)
 {
-
+    world.players.splice(world.players.indexOf(entity), 1);
 }
+
+export function create(x = 0, y = 0)
+{
+    return {
+        x, y,
+        dx: 0,
+        dy: 0,
+        rotation: 0
+    };
+}
+
+export function onPreUpdate(dt, world, entities) {}
 
 export function onUpdate(dt, world, entities)
 {
@@ -39,23 +44,28 @@ export function onUpdate(dt, world, entities)
 
     let xControl = PlayerControls.RIGHT.value - PlayerControls.LEFT.value;
     let yControl = PlayerControls.DOWN.value - PlayerControls.UP.value;
-    let brakeControl = PlayerControls.BRAKE.value;
-    let toggleBrakeControl = PlayerControls.TOGGLE_BRAKE.value;
-    
-    player.dx += xControl * PLAYER_MOVE_SPEED;
-    player.dy += yControl * PLAYER_MOVE_SPEED;
     let moveControl = xControl || yControl;
+
+    let rotation = Math.atan2(yControl, xControl);
+    let speed = Math.sqrt(player.dx * player.dx + player.dy * player.dy);
+    
+    let dx = Math.cos(rotation) * PLAYER_MOVE_SPEED;
+    let dy = Math.sin(rotation) * PLAYER_MOVE_SPEED;
     if (moveControl)
     {
-        if (!xControl) player.dx *= INV_PLAYER_BRAKE_FRICTION;
-        if (!yControl) player.dy *= INV_PLAYER_BRAKE_FRICTION;
+        player.dx += dx;
+        player.dy += dy;
     }
-
-    if (toggleBrakeControl) player.brakeMode = !player.brakeMode;
-    if (!moveControl && player.brakeMode || brakeControl)
+    else
     {
-        player.dx *= INV_PLAYER_BRAKE_FRICTION;
-        player.dy *= INV_PLAYER_BRAKE_FRICTION;
+        if (player.dx < MIN_PLAYER_VELOCITY_X)
+        {
+            player.dx = Utils.lerp(player.dx, MIN_PLAYER_VELOCITY_X, dt);
+        }
+        if (player.dy < MIN_PLAYER_VELOCITY_Y)
+        {
+            player.dy = Utils.lerp(player.dy, MIN_PLAYER_VELOCITY_Y, dt);
+        }
     }
 
     player.dx = Utils.clampRange(player.dx, -MAX_PLAYER_VELOCITY_X, MAX_PLAYER_VELOCITY_X);
@@ -69,25 +79,10 @@ export function onUpdate(dt, world, entities)
     }
 }
 
-export function onPostUpdate(dt, world, entities)
-{
-    
-}
-
 export function onRender(view, world, entities)
 {
     let ctx = view.context;
     let player = entities[0];
     Utils.drawBox(ctx, player.x, player.y, player.rotation, 16, 16, 'red');
     Utils.drawBox(ctx, player.x, player.y, player.rotation, 12, 4, 'white');
-}
-
-export function destroy(world, entity)
-{
-    world.players.splice(world.players.indexOf(entity), 1);
-}
-
-export function unload(assets)
-{
-
 }

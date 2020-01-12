@@ -20,6 +20,7 @@ const HIT_Y = Input.createRange('mouse[pos].y');
 function start()
 {
     this.balls = [];
+    this.particles = [];
     this.score = 0;
 
     this.gameStart = false;
@@ -51,6 +52,7 @@ function update(dt)
                 {
                     this.score += 1;
                     splitBall(this, ball);
+                    explode(this, ball.x, ball.y);
                     break;
                 }
             }
@@ -66,6 +68,8 @@ function update(dt)
         }
     }
 
+    updateParticles(dt, this, this.particles);
+
     let view = WORLD_VIEW;
     this.render(view);
 }
@@ -78,6 +82,13 @@ function render(view)
     BouncingBall.onRender(view, this);
     Utils.drawText(ctx, `${this.score}`, view.width / 2 + 3, view.height / 2 + 3, 0, 32, '#888888');
     Utils.drawText(ctx, `${this.score}`, view.width / 2, view.height / 2, 0, 32, '#FFFFFF');
+
+    for(let particle of this.particles)
+    {
+        let lifeRatio = Math.min(1, particle.life / 100);
+        let color = lightenColor(Utils.randomHexColor(), lifeRatio - 1);
+        Utils.drawBox(ctx, particle.x, particle.y, 0, particle.size, particle.size, color);
+    }
 
     Display.drawBufferToScreen(ctx);
 }
@@ -192,9 +203,57 @@ function lightenColor(color, percent)
     return "#" + (0x1000000 + (R<255?R<1?0:R:255)*0x10000 + (B<255?B<1?0:B:255)*0x100 + (G<255?G<1?0:G:255)).toString(16).slice(1);
 }
 
-function explode(world, x, y)
+function explode(world, x, y, amount = 100, life = 100, emitRadius = 16, minSpeed = 1, maxSpeed = 2, minSize = 8, maxSize = 16)
 {
+    let result = [];
+    for(let i = 0; i < amount; ++i)
+    {
+        const angle = Random.randomRange(0, Math.PI * 2);
+        const dist = Random.randomRange(0, emitRadius);
+        const dx = Math.cos(angle);
+        const dy = Math.sin(angle);
+        const speed = Random.randomRange(minSpeed, maxSpeed);
+        let particle = createParticle(world,
+            x + dx * dist, y + dy * dist,
+            dx * speed, dy * speed,
+            life,
+            Random.randomRange(minSize, maxSize)
+        );
+        result.push(particle);
+    }
+    return result;
+}
 
+function createParticle(world, x, y, dx, dy, life, size)
+{
+    let result = {
+        x, y,
+        dx, dy,
+        life,
+        size
+    };
+    world.particles.push(result);
+    return result;
+}
+
+function destroyParticle(world, particle)
+{
+    world.particles.splice(world.particles.indexOf(particle), 1);
+}
+
+function updateParticles(dt, world, particles)
+{
+    for(let particle of particles)
+    {
+        particle.life -= dt;
+        if (particle.life <= 0)
+        {
+            destroyParticle(world, particle);
+            continue;
+        }
+        particle.x += particle.dx;
+        particle.y += particle.dy;
+    }
 }
 
 GameLoop.start({ start, update, render });

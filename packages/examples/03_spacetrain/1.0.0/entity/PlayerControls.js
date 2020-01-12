@@ -1,4 +1,4 @@
-import { Input, DoubleActionInputAdapter } from './milque.js';
+import { Input } from '../milque.js';
 
 export const CONTEXT = Input.createContext();
 export const UP = CONTEXT.registerState('forward', {
@@ -25,10 +25,7 @@ export const RIGHT = CONTEXT.registerState('right', {
     'key[d].up': 0,
     'key[d].down': 1
 });
-export const BRAKE = CONTEXT.registerState('brake', {
-    'key[b].up': 0,
-    'key[b].down': 1
+export const FIRE = CONTEXT.registerState('fire', {
+    'key[ ].up': 0,
+    'key[ ].down': 1
 });
-export const TOGGLE_BRAKE = CONTEXT.registerInput('toggle-brake',
-    new DoubleActionInputAdapter(['key[b].down'])
-);
