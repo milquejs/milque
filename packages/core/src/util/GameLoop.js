@@ -1,6 +1,6 @@
 /**
  * @module GameLoop
- * @version 1.1
+ * @version 1.2
  * 
  * @example
  * let context = {
@@ -21,6 +21,19 @@
  *   .on('update', function update(dt) {
  *     // Update code here...
  *   });
+ * 
+ * @description
+ * # Changelog
+ * 
+ * ## 1.2
+ * - Fixed incrementing dt on window blur
+ * - Fixed large dt on first frame
+ * 
+ * ## 1.1
+ * - Added pause and resume
+ * 
+ * ## 1.0
+ * - Create GameLoop
  */
 import * as Eventable from './Eventable.js';
 
@@ -33,10 +46,15 @@ export const DEFAULT_FRAME_TIME = 1000 / 60;
  * @property {number} prevFrameTime The time of the previous frame in milliseconds.
  * @property {Object} animationFrameHandle The handle for the animation frame request. Used by cancelAnimationRequest().
  * @property {Object} gameContext The context of the game loop to run in.
+ * @property {Object} frameTime The expected time taken per frame.
+ * @property {Object} started Whether the game has started.
+ * @property {Object} paused Whether the game is paused.
  * 
  * @property {function} run The game loop function itself.
  * @property {function} start Begins the game loop.
  * @property {function} stop Ends the game loop.
+ * @property {function} pause Pauses the game loop.
+ * @property {function} resume Resumes the game loop.
  */
 
 /**
@@ -131,13 +149,17 @@ export function createGameLoop(context = {})
     {
         if (this.started) throw new Error('Loop already started.');
 
-        this.prevFrameTime = 0;
+        // If the window is out of focus, just ignore the time.
+        window.addEventListener('focus', this.resume);
+        window.addEventListener('blur', this.pause);
+
+        this.prevFrameTime = performance.now();
         this.started = true;
 
         if (typeof this.gameContext.start === 'function') this.gameContext.start.call(this.gameContext);
         this.emit('start');
 
-        this.run(0);
+        this.run(this.prevFrameTime);
     }
     .bind(result);
 
@@ -145,6 +167,10 @@ export function createGameLoop(context = {})
     result.stop = function stop()
     {
         if (!this.started) throw new Error('Loop not yet started.');
+
+        // If the window is out of focus, just ignore the time.
+        window.removeEventListener('focus', this.resume);
+        window.removeEventListener('blur', this.pause);
 
         cancelAnimationFrame(this.animationFrameHandle);
         this.animationFrameHandle = null;
@@ -174,13 +200,13 @@ export function createGameLoop(context = {})
     {
         if (!this.started || !this.pause) return;
 
-        this.prevFrameTime = 0;
+        this.prevFrameTime = performance.now();
         this.paused = false;
 
         if (typeof this.gameContext.resume === 'function') this.gameContext.resume.call(this.gameContext);
         this.emit('resume');
 
-        this.run(0);
+        this.run(this.prevFrameTime);
     }
     .bind(result);
 
