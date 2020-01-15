@@ -30,8 +30,10 @@ export function createView(camera = undefined, width = 640, height = 480)
 {
     let { canvas, context } = createViewBuffer(width, height);
     return {
+        // TODO: Users may only set canvas and not realize to also set context...
         canvas,
         context,
+        // TODO: Users may not realize that changing camera in render() does nothing.
         camera: camera || Camera.createCamera(),
         width,
         height,
