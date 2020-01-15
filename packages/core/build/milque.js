@@ -1409,10 +1409,10 @@
       var result = {
         canvas: canvasElement,
         context: canvasContext,
+        x: 0,
+        y: 0,
         width: width,
-        height: height,
-        offsetX: 0,
-        offsetY: 0
+        height: height
       };
       return result;
     }
@@ -1642,12 +1642,12 @@
       }, {
         key: "drawBufferToCanvas",
         value: function drawBufferToCanvas(bufferContext) {
-          var viewportOffsetX = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
-          var viewportOffsetY = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
+          var viewportX = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+          var viewportY = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
           var viewportWidth = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : this.width;
           var viewportHeight = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : this.height;
 
-          this._canvasContext.drawImage(bufferContext.canvas, viewportOffsetX, viewportOffsetY, viewportWidth, viewportHeight);
+          this._canvasContext.drawImage(bufferContext.canvas, viewportX, viewportY, viewportWidth, viewportHeight);
         }
       }, {
         key: "getCanvas",
@@ -1977,10 +1977,15 @@
      * @property {number} prevFrameTime The time of the previous frame in milliseconds.
      * @property {Object} animationFrameHandle The handle for the animation frame request. Used by cancelAnimationRequest().
      * @property {Object} gameContext The context of the game loop to run in.
+     * @property {Object} frameTime The expected time taken per frame.
+     * @property {Object} started Whether the game has started.
+     * @property {Object} paused Whether the game is paused.
      * 
      * @property {function} run The game loop function itself.
      * @property {function} start Begins the game loop.
      * @property {function} stop Ends the game loop.
+     * @property {function} pause Pauses the game loop.
+     * @property {function} resume Resumes the game loop.
      */
 
     /**
@@ -2065,18 +2070,24 @@
 
 
       result.start = function start() {
-        if (this.started) throw new Error('Loop already started.');
-        this.prevFrameTime = 0;
+        if (this.started) throw new Error('Loop already started.'); // If the window is out of focus, just ignore the time.
+
+        window.addEventListener('focus', this.resume);
+        window.addEventListener('blur', this.pause);
+        this.prevFrameTime = performance.now();
         this.started = true;
         if (typeof this.gameContext.start === 'function') this.gameContext.start.call(this.gameContext);
         this.emit('start');
-        this.run(0);
+        this.run(this.prevFrameTime);
       }.bind(result);
       /** Stops the game loop. */
 
 
       result.stop = function stop() {
-        if (!this.started) throw new Error('Loop not yet started.');
+        if (!this.started) throw new Error('Loop not yet started.'); // If the window is out of focus, just ignore the time.
+
+        window.removeEventListener('focus', this.resume);
+        window.removeEventListener('blur', this.pause);
         cancelAnimationFrame(this.animationFrameHandle);
         this.animationFrameHandle = null;
         this.started = false;
@@ -2099,11 +2110,11 @@
 
       result.resume = function resume() {
         if (!this.started || !this.pause) return;
-        this.prevFrameTime = 0;
+        this.prevFrameTime = performance.now();
         this.paused = false;
         if (typeof this.gameContext.resume === 'function') this.gameContext.resume.call(this.gameContext);
         this.emit('resume');
-        this.run(0);
+        this.run(this.prevFrameTime);
       }.bind(result);
 
       return result;

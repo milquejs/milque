@@ -276,9 +276,9 @@ export class DisplayPort extends HTMLElement
         }
     }
 
-    drawBufferToCanvas(bufferContext, viewportOffsetX = 0, viewportOffsetY = 0, viewportWidth = this.width, viewportHeight = this.height)
+    drawBufferToCanvas(bufferContext, viewportX = 0, viewportY = 0, viewportWidth = this.width, viewportHeight = this.height)
     {
-        this._canvasContext.drawImage(bufferContext.canvas, viewportOffsetX, viewportOffsetY, viewportWidth, viewportHeight);
+        this._canvasContext.drawImage(bufferContext.canvas, viewportX, viewportY, viewportWidth, viewportHeight);
     }
 
     getCanvas() { return this._canvasElement; }

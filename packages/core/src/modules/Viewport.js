@@ -10,10 +10,8 @@ export function createView(width = 320, height = width)
     let result = {
         canvas: canvasElement,
         context: canvasContext,
-        width,
-        height,
-        offsetX: 0,
-        offsetY: 0
+        x: 0, y: 0,
+        width, height
     };
     return result;
 }
