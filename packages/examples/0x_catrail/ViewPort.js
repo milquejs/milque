@@ -11,6 +11,11 @@ export class ViewPort
         this._context = canvasContext;
     }
 
+    // NOTE: We use function getters instead of property getters here because
+    // this can easily be overridden for a different implementation. These
+    // values are expected to support both computed and stored values. Whereas
+    // property getters imply a static, or stored, value.
+
     /** The x position offset in the output. */
     getX() { return 0; }
     /** The y position offset in the output. */
