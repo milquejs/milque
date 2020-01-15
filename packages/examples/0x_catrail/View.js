@@ -82,7 +82,7 @@ export function drawBufferToCanvas(
  * @param {number} [width=canvasElement.clientWidth] The width of the viewport in the output.
  * @param {number} [height=canvasElement.clientHeight] The height of the viewport in the output.
  */
-export function createViewport(
+export function createViewPort(
     canvasElement,
     canvasContext,
     x = 0,
