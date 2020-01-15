@@ -14,14 +14,13 @@ export async function load(game)
 {
     this.camera = new Camera2D(WORLD_VIEW.width / 2, WORLD_VIEW.height / 2);
 
-    game.registerView(HUD_VIEW, null, onHUDRender);
-    game.registerView(WORLD_VIEW, null, onWorldRender);
+    game.addRenderTarget(HUD_VIEW, onHUDRender)
+        .addRenderTarget(WORLD_VIEW, onWorldRender);
 }
 
 export async function unload(game)
 {
-    game.unregisterView(WORLD_VIEW);
-    game.unregisterView(HUD_VIEW);
+    game.clearRenderTargets();
 }
 
 export function onStart()

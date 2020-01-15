@@ -4,6 +4,8 @@ import * as View from './View.js';
 var game;
 var scenes = new Map();
 
+export const DEFAULT_VIEW = View.createView();
+
 export function registerScene(name, scene)
 {
     scenes.set(name, scene);
@@ -38,19 +40,23 @@ export function createGame(scene, context = {})
         world: context,
         loop: GameLoop.createGameLoop(context),
         scene: null,
-        _renders: new Map(),
+        _renderTargets: new Map(),
         _transition: null,
         _nextTransition: null,
         _nextScene: scene,
-        // TODO: These don't really register views... they setup render targets.
-        registerView(view, target = null, renderer = null)
+        addRenderTarget(view, renderer = null, viewPort = null, context = null, handle = view)
         {
-            this._renders.set(view, { view, target, renderer });
+            this._renderTargets.set(handle, { view, renderer, viewPort, context });
             return this;
         },
-        unregisterView(view)
+        removeRenderTarget(handle)
         {
-            this._renders.delete(view);
+            this._renderTargets.delete(handle);
+            return this;
+        },
+        clearRenderTargets()
+        {
+            this._renderTargets.clear();
             return this;
         },
         nextScene(scene, transition = undefined)
@@ -107,9 +113,6 @@ export function createGame(scene, context = {})
                 if ('load' in nextScene) result = result.then(() => nextScene.load.call(this.world, this));
 
                 result = result.then(() => {
-                    // Create a default view if there wasn't one created already...
-                    if (this._renders.size <= 0) this.registerView(View.createView(), nextScene);
-
                     this.scene = nextScene;
                     this._transition = null;
 
@@ -135,18 +138,31 @@ export function createGame(scene, context = {})
         },
         render()
         {
-            // TODO: In the future, renderer should be completely separate from the scene.
-            // Perhaps not even handled in Game.js ...
-            let first = true;
-            for(let renderInfo of this._renders.values())
+            if (this._renderTargets.size <= 0)
             {
-                let target = renderInfo.target || this._transition || this.world;
-                let renderer = renderInfo.renderer || (target ? target.onRender : null) || (this.scene ? this.scene.onRender : null);
-                this._renderStep(renderInfo.view, target, renderer, first);
-                first = false;
+                this._renderStep(DEFAULT_VIEW,
+                    this.scene ? this.scene.onRender : null,
+                    null,
+                    this._transition || this.world,
+                    true);
+            }
+            else
+            {
+                // TODO: In the future, renderer should be completely separate from the scene.
+                // Perhaps not even handled in Game.js ...
+                let first = true;
+                for(let renderTarget of this._renderTargets.values())
+                {
+                    let view = renderTarget.view;
+                    let renderer = renderTarget.renderer || (this.scene ? this.scene.onRender : null);
+                    let viewPort = renderTarget.viewPort;
+                    let context = renderTarget.context || this._transition || this.world;
+                    this._renderStep(view, renderer, viewPort, context, first);
+                    first = false;
+                }
             }
         },
-        _renderStep(view, target, renderer = null, first = true)
+        _renderStep(view, renderer = null, viewPort = null, context = null, first = true)
         {
             // Reset any transformations...
             view.context.setTransform(1, 0, 0, 1, 0, 0);
@@ -161,14 +177,15 @@ export function createGame(scene, context = {})
                 view.context.clearRect(0, 0, view.width, view.height);
             }
             
-            if (renderer) renderer.call(target, view.context, view, this.world);
+            if (renderer) renderer.call(context, view.context, view, this.world);
 
             // NOTE: The renderer can define a custom viewport to draw to
-            if (renderer && renderer.viewPort)
+            if (viewPort)
             {
-                View.drawBufferToCanvas(renderer.viewPort.context, view.canvas, renderer.viewPort.x, renderer.viewPort.y, renderer.viewPort.width, renderer.viewPort.height);
+                View.drawBufferToCanvas(viewPort.getContext(), view.canvas, viewPort.getX(), viewPort.getY(), viewPort.getWidth(), viewPort.getHeight());
             }
-            else
+            // TODO: Is there a way to get rid of this?
+            else if (Display.getDrawContext())
             {
                 View.drawBufferToCanvas(Display.getDrawContext(), view.canvas);
             }

@@ -10,12 +10,12 @@ const WORLD_VIEW = View.createView();
 
 export async function load(game)
 {
-    game.registerView(WORLD_VIEW);
+    game.addRenderTarget(WORLD_VIEW);
 }
 
 export async function unload(game)
 {
-    game.unregisterView(WORLD_VIEW);
+    game.removeRenderTarget(WORLD_VIEW);
 }
 
 export function onStart()

@@ -1,5 +1,7 @@
 /**
  * @module View
+ * @version 1.0
+ * 
  * A view is a section of a world that is drawn onto a section of a
  * display. For every view, there must exist a camera and viewport.
  * However, there could exist multiple cameras in the same view
@@ -72,32 +74,4 @@ export function drawBufferToCanvas(
 {
     targetCanvasContext.drawImage(bufferCanvasElement,
         viewPortX, viewPortY, viewPortWidth, viewPortHeight);
-}
-
-/**
- * Creates a viewport for a display output. This serves as the output dimensions
- * of a view.
- * @param {HTMLElement} canvasElement The output canvas (or the display).
- * @param {RenderingContext} canvasContext The output canvas context.
- * @param {number} [x=0] The x position offset in the output.
- * @param {number} [y=0] The y position offset in the output.
- * @param {number} [width=canvasElement.clientWidth] The width of the viewport in the output.
- * @param {number} [height=canvasElement.clientHeight] The height of the viewport in the output.
- */
-export function createViewPort(
-    canvasElement,
-    canvasContext,
-    x = 0,
-    y = 0,
-    width = canvasElement.clientWidth,
-    height = canvasElement.clientHeight)
-{
-    return {
-        canvas: canvasElement,
-        context: canvasContext,
-        x, y,
-        width, height,
-        getCanvas() { return this.canvas; },
-        getContext() { return this.context; }
-    };
 }
