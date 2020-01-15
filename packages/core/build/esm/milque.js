@@ -27,11 +27,11 @@ var self = /*#__PURE__*/Object.freeze({
     get RandomGenerator () { return RandomGenerator; },
     get SimpleRandomGenerator () { return SimpleRandomGenerator; },
     get Eventable () { return Eventable$1; },
-    get GameLoop () { return GameLoop; },
     get View () { return View; },
     get ViewHelper () { return ViewHelper; },
     get ViewPort () { return ViewPort; },
-    get Camera () { return Camera; }
+    get Camera () { return Camera; },
+    get GameLoop () { return GameLoop; }
 });
 
 /**
@@ -1965,167 +1965,6 @@ var Eventable$1 = /*#__PURE__*/Object.freeze({
     'default': Eventable
 });
 
-var INSTANCES = new Map();
-var DEFAULT_FRAME_TIME = 1000 / 60;
-/**
- * @typedef {Eventable.Eventable} GameLoop
- * 
- * @property {number} prevFrameTime The time of the previous frame in milliseconds.
- * @property {Object} animationFrameHandle The handle for the animation frame request. Used by cancelAnimationRequest().
- * @property {Object} gameContext The context of the game loop to run in.
- * @property {Object} frameTime The expected time taken per frame.
- * @property {Object} started Whether the game has started.
- * @property {Object} paused Whether the game is paused.
- * 
- * @property {function} run The game loop function itself.
- * @property {function} start Begins the game loop.
- * @property {function} stop Ends the game loop.
- * @property {function} pause Pauses the game loop.
- * @property {function} resume Resumes the game loop.
- */
-
-/**
- * Starts a game loop.
- * 
- * @param {Object} [handle] The handle that refers to the registered game
- * loop. If the handle has not been previously registered, it will
- * register the handle with a new game loop, with the handle serving as
- * both the new game loop's handle and context (only if the handle is
- * an object, otherwise, it will create an empty context).
- * @returns {GameLoop} The started game loop instance.
- */
-
-function start() {
-  var handle = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : undefined;
-  var gameLoop;
-
-  if (INSTANCES.has(handle)) {
-    gameLoop = INSTANCES.get(handle);
-  } else {
-    var context;
-    if (_typeof(handle) === 'object') context = handle;else context = {};
-    gameLoop = registerGameLoop(context, handle);
-  } // Start the loop (right after any chained method calls, like event listeners)
-
-
-  setTimeout(function () {
-    return gameLoop.start();
-  }, 0);
-  return gameLoop;
-}
-/**
- * Stops a game loop.
- * 
- * @param {Object} [handle] The handle that refers to the registered game loop.
- * @returns {GameLoop} The stopped game loop instance or null if no game loop
- * was found with handle.
- */
-
-function stop(handle) {
-  if (INSTANCES.has(handle)) {
-    var gameLoop = INSTANCES.get(handle);
-    gameLoop.stop();
-    return gameLoop;
-  }
-
-  return null;
-}
-function registerGameLoop() {
-  var context = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-  var handle = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : context;
-  var gameLoop = createGameLoop(context);
-  INSTANCES.set(handle, gameLoop);
-  return gameLoop;
-}
-function createGameLoop() {
-  var context = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-  var result = create(context);
-  result.prevFrameTime = 0;
-  result.animationFrameHandle = null;
-  result.gameContext = context;
-  result.frameTime = DEFAULT_FRAME_TIME;
-  result.started = false;
-  result.paused = false;
-  /** Sets the frame time. Only changes dt; does NOT change how many times update() is called. */
-
-  result.setFrameTime = function setFrameTime(dt) {
-    this.frameTime = dt;
-    return this;
-  };
-  /** Runs the game loop. Will call itself. */
-
-
-  result.run = function run(now) {
-    this.animationFrameHandle = requestAnimationFrame(this.run);
-    var dt = (now - this.prevFrameTime) / this.frameTime;
-    this.prevFrameTime = now;
-    if (typeof this.gameContext.update === 'function') this.gameContext.update.call(this.gameContext, dt);
-    this.emit('update', dt);
-  }.bind(result);
-  /** Starts the game loop. Calls run(). */
-
-
-  result.start = function start() {
-    if (this.started) throw new Error('Loop already started.'); // If the window is out of focus, just ignore the time.
-
-    window.addEventListener('focus', this.resume);
-    window.addEventListener('blur', this.pause);
-    this.prevFrameTime = performance.now();
-    this.started = true;
-    if (typeof this.gameContext.start === 'function') this.gameContext.start.call(this.gameContext);
-    this.emit('start');
-    this.run(this.prevFrameTime);
-  }.bind(result);
-  /** Stops the game loop. */
-
-
-  result.stop = function stop() {
-    if (!this.started) throw new Error('Loop not yet started.'); // If the window is out of focus, just ignore the time.
-
-    window.removeEventListener('focus', this.resume);
-    window.removeEventListener('blur', this.pause);
-    cancelAnimationFrame(this.animationFrameHandle);
-    this.animationFrameHandle = null;
-    this.started = false;
-    if (typeof this.gameContext.stop === 'function') this.gameContext.stop.call(this.gameContext);
-    this.emit('stop');
-  }.bind(result);
-  /** Pauses the game loop. */
-
-
-  result.pause = function pause() {
-    if (!this.started || this.paused) return;
-    cancelAnimationFrame(this.animationFrameHandle);
-    this.animationFrameHandle = null;
-    this.paused = true;
-    if (typeof this.gameContext.pause === 'function') this.gameContext.pause.call(this.gameContext);
-    this.emit('pause');
-  }.bind(result);
-  /** Resumes the game loop. */
-
-
-  result.resume = function resume() {
-    if (!this.started || !this.pause) return;
-    this.prevFrameTime = performance.now();
-    this.paused = false;
-    if (typeof this.gameContext.resume === 'function') this.gameContext.resume.call(this.gameContext);
-    this.emit('resume');
-    this.run(this.prevFrameTime);
-  }.bind(result);
-
-  return result;
-}
-
-var GameLoop = /*#__PURE__*/Object.freeze({
-    __proto__: null,
-    INSTANCES: INSTANCES,
-    DEFAULT_FRAME_TIME: DEFAULT_FRAME_TIME,
-    start: start,
-    stop: stop,
-    registerGameLoop: registerGameLoop,
-    createGameLoop: createGameLoop
-});
-
 /**
  * @module View
  * @version 1.1.0
@@ -2336,6 +2175,167 @@ function () {
 
   return Camera;
 }();
+
+var INSTANCES = new Map();
+var DEFAULT_FRAME_TIME = 1000 / 60;
+/**
+ * @typedef {Eventable.Eventable} GameLoop
+ * 
+ * @property {number} prevFrameTime The time of the previous frame in milliseconds.
+ * @property {Object} animationFrameHandle The handle for the animation frame request. Used by cancelAnimationRequest().
+ * @property {Object} gameContext The context of the game loop to run in.
+ * @property {Object} frameTime The expected time taken per frame.
+ * @property {Object} started Whether the game has started.
+ * @property {Object} paused Whether the game is paused.
+ * 
+ * @property {function} run The game loop function itself.
+ * @property {function} start Begins the game loop.
+ * @property {function} stop Ends the game loop.
+ * @property {function} pause Pauses the game loop.
+ * @property {function} resume Resumes the game loop.
+ */
+
+/**
+ * Starts a game loop.
+ * 
+ * @param {Object} [handle] The handle that refers to the registered game
+ * loop. If the handle has not been previously registered, it will
+ * register the handle with a new game loop, with the handle serving as
+ * both the new game loop's handle and context (only if the handle is
+ * an object, otherwise, it will create an empty context).
+ * @returns {GameLoop} The started game loop instance.
+ */
+
+function start() {
+  var handle = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : undefined;
+  var gameLoop;
+
+  if (INSTANCES.has(handle)) {
+    gameLoop = INSTANCES.get(handle);
+  } else {
+    var context;
+    if (_typeof(handle) === 'object') context = handle;else context = {};
+    gameLoop = registerGameLoop(context, handle);
+  } // Start the loop (right after any chained method calls, like event listeners)
+
+
+  setTimeout(function () {
+    return gameLoop.start();
+  }, 0);
+  return gameLoop;
+}
+/**
+ * Stops a game loop.
+ * 
+ * @param {Object} [handle] The handle that refers to the registered game loop.
+ * @returns {GameLoop} The stopped game loop instance or null if no game loop
+ * was found with handle.
+ */
+
+function stop(handle) {
+  if (INSTANCES.has(handle)) {
+    var gameLoop = INSTANCES.get(handle);
+    gameLoop.stop();
+    return gameLoop;
+  }
+
+  return null;
+}
+function registerGameLoop() {
+  var context = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+  var handle = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : context;
+  var gameLoop = createGameLoop(context);
+  INSTANCES.set(handle, gameLoop);
+  return gameLoop;
+}
+function createGameLoop() {
+  var context = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+  var result = create(context);
+  result.prevFrameTime = 0;
+  result.animationFrameHandle = null;
+  result.gameContext = context;
+  result.frameTime = DEFAULT_FRAME_TIME;
+  result.started = false;
+  result.paused = false;
+  /** Sets the frame time. Only changes dt; does NOT change how many times update() is called. */
+
+  result.setFrameTime = function setFrameTime(dt) {
+    this.frameTime = dt;
+    return this;
+  };
+  /** Runs the game loop. Will call itself. */
+
+
+  result.run = function run(now) {
+    this.animationFrameHandle = requestAnimationFrame(this.run);
+    var dt = (now - this.prevFrameTime) / this.frameTime;
+    this.prevFrameTime = now;
+    if (typeof this.gameContext.update === 'function') this.gameContext.update.call(this.gameContext, dt);
+    this.emit('update', dt);
+  }.bind(result);
+  /** Starts the game loop. Calls run(). */
+
+
+  result.start = function start() {
+    if (this.started) throw new Error('Loop already started.'); // If the window is out of focus, just ignore the time.
+
+    window.addEventListener('focus', this.resume);
+    window.addEventListener('blur', this.pause);
+    this.prevFrameTime = performance.now();
+    this.started = true;
+    if (typeof this.gameContext.start === 'function') this.gameContext.start.call(this.gameContext);
+    this.emit('start');
+    this.run(this.prevFrameTime);
+  }.bind(result);
+  /** Stops the game loop. */
+
+
+  result.stop = function stop() {
+    if (!this.started) throw new Error('Loop not yet started.'); // If the window is out of focus, just ignore the time.
+
+    window.removeEventListener('focus', this.resume);
+    window.removeEventListener('blur', this.pause);
+    cancelAnimationFrame(this.animationFrameHandle);
+    this.animationFrameHandle = null;
+    this.started = false;
+    if (typeof this.gameContext.stop === 'function') this.gameContext.stop.call(this.gameContext);
+    this.emit('stop');
+  }.bind(result);
+  /** Pauses the game loop. */
+
+
+  result.pause = function pause() {
+    if (!this.started || this.paused) return;
+    cancelAnimationFrame(this.animationFrameHandle);
+    this.animationFrameHandle = null;
+    this.paused = true;
+    if (typeof this.gameContext.pause === 'function') this.gameContext.pause.call(this.gameContext);
+    this.emit('pause');
+  }.bind(result);
+  /** Resumes the game loop. */
+
+
+  result.resume = function resume() {
+    if (!this.started || !this.pause) return;
+    this.prevFrameTime = performance.now();
+    this.paused = false;
+    if (typeof this.gameContext.resume === 'function') this.gameContext.resume.call(this.gameContext);
+    this.emit('resume');
+    this.run(this.prevFrameTime);
+  }.bind(result);
+
+  return result;
+}
+
+var GameLoop = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    INSTANCES: INSTANCES,
+    DEFAULT_FRAME_TIME: DEFAULT_FRAME_TIME,
+    start: start,
+    stop: stop,
+    registerGameLoop: registerGameLoop,
+    createGameLoop: createGameLoop
+});
 
 
 

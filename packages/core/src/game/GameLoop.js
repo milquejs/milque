@@ -35,7 +35,7 @@
  * ## 1.0
  * - Create GameLoop
  */
-import * as Eventable from './Eventable.js';
+import * as Eventable from '../util/Eventable.js';
 
 export const INSTANCES = new Map();
 export const DEFAULT_FRAME_TIME = 1000 / 60;
