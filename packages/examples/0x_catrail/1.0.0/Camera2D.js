@@ -1,7 +1,7 @@
-import { Utils, Camera } from './milque.js';
+import { Utils, AbstractCamera } from './milque.js';
 import { Transform } from './Transform.js';
 
-export class Camera2D extends Camera
+export class Camera2D extends AbstractCamera
 {
     constructor(offsetX = 0, offsetY = 0, speed = 1)
     {

@@ -30,7 +30,7 @@ var self = /*#__PURE__*/Object.freeze({
     get View () { return View; },
     get ViewHelper () { return ViewHelper; },
     get ViewPort () { return ViewPort; },
-    get Camera () { return Camera; },
+    get AbstractCamera () { return AbstractCamera; },
     get GameLoop () { return GameLoop; }
 });
 
@@ -2062,13 +2062,17 @@ var View = /*#__PURE__*/Object.freeze({
     drawBufferToCanvas: drawBufferToCanvas
 });
 
-function setViewTransform(view, camera) {
+function setViewTransform(view) {
+  var camera = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : undefined;
+
   if (camera) {
     var _view$context, _view$context2;
 
     (_view$context = view.context).setTransform.apply(_view$context, _toConsumableArray(camera.getProjectionMatrix()));
 
     (_view$context2 = view.context).transform.apply(_view$context2, _toConsumableArray(camera.getViewMatrix()));
+  } else {
+    view.context.setTransform(1, 0, 0, 1, 0, 0);
   }
 }
 
@@ -2147,14 +2151,14 @@ function () {
  * A camera for a view. This serves as the in-world representation of the
  * view. This is usually manipulated to move the world, zoom in, etc.
  */
-var Camera =
+var AbstractCamera =
 /*#__PURE__*/
 function () {
-  function Camera() {
-    _classCallCheck(this, Camera);
+  function AbstractCamera() {
+    _classCallCheck(this, AbstractCamera);
   }
 
-  _createClass(Camera, [{
+  _createClass(AbstractCamera, [{
     key: "update",
     value: function update(dt) {}
     /** @abstract */
@@ -2173,7 +2177,7 @@ function () {
     }
   }]);
 
-  return Camera;
+  return AbstractCamera;
 }();
 
 var INSTANCES = new Map();
@@ -2340,4 +2344,4 @@ var GameLoop = /*#__PURE__*/Object.freeze({
 
 
 export default self;
-export { AbstractInputAdapter, ActionInputAdapter, Audio, Camera, DOUBLE_ACTION_TIME, Display, DisplayPort, DoubleActionInputAdapter, EventKey, Eventable$1 as Eventable, GameLoop, Input, Keyboard, MAX_CONTEXT_PRIORITY, MIN_CONTEXT_PRIORITY, MODE_CENTER, MODE_FIT, MODE_NOSCALE, MODE_STRETCH, Mouse, Random, RandomGenerator, RangeInputAdapter, SimpleRandomGenerator, StateInputAdapter, Utils, View, ViewHelper, ViewPort, createContext, createSource };
+export { AbstractCamera, AbstractInputAdapter, ActionInputAdapter, Audio, DOUBLE_ACTION_TIME, Display, DisplayPort, DoubleActionInputAdapter, EventKey, Eventable$1 as Eventable, GameLoop, Input, Keyboard, MAX_CONTEXT_PRIORITY, MIN_CONTEXT_PRIORITY, MODE_CENTER, MODE_FIT, MODE_NOSCALE, MODE_STRETCH, Mouse, Random, RandomGenerator, RangeInputAdapter, SimpleRandomGenerator, StateInputAdapter, Utils, View, ViewHelper, ViewPort, createContext, createSource };

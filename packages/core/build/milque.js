@@ -36,7 +36,7 @@
         get View () { return View; },
         get ViewHelper () { return ViewHelper; },
         get ViewPort () { return ViewPort; },
-        get Camera () { return Camera; },
+        get AbstractCamera () { return AbstractCamera; },
         get GameLoop () { return GameLoop; }
     });
 
@@ -2068,13 +2068,17 @@
         drawBufferToCanvas: drawBufferToCanvas
     });
 
-    function setViewTransform(view, camera) {
+    function setViewTransform(view) {
+      var camera = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : undefined;
+
       if (camera) {
         var _view$context, _view$context2;
 
         (_view$context = view.context).setTransform.apply(_view$context, _toConsumableArray(camera.getProjectionMatrix()));
 
         (_view$context2 = view.context).transform.apply(_view$context2, _toConsumableArray(camera.getViewMatrix()));
+      } else {
+        view.context.setTransform(1, 0, 0, 1, 0, 0);
       }
     }
 
@@ -2153,14 +2157,14 @@
      * A camera for a view. This serves as the in-world representation of the
      * view. This is usually manipulated to move the world, zoom in, etc.
      */
-    var Camera =
+    var AbstractCamera =
     /*#__PURE__*/
     function () {
-      function Camera() {
-        _classCallCheck(this, Camera);
+      function AbstractCamera() {
+        _classCallCheck(this, AbstractCamera);
       }
 
-      _createClass(Camera, [{
+      _createClass(AbstractCamera, [{
         key: "update",
         value: function update(dt) {}
         /** @abstract */
@@ -2179,7 +2183,7 @@
         }
       }]);
 
-      return Camera;
+      return AbstractCamera;
     }();
 
     var INSTANCES = new Map();
@@ -2345,10 +2349,10 @@
 
 
 
+    exports.AbstractCamera = AbstractCamera;
     exports.AbstractInputAdapter = AbstractInputAdapter;
     exports.ActionInputAdapter = ActionInputAdapter;
     exports.Audio = Audio;
-    exports.Camera = Camera;
     exports.DOUBLE_ACTION_TIME = DOUBLE_ACTION_TIME;
     exports.Display = Display;
     exports.DisplayPort = DisplayPort;
