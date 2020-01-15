@@ -148,6 +148,9 @@ export function createGame(scene, context = {})
         },
         _renderStep(view, target, renderer = null, first = true)
         {
+            // Reset any transformations...
+            view.context.setTransform(1, 0, 0, 1, 0, 0);
+
             // TODO: Something more elegant please? I don't think we need the flag.
             if (first)
             {
@@ -157,12 +160,8 @@ export function createGame(scene, context = {})
             {
                 view.context.clearRect(0, 0, view.width, view.height);
             }
-
-            view.camera.update();
-
-            View.applyViewTransform(view);
+            
             if (renderer) renderer.call(target, view.context, view, this.world);
-            View.resetViewTransform(view);
 
             // NOTE: The renderer can define a custom viewport to draw to
             if (renderer && renderer.viewPort)

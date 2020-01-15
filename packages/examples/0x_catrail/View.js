@@ -20,23 +20,34 @@
  * The size of the view buffer should never change (unless game resolution
  * and aspect ratio changes).
  */
-import * as Camera from './Camera.js';
 
 /**
  * Creates a view which facilitates rendering from world to screen space.
- * @param {Camera} camera The camera in the world to view from.
  */
-export function createView(camera = undefined, width = 640, height = 480)
+export function createView(width = 640, height = 480)
 {
     let { canvas, context } = createViewBuffer(width, height);
     return {
-        // TODO: Users may only set canvas and not realize to also set context...
-        canvas,
-        context,
-        // TODO: Users may not realize that changing camera in render() does nothing.
-        camera: camera || Camera.createCamera(),
-        width,
-        height,
+        _canvas: canvas,
+        _context: context,
+        _width: width,
+        _height: height,
+
+        get canvas() { return this._canvas; },
+        get context() { return this._context; },
+
+        get width() { return this._width; },
+        set width(value)
+        {
+            this._width = value;
+            this._canvas.width = value;
+        },
+        get height() { return this._height; },
+        set height(value)
+        {
+            this._height = value;
+            this._canvas.height = value;
+        },
     };
 }
 
@@ -49,17 +60,6 @@ export function createViewBuffer(width, height)
     let canvasContext = canvasElement.getContext('2d');
     canvasContext.imageSmoothingEnabled = false;
     return { canvas: canvasElement, context: canvasContext };
-}
-
-export function applyViewTransform(view)
-{
-    view.context.setTransform(...view.camera.projectionMatrix);
-    view.context.transform(...view.camera.viewMatrix);
-}
-
-export function resetViewTransform(view)
-{
-    view.context.setTransform(1, 0, 0, 1, 0, 0);
 }
 
 export function drawBufferToCanvas(
@@ -97,13 +97,7 @@ export function createViewPort(
         context: canvasContext,
         x, y,
         width, height,
-        getCanvas()
-        {
-            return this.canvas;
-        },
-        getContext()
-        {
-            return this.context;
-        }
+        getCanvas() { return this.canvas; },
+        getContext() { return this.context; }
     };
 }

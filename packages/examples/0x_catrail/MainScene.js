@@ -3,18 +3,19 @@ import { Utils } from './milque.js';
 import * as RenderHelper from './RenderHelper.js';
 import * as MouseControls from './MouseControls.js';
 
+import { Camera2D } from './Camera2D.js';
 import * as View from './View.js';
+import * as ViewHelper from './ViewHelper.js';
 
 const WORLD_VIEW = View.createView();
 const HUD_VIEW = View.createView();
 
 export async function load(game)
 {
-    WORLD_VIEW.camera.offsetX = WORLD_VIEW.width / 2;
-    WORLD_VIEW.camera.offsetY = WORLD_VIEW.height / 2;
-    
-    game.registerView(HUD_VIEW);
-    game.registerView(WORLD_VIEW);
+    this.camera = new Camera2D(WORLD_VIEW.width / 2, WORLD_VIEW.height / 2);
+
+    game.registerView(HUD_VIEW, null, onHUDRender);
+    game.registerView(WORLD_VIEW, null, onWorldRender);
 }
 
 export async function unload(game)
@@ -29,8 +30,8 @@ export function onStart()
         x: 0, y: 0
     };
 
-    WORLD_VIEW.camera.target = this.player;
-    WORLD_VIEW.camera.speed = 0.1;
+    this.camera.target = this.player;
+    this.camera.speed = 0.1;
 }
 
 export function onUpdate(dt)
@@ -44,23 +45,25 @@ export function onUpdate(dt)
     {
         this.player.x -= 10;
     }
+
+    this.camera.update(dt);
 }
 
-export function onRender(ctx, view, world)
+export function onHUDRender(ctx, view, world)
 {
-    if (view === HUD_VIEW)
-    {
-        RenderHelper.drawNavigationInfo(view,
-            -WORLD_VIEW.camera.transform.x + WORLD_VIEW.camera.offsetX,
-            -WORLD_VIEW.camera.transform.y + WORLD_VIEW.camera.offsetY);
-    }
-    else if (view === WORLD_VIEW)
-    {
-        Utils.drawBox(ctx, world.player.x, world.player.y, 0, 64);
+    RenderHelper.drawNavigationInfo(view,
+        -world.camera.transform.x + world.camera.offsetX,
+        -world.camera.transform.y + world.camera.offsetY);
+}
 
-        const mouseX = MouseControls.POS_X.value * view.width + view.camera.transform.x - view.camera.offsetX;
-        const mouseY = MouseControls.POS_Y.value * view.height + view.camera.transform.y - view.camera.offsetY;
-        Utils.drawText(ctx, 'Bye!', mouseX, mouseY);
-    }
+export function onWorldRender(ctx, view, world)
+{
+    ViewHelper.applyViewTransform(view, world.camera);
+
+    Utils.drawBox(ctx, world.player.x, world.player.y, 0, 64);
+
+    const mouseX = MouseControls.POS_X.value * view.width + world.camera.transform.x - world.camera.offsetX;
+    const mouseY = MouseControls.POS_Y.value * view.height + world.camera.transform.y - world.camera.offsetY;
+    Utils.drawText(ctx, 'Bye!', mouseX, mouseY);
 }
 
