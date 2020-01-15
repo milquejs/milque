@@ -2060,11 +2060,11 @@ function createGameLoop() {
 
   result.start = function start() {
     if (this.started) throw new Error('Loop already started.');
-    this.prevFrameTime = 0;
+    this.prevFrameTime = performance.now();
     this.started = true;
     if (typeof this.gameContext.start === 'function') this.gameContext.start.call(this.gameContext);
     this.emit('start');
-    this.run(0);
+    this.run(this.prevFrameTime);
   }.bind(result);
   /** Stops the game loop. */
 
@@ -2093,11 +2093,11 @@ function createGameLoop() {
 
   result.resume = function resume() {
     if (!this.started || !this.pause) return;
-    this.prevFrameTime = 0;
+    this.prevFrameTime = performance.now();
     this.paused = false;
     if (typeof this.gameContext.resume === 'function') this.gameContext.resume.call(this.gameContext);
     this.emit('resume');
-    this.run(0);
+    this.run(this.prevFrameTime);
   }.bind(result);
 
   return result;

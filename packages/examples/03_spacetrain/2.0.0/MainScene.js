@@ -1,5 +1,7 @@
 import { Utils, Random } from './milque.js';
+
 import * as PlayerControls from './PlayerControls.js';
+import * as EntitySpawner from './EntitySpawner.js';
 
 const PLAYER_RADIUS = 8;
 const MAX_PLAYER_TRADE_COOLDOWN = 80;
@@ -8,6 +10,8 @@ const MAX_PLAYER_VELOCITY = 1;
 const PLAYER_SPEED = 0.1;
 const ORBIT_SPEED = 0.05;
 const ORBIT_VELOCITY = MAX_PLAYER_VELOCITY / 2;
+const TRAIN_CART_RADIUS = 6;
+const TRAIN_CART_SPEED = 0.04;
 
 const ITEMS = ['fud', 'mat', 'wet', 'lux', 'gem'];
 
@@ -25,27 +29,22 @@ export function onStart()
         inventory: {}
     };
 
-    this.planets = [];
-    this.tradePosts = [];
+    this.planets = EntitySpawner.createSpawner(createPlanet);
+    this.tradePosts = EntitySpawner.createSpawner(createTradePost);
+    this.trainCarts = EntitySpawner.createSpawner(createTrainCart);
 
     this.camera.target = this.player;
 
-    spawnPlanet(this, 100, 100);
+    this.planets.spawn(100, 100);
+    this.tradePosts.spawn(50, 50);
+    this.tradePosts.spawn(50, -50);
+    this.tradePosts.spawn(-50, 50);
+    this.tradePosts.spawn(-50, -50);
 
-    spawnTradePost(this, 50, 50);
-    spawnTradePost(this, 50, -50);
-    spawnTradePost(this, -50, -50);
-    spawnTradePost(this, -50, 50);
+    spawnTrainCarts(this, this.player, 4);
 }
 
-function spawnPlanet(world, x = 0, y = 0)
-{
-    let result = createPlanet(x, y);
-    world.planets.push(result);
-    return result;
-}
-
-function createPlanet(x, y)
+function createPlanet(x = 0, y = 0)
 {
     return {
         x, y,
@@ -55,14 +54,7 @@ function createPlanet(x, y)
     };
 }
 
-function spawnTradePost(world, x = 0, y = 0, parent = null)
-{
-    let result = createTradePost(x, y, parent);
-    world.tradePosts.push(result);
-    return result;
-}
-
-function createTradePost(x, y, parent)
+function createTradePost(x = 0, y = 0, parent = null)
 {
     let radius = Random.randomRange(4, 10);
     return {
@@ -75,18 +67,34 @@ function createTradePost(x, y, parent)
     };
 }
 
+function createTrainCart(x = 0, y = 0, parent = null)
+{
+    return {
+        parent,
+        x, y,
+        prevX: x, prevY: y,
+    };
+}
+
+function spawnTrainCarts(world, head, amount)
+{
+    let dst = [];
+    let next = head;
+    for(; amount >= 0; --amount)
+    {
+        next = world.trainCarts.spawn(0, 0, next);
+        dst.push(next);
+    }
+    return dst;
+}
+
 function randomTrade()
 {
     let sign = Random.randomSign();
     let cost = Math.floor(Random.randomRange(1, 100));
     let amt = Math.floor(Random.randomRange(1, 100));
     let item = Random.randomChoose(ITEMS);
-    return createTrade(sign * cost, -sign * amt, item);
-}
-
-function createTrade(cost, amt, item)
-{
-    return [ cost, amt, item ];
+    return [sign * cost, -sign * amt, item];
 }
 
 export function onPreUpdate(dt) {}
@@ -184,6 +192,17 @@ export function onUpdate(dt)
         this.camera.x = Utils.lerp(this.camera.x, this.camera.target.x, dt * this.camera.speed);
         this.camera.y = Utils.lerp(this.camera.y, this.camera.target.y, dt * this.camera.speed);
     }
+
+    for(let trainCart of this.trainCarts)
+    {
+        if (trainCart.parent && Utils.distance2D(trainCart, trainCart.parent) > TRAIN_CART_RADIUS * 2)
+        {
+            trainCart.prevX = trainCart.x;
+            trainCart.prevY = trainCart.y;
+            trainCart.x = Utils.lerp(trainCart.x, trainCart.parent.x, dt * TRAIN_CART_SPEED);
+            trainCart.y = Utils.lerp(trainCart.y, trainCart.parent.y, dt * TRAIN_CART_SPEED);
+        }
+    }
 }
 
 export function onRender(view, world)
@@ -211,6 +230,12 @@ export function onRender(view, world)
         for(const planet of this.planets)
         {
             Utils.drawCircle(ctx, planet.x, planet.y, 8, 'green');
+        }
+
+        for(const trainCart of this.trainCarts)
+        {
+            let rotation = Math.atan2(trainCart.y - trainCart.prevY, trainCart.x - trainCart.prevX);
+            Utils.drawBox(ctx, trainCart.x, trainCart.y, rotation, TRAIN_CART_RADIUS * 2, TRAIN_CART_RADIUS * 2, 'white');
         }
 
         Utils.drawBox(ctx, this.player.x, this.player.y, 0, PLAYER_RADIUS * 2, PLAYER_RADIUS * 2, 'green');
