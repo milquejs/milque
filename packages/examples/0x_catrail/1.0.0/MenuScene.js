@@ -1,4 +1,4 @@
-import { Utils, View } from './milque.js';
+import { Utils, View, Input, EventKey } from './milque.js';
 import * as Game from './Game.js';
 
 const LOAD_TIME = 250;
@@ -7,13 +7,18 @@ const FADE_OUT_TIME = LOAD_TIME * 0.9;
 
 const WORLD_VIEW = View.createView();
 
+const CONTEXT = Input.createContext();
+const ANY_KEY = CONTEXT.registerAction('continue', 'key.down', 'mouse.down');
+
 export async function load(game)
 {
-    game.addRenderTarget(WORLD_VIEW);
+    game.addRenderTarget(WORLD_VIEW, onRender);
+    CONTEXT.enable();
 }
 
 export async function unload(game)
 {
+    CONTEXT.disable();
     game.removeRenderTarget(WORLD_VIEW);
 }
 
@@ -25,6 +30,12 @@ export function onStart()
 export function onUpdate(dt)
 {
     this.time += dt;
+    // Skip loading...
+    if (ANY_KEY.value && this.time < FADE_OUT_TIME)
+    {
+        this.time = FADE_OUT_TIME;
+    }
+    // Continue to next scene...
     if (this.time > LOAD_TIME) Game.nextScene('main');
 }
 
