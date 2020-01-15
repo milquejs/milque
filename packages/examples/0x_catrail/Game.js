@@ -42,6 +42,7 @@ export function createGame(scene, context = {})
         _transition: null,
         _nextTransition: null,
         _nextScene: scene,
+        // TODO: These don't really register views... they setup render targets.
         registerView(view, target = null, renderer = null)
         {
             this._renders.set(view, { view, target, renderer });
@@ -81,6 +82,8 @@ export function createGame(scene, context = {})
         {
             if (this._transition)
             {
+                // TODO: Transitions should have their own methods and not just be tiny scenes...
+                
                 // Waiting for scene load...
                 this._updateStep(dt, this._transition);
             }
@@ -132,6 +135,8 @@ export function createGame(scene, context = {})
         },
         render()
         {
+            // TODO: In the future, renderer should be completely separate from the scene.
+            // Perhaps not even handled in Game.js ...
             let first = true;
             for(let renderInfo of this._renders.values())
             {
