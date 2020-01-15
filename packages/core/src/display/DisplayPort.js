@@ -199,16 +199,27 @@ export class DisplayPort extends HTMLElement
             const dt = now - this._prevAnimationFrameTime;
             const frames = dt <= 0 ? '--' : String(Math.round(1000 / dt)).padStart(2, '0');
             this._prevAnimationFrameTime = now;
-            this._fpsElement.innerText = frames;
+            if (this._fpsElement.innerText !== frames)
+            {
+                this._fpsElement.innerText = frames;
+            }
 
             // Update dimensions...
             if (this.mode === MODE_NOSCALE)
             {
-                this._dimensionElement.innerText = `${this._width}x${this._height}`;
+                let result = `${this._width}x${this._height}`;
+                if (this._dimensionElement.innerText !== result)
+                {
+                    this._dimensionElement.innerText = result;
+                }
             }
             else
             {
-                this._dimensionElement.innerText = `${this._width}x${this._height}|${this.shadowRoot.host.clientWidth}x${this.shadowRoot.host.clientHeight}`;
+                let result = `${this._width}x${this._height}|${this.shadowRoot.host.clientWidth}x${this.shadowRoot.host.clientHeight}`;
+                if (this._dimensionElement.innerText !== result)
+                {
+                    this._dimensionElement.innerText = result;
+                }
             }
         }
 

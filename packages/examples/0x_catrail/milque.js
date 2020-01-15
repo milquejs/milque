@@ -71,7 +71,9 @@ function drawText(ctx, text, x, y) {
   if (radians) ctx.rotate(-radians);
   ctx.translate(-x, -y);
 }
-function drawBox(ctx, x, y, radians, w) {
+function drawBox(ctx, x, y) {
+  var radians = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0;
+  var w = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 16;
   var h = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : w;
   var color = arguments.length > 6 && arguments[6] !== undefined ? arguments[6] : 'white';
   var outline = arguments.length > 7 && arguments[7] !== undefined ? arguments[7] : false;
@@ -1557,12 +1559,24 @@ function (_HTMLElement) {
         var dt = now - this._prevAnimationFrameTime;
         var frames = dt <= 0 ? '--' : String(Math.round(1000 / dt)).padStart(2, '0');
         this._prevAnimationFrameTime = now;
-        this._fpsElement.innerText = frames; // Update dimensions...
+
+        if (this._fpsElement.innerText !== frames) {
+          this._fpsElement.innerText = frames;
+        } // Update dimensions...
+
 
         if (this.mode === MODE_NOSCALE) {
-          this._dimensionElement.innerText = "".concat(this._width, "x").concat(this._height);
+          var result = "".concat(this._width, "x").concat(this._height);
+
+          if (this._dimensionElement.innerText !== result) {
+            this._dimensionElement.innerText = result;
+          }
         } else {
-          this._dimensionElement.innerText = "".concat(this._width, "x").concat(this._height, "|").concat(this.shadowRoot.host.clientWidth, "x").concat(this.shadowRoot.host.clientHeight);
+          var _result = "".concat(this._width, "x").concat(this._height, "|").concat(this.shadowRoot.host.clientWidth, "x").concat(this.shadowRoot.host.clientHeight);
+
+          if (this._dimensionElement.innerText !== _result) {
+            this._dimensionElement.innerText = _result;
+          }
         }
       }
 
@@ -1632,16 +1646,6 @@ function (_HTMLElement) {
           composed: true
         }));
       }
-    }
-  }, {
-    key: "drawBufferToCanvas",
-    value: function drawBufferToCanvas(bufferContext) {
-      var viewportX = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
-      var viewportY = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
-      var viewportWidth = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : this.width;
-      var viewportHeight = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : this.height;
-
-      this._canvasContext.drawImage(bufferContext.canvas, viewportX, viewportY, viewportWidth, viewportHeight);
     }
   }, {
     key: "getCanvas",
