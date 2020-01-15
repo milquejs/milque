@@ -46,7 +46,7 @@ export function drawText(ctx, text, x, y, radians = 0, fontSize = 16, color = 'w
     ctx.translate(-x, -y);
 }
 
-export function drawBox(ctx, x, y, radians, w, h = w, color = 'white', outline = false)
+export function drawBox(ctx, x, y, radians = 0, w = 16, h = w, color = 'white', outline = false)
 {
     ctx.translate(x, y);
     if (radians) ctx.rotate(radians);
