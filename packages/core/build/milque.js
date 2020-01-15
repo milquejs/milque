@@ -10,7 +10,6 @@
         get Audio () { return Audio; },
         get Input () { return Input; },
         get Random () { return Random; },
-        get Viewport () { return Viewport; },
         get Utils () { return Utils; },
         get default () { return self; },
         get MODE_NOSCALE () { return MODE_NOSCALE; },
@@ -34,7 +33,11 @@
         get RandomGenerator () { return RandomGenerator; },
         get SimpleRandomGenerator () { return SimpleRandomGenerator; },
         get Eventable () { return Eventable$1; },
-        get GameLoop () { return GameLoop; }
+        get GameLoop () { return GameLoop; },
+        get View () { return View; },
+        get ViewHelper () { return ViewHelper; },
+        get ViewPort () { return ViewPort; },
+        get Camera () { return Camera; }
     });
 
     /**
@@ -473,6 +476,26 @@
       }
 
       return _assertThisInitialized(self);
+    }
+
+    function _toConsumableArray(arr) {
+      return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _nonIterableSpread();
+    }
+
+    function _arrayWithoutHoles(arr) {
+      if (Array.isArray(arr)) {
+        for (var i = 0, arr2 = new Array(arr.length); i < arr.length; i++) arr2[i] = arr[i];
+
+        return arr2;
+      }
+    }
+
+    function _iterableToArray(iter) {
+      if (Symbol.iterator in Object(iter) || Object.prototype.toString.call(iter) === "[object Arguments]") return Array.from(iter);
+    }
+
+    function _nonIterableSpread() {
+      throw new TypeError("Invalid attempt to spread non-iterable instance");
     }
 
     var Mouse =
@@ -1399,31 +1422,6 @@
         randomSign: randomSign
     });
 
-    function createView() {
-      var width = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 320;
-      var height = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : width;
-      var canvasElement = document.createElement('canvas');
-      canvasElement.width = width;
-      canvasElement.height = height;
-      canvasElement.style = 'image-rendering: pixelated';
-      var canvasContext = canvasElement.getContext('2d');
-      canvasContext.imageSmoothingEnabled = false;
-      var result = {
-        canvas: canvasElement,
-        context: canvasContext,
-        x: 0,
-        y: 0,
-        width: width,
-        height: height
-      };
-      return result;
-    }
-
-    var Viewport = /*#__PURE__*/Object.freeze({
-        __proto__: null,
-        createView: createView
-    });
-
     /**
      * @module DisplayPort
      * @version 1.4
@@ -2134,11 +2132,223 @@
         createGameLoop: createGameLoop
     });
 
+    /**
+     * @module View
+     * @version 1.1.0
+     * 
+     * A view is a section of a world that is drawn onto a section of a
+     * display. For every view, there must exist a camera and viewport.
+     * However, there could exist multiple cameras in the same view
+     * (albeit inactive).
+     * 
+     * A viewport is the section of the display that shows the content.
+     * Since viewports generally change with the display, it is calculated
+     * when needed rather than stored. Usually, you only want the full display
+     * as a viewport.
+     * 
+     * A camera is the view in the world space itself. This usually means
+     * it has the view and projection matrix. And because of its existance
+     * within the world, it is often manipulated to change the world view.
+     * 
+     * Another way to look at it is that viewports hold the destination
+     * dimensions of a view, whilst the camera holds the source transformations
+     * that are applied to a view's source canvas (its buffer) dimension.
+     * The size of the view buffer should never change (unless game resolution
+     * and aspect ratio changes).
+     */
+
+    /**
+     * Creates a view which facilitates rendering from world to screen space.
+     */
+    function createView() {
+      var width = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 640;
+      var height = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 480;
+
+      var _createViewBuffer = createViewBuffer(width, height),
+          canvas = _createViewBuffer.canvas,
+          context = _createViewBuffer.context;
+
+      return {
+        _canvas: canvas,
+        _context: context,
+        _width: width,
+        _height: height,
+
+        get canvas() {
+          return this._canvas;
+        },
+
+        get context() {
+          return this._context;
+        },
+
+        get width() {
+          return this._width;
+        },
+
+        set width(value) {
+          this._width = value;
+          this._canvas.width = value;
+        },
+
+        get height() {
+          return this._height;
+        },
+
+        set height(value) {
+          this._height = value;
+          this._canvas.height = value;
+        }
+
+      };
+    }
+    function createViewBuffer(width, height) {
+      var canvasElement = document.createElement('canvas');
+      canvasElement.width = width;
+      canvasElement.height = height;
+      canvasElement.style = 'image-rendering: pixelated';
+      var canvasContext = canvasElement.getContext('2d');
+      canvasContext.imageSmoothingEnabled = false;
+      return {
+        canvas: canvasElement,
+        context: canvasContext
+      };
+    }
+    function drawBufferToCanvas(targetCanvasContext, bufferCanvasElement) {
+      var viewPortX = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
+      var viewPortY = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0;
+      var viewPortWidth = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : targetCanvasContext.canvas.clientWidth;
+      var viewPortHeight = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : targetCanvasContext.canvas.clientHeight;
+      targetCanvasContext.drawImage(bufferCanvasElement, viewPortX, viewPortY, viewPortWidth, viewPortHeight);
+    }
+
+    var View = /*#__PURE__*/Object.freeze({
+        __proto__: null,
+        createView: createView,
+        createViewBuffer: createViewBuffer,
+        drawBufferToCanvas: drawBufferToCanvas
+    });
+
+    function setViewTransform(view, camera) {
+      if (camera) {
+        var _view$context, _view$context2;
+
+        (_view$context = view.context).setTransform.apply(_view$context, _toConsumableArray(camera.getProjectionMatrix()));
+
+        (_view$context2 = view.context).transform.apply(_view$context2, _toConsumableArray(camera.getViewMatrix()));
+      }
+    }
+
+    var ViewHelper = /*#__PURE__*/Object.freeze({
+        __proto__: null,
+        setViewTransform: setViewTransform
+    });
+
+    /**
+     * A viewport for a display output. This serves as the output dimensions of a view.
+     * @param {HTMLElement} canvasElement The output canvas (or the display).
+     * @param {RenderingContext} canvasContext The output canvas context.
+     */
+    var ViewPort =
+    /*#__PURE__*/
+    function () {
+      function ViewPort(canvasElement, canvasContext) {
+        _classCallCheck(this, ViewPort);
+
+        this._canvas = canvasElement;
+        this._context = canvasContext;
+      } // NOTE: We use function getters instead of property getters here because
+      // this can easily be overridden for a different implementation. These
+      // values are expected to support both computed and stored values. Whereas
+      // property getters imply a static, or stored, value.
+
+      /** The x position offset in the output. */
+
+
+      _createClass(ViewPort, [{
+        key: "getX",
+        value: function getX() {
+          return 0;
+        }
+        /** The y position offset in the output. */
+
+      }, {
+        key: "getY",
+        value: function getY() {
+          return 0;
+        }
+        /** The width of the viewport in the output. */
+
+      }, {
+        key: "getWidth",
+        value: function getWidth() {
+          return this._canvas.clientWidth;
+        }
+        /** The height of the viewport in the output. */
+
+      }, {
+        key: "getHeight",
+        value: function getHeight() {
+          return this._canvas.clientHeight;
+        }
+        /** The output canvas element. */
+
+      }, {
+        key: "getCanvas",
+        value: function getCanvas() {
+          return this._canvas;
+        }
+        /** The output canvas context. */
+
+      }, {
+        key: "getContext",
+        value: function getContext() {
+          return this._context;
+        }
+      }]);
+
+      return ViewPort;
+    }();
+
+    /**
+     * A camera for a view. This serves as the in-world representation of the
+     * view. This is usually manipulated to move the world, zoom in, etc.
+     */
+    var Camera =
+    /*#__PURE__*/
+    function () {
+      function Camera() {
+        _classCallCheck(this, Camera);
+      }
+
+      _createClass(Camera, [{
+        key: "update",
+        value: function update(dt) {}
+        /** @abstract */
+
+      }, {
+        key: "getProjectionMatrix",
+        value: function getProjectionMatrix() {
+          return [1, 0, 0, 1, 0, 0];
+        }
+        /** @abstract */
+
+      }, {
+        key: "getViewMatrix",
+        value: function getViewMatrix() {
+          return [1, 0, 0, 1, 0, 0];
+        }
+      }]);
+
+      return Camera;
+    }();
+
 
 
     exports.AbstractInputAdapter = AbstractInputAdapter;
     exports.ActionInputAdapter = ActionInputAdapter;
     exports.Audio = Audio;
+    exports.Camera = Camera;
     exports.DOUBLE_ACTION_TIME = DOUBLE_ACTION_TIME;
     exports.Display = Display;
     exports.DisplayPort = DisplayPort;
@@ -2161,7 +2371,9 @@
     exports.SimpleRandomGenerator = SimpleRandomGenerator;
     exports.StateInputAdapter = StateInputAdapter;
     exports.Utils = Utils;
-    exports.Viewport = Viewport;
+    exports.View = View;
+    exports.ViewHelper = ViewHelper;
+    exports.ViewPort = ViewPort;
     exports.createContext = createContext;
     exports.createSource = createSource;
     exports.default = self;

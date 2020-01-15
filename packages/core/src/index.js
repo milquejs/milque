@@ -15,7 +15,6 @@ export {
     Audio,
     Input,
     Random,
-    Viewport,
     Utils,
 };
 
