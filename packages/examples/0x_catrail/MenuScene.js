@@ -1,9 +1,22 @@
 import * as m from './milque.js';
 import * as Game from './Game.js';
+import * as View from './View.js';
 
 const LOAD_TIME = 250;
 const FADE_IN_TIME = LOAD_TIME * 0.3;
 const FADE_OUT_TIME = LOAD_TIME * 0.9;
+
+const WORLD_VIEW = View.createView();
+
+export async function load(game)
+{
+    game.registerView(WORLD_VIEW);
+}
+
+export async function unload(game)
+{
+    game.unregisterView(WORLD_VIEW);
+}
 
 export function onStart()
 {

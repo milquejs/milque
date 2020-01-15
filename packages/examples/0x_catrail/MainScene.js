@@ -1,49 +1,75 @@
 import { Utils } from './milque.js';
 
 import * as RenderHelper from './RenderHelper.js';
-import * as SceneGraph from './SceneGraph.js';
-import * as Transform from './Transform.js';
+import * as MouseControls from './MouseControls.js';
+
+import * as View from './View.js';
+
+const CAMERA_SPEED = 0.1;
+
+const WORLD_VIEW = View.createView();
+const HUD_VIEW = View.createView();
+
+export async function load(game)
+{
+    WORLD_VIEW.camera.offsetX = WORLD_VIEW.width / 2;
+    WORLD_VIEW.camera.offsetY = WORLD_VIEW.height / 2;
+    game.registerView(HUD_VIEW);
+    game.registerView(WORLD_VIEW);
+}
+
+export async function unload(game)
+{
+    game.unregisterView(WORLD_VIEW);
+    game.unregisterView(HUD_VIEW);
+}
 
 export function onStart()
 {
-    this.camera = {
-        x: 0, y: 0,
-        speed: 0.1,
-        target: null
-    };
+    this.target = null;
 
     this.player = {
         x: 0, y: 0
     };
 
-    this.camera.target = this.player;
+    this.target = this.player;
 }
 
 export function onUpdate(dt)
 {
-    if (this.camera.target)
+    if (MouseControls.LEFT_DOWN.value)
     {
-        this.camera.x = Utils.lerp(this.camera.x, this.camera.target.x, dt * this.camera.speed);
-        this.camera.y = Utils.lerp(this.camera.y, this.camera.target.y, dt * this.camera.speed);
+        this.player.x += 10;
     }
-}
 
-export function onPostUpdate(dt)
-{
+    if (MouseControls.RIGHT_DOWN.value)
+    {
+        this.player.x -= 10;
+    }
+
+    if (this.target)
+    {
+        let transform = WORLD_VIEW.camera.transform;
+        transform.x = Utils.lerp(transform.x, this.target.x, dt * CAMERA_SPEED);
+        transform.y = Utils.lerp(transform.y, this.target.y, dt * CAMERA_SPEED);
+    }
 }
 
 export function onRender(ctx, view, world)
 {
-    let cameraX = view.width / 2 - this.camera.x;
-    let cameraY = view.height / 2 - this.camera.y;
-    RenderHelper.drawNavigationInfo(view, cameraX, cameraY);
-    
-    ctx.translate(cameraX, cameraY);
+    if (view === HUD_VIEW)
     {
-        ctx.fillRect(-8, -8, 16, 16);
+        RenderHelper.drawNavigationInfo(view,
+            -WORLD_VIEW.camera.transform.x + WORLD_VIEW.camera.offsetX,
+            -WORLD_VIEW.camera.transform.y + WORLD_VIEW.camera.offsetY);
     }
-    ctx.translate(-cameraX, -cameraY);
-    
-    Utils.drawText(ctx, 'Bye!', view.width / 2, view.height / 2);
+    else if (view === WORLD_VIEW)
+    {
+        Utils.drawBox(ctx, world.player.x, world.player.y, 0, 64);
+
+        const mouseX = MouseControls.POS_X.value * view.width + view.camera.transform.x - view.camera.offsetX;
+        const mouseY = MouseControls.POS_Y.value * view.height + view.camera.transform.y - view.camera.offsetY;
+        Utils.drawText(ctx, 'Bye!', mouseX, mouseY);
+    }
 }
 

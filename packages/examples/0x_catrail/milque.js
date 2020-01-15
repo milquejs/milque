@@ -1403,10 +1403,10 @@ function createView() {
   var result = {
     canvas: canvasElement,
     context: canvasContext,
+    x: 0,
+    y: 0,
     width: width,
-    height: height,
-    offsetX: 0,
-    offsetY: 0
+    height: height
   };
   return result;
 }
@@ -1636,12 +1636,12 @@ function (_HTMLElement) {
   }, {
     key: "drawBufferToCanvas",
     value: function drawBufferToCanvas(bufferContext) {
-      var viewportOffsetX = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
-      var viewportOffsetY = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
+      var viewportX = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+      var viewportY = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
       var viewportWidth = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : this.width;
       var viewportHeight = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : this.height;
 
-      this._canvasContext.drawImage(bufferContext.canvas, viewportOffsetX, viewportOffsetY, viewportWidth, viewportHeight);
+      this._canvasContext.drawImage(bufferContext.canvas, viewportX, viewportY, viewportWidth, viewportHeight);
     }
   }, {
     key: "getCanvas",
