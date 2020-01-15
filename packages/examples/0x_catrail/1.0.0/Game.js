@@ -10,8 +10,10 @@ export function registerScene(name, scene)
     scenes.set(name, scene);
 }
 
-export function start(scene, context = {})
+export function start(scene = undefined, context = undefined)
 {
+    if (typeof scene === 'string') scene = scenes.get(scene);
+    if (typeof scene === 'undefined') scene = Array.from(scenes.values())[0];
     return game = createGame(scene, context).start();
 }
 
@@ -33,16 +35,19 @@ export function getScene()
 }
 
 const NO_TRANSITION = {};
-export function createGame(scene, context = {})
+export function createGame(scene, context = undefined)
 {
+    if (!context) context = Object.isExtensible(scene) ? scene : {};
+
     let result = {
-        world: context,
-        loop: GameLoop.createGameLoop(context),
+        loop: GameLoop.createGameLoop(),
         scene: null,
+        world: null,
         _renderTargets: new Map(),
         _transition: null,
         _nextTransition: null,
         _nextScene: scene,
+        _nextContext: context,
         addRenderTarget(view, renderer = null, viewPort = null, context = null, handle = view)
         {
             this._renderTargets.set(handle, { view, renderer, viewPort, context });
@@ -58,11 +63,12 @@ export function createGame(scene, context = {})
             this._renderTargets.clear();
             return this;
         },
-        nextScene(scene, transition = undefined)
+        nextScene(scene, transition = undefined, context = undefined)
         {
             if (!this._nextScene)
             {
                 this._nextScene = scene;
+                this._nextContext = context || (Object.isExtensible(scene) ? scene : {});
 
                 // NOTE: Transition MUST NEVER be null while switching scenes as it
                 // also serves as the flag to stop scene updates.
@@ -96,8 +102,10 @@ export function createGame(scene, context = {})
             {
                 // Starting next scene request...
                 const nextScene = this._nextScene;
+                const nextContext = this._nextContext;
                 const nextTransition = this._nextTransition;
                 this._nextScene = null;
+                this._nextContext = null;
                 this._nextTransition = null;
 
                 this._transition = nextTransition;
@@ -109,10 +117,11 @@ export function createGame(scene, context = {})
                     if ('unload' in this.scene) result = result.then(() => this.scene.unload.call(this.world, this));
                 }
 
-                if ('load' in nextScene) result = result.then(() => nextScene.load.call(this.world, this));
+                if ('load' in nextScene) result = result.then(() => nextScene.load.call(nextContext, this));
 
                 result = result.then(() => {
                     this.scene = nextScene;
+                    this.world = nextContext;
                     this._transition = null;
 
                     if ('onStart' in this.scene) this.scene.onStart.call(this.world);
@@ -155,13 +164,13 @@ export function createGame(scene, context = {})
                     let view = renderTarget.view;
                     let renderer = renderTarget.renderer || (this.scene ? this.scene.onRender : null);
                     let viewPort = renderTarget.viewPort;
-                    let context = renderTarget.context || this._transition || this.world;
-                    this._renderStep(view, renderer, viewPort, context, first);
+                    let renderContext = renderTarget.context || this._transition || this.world;
+                    this._renderStep(view, renderer, viewPort, renderContext, first);
                     first = false;
                 }
             }
         },
-        _renderStep(view, renderer = null, viewPort = null, context = null, first = true)
+        _renderStep(view, renderer = null, viewPort = null, renderContext = null, first = true)
         {
             // Reset any transformations...
             view.context.setTransform(1, 0, 0, 1, 0, 0);
@@ -176,7 +185,7 @@ export function createGame(scene, context = {})
                 view.context.clearRect(0, 0, view.width, view.height);
             }
             
-            if (renderer) renderer.call(context, view.context, view, this.world);
+            if (renderer) renderer.call(renderContext, view.context, view, this.world);
 
             // NOTE: The renderer can define a custom viewport to draw to
             if (viewPort)
