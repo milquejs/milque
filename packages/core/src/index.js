@@ -9,6 +9,7 @@ export * from './input/index.js';
 export * from './random/index.js';
 export * from './util/index.js';
 export * from './view/index.js';
+export * from './game/index.js';
 
 export {
     Display,
