@@ -1,3 +1,4 @@
+import { Utils } from './milque.js';
 import { Transform } from './Transform.js';
 
 /**
@@ -7,6 +8,8 @@ import { Transform } from './Transform.js';
 export function createCamera(offsetX = 0, offsetY = 0)
 {
     return {
+        target: null,
+        speed: 1,
         transform: new Transform(),
         projectionMatrix: [1, 0, 0, 1, offsetX, offsetY],
         get viewMatrix() {
@@ -19,5 +22,13 @@ export function createCamera(offsetX = 0, offsetY = 0)
         set offsetX(value) { this.projectionMatrix[4] = value; },
         get offsetY() { return this.projectionMatrix[5]; },
         set offsetY(value) { this.projectionMatrix[5] = value; },
+        update()
+        {
+            if (this.target)
+            {
+                this.transform.x = Utils.lerp(this.transform.x, this.target.x, this.speed);
+                this.transform.y = Utils.lerp(this.transform.y, this.target.y, this.speed);
+            }
+        }
     };
 }

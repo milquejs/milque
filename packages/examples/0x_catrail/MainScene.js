@@ -5,8 +5,6 @@ import * as MouseControls from './MouseControls.js';
 
 import * as View from './View.js';
 
-const CAMERA_SPEED = 0.1;
-
 const WORLD_VIEW = View.createView();
 const HUD_VIEW = View.createView();
 
@@ -14,6 +12,7 @@ export async function load(game)
 {
     WORLD_VIEW.camera.offsetX = WORLD_VIEW.width / 2;
     WORLD_VIEW.camera.offsetY = WORLD_VIEW.height / 2;
+    
     game.registerView(HUD_VIEW);
     game.registerView(WORLD_VIEW);
 }
@@ -26,13 +25,12 @@ export async function unload(game)
 
 export function onStart()
 {
-    this.target = null;
-
     this.player = {
         x: 0, y: 0
     };
 
-    this.target = this.player;
+    WORLD_VIEW.camera.target = this.player;
+    WORLD_VIEW.camera.speed = 0.1;
 }
 
 export function onUpdate(dt)
@@ -45,13 +43,6 @@ export function onUpdate(dt)
     if (MouseControls.RIGHT_DOWN.value)
     {
         this.player.x -= 10;
-    }
-
-    if (this.target)
-    {
-        let transform = WORLD_VIEW.camera.transform;
-        transform.x = Utils.lerp(transform.x, this.target.x, dt * CAMERA_SPEED);
-        transform.y = Utils.lerp(transform.y, this.target.y, dt * CAMERA_SPEED);
     }
 }
 

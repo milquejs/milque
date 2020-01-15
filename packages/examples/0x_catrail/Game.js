@@ -158,6 +158,8 @@ export function createGame(scene, context = {})
                 view.context.clearRect(0, 0, view.width, view.height);
             }
 
+            view.camera.update();
+
             View.applyViewTransform(view);
             if (renderer) renderer.call(target, view.context, view, this.world);
             View.resetViewTransform(view);
