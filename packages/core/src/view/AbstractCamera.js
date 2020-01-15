@@ -2,7 +2,7 @@
  * A camera for a view. This serves as the in-world representation of the
  * view. This is usually manipulated to move the world, zoom in, etc.
  */
-export class Camera
+export class AbstractCamera
 {
     update(dt) {}
 

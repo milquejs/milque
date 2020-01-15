@@ -7,4 +7,4 @@ export {
 };
 
 export * from './ViewPort.js';
-export * from './Camera.js';
+export * from './AbstractCamera.js';
