@@ -1,4 +1,4 @@
-import { Utils, AbstractCamera } from './milque.js';
+import { Utils, AbstractCamera } from '../milque.js';
 import { Transform2 } from './Transform2.js';
 
 export class Camera2 extends AbstractCamera

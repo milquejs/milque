@@ -1,11 +1,9 @@
-import * as Game from './Game.js';
+import * as Game from './util/Game.js';
 
 import { SplashScene } from './SplashScene.js';
-import * as MainScene from './MainScene.js';
+import * as TileScene from './TileScene.js';
 
-Game.registerScene('0', new SplashScene('Powered by Milque.js', 'main'));
-Game.registerScene('1', new SplashScene('Created by Andrew Kuo', '2'));
-Game.registerScene('2', new SplashScene('15 seconds of logos are fun.', 'main'));
-Game.registerScene('main', MainScene);
+Game.registerScene('0', new SplashScene('Powered by Milque.js', 'tile'));
+Game.registerScene('tile', TileScene);
 
 Game.start('0');

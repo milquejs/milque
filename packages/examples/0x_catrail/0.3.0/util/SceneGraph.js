@@ -1,4 +1,4 @@
-import { Transform } from './Transform.js';
+import { Transform2 } from '../Transform2.js';
 
 export function createSceneGraph()
 {
@@ -50,8 +50,8 @@ function createSceneNode(source = null, parent = null)
         _source: source,
         _parent: parent,
         _children: [],
-        localTransform: new Transform(),
-        worldTransform: new Transform(),
+        localTransform: new Transform2(),
+        worldTransform: new Transform2(),
         get transform() { return this._worldTransform; },
         get parent() { return this._parent; },
         get children() { return this._children; },

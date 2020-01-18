@@ -1,4 +1,4 @@
-import { Input } from './milque.js';
+import { Input } from '../milque.js';
 
 export const CONTEXT = Input.createContext();
 

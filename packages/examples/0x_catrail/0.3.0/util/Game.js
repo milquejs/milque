@@ -1,4 +1,4 @@
-import { GameLoop, Input, Display, Utils, View } from './milque.js';
+import { GameLoop, Input, Display, Utils, View } from '../milque.js';
 
 var game;
 var scenes = new Map();
@@ -118,12 +118,12 @@ export function createGame(scene, context = undefined)
                         this.scene.unload.call(this.world, this));
                 }
 
-                if ('load' in nextScene) result = result.then(async () =>
-                    await nextScene.load.call(nextContext, this) || nextContext);
-
+                if ('load' in nextScene) result = result.then(() =>
+                    nextScene.load.call(nextContext, this));
+                
                 result = result.then(nextWorld => {
                     this.scene = nextScene;
-                    this.world = nextWorld;
+                    this.world = nextWorld || nextContext;
                     this._transition = null;
 
                     if ('onStart' in this.scene) this.scene.onStart.call(this.world);
