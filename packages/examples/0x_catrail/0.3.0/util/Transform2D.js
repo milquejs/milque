@@ -1,4 +1,4 @@
-export class Transform2
+export class Transform2D
 {
     constructor(x = 0, y = 0)
     {

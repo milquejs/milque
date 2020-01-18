@@ -1,9 +1,9 @@
 import { ViewHelper } from './milque.js';
-import { Camera2 } from './util/Camera2.js';
+import { Camera2D } from './util/Camera2D.js';
 
 const TILE_MAP = `
 0,0,6,3,0:
-1. .1. .1. .
+1. .1. .2. .
 1.1.1. .1. .
 1. .1. .1. .`;
 const TILE_COLORS = [
@@ -22,7 +22,7 @@ function drawTileByColorMap(colorMap, tileSize, ctx, x, y, value)
 
 export function onStart()
 {
-    this.camera = new Camera2();
+    this.camera = new Camera2D();
     this.tileMap = parseTileMap(TILE_MAP);
 }
 
