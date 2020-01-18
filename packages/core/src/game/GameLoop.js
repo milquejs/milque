@@ -1,28 +1,14 @@
+import * as Eventable from '../util/Eventable.js';
+
+export const DEFAULT_FRAME_TIME = 1000 / 60;
+
+const INSTANCES = new Map();
+
 /**
- * @module GameLoop
  * @version 1.2
- * 
- * @example
- * let context = {
- *   start() {
- *     // Start code here...
- *   },
- *   update(dt) {
- *     // Update code here...
- *   }
- * };
- * GameLoop.start(context);
- * 
- * @example
- * GameLoop.start()
- *   .on('start', function start() {
- *     // Start code here...
- *   })
- *   .on('update', function update(dt) {
- *     // Update code here...
- *   });
- * 
  * @description
+ * Handles a steady update loop.
+ * 
  * # Changelog
  * 
  * ## 1.2
@@ -34,106 +20,129 @@
  * 
  * ## 1.0
  * - Create GameLoop
- */
-import * as Eventable from '../util/Eventable.js';
-
-export const INSTANCES = new Map();
-export const DEFAULT_FRAME_TIME = 1000 / 60;
-
-/**
- * @typedef {Eventable.Eventable} GameLoop
  * 
- * @property {number} prevFrameTime The time of the previous frame in milliseconds.
+ * @property {Number} prevFrameTime The time of the previous frame in milliseconds.
  * @property {Object} animationFrameHandle The handle for the animation frame request. Used by cancelAnimationRequest().
  * @property {Object} gameContext The context of the game loop to run in.
  * @property {Object} frameTime The expected time taken per frame.
  * @property {Object} started Whether the game has started.
  * @property {Object} paused Whether the game is paused.
  * 
- * @property {function} run The game loop function itself.
- * @property {function} start Begins the game loop.
- * @property {function} stop Ends the game loop.
- * @property {function} pause Pauses the game loop.
- * @property {function} resume Resumes the game loop.
+ * @fires start
+ * @fires stop
+ * @fires pause
+ * @fires resume
+ * @fires update
  */
-
-/**
- * Starts a game loop.
- * 
- * @param {Object} [handle] The handle that refers to the registered game
- * loop. If the handle has not been previously registered, it will
- * register the handle with a new game loop, with the handle serving as
- * both the new game loop's handle and context (only if the handle is
- * an object, otherwise, it will create an empty context).
- * @returns {GameLoop} The started game loop instance.
- */
-export function start(handle = undefined)
+export class GameLoop
 {
-    let gameLoop;
-    if (INSTANCES.has(handle))
+    /**
+     * Starts a game loop. This is not required to start a loop, but is
+     * here for ease of use.
+     * 
+     * @example
+     * let context = {
+     *   start() {
+     *     // Start code here...
+     *   },
+     *   update(dt) {
+     *     // Update code here...
+     *   }
+     * };
+     * GameLoop.start(context);
+     * 
+     * @example
+     * GameLoop.start()
+     *   .on('start', function start() {
+     *     // Start code here...
+     *   })
+     *   .on('update', function update(dt) {
+     *     // Update code here...
+     *   });
+     * 
+     * @example
+     * let gameLoop = new GameLoop();
+     * gameLoop
+     *   .on('start', ...)
+     *   .on('update', ...)
+     *   .on('stop', ...);
+     * 
+     * @param {Object} [handle] The handle that refers to the registered game
+     * loop. If the handle has not been previously registered, it will
+     * register the handle with a new game loop, with the handle serving as
+     * both the new game loop's handle and context (only if the handle is
+     * an object, otherwise, it will create an empty context).
+     * 
+     * @returns {GameLoop} The started game loop instance.
+     */
+    static start(handle = undefined)
     {
-        gameLoop = INSTANCES.get(handle);
+        let result;
+        if (INSTANCES.has(handle))
+        {
+            throw new Error('Cannot start game loop with duplicate handle.');
+        }
+        else
+        {
+            let context;
+            if (typeof handle === 'object') context = handle;
+            else context = {};
+
+            result = new GameLoop(context);
+        }
+        INSTANCES.set(handle, result);
+
+        // Start the loop (right after any chained method calls, like event listeners)
+        setTimeout(() => result.start(), 0);
+        return result;
     }
-    else
+
+    /**
+     * Stops a game loop. This is not required to stop a loop, but is
+     * here for ease of use.
+     */
+    static stop(handle)
     {
-        let context;
-        if (typeof handle === 'object') context = handle;
-        else context = {};
+        if (INSTANCES.has(handle))
+        {
+            let gameLoop = INSTANCES.get(handle);
+            gameLoop.stop();
+            INSTANCES.delete(handle);
+            return gameLoop;
+        }
 
-        gameLoop = registerGameLoop(context, handle);
+        return null;
     }
 
-    // Start the loop (right after any chained method calls, like event listeners)
-    setTimeout(() => gameLoop.start(), 0);
-    
-    return gameLoop;
-}
-
-/**
- * Stops a game loop.
- * 
- * @param {Object} [handle] The handle that refers to the registered game loop.
- * @returns {GameLoop} The stopped game loop instance or null if no game loop
- * was found with handle.
- */
-export function stop(handle)
-{
-    if (INSTANCES.has(handle))
+    constructor(context = {})
     {
-        let gameLoop = INSTANCES.get(handle);
-        gameLoop.stop();
-        return gameLoop;
+        this.prevFrameTime = 0;
+        this.animationFrameHandle = null;
+        this.frameTime = DEFAULT_FRAME_TIME;
+        this.started = false;
+        this.paused = false;
+
+        this.gameContext = context;
+
+        this.run = this.run.bind(this);
+        this.start = this.start.bind(this);
+        this.stop = this.stop.bind(this);
+        this.pause = this.pause.bind(this);
+        this.resume = this.resume.bind(this);
+
+        // HACK: This overrides Eventable's callback context.
+        this.__context = context;
     }
-
-    return null;
-}
-
-export function registerGameLoop(context = {}, handle = context)
-{
-    const gameLoop = createGameLoop(context);
-    INSTANCES.set(handle, gameLoop);
-    return gameLoop;
-}
-
-export function createGameLoop(context = {})
-{
-    const result = Eventable.create(context);
-    result.prevFrameTime = 0;
-    result.animationFrameHandle = null;
-    result.gameContext = context;
-    result.frameTime = DEFAULT_FRAME_TIME;
-    result.started = false;
-    result.paused = false;
 
     /** Sets the frame time. Only changes dt; does NOT change how many times update() is called. */
-    result.setFrameTime = function setFrameTime(dt)
+    setFrameTime(frameTime)
     {
-        this.frameTime = dt;
+        this.frameTime = frameTime;
         return this;
-    };
+    }
 
     /** Runs the game loop. Will call itself. */
-    result.run = function run(now)
+    run(now)
     {
         this.animationFrameHandle = requestAnimationFrame(this.run);
         const dt = (now - this.prevFrameTime) / this.frameTime;
@@ -142,10 +151,9 @@ export function createGameLoop(context = {})
         if (typeof this.gameContext.update === 'function') this.gameContext.update.call(this.gameContext, dt);
         this.emit('update', dt);
     }
-    .bind(result);
 
     /** Starts the game loop. Calls run(). */
-    result.start = function start()
+    start()
     {
         if (this.started) throw new Error('Loop already started.');
 
@@ -161,10 +169,9 @@ export function createGameLoop(context = {})
 
         this.run(this.prevFrameTime);
     }
-    .bind(result);
 
     /** Stops the game loop. */
-    result.stop = function stop()
+    stop()
     {
         if (!this.started) throw new Error('Loop not yet started.');
 
@@ -179,10 +186,9 @@ export function createGameLoop(context = {})
         if (typeof this.gameContext.stop === 'function') this.gameContext.stop.call(this.gameContext);
         this.emit('stop');
     }
-    .bind(result);
 
     /** Pauses the game loop. */
-    result.pause = function pause()
+    pause()
     {
         if (!this.started || this.paused) return;
 
@@ -193,10 +199,9 @@ export function createGameLoop(context = {})
         if (typeof this.gameContext.pause === 'function') this.gameContext.pause.call(this.gameContext);
         this.emit('pause');
     }
-    .bind(result);
 
     /** Resumes the game loop. */
-    result.resume = function resume()
+    resume()
     {
         if (!this.started || !this.pause) return;
 
@@ -208,7 +213,5 @@ export function createGameLoop(context = {})
 
         this.run(this.prevFrameTime);
     }
-    .bind(result);
-
-    return result;
 }
+Eventable.mixin(GameLoop);
