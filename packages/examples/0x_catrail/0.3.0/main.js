@@ -1,0 +1,11 @@
+import * as Game from './Game.js';
+
+import { SplashScene } from './SplashScene.js';
+import * as MainScene from './MainScene.js';
+
+Game.registerScene('0', new SplashScene('Powered by Milque.js', 'main'));
+Game.registerScene('1', new SplashScene('Created by Andrew Kuo', '2'));
+Game.registerScene('2', new SplashScene('15 seconds of logos are fun.', 'main'));
+Game.registerScene('main', MainScene);
+
+Game.start('0');
