@@ -114,14 +114,16 @@ export function createGame(scene, context = undefined)
                 if (this.scene)
                 {
                     if ('onStop' in this.scene) this.scene.onStop.call(this.world);
-                    if ('unload' in this.scene) result = result.then(() => this.scene.unload.call(this.world, this));
+                    if ('unload' in this.scene) result = result.then(() =>
+                        this.scene.unload.call(this.world, this));
                 }
 
-                if ('load' in nextScene) result = result.then(() => nextScene.load.call(nextContext, this));
+                if ('load' in nextScene) result = result.then(async () =>
+                    await nextScene.load.call(nextContext, this) || nextContext);
 
-                result = result.then(() => {
+                result = result.then(nextWorld => {
                     this.scene = nextScene;
-                    this.world = nextContext;
+                    this.world = nextWorld;
                     this._transition = null;
 
                     if ('onStart' in this.scene) this.scene.onStart.call(this.world);

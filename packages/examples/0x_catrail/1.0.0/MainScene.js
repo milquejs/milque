@@ -5,10 +5,14 @@ import * as MouseControls from './MouseControls.js';
 
 import { Camera2D } from './Camera2D.js';
 
+export async function load(game)
+{
+}
+
 export function onStart()
 {
     this.camera = new Camera2D();
-
+    
     this.player = {
         x: 0, y: 0
     };
