@@ -1,11 +1,9 @@
-import { Utils, ViewHelper } from './milque.js';
+import { Utils, ViewHelper, HybridEntity, ComponentBase, EntityQuery, EntityWorld } from './milque.js';
 import { Camera2D } from './Camera2D.js';
-
-import { HybridEntity, Component, Query, World } from './entity/index.js';
 
 export async function load(game)
 {
-    return new World();
+    return new EntityWorld();
 }
 
 export function onStart()
@@ -63,7 +61,7 @@ class Player extends HybridEntity
     }
 }
 
-class Box extends Component
+class Box extends ComponentBase
 {
     constructor(world, entityId)
     {
@@ -74,4 +72,4 @@ class Box extends Component
     }
 }
 
-const BOXES = new Query([Box]);
+const BOXES = new EntityQuery([Box]);
