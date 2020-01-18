@@ -1,5 +1,3 @@
-import { Eventable } from '../milque.js';
-
 import { Query } from './Query.js';
 import { getComponentTypeName } from './component/ComponentHelper.js';
 import { EntityManager } from './EntityManager.js';
@@ -12,11 +10,6 @@ import { ComponentManager } from './ComponentManager.js';
 
 /**
  * Manages all entities.
- * 
- * @fires World#entitycreate
- * @fires World#entitydestroy
- * @fires World#componentadd
- * @fires World#componentremove
  */
 export class World
 {
@@ -53,7 +46,7 @@ export class World
         // Remove entity components from world
         for(let componentType of this.componentManager.getComponentTypes())
         {
-            if (this.componentManager.getEntityComponentMap(componentType).has(entityId))
+            if (this.componentManager.getComponentInstanceMapByType(componentType).has(entityId))
             {
                 this.removeComponent(entityId, componentType);
             }
@@ -71,56 +64,56 @@ export class World
     /**
      * 
      * @param {import('./Entity.js').EntityId} entityId The id of the entity to add to.
-     * @param {FunctionConstructor|import('./Component.js').ComponentFactory|String|Number} componentClass The component type.
+     * @param {FunctionConstructor|import('./Component.js').ComponentFactory|String|Number} componentType The component type.
      * Can either be a component class or a component factory.
      * @param {Object} [initialValues] The initial values for the component. Can be an object
      * map of all defined key-value pairs or another instance of the same component. This
      * must be undefined for tag-like components.
      */
-    addComponent(entityId, componentClass, initialValues = undefined)
+    addComponent(entityId, componentType, initialValues = undefined)
     {
         try
         {
-            let component = this.componentManager.createComponent(entityId, componentClass, initialValues);
-            this.componentManager.putComponent(entityId, componentClass, component, initialValues);
+            let component = this.componentManager.createComponent(entityId, componentType, initialValues);
+            this.componentManager.putComponent(entityId, componentType, component, initialValues);
             return component;
         }
         catch(e)
         {
-            console.error(`Failed to add component '${getComponentTypeName(componentClass)}' to entity '${entityId}'.`);
+            console.error(`Failed to add component '${getComponentTypeName(componentType)}' to entity '${entityId}'.`);
             console.error(e);
         }
     }
 
-    removeComponent(entityId, componentClass)
+    removeComponent(entityId, componentType)
     {
         try
         {
-            let component = this.getComponent(entityId, componentClass);
-            this.componentManager.deleteComponent(entityId, componentClass, component);
+            let component = this.getComponent(entityId, componentType);
+            this.componentManager.deleteComponent(entityId, componentType, component);
         }
         catch(e)
         {
-            console.error(`Failed to remove component '${getComponentTypeName(componentClass)}' from entity '${entityId}'.`);
+            console.error(`Failed to remove component '${getComponentTypeName(componentType)}' from entity '${entityId}'.`);
             console.error(e);
         }
     }
 
     clearComponents(entityId)
     {
-        for(let entityComponentMap of this.componentManager.getEntityComponentMaps())
+        for(let entityComponentMap of this.componentManager.getComponentInstanceMaps())
         {
             if (entityComponentMap.has(entityId))
             {
                 let component = entityComponentMap.get(entityId);
-                this.componentManager.deleteComponent(entityId, componentClass, component);
+                this.componentManager.deleteComponent(entityId, componentType, component);
             }
         }
     }
 
     getComponent(entityId, componentType)
     {
-        return this.componentManager.getEntityComponentMap(componentType).get(entityId);
+        return this.componentManager.getComponentInstanceMapByType(componentType).get(entityId);
     }
 
     hasComponent(entityId, ...componentTypes)
@@ -128,7 +121,7 @@ export class World
         for(let componentType of componentTypes)
         {
             if (!this.componentManager.hasComponentType(componentType)) return false;
-            if (!this.componentManager.getEntityComponentMap(componentType).has(entityId)) return false;
+            if (!this.componentManager.getComponentInstanceMapByType(componentType).has(entityId)) return false;
         }
         return true;
     }
@@ -136,7 +129,7 @@ export class World
     countComponents(entityId)
     {
         let count = 0;
-        for(let entityComponentMap of this.componentManager.getEntityComponentMaps())
+        for(let entityComponentMap of this.componentManager.getComponentInstanceMaps())
         {
             if (entityComponentMap.has(entityId))
             {
@@ -155,5 +148,4 @@ export class World
     {
         return Query.select(this, components);
     }
-};
-Eventable.mixin(World);
+}

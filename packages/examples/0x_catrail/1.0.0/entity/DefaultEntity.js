@@ -9,28 +9,28 @@ export class DefaultEntity extends EntityComponent
         this.onComponentAdd = this.onComponentAdd.bind(this);
         this.onComponentRemove = this.onComponentRemove.bind(this);
 
-        this.world.on('componentadd', this.onComponentAdd);
-        this.world.on('componentremove', this.onComponentRemove);
+        this.world.componentManager.on('add', this.onComponentAdd);
+        this.world.componentManager.on('remove', this.onComponentRemove);
     }
 
     /** @abstract */
     onDestroy() {}
 
-    onComponentAdd(entityId, componentClass, component, initialValues)
+    onComponentAdd(entityId, componentType, component, initialValues)
     {
         if (entityId === this.id)
         {
             // NOTE: Since this callback is connected only AFTER EntityComponent has been added
             // we can safely assume that it cannot be added again.
-            addComponentProperties(this, componentClass, component);
+            addComponentProperties(this, componentType, component);
         }
     }
 
-    onComponentRemove(entityId, componentClass, component)
+    onComponentRemove(entityId, componentType, component)
     {
         if (entityId === this.id)
         {
-            if (componentClass === EntityComponent)
+            if (componentType === EntityComponent)
             {
                 this.world.off('componentadd', this.onComponentAdd);
                 this.world.off('componentremove', this.onComponentRemove);
@@ -39,13 +39,13 @@ export class DefaultEntity extends EntityComponent
             }
             else
             {
-                removeComponentProperties(this, componentClass, component);
+                removeComponentProperties(this, componentType, component);
             }
         }
     }
 }
 
-function addComponentProperties(target, componentClass, component)
+function addComponentProperties(target, componentType, component)
 {
     if (typeof component === 'object')
     {
@@ -55,7 +55,7 @@ function addComponentProperties(target, componentClass, component)
         {
             if (ownProps.includes(prop))
             {
-                throw new Error(`Conflicting property names in entity for component '${getComponentTypeName(componentClass)}'.`);
+                throw new Error(`Conflicting property names in entity for component '${getComponentTypeName(componentType)}'.`);
             }
 
             newProps[prop] = {
@@ -68,7 +68,7 @@ function addComponentProperties(target, componentClass, component)
     }
 }
 
-function removeComponentProperties(target, componentClass, component)
+function removeComponentProperties(target, componentType, component)
 {
     if (typeof component === 'object')
     {

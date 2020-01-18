@@ -29,26 +29,26 @@ export class EntityComponent
         this.world = null;
     }
 
-    addComponent(componentClass, initialValues = undefined)
+    addComponent(componentType, initialValues = undefined)
     {
-        this.world.addComponent(this.id, componentClass, initialValues);
+        this.world.addComponent(this.id, componentType, initialValues);
         return this;
     }
 
-    removeComponent(componentClass)
+    removeComponent(componentType)
     {
-        this.world.removeComponent(this.id, componentClass);
+        this.world.removeComponent(this.id, componentType);
         return this;
     }
 
-    hasComponent(componentClass)
+    hasComponent(componentType)
     {
-        return this.world.hasComponent(this.id, componentClass);
+        return this.world.hasComponent(this.id, componentType);
     }
 
-    getComponent(componentClass)
+    getComponent(componentType)
     {
-        return this.world.getComponent(this.id, componentClass);
+        return this.world.getComponent(this.id, componentType);
     }
 }
 

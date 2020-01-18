@@ -1,8 +1,13 @@
+import { Eventable } from '../milque.js';
+
+/**
+ * @fires create
+ * @fires destroy
+ */
 export class EntityManager
 {
-    constructor(world)
+    constructor()
     {
-        this._world = world;
         this._entities = new Set();
         this._nextAvailableEntityId = 1;
     }
@@ -10,13 +15,13 @@ export class EntityManager
     addEntityId(entityId)
     {
         this._entities.add(entityId);
-        this._world.emit('entitycreate', entityId);
+        this.emit('create', entityId);
     }
 
     deleteEntityId(entityId)
     {
         this._entities.delete(entityId);
-        this._world.emit('entitydestroy', entityId);
+        this.emit('destroy', entityId);
     }
     
     getNextAvailableEntityId()
@@ -29,3 +34,4 @@ export class EntityManager
         return this._entities;
     }
 }
+Eventable.mixin(EntityManager);

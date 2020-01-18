@@ -4,9 +4,9 @@ const OPERATOR = Symbol('operator');
 const HANDLER = Symbol('handler');
 
 export const Not = createOperator(
-    function NotOperator(world, entityId, componentClasses)
+    function NotOperator(world, entityId, componentTypees)
     {
-        return !(world.hasComponent(entityId, ...componentClasses));
+        return !(world.hasComponent(entityId, ...componentTypees));
     },
     Symbol('!')
 );
@@ -109,10 +109,10 @@ export class Query
 
         if (persistent)
         {
-            world.on('entitycreate', this.onEntityCreate);
-            world.on('entitydestroy', this.onEntityDestroy);
-            world.on('componentadd', this.onComponentAdd);
-            world.on('componentremove', this.onComponentRemove);
+            world.entityManager.on('create', this.onEntityCreate);
+            world.entityManager.on('destroy', this.onEntityDestroy);
+            world.componentManager.on('add', this.onComponentAdd);
+            world.componentManager.on('remove', this.onComponentRemove);
 
             this.persistent = true;
         }
@@ -123,10 +123,10 @@ export class Query
     {
         if (this.persistent)
         {
-            this.world.off('entitycreate', this.onEntityCreate);
-            this.world.off('entitydestroy', this.onEntityDestroy);
-            this.world.off('componentadd', this.onComponentAdd);
-            this.world.off('componentremove', this.onComponentRemove);
+            this.world.entityManager.off('create', this.onEntityCreate);
+            this.world.entityManager.off('destroy', this.onEntityDestroy);
+            this.world.componentManager.off('add', this.onComponentAdd);
+            this.world.componentManager.off('remove', this.onComponentRemove);
             this.persistent = false;
         }
 
@@ -150,13 +150,13 @@ export class Query
         }
     }
 
-    onComponentAdd(entityId, componentClass, component, initialValues)
+    onComponentAdd(entityId, componentType, component, initialValues)
     {
-        this.onComponentRemove(entityId, componentClass, component);
+        this.onComponentRemove(entityId, componentType, component);
     }
     
     // NOTE: Could be further optimized if we know it ONLY contains includes, etc.
-    onComponentRemove(entityId, componentClass, component)
+    onComponentRemove(entityId, componentType, component)
     {
         if (this.matches(this.world, entityId))
         {
@@ -171,8 +171,8 @@ export class Query
 
 export function createOperator(handler, key = Symbol(handler.name))
 {
-    let result = function(componentClass) {
-        return { [OPERATOR]: key, [HANDLER]: handler, component: componentClass };
+    let result = function(componentType) {
+        return { [OPERATOR]: key, [HANDLER]: handler, component: componentType };
     };
     // Dynamic renaming of function for debugging purposes
     // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/name

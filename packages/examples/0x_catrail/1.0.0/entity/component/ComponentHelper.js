@@ -1,4 +1,4 @@
-export function getComponentTypeName(componentClass)
+export function getComponentTypeName(componentType)
 {
-    return componentClass.name || componentClass.toString();
+    return componentType.name || componentType.toString();
 }

@@ -1,31 +1,36 @@
+import { Eventable } from '../milque.js';
+
+/**
+ * @fires add
+ * @fires remove
+ */
 export class ComponentManager
 {
-    constructor(world)
+    constructor()
     {
-        this.world = world;
-        this.componentClassToEntityComponentMap = new Map();
+        this.componentTypeInstanceMap = new Map();
     }
 
-    createComponent(entityId, componentClass, initialValues)
+    createComponent(entityId, componentType, initialValues)
     {
         let component;
 
         // Instantiate the component...
-        let type = typeof componentClass;
+        let type = typeof componentType;
         if (type === 'object')
         {
             // NOTE: Although this checks the prototype chain on EVERY add, it only
             // checks on the class object, which should NOT have a chain.
-            if (!('create' in componentClass))
+            if (!('create' in componentType))
             {
-                throw new Error(`Instanced component class '${getComponentTypeName(componentClass)}' must at least have a create() function.`);
+                throw new Error(`Instanced component class '${getComponentTypeName(componentType)}' must at least have a create() function.`);
             }
 
-            component = componentClass.create(this, entityId);
+            component = componentType.create(this, entityId);
         }
         else if (type === 'function')
         {
-            component = new componentClass(this, entityId);
+            component = new componentType(this, entityId);
         }
         else if (type === 'symbol')
         {
@@ -38,16 +43,16 @@ export class ComponentManager
             // NOTE: This means that these can be numbers and strings.
             // HOWEVER, I caution against using numbers. Numbers can often be confused
             // with other operations (particularly when computation is involved).
-            component = componentClass;
+            component = componentType;
         }
 
         // Initialize the component...
         if (initialValues)
         {
             // Try user-defined static copy...
-            if ('copy' in componentClass)
+            if ('copy' in componentType)
             {
-                componentClass.copy(component, initialValues);
+                componentType.copy(component, initialValues);
             }
             // Try user-defined instance copy...
             else if ('copy' in component)
@@ -67,35 +72,36 @@ export class ComponentManager
         return component;
     }
 
-    putComponent(entityId, componentClass, component, initialValues)
+    putComponent(entityId, componentType, component, initialValues)
     {
-        let entityComponentMap;
-        if (this.componentClassToEntityComponentMap.has(componentClass))
+        let componentInstanceMap;
+        if (this.componentTypeInstanceMap.has(componentType))
         {
-            entityComponentMap = this.componentClassToEntityComponentMap.get(componentClass);
+            componentInstanceMap = this.componentTypeInstanceMap.get(componentType);
         }
         else
         {
-            this.componentClassToEntityComponentMap.set(componentClass, entityComponentMap = new Map());
+            this.componentTypeInstanceMap.set(componentType, componentInstanceMap = new Map());
         }
 
-        if (entityComponentMap.has(entityId))
+        if (componentInstanceMap.has(entityId))
         {
-            throw new Error(`Cannot add more than one instance of component class '${getComponentTypeName(componentClass)}' for entity '${entityId}'.`);
+            throw new Error(`Cannot add more than one instance of component class '${getComponentTypeName(componentType)}' for entity '${entityId}'.`);
         }
 
-        entityComponentMap.set(entityId, component);
-        this.world.emit('componentadd', entityId, componentClass, component, initialValues);
+        componentInstanceMap.set(entityId, component);
+
+        this.emit('add', entityId, componentType, component, initialValues);
     }
 
-    deleteComponent(entityId, componentClass, component)
+    deleteComponent(entityId, componentType, component)
     {
-        this.componentClassToEntityComponentMap.get(componentClass).delete(entityId);
+        this.componentTypeInstanceMap.get(componentType).delete(entityId);
     
         let reusable;
-        if ('reset' in componentClass)
+        if ('reset' in componentType)
         {
-            reusable = componentClass.reset(component);
+            reusable = componentType.reset(component);
         }
         else if ('reset' in component)
         {
@@ -113,26 +119,27 @@ export class ComponentManager
             // The return statement is simply for documentation (and future optimizations).
         }
 
-        this.world.emit('componentremove', entityId, componentClass, component);
+        this.emit('remove', entityId, componentType, component);
     }
 
     hasComponentType(componentType)
     {
-        return this.componentClassToEntityComponentMap.has(componentType);
+        return this.componentTypeInstanceMap.has(componentType);
     }
 
     getComponentTypes()
     {
-        return this.componentClassToEntityComponentMap.keys();
+        return this.componentTypeInstanceMap.keys();
     }
 
-    getEntityComponentMap(componentType)
+    getComponentInstanceMapByType(componentType)
     {
-        return this.componentClassToEntityComponentMap.get(componentType);
+        return this.componentTypeInstanceMap.get(componentType);
     }
 
-    getEntityComponentMaps()
+    getComponentInstanceMaps()
     {
-        return this.componentClassToEntityComponentMap.values();
+        return this.componentTypeInstanceMap.values();
     }
 }
+Eventable.mixin(ComponentManager);
