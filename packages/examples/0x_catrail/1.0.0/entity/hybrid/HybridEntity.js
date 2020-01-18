@@ -1,6 +1,6 @@
-import { EntityComponent } from './hybrid/EntityComponent.js';
+import { Entity } from './Entity.js';
 
-export class DefaultEntity extends EntityComponent
+export class HybridEntity extends Entity
 {
     constructor(world)
     {

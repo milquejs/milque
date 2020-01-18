@@ -10,7 +10,7 @@
  * 
  * Usually, you will use this class like so:
  * @example
- * class MyComponent extends DefaultComponent
+ * class MyComponent extends Component
  * {
  *   constructor()
  *   {
@@ -23,8 +23,10 @@
  * }
  */
 const DEFAULT_UNDEFINED = Symbol('defaultUndefined');
-export class DefaultComponent
+export class Component
 {
+    static get defaultValues() { return null; }
+
     constructor(world, entityId, resetAsSelfConstructor = true)
     {
         if (!('defaultValues' in this.constructor))
@@ -79,4 +81,3 @@ export class DefaultComponent
         }
     }
 }
-DefaultComponent.defaultValues = null;

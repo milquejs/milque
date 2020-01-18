@@ -7,13 +7,17 @@ export class EntityComponent
         {
             throw new Error('This component cannot be added to an existing entity; it can only initialize itself.');
         }
+        
+        if (!world)
+        {
+            throw new Error('Cannot create entity in null world.');
+        }
 
         const id = world.createEntity();
 
         // Skip component creation, as we will be using ourselves :D
         world.componentManager.putComponent(id, EntityComponent, this, undefined);
-
-        this.world = world;
+        
         this.id = id;
     }
 
@@ -22,34 +26,6 @@ export class EntityComponent
     
     /** @override */
     reset() { return false; }
-
-    destroy()
-    {
-        this.world.destroyEntity(this.entityId);
-        this.world = null;
-    }
-
-    addComponent(componentType, initialValues = undefined)
-    {
-        this.world.addComponent(this.id, componentType, initialValues);
-        return this;
-    }
-
-    removeComponent(componentType)
-    {
-        this.world.removeComponent(this.id, componentType);
-        return this;
-    }
-
-    hasComponent(componentType)
-    {
-        return this.world.hasComponent(this.id, componentType);
-    }
-
-    getComponent(componentType)
-    {
-        return this.world.getComponent(this.id, componentType);
-    }
 }
 
 export function getEntityById(world, entityId)
