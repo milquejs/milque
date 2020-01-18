@@ -2,6 +2,8 @@ import * as Eventable from '../util/Eventable.js';
 
 export const DEFAULT_FRAME_TIME = 1000 / 60;
 
+// TODO: This should not have any global state. That should
+// be handled by the modules, not here.
 const INSTANCES = new Map();
 
 /**
