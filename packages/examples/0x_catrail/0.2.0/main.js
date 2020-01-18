@@ -1,7 +1,6 @@
 import * as Game from './Game.js';
 
 import { SplashScene } from './SplashScene.js';
-import * as MenuScene from './MenuScene.js';
 import * as MainScene from './MainScene.js';
 import * as PlayScene from './PlayScene.js';
 
