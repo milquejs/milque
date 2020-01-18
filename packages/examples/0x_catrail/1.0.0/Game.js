@@ -40,7 +40,7 @@ export function createGame(scene, context = undefined)
     if (!context) context = Object.isExtensible(scene) ? scene : {};
 
     let result = {
-        loop: GameLoop.createGameLoop(),
+        loop: new GameLoop(),
         scene: null,
         world: null,
         _renderTargets: new Map(),

@@ -1,4 +1,3 @@
-import { World } from './entity/World.js';
 import * as Game from './Game.js';
 
 import { SplashScene } from './SplashScene.js';
