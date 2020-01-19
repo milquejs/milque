@@ -25,7 +25,7 @@ export function onStart()
     {
         for(let x = 0; x < this.tileMap.height; ++x)
         {
-            this.tileMap.array[y][x] = Random.randomChoose(Object.keys(this.tileMap.registry));
+            this.tileMap.set(x, y, Random.randomChoose(Object.keys(this.tileMap.registry)));
         }
     }
 }

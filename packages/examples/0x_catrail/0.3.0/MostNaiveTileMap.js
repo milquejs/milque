@@ -63,6 +63,22 @@ export class TileMap
         };
     }
 
+    get(x, y)
+    {
+        return this.array[y][x];
+    }
+
+    set(x, y, tileId)
+    {
+        this.array[y][x] = tileId;
+        return this;
+    }
+
+    tileAt(x, y)
+    {
+        return this.registry[this.array[y][x]];
+    }
+
     registerTile(id, tile)
     {
         this.registry[id] = tile;
