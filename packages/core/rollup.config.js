@@ -5,12 +5,13 @@ import { terser } from 'rollup-plugin-terser';
 import clear from 'rollup-plugin-clear';
 import pkg from './package.json';
 
+const POLYFILL_INPUT_PATH = './src/polyfill.js';
 const INPUT_PATH = './src/index.js';
 const PACKAGE_NAME = 'Milque';
 
 export default [
     {
-        input: INPUT_PATH,
+        input: POLYFILL_INPUT_PATH,
         output: {
             file: pkg.browser,
             format: 'umd',
@@ -26,7 +27,7 @@ export default [
         ]
     },
     {
-        input: INPUT_PATH,
+        input: POLYFILL_INPUT_PATH,
         output: {
             file: pkg.browser.substring(0, pkg.browser.lastIndexOf('.')) + '.min.js',
             format: 'umd',
@@ -53,7 +54,6 @@ export default [
         ],
         plugins: [
             clear({ targets: ['build'] }),
-            babel({ exclude: 'node_modules/**' }),
         ]
     }
 ];

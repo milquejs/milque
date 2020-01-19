@@ -5,6 +5,7 @@ export * from './util/index.js';
 export * from './view/index.js';
 export * from './game/index.js';
 export * from './entity/index.js';
+export * from './scene/index.js';
 
 import * as Display from './modules/Display.js';
 export { Display };

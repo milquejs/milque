@@ -16,5 +16,6 @@
   "bugs": {
     "url": "https://github.com/andykuo1/milque/issues"
   },
-  "homepage": "https://github.com/andykuo1/milque#readme"
+  "homepage": "https://github.com/andykuo1/milque#readme",
+  "dependencies": {}
 }
