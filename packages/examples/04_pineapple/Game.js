@@ -1,5 +1,4 @@
-import { GameLoop, Input, Display, Utils, View, EntityManager } from './milque.js';
-import { SceneManager } from './SceneManager.js';
+import { GameLoop, Input, Display, Utils, View, EntityManager, SceneManager } from './milque.js';
 
 var game;
 
@@ -8,7 +7,7 @@ export const DEFAULT_VIEW = View.createView();
 export function registerScene(name, scene)
 {
     if (!game) game = createGame(scene);
-    game.sceneManager.register(name, scene);
+    game.scenes.register(name, scene);
 }
 
 export function start(scene = undefined)
@@ -29,14 +28,14 @@ export function stop()
 
 export function getScene()
 {
-    return game.sceneManager.getCurrentScene();
+    return game.scenes.getCurrentScene();
 }
 
 export function createGame(scene)
 {
     let result = {
         loop: new GameLoop(),
-        sceneManager: new SceneManager(),
+        scenes: new SceneManager(),
         entities: new EntityManager(),
         _renderTargets: new Map(),
         addRenderTarget(view, renderer = null, viewPort = null, context = null, handle = view)
@@ -56,7 +55,7 @@ export function createGame(scene)
         },
         nextScene(scene, transition = null, loadOpts = {})
         {
-            this.sceneManager.nextScene(scene, transition, loadOpts);
+            this.scenes.nextScene(scene, transition, loadOpts);
         },
         start()
         {
@@ -70,7 +69,7 @@ export function createGame(scene)
         },
         update(dt)
         {
-            this.sceneManager.update(dt);
+            this.scenes.update(dt);
 
             // Do render regardless of loading...
             this.render();
@@ -79,7 +78,7 @@ export function createGame(scene)
         {
             if (this._renderTargets.size <= 0)
             {
-                let scene = this.sceneManager.getCurrentScene();
+                let scene = this.scenes.getCurrentScene();
                 this._renderStep(DEFAULT_VIEW,
                     scene ? scene.onRender : null,
                     null,
@@ -90,7 +89,7 @@ export function createGame(scene)
             {
                 // TODO: In the future, renderer should be completely separate from the scene.
                 // Perhaps not even handled in Game.js ...
-                let scene = this.sceneManager.getCurrentScene();
+                let scene = this.scenes.getCurrentScene();
                 let first = true;
                 for(let renderTarget of this._renderTargets.values())
                 {
@@ -118,7 +117,7 @@ export function createGame(scene)
                 view.context.clearRect(0, 0, view.width, view.height);
             }
             
-            if (renderer) renderer.call(renderContext, view.context, view, this.sceneManager.getCurrentScene());
+            if (renderer) renderer.call(renderContext, view.context, view, this.scenes.getCurrentScene());
 
             // NOTE: The renderer can define a custom viewport to draw to
             if (viewPort)
@@ -133,8 +132,8 @@ export function createGame(scene)
         }
     };
     result.loop.on('update', result.update.bind(result));
-    result.sceneManager.on('preupdate', () => Input.poll());
-    result.sceneManager.setSharedContext(result);
-    result.sceneManager.nextScene(scene);
+    result.scenes.on('preupdate', () => Input.poll());
+    result.scenes.setSharedContext(result);
+    result.scenes.nextScene(scene);
     return result;
 }
