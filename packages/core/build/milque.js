@@ -12405,25 +12405,24 @@
 	  return AbstractCamera;
 	}();
 
-	var DEFAULT_FRAME_TIME = 1000 / 60; // TODO: This should not have any global state. That should
-	// be handled by the modules, not here.
-
-	var INSTANCES = new Map();
+	var DEFAULT_FRAME_TIME = 1000 / 60;
 	/**
-	 * @version 1.2
+	 * @version 1.3.0
 	 * @description
 	 * Handles a steady update loop.
 	 * 
 	 * # Changelog
+	 * ## 1.3.0
+	 * - Moved static start()/stop() for game loop to modules
 	 * 
-	 * ## 1.2
+	 * ## 1.2.0
 	 * - Fixed incrementing dt on window blur
 	 * - Fixed large dt on first frame
 	 * 
-	 * ## 1.1
+	 * ## 1.1.0
 	 * - Added pause and resume
 	 * 
-	 * ## 1.0
+	 * ## 1.0.0
 	 * - Create GameLoop
 	 * 
 	 * @property {Number} prevFrameTime The time of the previous frame in milliseconds.
@@ -12443,86 +12442,6 @@
 	var GameLoop =
 	/*#__PURE__*/
 	function () {
-	  _createClass(GameLoop, null, [{
-	    key: "start",
-
-	    /**
-	     * Starts a game loop. This is not required to start a loop, but is
-	     * here for ease of use.
-	     * 
-	     * @example
-	     * let context = {
-	     *   start() {
-	     *     // Start code here...
-	     *   },
-	     *   update(dt) {
-	     *     // Update code here...
-	     *   }
-	     * };
-	     * GameLoop.start(context);
-	     * 
-	     * @example
-	     * GameLoop.start()
-	     *   .on('start', function start() {
-	     *     // Start code here...
-	     *   })
-	     *   .on('update', function update(dt) {
-	     *     // Update code here...
-	     *   });
-	     * 
-	     * @example
-	     * let gameLoop = new GameLoop();
-	     * gameLoop
-	     *   .on('start', ...)
-	     *   .on('update', ...)
-	     *   .on('stop', ...);
-	     * 
-	     * @param {Object} [handle] The handle that refers to the registered game
-	     * loop. If the handle has not been previously registered, it will
-	     * register the handle with a new game loop, with the handle serving as
-	     * both the new game loop's handle and context (only if the handle is
-	     * an object, otherwise, it will create an empty context).
-	     * 
-	     * @returns {GameLoop} The started game loop instance.
-	     */
-	    value: function start() {
-	      var handle = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : undefined;
-	      var result;
-
-	      if (INSTANCES.has(handle)) {
-	        throw new Error('Cannot start game loop with duplicate handle.');
-	      } else {
-	        var context;
-	        if (_typeof(handle) === 'object') context = handle;else context = {};
-	        result = new GameLoop(context);
-	      }
-
-	      INSTANCES.set(handle, result); // Start the loop (right after any chained method calls, like event listeners)
-
-	      setTimeout(function () {
-	        return result.start();
-	      }, 0);
-	      return result;
-	    }
-	    /**
-	     * Stops a game loop. This is not required to stop a loop, but is
-	     * here for ease of use.
-	     */
-
-	  }, {
-	    key: "stop",
-	    value: function stop(handle) {
-	      if (INSTANCES.has(handle)) {
-	        var gameLoop = INSTANCES.get(handle);
-	        gameLoop.stop();
-	        INSTANCES["delete"](handle);
-	        return gameLoop;
-	      }
-
-	      return null;
-	    }
-	  }]);
-
 	  function GameLoop() {
 	    var context = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
@@ -14425,6 +14344,93 @@
 		randomSign: randomSign
 	});
 
+	var GAME_LOOPS = new Map();
+	/**
+	 * Starts a game loop. This is not required to start a loop, but is
+	 * here for ease of use.
+	 * 
+	 * @example
+	 * let context = {
+	 *   start() {
+	 *     // Start code here...
+	 *   },
+	 *   update(dt) {
+	 *     // Update code here...
+	 *   }
+	 * };
+	 * GameLoop.start(context);
+	 * 
+	 * @example
+	 * GameLoop.start()
+	 *   .on('start', function start() {
+	 *     // Start code here...
+	 *   })
+	 *   .on('update', function update(dt) {
+	 *     // Update code here...
+	 *   });
+	 * 
+	 * @example
+	 * let gameLoop = new GameLoop();
+	 * gameLoop
+	 *   .on('start', ...)
+	 *   .on('update', ...)
+	 *   .on('stop', ...);
+	 * 
+	 * @param {Object} [handle] The handle that refers to the registered game
+	 * loop. If the handle has not been previously registered, it will
+	 * register the handle with a new game loop, with the handle serving as
+	 * both the new game loop's handle and context (only if the handle is
+	 * an object, otherwise, it will create an empty context).
+	 * 
+	 * @returns {GameLoop} The started game loop instance.
+	 */
+
+	function start() {
+	  var handle = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : undefined;
+	  var result;
+
+	  if (GAME_LOOPS.has(handle)) {
+	    throw new Error('Cannot start game loop with duplicate handle.');
+	  } else {
+	    var context;
+	    if (_typeof(handle) === 'object') context = handle;else context = {};
+	    result = new GameLoop(context);
+	  }
+
+	  GAME_LOOPS.set(handle, result); // Start the loop (right after any chained method calls, like event listeners)
+
+	  setTimeout(function () {
+	    return result.start();
+	  }, 0);
+	  return result;
+	}
+	/**
+	 * Stops a game loop. This is not required to stop a loop, but is
+	 * here for ease of use.
+	 */
+
+	function stop(handle) {
+	  if (GAME_LOOPS.has(handle)) {
+	    var gameLoop = GAME_LOOPS.get(handle);
+	    gameLoop.stop();
+	    GAME_LOOPS["delete"](handle);
+	    return gameLoop;
+	  }
+
+	  return null;
+	}
+	function createGameLoop() {
+	  var context = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+	  return new GameLoop(context);
+	}
+
+	var Game = /*#__PURE__*/Object.freeze({
+		__proto__: null,
+		start: start,
+		stop: stop,
+		createGameLoop: createGameLoop
+	});
+
 	exports.AbstractCamera = AbstractCamera;
 	exports.AbstractInputAdapter = AbstractInputAdapter;
 	exports.ActionInputAdapter = ActionInputAdapter;
@@ -14444,6 +14450,7 @@
 	exports.EntityQuery = EntityQuery;
 	exports.EventKey = EventKey;
 	exports.Eventable = Eventable$1;
+	exports.Game = Game;
 	exports.GameLoop = GameLoop;
 	exports.HybridEntity = HybridEntity;
 	exports.Input = Input;

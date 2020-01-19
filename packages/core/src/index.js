@@ -17,6 +17,8 @@ import * as Random from './modules/Random.js';
 export { Random };
 import * as Utils from './modules/Utils.js';
 export { Utils };
+import * as Game from './modules/Game.js';
+export { Game };
 
 // NOTE: To allow both named and default imports
 import * as self from './index.js';

@@ -5,6 +5,7 @@ var self = /*#__PURE__*/Object.freeze({
     get Input () { return Input; },
     get Random () { return Random; },
     get Utils () { return Utils; },
+    get Game () { return Game; },
     get default () { return self; },
     get MODE_NOSCALE () { return MODE_NOSCALE; },
     get MODE_CENTER () { return MODE_CENTER; },
@@ -1310,25 +1311,23 @@ class AbstractCamera
 
 const DEFAULT_FRAME_TIME = 1000 / 60;
 
-// TODO: This should not have any global state. That should
-// be handled by the modules, not here.
-const INSTANCES = new Map();
-
 /**
- * @version 1.2
+ * @version 1.3.0
  * @description
  * Handles a steady update loop.
  * 
  * # Changelog
+ * ## 1.3.0
+ * - Moved static start()/stop() for game loop to modules
  * 
- * ## 1.2
+ * ## 1.2.0
  * - Fixed incrementing dt on window blur
  * - Fixed large dt on first frame
  * 
- * ## 1.1
+ * ## 1.1.0
  * - Added pause and resume
  * 
- * ## 1.0
+ * ## 1.0.0
  * - Create GameLoop
  * 
  * @property {Number} prevFrameTime The time of the previous frame in milliseconds.
@@ -1346,84 +1345,6 @@ const INSTANCES = new Map();
  */
 class GameLoop
 {
-    /**
-     * Starts a game loop. This is not required to start a loop, but is
-     * here for ease of use.
-     * 
-     * @example
-     * let context = {
-     *   start() {
-     *     // Start code here...
-     *   },
-     *   update(dt) {
-     *     // Update code here...
-     *   }
-     * };
-     * GameLoop.start(context);
-     * 
-     * @example
-     * GameLoop.start()
-     *   .on('start', function start() {
-     *     // Start code here...
-     *   })
-     *   .on('update', function update(dt) {
-     *     // Update code here...
-     *   });
-     * 
-     * @example
-     * let gameLoop = new GameLoop();
-     * gameLoop
-     *   .on('start', ...)
-     *   .on('update', ...)
-     *   .on('stop', ...);
-     * 
-     * @param {Object} [handle] The handle that refers to the registered game
-     * loop. If the handle has not been previously registered, it will
-     * register the handle with a new game loop, with the handle serving as
-     * both the new game loop's handle and context (only if the handle is
-     * an object, otherwise, it will create an empty context).
-     * 
-     * @returns {GameLoop} The started game loop instance.
-     */
-    static start(handle = undefined)
-    {
-        let result;
-        if (INSTANCES.has(handle))
-        {
-            throw new Error('Cannot start game loop with duplicate handle.');
-        }
-        else
-        {
-            let context;
-            if (typeof handle === 'object') context = handle;
-            else context = {};
-
-            result = new GameLoop(context);
-        }
-        INSTANCES.set(handle, result);
-
-        // Start the loop (right after any chained method calls, like event listeners)
-        setTimeout(() => result.start(), 0);
-        return result;
-    }
-
-    /**
-     * Stops a game loop. This is not required to stop a loop, but is
-     * here for ease of use.
-     */
-    static stop(handle)
-    {
-        if (INSTANCES.has(handle))
-        {
-            let gameLoop = INSTANCES.get(handle);
-            gameLoop.stop();
-            INSTANCES.delete(handle);
-            return gameLoop;
-        }
-
-        return null;
-    }
-
     constructor(context = {})
     {
         this.prevFrameTime = 0;
@@ -3017,7 +2938,99 @@ var Random = /*#__PURE__*/Object.freeze({
     randomSign: randomSign
 });
 
+const GAME_LOOPS = new Map();
+
+/**
+ * Starts a game loop. This is not required to start a loop, but is
+ * here for ease of use.
+ * 
+ * @example
+ * let context = {
+ *   start() {
+ *     // Start code here...
+ *   },
+ *   update(dt) {
+ *     // Update code here...
+ *   }
+ * };
+ * GameLoop.start(context);
+ * 
+ * @example
+ * GameLoop.start()
+ *   .on('start', function start() {
+ *     // Start code here...
+ *   })
+ *   .on('update', function update(dt) {
+ *     // Update code here...
+ *   });
+ * 
+ * @example
+ * let gameLoop = new GameLoop();
+ * gameLoop
+ *   .on('start', ...)
+ *   .on('update', ...)
+ *   .on('stop', ...);
+ * 
+ * @param {Object} [handle] The handle that refers to the registered game
+ * loop. If the handle has not been previously registered, it will
+ * register the handle with a new game loop, with the handle serving as
+ * both the new game loop's handle and context (only if the handle is
+ * an object, otherwise, it will create an empty context).
+ * 
+ * @returns {GameLoop} The started game loop instance.
+ */
+function start(handle = undefined)
+{
+    let result;
+    if (GAME_LOOPS.has(handle))
+    {
+        throw new Error('Cannot start game loop with duplicate handle.');
+    }
+    else
+    {
+        let context;
+        if (typeof handle === 'object') context = handle;
+        else context = {};
+
+        result = new GameLoop(context);
+    }
+    GAME_LOOPS.set(handle, result);
+
+    // Start the loop (right after any chained method calls, like event listeners)
+    setTimeout(() => result.start(), 0);
+    return result;
+}
+
+/**
+ * Stops a game loop. This is not required to stop a loop, but is
+ * here for ease of use.
+ */
+function stop(handle)
+{
+    if (GAME_LOOPS.has(handle))
+    {
+        let gameLoop = GAME_LOOPS.get(handle);
+        gameLoop.stop();
+        GAME_LOOPS.delete(handle);
+        return gameLoop;
+    }
+
+    return null;
+}
+
+function createGameLoop(context = {})
+{
+    return new GameLoop(context);
+}
+
+var Game = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    start: start,
+    stop: stop,
+    createGameLoop: createGameLoop
+});
+
 
 
 export default self;
-export { AbstractCamera, AbstractInputAdapter, ActionInputAdapter, Audio, ComponentHelper as Component, ComponentBase, ComponentFactory, DEFAULT_FRAME_TIME, DOUBLE_ACTION_TIME, Display, DisplayPort, DoubleActionInputAdapter, EntityHelper as Entity, EntityBase, EntityComponent$1 as EntityComponent, EntityManager, EntityQuery, EventKey, Eventable$1 as Eventable, GameLoop, HybridEntity, Input, Keyboard, MAX_CONTEXT_PRIORITY, MIN_CONTEXT_PRIORITY, MODE_CENTER, MODE_FIT, MODE_NOSCALE, MODE_STRETCH, Mouse, QueryOperator, Random, RandomGenerator, RangeInputAdapter, SceneBase, SceneManager, SimpleRandomGenerator, StateInputAdapter, TagComponent, Utils, View, ViewHelper, ViewPort, createContext, createSource };
+export { AbstractCamera, AbstractInputAdapter, ActionInputAdapter, Audio, ComponentHelper as Component, ComponentBase, ComponentFactory, DEFAULT_FRAME_TIME, DOUBLE_ACTION_TIME, Display, DisplayPort, DoubleActionInputAdapter, EntityHelper as Entity, EntityBase, EntityComponent$1 as EntityComponent, EntityManager, EntityQuery, EventKey, Eventable$1 as Eventable, Game, GameLoop, HybridEntity, Input, Keyboard, MAX_CONTEXT_PRIORITY, MIN_CONTEXT_PRIORITY, MODE_CENTER, MODE_FIT, MODE_NOSCALE, MODE_STRETCH, Mouse, QueryOperator, Random, RandomGenerator, RangeInputAdapter, SceneBase, SceneManager, SimpleRandomGenerator, StateInputAdapter, TagComponent, Utils, View, ViewHelper, ViewPort, createContext, createSource };
