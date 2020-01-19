@@ -3,13 +3,15 @@ import { POS_X, POS_Y, LEFT_DOWN, RIGHT_CLICK } from './util/MouseControls.js';
 import { TileMap, loadTileSheet } from './MostNaiveTileMap.js';
 import { Random } from './milque.js';
 
+// This slows down at around 100x100
+
 export async function load(game)
 {
     let dungeonSheet = await loadTileSheet('../res/dungeon.png', '../res/dungeon.tiles');
     this.tileSet = {
         ...dungeonSheet
     };
-    this.tileMap = new TileMap(5, 5, 64);
+    this.tileMap = new TileMap(60, 60, 8);
 }
 
 export function onStart()

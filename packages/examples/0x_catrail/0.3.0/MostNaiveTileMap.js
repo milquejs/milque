@@ -1,47 +1,3 @@
-
-export async function loadTileSheet(sheetUrl, tileUrl)
-{
-    let dst = {};
-
-    let img = new Image();
-    img.src = sheetUrl;
-
-    let data = await fetch(tileUrl);
-    let stringData = await data.text();
-    for(let line of stringData.split('\n'))
-    {
-        line = line.trim();
-        if (line <= 0) continue;
-
-        let args = [];
-        let i = 0;
-        let j = line.indexOf(' ');
-        while(j >= 0)
-        {
-            args.push(line.substring(i, j));
-            i = j + 1;
-            j = line.indexOf(' ', i);
-        }
-        args.push(line.substring(i));
-
-        let name = args[0];
-        let u = Number.parseInt(args[1]);
-        let v = Number.parseInt(args[2]);
-        let w = Number.parseInt(args[3]);
-        let h = Number.parseInt(args[4]);
-        let frames = args.length >= 6 ? Number.parseInt(args[5]) : 1;
-
-        dst[name] = {
-            source: img,
-            u, v,
-            w, h,
-            frames,
-            name,
-        };
-    }
-    return dst;
-}
-
 export class TileMap
 {
     constructor(width, height, tileSize)
@@ -150,4 +106,47 @@ function drawTilePointer(ctx, x, y, tile, tileSize)
     ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(x - BORDER_WIDTH, y - BORDER_WIDTH, tileSize + BORDER_WIDTH * 2, tileSize + BORDER_WIDTH * 2);
     drawTile(ctx, x, y, tile, tileSize);
+}
+
+export async function loadTileSheet(sheetUrl, tileUrl)
+{
+    let dst = {};
+
+    let img = new Image();
+    img.src = sheetUrl;
+
+    let data = await fetch(tileUrl);
+    let stringData = await data.text();
+    for(let line of stringData.split('\n'))
+    {
+        line = line.trim();
+        if (line <= 0) continue;
+
+        let args = [];
+        let i = 0;
+        let j = line.indexOf(' ');
+        while(j >= 0)
+        {
+            args.push(line.substring(i, j));
+            i = j + 1;
+            j = line.indexOf(' ', i);
+        }
+        args.push(line.substring(i));
+
+        let name = args[0];
+        let u = Number.parseInt(args[1]);
+        let v = Number.parseInt(args[2]);
+        let w = Number.parseInt(args[3]);
+        let h = Number.parseInt(args[4]);
+        let frames = args.length >= 6 ? Number.parseInt(args[5]) : 1;
+
+        dst[name] = {
+            source: img,
+            u, v,
+            w, h,
+            frames,
+            name,
+        };
+    }
+    return dst;
 }
