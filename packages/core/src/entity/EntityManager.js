@@ -1,7 +1,7 @@
 import { EntityQuery } from './query/EntityQuery.js';
 import { getComponentTypeName } from './component/ComponentHelper.js';
-import { EntityManager } from './manager/EntityManager.js';
-import { ComponentManager } from './manager/ComponentManager.js';
+import { EntityHandler } from './handlers/EntityHandler.js';
+import { ComponentHandler } from './handlers/ComponentHandler.js';
 
 /**
  * @typedef EntityId
@@ -11,17 +11,17 @@ import { ComponentManager } from './manager/ComponentManager.js';
 /**
  * Manages all entities.
  */
-export class EntityWorld
+export class EntityManager
 {
     constructor()
     {
-        this.entityManager = new EntityManager(this);
-        this.componentManager = new ComponentManager(this);
+        this.entityHandler = new EntityHandler(this);
+        this.componentHandler = new ComponentHandler(this);
     }
 
     clear()
     {
-        for(let entityId of this.entityManager.getEntityIds())
+        for(let entityId of this.entityHandler.getEntityIds())
         {
             this.destroyEntity(entityId, opts);
         }
@@ -30,8 +30,8 @@ export class EntityWorld
     /** Creates a unique entity with passed-in components (without initial values). */
     createEntity(...components)
     {
-        const entityId = this.entityManager.getNextAvailableEntityId();
-        this.entityManager.addEntityId(entityId);
+        const entityId = this.entityHandler.getNextAvailableEntityId();
+        this.entityHandler.addEntityId(entityId);
 
         for(let component of components)
         {
@@ -44,21 +44,21 @@ export class EntityWorld
     destroyEntity(entityId)
     {
         // Remove entity components from world
-        for(let componentType of this.componentManager.getComponentTypes())
+        for(let componentType of this.componentHandler.getComponentTypes())
         {
-            if (this.componentManager.getComponentInstanceMapByType(componentType).has(entityId))
+            if (this.componentHandler.getComponentInstanceMapByType(componentType).has(entityId))
             {
                 this.removeComponent(entityId, componentType);
             }
         }
 
         // Remove entity from world
-        this.entityManager.deleteEntityId(entityId);
+        this.entityHandler.deleteEntityId(entityId);
     }
 
     getEntityIds()
     {
-        return this.entityManager.getEntityIds();
+        return this.entityHandler.getEntityIds();
     }
     
     /**
@@ -74,8 +74,8 @@ export class EntityWorld
     {
         try
         {
-            let component = this.componentManager.createComponent(entityId, componentType, initialValues);
-            this.componentManager.putComponent(entityId, componentType, component, initialValues);
+            let component = this.componentHandler.createComponent(entityId, componentType, initialValues);
+            this.componentHandler.putComponent(entityId, componentType, component, initialValues);
             return component;
         }
         catch(e)
@@ -90,7 +90,7 @@ export class EntityWorld
         try
         {
             let component = this.getComponent(entityId, componentType);
-            this.componentManager.deleteComponent(entityId, componentType, component);
+            this.componentHandler.deleteComponent(entityId, componentType, component);
         }
         catch(e)
         {
@@ -101,27 +101,27 @@ export class EntityWorld
 
     clearComponents(entityId)
     {
-        for(let entityComponentMap of this.componentManager.getComponentInstanceMaps())
+        for(let entityComponentMap of this.componentHandler.getComponentInstanceMaps())
         {
             if (entityComponentMap.has(entityId))
             {
                 let component = entityComponentMap.get(entityId);
-                this.componentManager.deleteComponent(entityId, componentType, component);
+                this.componentHandler.deleteComponent(entityId, componentType, component);
             }
         }
     }
 
     getComponent(entityId, componentType)
     {
-        return this.componentManager.getComponentInstanceMapByType(componentType).get(entityId);
+        return this.componentHandler.getComponentInstanceMapByType(componentType).get(entityId);
     }
 
     hasComponent(entityId, ...componentTypes)
     {
         for(let componentType of componentTypes)
         {
-            if (!this.componentManager.hasComponentType(componentType)) return false;
-            if (!this.componentManager.getComponentInstanceMapByType(componentType).has(entityId)) return false;
+            if (!this.componentHandler.hasComponentType(componentType)) return false;
+            if (!this.componentHandler.getComponentInstanceMapByType(componentType).has(entityId)) return false;
         }
         return true;
     }
@@ -129,7 +129,7 @@ export class EntityWorld
     countComponents(entityId)
     {
         let count = 0;
-        for(let entityComponentMap of this.componentManager.getComponentInstanceMaps())
+        for(let entityComponentMap of this.componentHandler.getComponentInstanceMaps())
         {
             if (entityComponentMap.has(entityId))
             {
@@ -147,5 +147,10 @@ export class EntityWorld
     query(components)
     {
         return EntityQuery.select(this, components);
+    }
+
+    [Symbol.iterator]()
+    {
+        return this.getEntityIds()[Symbol.iterator]();
     }
 }

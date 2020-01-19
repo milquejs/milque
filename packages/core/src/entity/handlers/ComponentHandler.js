@@ -4,7 +4,7 @@ import * as Eventable from '../../util/Eventable.js';
  * @fires add
  * @fires remove
  */
-export class ComponentManager
+export class ComponentHandler
 {
     constructor()
     {
@@ -142,4 +142,4 @@ export class ComponentManager
         return this.componentTypeInstanceMap.values();
     }
 }
-Eventable.mixin(ComponentManager);
+Eventable.mixin(ComponentHandler);

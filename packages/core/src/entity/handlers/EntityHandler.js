@@ -4,7 +4,7 @@ import * as Eventable from '../../util/Eventable.js';
  * @fires create
  * @fires destroy
  */
-export class EntityManager
+export class EntityHandler
 {
     constructor()
     {
@@ -34,4 +34,4 @@ export class EntityManager
         return this._entities;
     }
 }
-Eventable.mixin(EntityManager);
+Eventable.mixin(EntityHandler);

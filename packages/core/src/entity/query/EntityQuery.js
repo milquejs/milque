@@ -101,10 +101,10 @@ export class EntityQuery
 
         if (persistent)
         {
-            world.entityManager.on('create', this.onEntityCreate);
-            world.entityManager.on('destroy', this.onEntityDestroy);
-            world.componentManager.on('add', this.onComponentAdd);
-            world.componentManager.on('remove', this.onComponentRemove);
+            world.entityHandler.on('create', this.onEntityCreate);
+            world.entityHandler.on('destroy', this.onEntityDestroy);
+            world.componentHandler.on('add', this.onComponentAdd);
+            world.componentHandler.on('remove', this.onComponentRemove);
 
             this.persistent = true;
         }
@@ -115,10 +115,10 @@ export class EntityQuery
     {
         if (this.persistent)
         {
-            this.world.entityManager.off('create', this.onEntityCreate);
-            this.world.entityManager.off('destroy', this.onEntityDestroy);
-            this.world.componentManager.off('add', this.onComponentAdd);
-            this.world.componentManager.off('remove', this.onComponentRemove);
+            this.world.entityHandler.off('create', this.onEntityCreate);
+            this.world.entityHandler.off('destroy', this.onEntityDestroy);
+            this.world.componentHandler.off('add', this.onComponentAdd);
+            this.world.componentHandler.off('remove', this.onComponentRemove);
             this.persistent = false;
         }
 

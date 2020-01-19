@@ -9,8 +9,8 @@ export class HybridEntity extends EntityBase
         this.onComponentAdd = this.onComponentAdd.bind(this);
         this.onComponentRemove = this.onComponentRemove.bind(this);
 
-        this.world.componentManager.on('add', this.onComponentAdd);
-        this.world.componentManager.on('remove', this.onComponentRemove);
+        this.world.componentHandler.on('add', this.onComponentAdd);
+        this.world.componentHandler.on('remove', this.onComponentRemove);
     }
 
     /** @abstract */
@@ -32,8 +32,8 @@ export class HybridEntity extends EntityBase
         {
             if (componentType === EntityComponent)
             {
-                this.world.off('componentadd', this.onComponentAdd);
-                this.world.off('componentremove', this.onComponentRemove);
+                this.world.componentHandler.off('add', this.onComponentAdd);
+                this.world.componentHandler.off('remove', this.onComponentRemove);
 
                 this.onDestroy();
             }

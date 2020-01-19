@@ -16,7 +16,7 @@ export class EntityComponent
         const id = world.createEntity();
 
         // Skip component creation, as we will be using ourselves :D
-        world.componentManager.putComponent(id, EntityComponent, this, undefined);
+        world.componentHandler.putComponent(id, EntityComponent, this, undefined);
         
         this.id = id;
     }

@@ -1,4 +1,4 @@
-export * from './EntityWorld.js';
+export * from './EntityManager.js';
 export * from './query/EntityQuery.js';
 
 import * as QueryOperator from './query/QueryOperator.js';
