@@ -1,7 +1,5 @@
 import * as Eventable from '../util/Eventable.js';
 
-export const DEFAULT_FRAME_TIME = 1000 / 60;
-
 /**
  * @version 1.3.0
  * @description
@@ -9,6 +7,7 @@ export const DEFAULT_FRAME_TIME = 1000 / 60;
  * 
  * # Changelog
  * ## 1.3.0
+ * - Removed frameTime in favor of deltaTimeFactor
  * - Moved static start()/stop() for game loop to modules
  * 
  * ## 1.2.0
@@ -24,7 +23,7 @@ export const DEFAULT_FRAME_TIME = 1000 / 60;
  * @property {Number} prevFrameTime The time of the previous frame in milliseconds.
  * @property {Object} animationFrameHandle The handle for the animation frame request. Used by cancelAnimationRequest().
  * @property {Object} gameContext The context of the game loop to run in.
- * @property {Object} frameTime The expected time taken per frame.
+ * @property {Object} deltaTimeFactor The value multiplied to dt for the update call.
  * @property {Object} started Whether the game has started.
  * @property {Object} paused Whether the game is paused.
  * 
@@ -40,9 +39,9 @@ export class GameLoop
     {
         this.prevFrameTime = 0;
         this.animationFrameHandle = null;
-        this.frameTime = DEFAULT_FRAME_TIME;
         this.started = false;
         this.paused = false;
+        this.deltaTimeFactor = 1 / 1000;
 
         this.gameContext = context;
 
@@ -56,10 +55,9 @@ export class GameLoop
         this.__context = context;
     }
 
-    /** Sets the frame time. Only changes dt; does NOT change how many times update() is called. */
-    setFrameTime(frameTime)
+    setDeltaTimeFactor(value)
     {
-        this.frameTime = frameTime;
+        this.deltaTimeFactor = value;
         return this;
     }
 
@@ -67,7 +65,7 @@ export class GameLoop
     run(now)
     {
         this.animationFrameHandle = requestAnimationFrame(this.run);
-        const dt = (now - this.prevFrameTime) / this.frameTime;
+        const dt = (now - this.prevFrameTime) * this.deltaTimeFactor;
         this.prevFrameTime = now;
 
         if (typeof this.gameContext.update === 'function') this.gameContext.update.call(this.gameContext, dt);

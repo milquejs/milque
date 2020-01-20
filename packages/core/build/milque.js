@@ -12384,12 +12384,9 @@
 	  }
 
 	  _createClass(AbstractCamera, [{
-	    key: "update",
-	    value: function update(dt) {}
-	    /** @abstract */
-
-	  }, {
 	    key: "getProjectionMatrix",
+
+	    /** @abstract */
 	    value: function getProjectionMatrix() {
 	      return [1, 0, 0, 1, 0, 0];
 	    }
@@ -12405,7 +12402,6 @@
 	  return AbstractCamera;
 	}();
 
-	var DEFAULT_FRAME_TIME = 1000 / 60;
 	/**
 	 * @version 1.3.0
 	 * @description
@@ -12413,6 +12409,7 @@
 	 * 
 	 * # Changelog
 	 * ## 1.3.0
+	 * - Removed frameTime in favor of deltaTimeFactor
 	 * - Moved static start()/stop() for game loop to modules
 	 * 
 	 * ## 1.2.0
@@ -12428,7 +12425,7 @@
 	 * @property {Number} prevFrameTime The time of the previous frame in milliseconds.
 	 * @property {Object} animationFrameHandle The handle for the animation frame request. Used by cancelAnimationRequest().
 	 * @property {Object} gameContext The context of the game loop to run in.
-	 * @property {Object} frameTime The expected time taken per frame.
+	 * @property {Object} deltaTimeFactor The value multiplied to dt for the update call.
 	 * @property {Object} started Whether the game has started.
 	 * @property {Object} paused Whether the game is paused.
 	 * 
@@ -12449,9 +12446,9 @@
 
 	    this.prevFrameTime = 0;
 	    this.animationFrameHandle = null;
-	    this.frameTime = DEFAULT_FRAME_TIME;
 	    this.started = false;
 	    this.paused = false;
+	    this.deltaTimeFactor = 1 / 1000;
 	    this.gameContext = context;
 	    this.run = this.run.bind(this);
 	    this.start = this.start.bind(this);
@@ -12461,13 +12458,11 @@
 
 	    this.__context = context;
 	  }
-	  /** Sets the frame time. Only changes dt; does NOT change how many times update() is called. */
-
 
 	  _createClass(GameLoop, [{
-	    key: "setFrameTime",
-	    value: function setFrameTime(frameTime) {
-	      this.frameTime = frameTime;
+	    key: "setDeltaTimeFactor",
+	    value: function setDeltaTimeFactor(value) {
+	      this.deltaTimeFactor = value;
 	      return this;
 	    }
 	    /** Runs the game loop. Will call itself. */
@@ -12476,7 +12471,7 @@
 	    key: "run",
 	    value: function run(now) {
 	      this.animationFrameHandle = requestAnimationFrame(this.run);
-	      var dt = (now - this.prevFrameTime) / this.frameTime;
+	      var dt = (now - this.prevFrameTime) * this.deltaTimeFactor;
 	      this.prevFrameTime = now;
 	      if (typeof this.gameContext.update === 'function') this.gameContext.update.call(this.gameContext, dt);
 	      this.emit('update', dt);
@@ -14438,7 +14433,6 @@
 	exports.Component = ComponentHelper;
 	exports.ComponentBase = ComponentBase;
 	exports.ComponentFactory = ComponentFactory;
-	exports.DEFAULT_FRAME_TIME = DEFAULT_FRAME_TIME;
 	exports.DOUBLE_ACTION_TIME = DOUBLE_ACTION_TIME;
 	exports.Display = Display;
 	exports.DisplayPort = DisplayPort;

@@ -4,8 +4,6 @@
  */
 export class AbstractCamera
 {
-    update(dt) {}
-
     /** @abstract */
     getProjectionMatrix() { return [1, 0, 0, 1, 0, 0]; }
     /** @abstract */
