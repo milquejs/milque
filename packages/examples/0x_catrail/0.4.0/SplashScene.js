@@ -2,8 +2,7 @@ import { Utils, Input } from './milque.js';
 
 import * as Game from './Game.js';
 
-const TIME_STEP = 100;
-const LOAD_TIME = 300;
+const LOAD_TIME = 250;
 const FADE_IN_TIME = LOAD_TIME * 0.3;
 const FADE_OUT_TIME = LOAD_TIME * 0.9;
 
@@ -39,7 +38,7 @@ export class SplashScene
     /** @override */
     onUpdate(dt)
     {
-        this.time += dt * TIME_STEP;
+        this.time += dt;
         // Skip loading...
         if (ANY_KEY.value && this.time > FADE_IN_TIME && this.time < FADE_OUT_TIME)
         {

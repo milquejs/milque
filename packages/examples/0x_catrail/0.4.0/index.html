@@ -2,7 +2,7 @@
 <html lang="en">
     <head>
         <meta charset="utf-8">
-        <title>Pineapple</title>
+        <title>Catrail</title>
 
         <style>body { margin: 0; }</style>
     </head>
@@ -12,10 +12,9 @@
             import * as Game from './Game.js';
 
             import { SplashScene } from './SplashScene.js';
-            import * as MainScene from './MainScene.js';
 
             Game.registerScene('0', new SplashScene('Powered by Milque.js', '1'));
-            Game.registerScene('1', MainScene);
+            Game.registerScene('1', new SplashScene('Cool Beans', '0'));
             Game.start('0');
         </script>
     </body>

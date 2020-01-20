@@ -32,6 +32,7 @@ var self = /*#__PURE__*/Object.freeze({
     get ViewHelper () { return ViewHelper; },
     get ViewPort () { return ViewPort; },
     get AbstractCamera () { return AbstractCamera; },
+    get DEFAULT_FRAME_TIME () { return DEFAULT_FRAME_TIME; },
     get GameLoop () { return GameLoop; },
     get QueryOperator () { return QueryOperator; },
     get ComponentFactory () { return ComponentFactory; },
@@ -1300,11 +1301,15 @@ class ViewPort
  */
 class AbstractCamera
 {
+    update(dt) {}
+
     /** @abstract */
     getProjectionMatrix() { return [1, 0, 0, 1, 0, 0]; }
     /** @abstract */
     getViewMatrix() { return [1, 0, 0, 1, 0, 0]; }
 }
+
+const DEFAULT_FRAME_TIME = 1000 / 60;
 
 /**
  * @version 1.3.0
@@ -1313,7 +1318,6 @@ class AbstractCamera
  * 
  * # Changelog
  * ## 1.3.0
- * - Removed frameTime in favor of deltaTimeFactor
  * - Moved static start()/stop() for game loop to modules
  * 
  * ## 1.2.0
@@ -1329,7 +1333,7 @@ class AbstractCamera
  * @property {Number} prevFrameTime The time of the previous frame in milliseconds.
  * @property {Object} animationFrameHandle The handle for the animation frame request. Used by cancelAnimationRequest().
  * @property {Object} gameContext The context of the game loop to run in.
- * @property {Object} deltaTimeFactor The value multiplied to dt for the update call.
+ * @property {Object} frameTime The expected time taken per frame.
  * @property {Object} started Whether the game has started.
  * @property {Object} paused Whether the game is paused.
  * 
@@ -1345,9 +1349,9 @@ class GameLoop
     {
         this.prevFrameTime = 0;
         this.animationFrameHandle = null;
+        this.frameTime = DEFAULT_FRAME_TIME;
         this.started = false;
         this.paused = false;
-        this.deltaTimeFactor = 1 / 1000;
 
         this.gameContext = context;
 
@@ -1361,9 +1365,10 @@ class GameLoop
         this.__context = context;
     }
 
-    setDeltaTimeFactor(value)
+    /** Sets the frame time. Only changes dt; does NOT change how many times update() is called. */
+    setFrameTime(frameTime)
     {
-        this.deltaTimeFactor = value;
+        this.frameTime = frameTime;
         return this;
     }
 
@@ -1371,7 +1376,7 @@ class GameLoop
     run(now)
     {
         this.animationFrameHandle = requestAnimationFrame(this.run);
-        const dt = (now - this.prevFrameTime) * this.deltaTimeFactor;
+        const dt = (now - this.prevFrameTime) / this.frameTime;
         this.prevFrameTime = now;
 
         if (typeof this.gameContext.update === 'function') this.gameContext.update.call(this.gameContext, dt);
@@ -3028,4 +3033,4 @@ var Game = /*#__PURE__*/Object.freeze({
 
 
 export default self;
-export { AbstractCamera, AbstractInputAdapter, ActionInputAdapter, Audio, ComponentHelper as Component, ComponentBase, ComponentFactory, DOUBLE_ACTION_TIME, Display, DisplayPort, DoubleActionInputAdapter, EntityHelper as Entity, EntityBase, EntityComponent$1 as EntityComponent, EntityManager, EntityQuery, EventKey, Eventable$1 as Eventable, Game, GameLoop, HybridEntity, Input, Keyboard, MAX_CONTEXT_PRIORITY, MIN_CONTEXT_PRIORITY, MODE_CENTER, MODE_FIT, MODE_NOSCALE, MODE_STRETCH, Mouse, QueryOperator, Random, RandomGenerator, RangeInputAdapter, SceneBase, SceneManager, SimpleRandomGenerator, StateInputAdapter, TagComponent, Utils, View, ViewHelper, ViewPort, createContext, createSource };
+export { AbstractCamera, AbstractInputAdapter, ActionInputAdapter, Audio, ComponentHelper as Component, ComponentBase, ComponentFactory, DEFAULT_FRAME_TIME, DOUBLE_ACTION_TIME, Display, DisplayPort, DoubleActionInputAdapter, EntityHelper as Entity, EntityBase, EntityComponent$1 as EntityComponent, EntityManager, EntityQuery, EventKey, Eventable$1 as Eventable, Game, GameLoop, HybridEntity, Input, Keyboard, MAX_CONTEXT_PRIORITY, MIN_CONTEXT_PRIORITY, MODE_CENTER, MODE_FIT, MODE_NOSCALE, MODE_STRETCH, Mouse, QueryOperator, Random, RandomGenerator, RangeInputAdapter, SceneBase, SceneManager, SimpleRandomGenerator, StateInputAdapter, TagComponent, Utils, View, ViewHelper, ViewPort, createContext, createSource };
