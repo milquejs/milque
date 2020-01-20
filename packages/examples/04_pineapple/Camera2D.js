@@ -40,13 +40,17 @@ export class Camera2D extends AbstractCamera
     /** @override */
     getProjectionMatrix()
     {
-        return [1, 0, 0, 1, this.offsetX, this.offsetY];
+        // NOTE: Scaling must be applied here, instead of the view
+        return [this.transform.matrix[0], 0, 0, this.transform.matrix[3],
+            this.offsetX, this.offsetY];
     }
 
     /** @override */
     getViewMatrix()
     {
         let dst = [ ...this.transform.matrix ];
+        dst[0] = Math.cos(this.transform.rotation);
+        dst[3] = dst[0];
         dst[4] = -dst[4];
         dst[5] = -dst[5];
         return dst;

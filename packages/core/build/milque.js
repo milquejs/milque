@@ -12548,7 +12548,7 @@
 	var OPERATOR$1 = Symbol('operator');
 	var HANDLER$1 = Symbol('handler');
 	/**
-	 * NOTE: Intentionally does not depend on the "world" to exist in order to be created.
+	 * NOTE: Intentionally does not depend on the "entityManager" to exist in order to be created.
 	 */
 
 	var EntityQuery =
@@ -12556,8 +12556,8 @@
 	function () {
 	  _createClass(EntityQuery, null, [{
 	    key: "select",
-	    value: function select(world, components) {
-	      return new EntityQuery(components).select(world, false);
+	    value: function select(entityManager, components) {
+	      return new EntityQuery(components, false).select(entityManager);
 	    }
 	  }, {
 	    key: "computeKey",
@@ -12597,10 +12597,17 @@
 	  }]);
 
 	  function EntityQuery(components) {
+	    var persistent = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
+
 	    _classCallCheck(this, EntityQuery);
 
 	    this._included = [];
-	    this._operated = {};
+	    this._operated = {}; // NOTE: This allows single element collections to be passed-in as a "naked" element instead.
+
+	    if (!(Symbol.iterator in components)) {
+	      componnets = [components];
+	    }
+
 	    var _iteratorNormalCompletion2 = true;
 	    var _didIteratorError2 = false;
 	    var _iteratorError2 = undefined;
@@ -12639,8 +12646,8 @@
 	      }
 	    }
 
-	    this.world = null;
-	    this.persistent = false;
+	    this.entityManager = null;
+	    this.persistent = persistent;
 	    this.entityIds = new Set();
 	    this.key = EntityQuery.computeKey(components);
 	    this.onEntityCreate = this.onEntityCreate.bind(this);
@@ -12651,9 +12658,9 @@
 
 	  _createClass(EntityQuery, [{
 	    key: "matches",
-	    value: function matches(world, entityId) {
-	      if (this.world !== world) return false;
-	      if (!world.hasComponent.apply(world, [entityId].concat(_toConsumableArray(this._included)))) return false;
+	    value: function matches(entityManager, entityId) {
+	      if (this.entityManager !== entityManager) return false;
+	      if (!entityManager.hasComponent.apply(entityManager, [entityId].concat(_toConsumableArray(this._included)))) return false;
 	      var _iteratorNormalCompletion3 = true;
 	      var _didIteratorError3 = false;
 	      var _iteratorError3 = undefined;
@@ -12662,7 +12669,7 @@
 	        for (var _iterator3 = Object.getOwnPropertyNames(this._operated)[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
 	          var operatedInfo = _step3.value;
 
-	          if (!operatedInfo[HANDLER$1].call(this, world, entityId, operatedInfo.components)) {
+	          if (!operatedInfo[HANDLER$1].call(this, entityManager, entityId, operatedInfo.components)) {
 	            return false;
 	          }
 	        }
@@ -12685,20 +12692,21 @@
 	    }
 	  }, {
 	    key: "select",
-	    value: function select(world) {
-	      var persistent = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
-	      if (this.persistent) return this.entityIds;
-	      this.world = world;
+	    value: function select(entityManager) {
+	      var flag = this.entityManager === entityManager;
+	      if (this.persistent && flag) return this.entityIds;
+	      var prevEntityManager = this.entityManager;
+	      this.entityManager = entityManager;
 	      this.entityIds.clear();
 	      var _iteratorNormalCompletion4 = true;
 	      var _didIteratorError4 = false;
 	      var _iteratorError4 = undefined;
 
 	      try {
-	        for (var _iterator4 = world.getEntityIds()[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
+	        for (var _iterator4 = entityManager.getEntityIds()[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
 	          var entityId = _step4.value;
 
-	          if (this.matches(world, entityId)) {
+	          if (this.matches(entityManager, entityId)) {
 	            this.entityIds.add(entityId);
 	          }
 	        }
@@ -12717,34 +12725,71 @@
 	        }
 	      }
 
-	      if (persistent) {
-	        world.entityHandler.on('create', this.onEntityCreate);
-	        world.entityHandler.on('destroy', this.onEntityDestroy);
-	        world.componentHandler.on('add', this.onComponentAdd);
-	        world.componentHandler.on('remove', this.onComponentRemove);
-	        this.persistent = true;
+	      if (this.persistent && !flag) {
+	        if (prevEntityManager) {
+	          prevEntityManager.entityHandler.off('create', this.onEntityCreate);
+	          prevEntityManager.entityHandler.off('destroy', this.onEntityDestroy);
+	          prevEntityManager.componentHandler.off('add', this.onComponentAdd);
+	          prevEntityManager.componentHandler.off('remove', this.onComponentRemove);
+	        }
+
+	        this.entityManager.entityHandler.on('create', this.onEntityCreate);
+	        this.entityManager.entityHandler.on('destroy', this.onEntityDestroy);
+	        this.entityManager.componentHandler.on('add', this.onComponentAdd);
+	        this.entityManager.componentHandler.on('remove', this.onComponentRemove);
 	      }
 
 	      return this.entityIds;
 	    }
 	  }, {
+	    key: "selectComponent",
+	    value: function selectComponent(entityManager) {
+	      var component = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : this._included[0];
+	      var result = this.select(entityManager);
+	      var dst = [];
+	      var _iteratorNormalCompletion5 = true;
+	      var _didIteratorError5 = false;
+	      var _iteratorError5 = undefined;
+
+	      try {
+	        for (var _iterator5 = result[Symbol.iterator](), _step5; !(_iteratorNormalCompletion5 = (_step5 = _iterator5.next()).done); _iteratorNormalCompletion5 = true) {
+	          var entityId = _step5.value;
+	          dst.push(entityManager.getComponent(entityId, component));
+	        }
+	      } catch (err) {
+	        _didIteratorError5 = true;
+	        _iteratorError5 = err;
+	      } finally {
+	        try {
+	          if (!_iteratorNormalCompletion5 && _iterator5["return"] != null) {
+	            _iterator5["return"]();
+	          }
+	        } finally {
+	          if (_didIteratorError5) {
+	            throw _iteratorError5;
+	          }
+	        }
+	      }
+
+	      return dst;
+	    }
+	  }, {
 	    key: "clear",
 	    value: function clear() {
 	      if (this.persistent) {
-	        this.world.entityHandler.off('create', this.onEntityCreate);
-	        this.world.entityHandler.off('destroy', this.onEntityDestroy);
-	        this.world.componentHandler.off('add', this.onComponentAdd);
-	        this.world.componentHandler.off('remove', this.onComponentRemove);
-	        this.persistent = false;
+	        this.entityManager.entityHandler.off('create', this.onEntityCreate);
+	        this.entityManager.entityHandler.off('destroy', this.onEntityDestroy);
+	        this.entityManager.componentHandler.off('add', this.onComponentAdd);
+	        this.entityManager.componentHandler.off('remove', this.onComponentRemove);
 	      }
 
 	      this.entityIds.clear();
-	      this.world = null;
+	      this.entityManager = null;
 	    }
 	  }, {
 	    key: "onEntityCreate",
 	    value: function onEntityCreate(entityId) {
-	      if (this.matches(this.world, entityId)) {
+	      if (this.matches(this.entityManager, entityId)) {
 	        this.entityIds.add(entityId);
 	      }
 	    }
@@ -12764,7 +12809,7 @@
 	  }, {
 	    key: "onComponentRemove",
 	    value: function onComponentRemove(entityId, componentType, component) {
-	      if (this.matches(this.world, entityId)) {
+	      if (this.matches(this.entityManager, entityId)) {
 	        this.entityIds.add(entityId);
 	      } else if (this.entityIds.has(entityId)) {
 	        this.entityIds["delete"](entityId);

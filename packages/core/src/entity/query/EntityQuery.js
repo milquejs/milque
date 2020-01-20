@@ -4,13 +4,13 @@ const OPERATOR = Symbol('operator');
 const HANDLER = Symbol('handler');
 
 /**
- * NOTE: Intentionally does not depend on the "world" to exist in order to be created.
+ * NOTE: Intentionally does not depend on the "entityManager" to exist in order to be created.
  */
 export class EntityQuery
 {
-    static select(world, components)
+    static select(entityManager, components)
     {
-        return new EntityQuery(components).select(world, false);
+        return new EntityQuery(components, false).select(entityManager);
     }
 
     static computeKey(components)
@@ -30,7 +30,7 @@ export class EntityQuery
         return result.sort().join('-');
     }
 
-    constructor(components)
+    constructor(components, persistent = true)
     {
         this._included = [];
         this._operated = {};
@@ -58,8 +58,8 @@ export class EntityQuery
             }
         }
 
-        this.world = null;
-        this.persistent = false;
+        this.entityManager = null;
+        this.persistent = persistent;
         this.entityIds = new Set();
 
         this.key = EntityQuery.computeKey(components);
@@ -70,13 +70,13 @@ export class EntityQuery
         this.onComponentRemove = this.onComponentRemove.bind(this);
     }
 
-    matches(world, entityId)
+    matches(entityManager, entityId)
     {
-        if (this.world !== world) return false;
-        if (!world.hasComponent(entityId, ...this._included)) return false;
+        if (this.entityManager !== entityManager) return false;
+        if (!entityManager.hasComponent(entityId, ...this._included)) return false;
         for(let operatedInfo of Object.getOwnPropertyNames(this._operated))
         {
-            if (!operatedInfo[HANDLER].call(this, world, entityId, operatedInfo.components))
+            if (!operatedInfo[HANDLER].call(this, entityManager, entityId, operatedInfo.components))
             {
                 return false;
             }
@@ -84,51 +84,70 @@ export class EntityQuery
         return true;
     }
 
-    select(world, persistent = true)
+    select(entityManager)
     {
-        if (this.persistent) return this.entityIds;
+        let flag = this.entityManager === entityManager;
+        if (this.persistent && flag) return this.entityIds;
         
-        this.world = world;
+        const prevEntityManager = this.entityManager;
+        this.entityManager = entityManager;
         this.entityIds.clear();
 
-        for(let entityId of world.getEntityIds())
+        for(let entityId of entityManager.getEntityIds())
         {
-            if (this.matches(world, entityId))
+            if (this.matches(entityManager, entityId))
             {
                 this.entityIds.add(entityId);
             }
         }
 
-        if (persistent)
+        if (this.persistent && !flag)
         {
-            world.entityHandler.on('create', this.onEntityCreate);
-            world.entityHandler.on('destroy', this.onEntityDestroy);
-            world.componentHandler.on('add', this.onComponentAdd);
-            world.componentHandler.on('remove', this.onComponentRemove);
+            if (prevEntityManager)
+            {
+                prevEntityManager.entityHandler.off('create', this.onEntityCreate);
+                prevEntityManager.entityHandler.off('destroy', this.onEntityDestroy);
+                prevEntityManager.componentHandler.off('add', this.onComponentAdd);
+                prevEntityManager.componentHandler.off('remove', this.onComponentRemove);
+            }
 
-            this.persistent = true;
+            this.entityManager.entityHandler.on('create', this.onEntityCreate);
+            this.entityManager.entityHandler.on('destroy', this.onEntityDestroy);
+            this.entityManager.componentHandler.on('add', this.onComponentAdd);
+            this.entityManager.componentHandler.on('remove', this.onComponentRemove);
         }
+
         return this.entityIds;
+    }
+
+    selectComponent(entityManager, component = this._included[0])
+    {
+        let result = this.select(entityManager);
+        let dst = [];
+        for(let entityId of result)
+        {
+            dst.push(entityManager.getComponent(entityId, component));
+        }
+        return dst;
     }
 
     clear()
     {
         if (this.persistent)
         {
-            this.world.entityHandler.off('create', this.onEntityCreate);
-            this.world.entityHandler.off('destroy', this.onEntityDestroy);
-            this.world.componentHandler.off('add', this.onComponentAdd);
-            this.world.componentHandler.off('remove', this.onComponentRemove);
-            this.persistent = false;
+            this.entityManager.entityHandler.off('create', this.onEntityCreate);
+            this.entityManager.entityHandler.off('destroy', this.onEntityDestroy);
+            this.entityManager.componentHandler.off('add', this.onComponentAdd);
+            this.entityManager.componentHandler.off('remove', this.onComponentRemove);
         }
 
         this.entityIds.clear();
-        this.world = null;
+        this.entityManager = null;
     }
 
     onEntityCreate(entityId)
     {
-        if (this.matches(this.world, entityId))
+        if (this.matches(this.entityManager, entityId))
         {
             this.entityIds.add(entityId);
         }
@@ -150,7 +169,7 @@ export class EntityQuery
     // NOTE: Could be further optimized if we know it ONLY contains includes, etc.
     onComponentRemove(entityId, componentType, component)
     {
-        if (this.matches(this.world, entityId))
+        if (this.matches(this.entityManager, entityId))
         {
             this.entityIds.add(entityId);
         }

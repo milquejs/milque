@@ -1,31 +1,40 @@
-export function drawNavigationInfo(ctx, view, camera)
+const CELL_SIZE = 32;
+const ORIGIN_POINT = new DOMPointReadOnly(0, 0, 0, 1);
+const CELL_POINT = new DOMPointReadOnly(CELL_SIZE, CELL_SIZE, 0, 1);
+const INV_NATURAL_LOG_2 = 1 / Math.log(2);
+
+export function drawWorldGrid(ctx, view, camera)
 {
-    const offsetX = -camera.transform.x + camera.offsetX;
-    const offsetY = -camera.transform.y + camera.offsetY;
+    const viewMatrix = new DOMMatrixReadOnly(camera.getViewMatrix());
+    const projMatrix = new DOMMatrixReadOnly(camera.getProjectionMatrix());
+    const transformMatrix = projMatrix.multiply(viewMatrix);
+    const offsetPoint = transformMatrix.transformPoint(ORIGIN_POINT);
+    const cellPoint = transformMatrix.transformPoint(CELL_POINT);
+
+    const minCellWidth = cellPoint.x - offsetPoint.x;
+    const minCellHeight = cellPoint.y - offsetPoint.y;
+    const maxCellSize = Math.floor((Math.log(view.width) - Math.log(minCellWidth)) * INV_NATURAL_LOG_2);
     
-    const cellWidth = 32;
-    const cellHeight = 32;
-    const chunkWidth = 256;
-    const chunkHeight = 256;
+    let cellWidth = Math.pow(2, maxCellSize) * minCellWidth;
+    let cellHeight = Math.pow(2, maxCellSize) * minCellHeight;
+    if (cellWidth === 0 || cellHeight === 0) return;
+    drawGrid(ctx, view, offsetPoint.x, offsetPoint.y, cellWidth, cellHeight, 1, false);
+    drawGrid(ctx, view, offsetPoint.x, offsetPoint.y, cellWidth / 2, cellHeight / 2, 3 / 4, false);
+    drawGrid(ctx, view, offsetPoint.x, offsetPoint.y, cellWidth / 4, cellHeight / 4, 2 / 4, false);
+    drawGrid(ctx, view, offsetPoint.x, offsetPoint.y, cellWidth / 8, cellHeight / 8, 1 / 4, false);
+}
 
-    drawGrid(ctx, view, offsetX, offsetY, cellWidth, cellHeight, 1, false);
-    drawGrid(ctx, view, offsetX, offsetY, chunkWidth, chunkHeight, 4, true);
-
-    let fontSize = 10;
-    let worldX = -Math.floor(offsetX - view.width / 2);
-    let worldY = -Math.floor(offsetY - view.height / 2);
+export function drawWorldTransformGizmo(ctx, view, camera)
+{
+    const viewMatrix = new DOMMatrixReadOnly(camera.getViewMatrix());
+    const worldPoint = viewMatrix.transformPoint(ORIGIN_POINT);
+    const fontSize = view.width / CELL_SIZE;
     ctx.fillStyle = '#666666';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
-    ctx.font = `${fontSize}px sans-serif`;
-    ctx.fillText(`(${worldX},${worldY})`, cellWidth / 2, cellHeight / 2);
-
-    drawTransformGizmo(ctx,
-        cellWidth / 4,
-        cellHeight / 4,
-        cellWidth / 2,
-        cellHeight / 2
-    );
+    ctx.font = `${fontSize}px monospace`;
+    ctx.fillText(`(${-Math.floor(worldPoint.x)},${-Math.floor(worldPoint.y)})`, CELL_SIZE, CELL_SIZE);
+    drawTransformGizmo(ctx, CELL_SIZE / 4, CELL_SIZE / 4, CELL_SIZE, CELL_SIZE);
 }
 
 export function drawGrid(ctx, view, offsetX, offsetY, cellWidth = 32, cellHeight = cellWidth, lineWidth = 1, showCoords = false)
@@ -51,7 +60,7 @@ export function drawGrid(ctx, view, offsetX, offsetY, cellWidth = 32, cellHeight
         const fontSize = Math.min(cellWidth / 4, 16);
         ctx.textAlign = 'left';
         ctx.textBaseline = 'top';
-        ctx.font = `bold ${fontSize}px sans-serif`;
+        ctx.font = `bold ${fontSize}px monospace`;
         ctx.fillStyle = '#333333';
 
         for(let y = offsetY % cellHeight; y < view.height; y += cellHeight)
@@ -70,7 +79,7 @@ export function drawTransformGizmo(ctx, x, y, width, height = width)
 
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.font = `${fontSize}px sans-serif`;
+    ctx.font = `${fontSize}px monospace`;
 
     ctx.translate(x, y);
 
@@ -89,6 +98,11 @@ export function drawTransformGizmo(ctx, x, y, width, height = width)
     ctx.stroke();
     ctx.fillStyle = '#00FF00';
     ctx.fillText('y', 0, height + fontSize);
+
+    const zSize = fontSize / 4;
+    ctx.fillStyle = '#0000FF';
+    ctx.fillRect(-zSize / 2, -zSize / 2, zSize, zSize);
+    ctx.fillText('z', fontSize / 2, fontSize / 2);
 
     ctx.translate(-x, -y);
 }
