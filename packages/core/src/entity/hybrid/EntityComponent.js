@@ -1,13 +1,8 @@
 /** Cannot be directly added through world.addComponent(). Must be create with new EntityComponent(). */
 export class EntityComponent
 {
-    constructor(world, entityId = undefined)
+    constructor(world)
     {
-        if (typeof entityId !== 'undefined')
-        {
-            throw new Error('This component cannot be added to an existing entity; it can only initialize itself.');
-        }
-        
         if (!world)
         {
             throw new Error('Cannot create entity in null world.');

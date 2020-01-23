@@ -1,3 +1,8 @@
+/**
+ * @module Entity
+ * @version 1.2
+ */
+
 export * from './EntityManager.js';
 export * from './query/EntityQuery.js';
 
@@ -19,3 +24,12 @@ export { Component };
 
 import * as Entity from './hybrid/EntityHelper.js';
 export { Entity };
+
+import * as EntityWrapper from './hybrid/EntityWrapper.js';
+export { EntityWrapper };
+
+// Hot entity replacement
+import * as HotEntityReplacement from './hot/HotEntityReplacement.js';
+export { HotEntityReplacement };
+export * from './hot/HotEntityModule.js';
+export * from './hot/strategies/FineDiffStrategy.js';

@@ -2,17 +2,17 @@ import { EntityBase } from './EntityBase.js';
 
 export class HybridEntity extends EntityBase
 {
-    constructor(world)
+    constructor(entityManager)
     {
-        super(world);
+        super(entityManager);
 
         this.onComponentAdd = this.onComponentAdd.bind(this);
         this.onComponentRemove = this.onComponentRemove.bind(this);
 
-        this.world.componentHandler.on('add', this.onComponentAdd);
-        this.world.componentHandler.on('remove', this.onComponentRemove);
+        this.entityManager.entityHandler.addEntityListener(this.id, 'componentadd', this.onComponentAdd);
+        this.entityManager.entityHandler.addEntityListener(this.id, 'componentremove', this.onComponentRemove);
     }
-
+    
     /** @abstract */
     onDestroy() {}
 
@@ -28,19 +28,16 @@ export class HybridEntity extends EntityBase
 
     onComponentRemove(entityId, componentType, component)
     {
-        if (entityId === this.id)
+        if (componentType === EntityComponent)
         {
-            if (componentType === EntityComponent)
-            {
-                this.world.componentHandler.off('add', this.onComponentAdd);
-                this.world.componentHandler.off('remove', this.onComponentRemove);
-
-                this.onDestroy();
-            }
-            else
-            {
-                removeComponentProperties(this, componentType, component);
-            }
+            this.entityManager.entityHandler.removeEntityListener(this.id, 'componentadd', this.onComponentAdd);
+            this.entityManager.entityHandler.removeEntityListener(this.id, 'componentremove', this.onComponentRemove);
+            
+            this.onDestroy();
+        }
+        else
+        {
+            removeComponentProperties(this, componentType, component);
         }
     }
 }

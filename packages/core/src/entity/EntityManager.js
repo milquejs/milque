@@ -15,15 +15,15 @@ export class EntityManager
 {
     constructor()
     {
-        this.entityHandler = new EntityHandler(this);
-        this.componentHandler = new ComponentHandler(this);
+        this.entityHandler = new EntityHandler();
+        this.componentHandler = new ComponentHandler(this.entityHandler);
     }
 
     clear()
     {
         for(let entityId of this.entityHandler.getEntityIds())
         {
-            this.destroyEntity(entityId, opts);
+            this.destroyEntity(entityId);
         }
     }
 
@@ -74,7 +74,7 @@ export class EntityManager
     {
         try
         {
-            let component = this.componentHandler.createComponent(entityId, componentType, initialValues);
+            let component = this.componentHandler.createComponent(componentType, initialValues);
             this.componentHandler.putComponent(entityId, componentType, component, initialValues);
             return component;
         }
@@ -84,13 +84,14 @@ export class EntityManager
             console.error(e);
         }
     }
-
+    
     removeComponent(entityId, componentType)
     {
         try
         {
             let component = this.getComponent(entityId, componentType);
             this.componentHandler.deleteComponent(entityId, componentType, component);
+            return component;
         }
         catch(e)
         {
@@ -101,14 +102,28 @@ export class EntityManager
 
     clearComponents(entityId)
     {
-        for(let entityComponentMap of this.componentHandler.getComponentInstanceMaps())
+        for(let componentInstanceMap of this.componentHandler.getComponentInstanceMaps())
         {
-            if (entityComponentMap.has(entityId))
+            if (componentInstanceMap.has(entityId))
             {
-                let component = entityComponentMap.get(entityId);
+                let component = componentInstanceMap.get(entityId);
                 this.componentHandler.deleteComponent(entityId, componentType, component);
             }
         }
+    }
+
+    getComponentTypesByEntityId(entityId)
+    {
+        let dst = [];
+        for(let componentType of this.componentHandler.getComponentTypes())
+        {
+            let componentInstanceMap = this.componentHandler.getComponentInstanceMapByType(componentType);
+            if (componentInstanceMap.has(entityId))
+            {
+                dst.push(componentType);
+            }
+        }
+        return dst;
     }
 
     getComponent(entityId, componentType)
@@ -129,9 +144,9 @@ export class EntityManager
     countComponents(entityId)
     {
         let count = 0;
-        for(let entityComponentMap of this.componentHandler.getComponentInstanceMaps())
+        for(let componentInstanceMap of this.componentHandler.getComponentInstanceMaps())
         {
-            if (entityComponentMap.has(entityId))
+            if (componentInstanceMap.has(entityId))
             {
                 ++count;
             }
@@ -140,11 +155,11 @@ export class EntityManager
     }
 
     /**
-     * Immediately query entity ids by its components. This is simply an alias for Query.select().
+     * Immediately find entity ids by its components. This is simply an alias for Query.select().
      * @param {Array<Component>} components The component list to match entities to.
      * @returns {Iterable<EntityId>} A collection of all matching entity ids.
      */
-    query(components)
+    find(components)
     {
         return EntityQuery.select(this, components);
     }
