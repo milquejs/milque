@@ -10798,6 +10798,10 @@
 	  return _assertThisInitialized(self);
 	}
 
+	function _slicedToArray(arr, i) {
+	  return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _nonIterableRest();
+	}
+
 	function _toConsumableArray(arr) {
 	  return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _nonIterableSpread();
 	}
@@ -10810,12 +10814,50 @@
 	  }
 	}
 
+	function _arrayWithHoles(arr) {
+	  if (Array.isArray(arr)) return arr;
+	}
+
 	function _iterableToArray(iter) {
 	  if (Symbol.iterator in Object(iter) || Object.prototype.toString.call(iter) === "[object Arguments]") return Array.from(iter);
 	}
 
+	function _iterableToArrayLimit(arr, i) {
+	  if (!(Symbol.iterator in Object(arr) || Object.prototype.toString.call(arr) === "[object Arguments]")) {
+	    return;
+	  }
+
+	  var _arr = [];
+	  var _n = true;
+	  var _d = false;
+	  var _e = undefined;
+
+	  try {
+	    for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) {
+	      _arr.push(_s.value);
+
+	      if (i && _arr.length === i) break;
+	    }
+	  } catch (err) {
+	    _d = true;
+	    _e = err;
+	  } finally {
+	    try {
+	      if (!_n && _i["return"] != null) _i["return"]();
+	    } finally {
+	      if (_d) throw _e;
+	    }
+	  }
+
+	  return _arr;
+	}
+
 	function _nonIterableSpread() {
 	  throw new TypeError("Invalid attempt to spread non-iterable instance");
+	}
+
+	function _nonIterableRest() {
+	  throw new TypeError("Invalid attempt to destructure non-iterable instance");
 	}
 
 	/**
@@ -12602,12 +12644,7 @@
 	    _classCallCheck(this, EntityQuery);
 
 	    this._included = [];
-	    this._operated = {}; // NOTE: This allows single element collections to be passed-in as a "naked" element instead.
-
-	    if (!(Symbol.iterator in components)) {
-	      componnets = [components];
-	    }
-
+	    this._operated = {};
 	    var _iteratorNormalCompletion2 = true;
 	    var _didIteratorError2 = false;
 	    var _iteratorError2 = undefined;
@@ -12821,10 +12858,8 @@
 	}();
 
 	/**
-	 * @fires create
 	 * @fires destroy
 	 */
-
 	var EntityHandler =
 	/*#__PURE__*/
 	function () {
@@ -12833,21 +12868,147 @@
 
 	    this._entities = new Set();
 	    this._nextAvailableEntityId = 1;
+	    this._listeners = new Map();
 	  }
+	  /**
+	   * Adds a listener for entity events that occur for the passed-in id.
+	   * 
+	   * @param {EntityId} entityId The associated id for the entity to listen to.
+	   * @param {String} eventType The event type to listen for.
+	   * @param {Function} listener The listener function that will be called when the event occurs.
+	   * @param {Object} [opts] Additional options.
+	   * @param {Boolean} [opts.once=false] Whether the listener should be invoked at most once after being
+	   * added. If true, the listener would be automatically removed when invoked.
+	   * @param {Function|String|*} [opts.handle=listener] The handle to uniquely identify the listener. If set,
+	   * this will be used instead of the function instance. This is usful for anonymous functions, since
+	   * they are always unique and therefore cannot be removed, causing an unfortunate memory leak.
+	   */
+
 
 	  _createClass(EntityHandler, [{
+	    key: "addEntityListener",
+	    value: function addEntityListener(entityId, eventType, listener) {
+	      var opts = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : undefined;
+	      var handle = opts && typeof opts.handle !== 'undefined' ? opts.handle : listener;
+
+	      if (this._listeners.has(entityId)) {
+	        var eventMap = this._listeners.get(entityId);
+
+	        if (eventType in eventMap) {
+	          var listeners = eventMap[eventType];
+	          listeners.set(handle, listener);
+	        } else {
+	          var _listeners = new Map();
+
+	          _listeners.set(handle, listener);
+
+	          eventMap[eventType] = _listeners;
+	        }
+	      } else {
+	        var onces = new Set();
+
+	        var _listeners2 = new Map();
+
+	        _listeners2.set(handle, listener);
+
+	        if (opts.once) onces.add(handle);
+
+	        var _eventMap = _defineProperty({
+	          onces: onces
+	        }, eventType, _listeners2);
+
+	        this._listeners.set(entityId, _eventMap);
+	      }
+	    }
+	    /**
+	     * Removes the listener from the entity with the passed-in id.
+	     * 
+	     * @param {EntityId} entityId The associated id for the entity to remove from.
+	     * @param {String} eventType The event type to remove from.
+	     * @param {Function|String|*} handle The listener handle that will be called when the event occurs.
+	     * Usually, this is the function itself.
+	     * @param {Object} [opts] Additional options.
+	     */
+
+	  }, {
+	    key: "removeEntityListener",
+	    value: function removeEntityListener(entityId, eventType, handle) {
+
+	      if (this._listeners.has(entityId)) {
+	        var eventMap = this._listeners.get(entityId);
+
+	        if (eventType in eventMap) {
+	          eventMap[eventType]["delete"](handle);
+
+	          if (eventMap.onces.has(handle)) {
+	            eventMap.onces["delete"](handle);
+	          }
+	        }
+	      }
+	    }
+	    /**
+	     * Dispatches an event to all the entity's listeners.
+	     * 
+	     * @param {EntityId} entityId The id of the entity.
+	     * @param {String} eventType The type of the dispatched event.
+	     * @param {Array} [eventArgs] An array of arguments to be passed to the listeners.
+	     */
+
+	  }, {
+	    key: "dispatchEntityEvent",
+	    value: function dispatchEntityEvent(entityId, eventType) {
+	      var eventArgs = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : undefined;
+
+	      if (this._listeners.has(entityId)) {
+	        var eventMap = this._listeners.get(entityId);
+
+	        if (eventType in eventMap) {
+	          var onces = eventMap.onces;
+	          var listeners = eventMap[eventType];
+	          var _iteratorNormalCompletion = true;
+	          var _didIteratorError = false;
+	          var _iteratorError = undefined;
+
+	          try {
+	            for (var _iterator = listeners.entries()[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+	              var _step$value = _slicedToArray(_step.value, 2),
+	                  handle = _step$value[0],
+	                  listener = _step$value[1];
+
+	              listener.apply(undefined, eventArgs);
+
+	              if (onces.has(handle)) {
+	                listeners["delete"](handle);
+	              }
+	            }
+	          } catch (err) {
+	            _didIteratorError = true;
+	            _iteratorError = err;
+	          } finally {
+	            try {
+	              if (!_iteratorNormalCompletion && _iterator["return"] != null) {
+	                _iterator["return"]();
+	              }
+	            } finally {
+	              if (_didIteratorError) {
+	                throw _iteratorError;
+	              }
+	            }
+	          }
+	        }
+	      }
+	    }
+	  }, {
 	    key: "addEntityId",
 	    value: function addEntityId(entityId) {
 	      this._entities.add(entityId);
-
-	      this.emit('create', entityId);
 	    }
 	  }, {
 	    key: "deleteEntityId",
 	    value: function deleteEntityId(entityId) {
 	      this._entities["delete"](entityId);
 
-	      this.emit('destroy', entityId);
+	      this.dispatchEntityEvent(entityId, 'destroy', [entityId]);
 	    }
 	  }, {
 	    key: "getNextAvailableEntityId",
@@ -12863,25 +13024,61 @@
 
 	  return EntityHandler;
 	}();
-	mixin(EntityHandler);
+
+	/** Cannot be directly added through world.addComponent(). Must be create with new EntityComponent(). */
+	var EntityComponent$1 =
+	/*#__PURE__*/
+	function () {
+	  function EntityComponent(world) {
+	    _classCallCheck(this, EntityComponent);
+
+	    if (!world) {
+	      throw new Error('Cannot create entity in null world.');
+	    }
+
+	    var id = world.createEntity(); // Skip component creation, as we will be using ourselves :D
+
+	    world.componentHandler.putComponent(id, EntityComponent, this, undefined);
+	    this.id = id;
+	  }
+	  /** @override */
+
+
+	  _createClass(EntityComponent, [{
+	    key: "copy",
+	    value: function copy(values) {
+	      throw new Error('Unsupported operation; cannot be initialized by existing values.');
+	    }
+	    /** @override */
+
+	  }, {
+	    key: "reset",
+	    value: function reset() {
+	      return false;
+	    }
+	  }]);
+
+	  return EntityComponent;
+	}();
 
 	/**
-	 * @fires add
-	 * @fires remove
+	 * @fires componentadd
+	 * @fires componentremove
 	 */
 
 	var ComponentHandler =
 	/*#__PURE__*/
 	function () {
-	  function ComponentHandler() {
+	  function ComponentHandler(entityHandler) {
 	    _classCallCheck(this, ComponentHandler);
 
+	    this._entityHandler = entityHandler;
 	    this.componentTypeInstanceMap = new Map();
 	  }
 
 	  _createClass(ComponentHandler, [{
 	    key: "createComponent",
-	    value: function createComponent(entityId, componentType, initialValues) {
+	    value: function createComponent(componentType, initialValues) {
 	      var component; // Instantiate the component...
 
 	      var type = _typeof(componentType);
@@ -12893,9 +13090,14 @@
 	          throw new Error("Instanced component class '".concat(getComponentTypeName(componentType), "' must at least have a create() function."));
 	        }
 
-	        component = componentType.create(this, entityId);
+	        component = componentType.create(this);
 	      } else if (type === 'function') {
-	        component = new componentType(this, entityId);
+	        // HACK: This is a hack debugging tool to stop wrong use.
+	        if (componentType.prototype instanceof EntityComponent$1) {
+	          throw new Error('This component cannot be added to an existing entity; it can only initialize itself.');
+	        }
+
+	        component = new componentType(this);
 	      } else if (type === 'symbol') {
 	        // NOTE: Symbols lose their immutability when converted into a component
 	        // (their equality is checked by their toString() when computing its key)
@@ -12909,38 +13111,7 @@
 
 
 	      if (initialValues) {
-	        // Try user-defined static copy...
-	        if ('copy' in componentType) {
-	          componentType.copy(component, initialValues);
-	        } // Try user-defined instance copy...
-	        else if ('copy' in component) {
-	            component.copy(initialValues);
-	          } // Try default copy...
-	          else {
-	              var _iteratorNormalCompletion = true;
-	              var _didIteratorError = false;
-	              var _iteratorError = undefined;
-
-	              try {
-	                for (var _iterator = Object.getOwnPropertyNames(initialValues)[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-	                  var key = _step.value;
-	                  component[key] = initialValues[key];
-	                }
-	              } catch (err) {
-	                _didIteratorError = true;
-	                _iteratorError = err;
-	              } finally {
-	                try {
-	                  if (!_iteratorNormalCompletion && _iterator["return"] != null) {
-	                    _iterator["return"]();
-	                  }
-	                } finally {
-	                  if (_didIteratorError) {
-	                    throw _iteratorError;
-	                  }
-	                }
-	              }
-	            }
+	        this.copyComponent(componentType, component, initialValues);
 	      }
 
 	      return component;
@@ -12961,24 +13132,71 @@
 	      }
 
 	      componentInstanceMap.set(entityId, component);
-	      this.emit('add', entityId, componentType, component, initialValues);
+
+	      this._entityHandler.dispatchEntityEvent(entityId, 'componentadd', [entityId, componentType, component, initialValues]);
 	    }
 	  }, {
 	    key: "deleteComponent",
 	    value: function deleteComponent(entityId, componentType, component) {
 	      this.componentTypeInstanceMap.get(componentType)["delete"](entityId);
-	      var reusable;
+	      var reusable; // It's a tag. No reuse.
 
-	      if ('reset' in componentType) {
-	        reusable = componentType.reset(component);
-	      } else if ('reset' in component) {
-	        reusable = component.reset();
-	      } else {
-	        // Do nothing. It cannot be reset.
+	      if (componentType === component) {
 	        reusable = false;
-	      }
+	      } // Try user-defined static reset...
+	      else if ('reset' in componentType) {
+	          reusable = componentType.reset(component);
+	        } // Try user-defined instance reset...
+	        else if ('reset' in component) {
+	            reusable = component.reset();
+	          } // Try default reset...
+	          else {
+	              // Do nothing. It cannot be reset.
+	              reusable = false;
+	            }
 
-	      this.emit('remove', entityId, componentType, component);
+	      this._entityHandler.dispatchEntityEvent(entityId, 'componentremove', [entityId, componentType, component]);
+
+	      return component;
+	    }
+	  }, {
+	    key: "copyComponent",
+	    value: function copyComponent(componentType, component, targetValues) {
+	      // It's a tag. No need to copy.
+	      if (componentType === component) {
+	        return;
+	      } // Try user-defined static copy...
+	      else if ('copy' in componentType) {
+	          componentType.copy(component, targetValues);
+	        } // Try user-defined instance copy...
+	        else if ('copy' in component) {
+	            component.copy(targetValues);
+	          } // Try default copy...
+	          else {
+	              var _iteratorNormalCompletion = true;
+	              var _didIteratorError = false;
+	              var _iteratorError = undefined;
+
+	              try {
+	                for (var _iterator = Object.getOwnPropertyNames(targetValues)[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+	                  var key = _step.value;
+	                  component[key] = targetValues[key];
+	                }
+	              } catch (err) {
+	                _didIteratorError = true;
+	                _iteratorError = err;
+	              } finally {
+	                try {
+	                  if (!_iteratorNormalCompletion && _iterator["return"] != null) {
+	                    _iterator["return"]();
+	                  }
+	                } finally {
+	                  if (_didIteratorError) {
+	                    throw _iteratorError;
+	                  }
+	                }
+	              }
+	            }
 	    }
 	  }, {
 	    key: "hasComponentType",
@@ -13004,7 +13222,6 @@
 
 	  return ComponentHandler;
 	}();
-	mixin(ComponentHandler);
 
 	/**
 	 * @typedef EntityId
@@ -13021,8 +13238,8 @@
 	  function EntityManager() {
 	    _classCallCheck(this, EntityManager);
 
-	    this.entityHandler = new EntityHandler(this);
-	    this.componentHandler = new ComponentHandler(this);
+	    this.entityHandler = new EntityHandler();
+	    this.componentHandler = new ComponentHandler(this.entityHandler);
 	  }
 
 	  _createClass(EntityManager, [{
@@ -13035,7 +13252,7 @@
 	      try {
 	        for (var _iterator = this.entityHandler.getEntityIds()[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
 	          var entityId = _step.value;
-	          this.destroyEntity(entityId, opts);
+	          this.destroyEntity(entityId);
 	        }
 	      } catch (err) {
 	        _didIteratorError = true;
@@ -13128,7 +13345,7 @@
 	      var initialValues = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : undefined;
 
 	      try {
-	        var component = this.componentHandler.createComponent(entityId, componentType, initialValues);
+	        var component = this.componentHandler.createComponent(componentType, initialValues);
 	        this.componentHandler.putComponent(entityId, componentType, component, initialValues);
 	        return component;
 	      } catch (e) {
@@ -13142,6 +13359,7 @@
 	      try {
 	        var component = this.getComponent(entityId, componentType);
 	        this.componentHandler.deleteComponent(entityId, componentType, component);
+	        return component;
 	      } catch (e) {
 	        console.error("Failed to remove component '".concat(getComponentTypeName$1(componentType), "' from entity '").concat(entityId, "'."));
 	        console.error(e);
@@ -13156,10 +13374,10 @@
 
 	      try {
 	        for (var _iterator3 = this.componentHandler.getComponentInstanceMaps()[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
-	          var entityComponentMap = _step3.value;
+	          var componentInstanceMap = _step3.value;
 
-	          if (entityComponentMap.has(entityId)) {
-	            var component = entityComponentMap.get(entityId);
+	          if (componentInstanceMap.has(entityId)) {
+	            var component = componentInstanceMap.get(entityId);
 	            this.componentHandler.deleteComponent(entityId, componentType, component);
 	          }
 	        }
@@ -13179,39 +13397,20 @@
 	      }
 	    }
 	  }, {
-	    key: "getComponent",
-	    value: function getComponent(entityId, componentType) {
-	      return this.componentHandler.getComponentInstanceMapByType(componentType).get(entityId);
-	    }
-	  }, {
-	    key: "hasComponent",
-	    value: function hasComponent(entityId) {
-	      for (var _len2 = arguments.length, componentTypes = new Array(_len2 > 1 ? _len2 - 1 : 0), _key2 = 1; _key2 < _len2; _key2++) {
-	        componentTypes[_key2 - 1] = arguments[_key2];
-	      }
-
-	      for (var _i2 = 0, _componentTypes = componentTypes; _i2 < _componentTypes.length; _i2++) {
-	        var _componentType2 = _componentTypes[_i2];
-	        if (!this.componentHandler.hasComponentType(_componentType2)) return false;
-	        if (!this.componentHandler.getComponentInstanceMapByType(_componentType2).has(entityId)) return false;
-	      }
-
-	      return true;
-	    }
-	  }, {
-	    key: "countComponents",
-	    value: function countComponents(entityId) {
-	      var count = 0;
+	    key: "getComponentTypesByEntityId",
+	    value: function getComponentTypesByEntityId(entityId) {
+	      var dst = [];
 	      var _iteratorNormalCompletion4 = true;
 	      var _didIteratorError4 = false;
 	      var _iteratorError4 = undefined;
 
 	      try {
-	        for (var _iterator4 = this.componentHandler.getComponentInstanceMaps()[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
-	          var entityComponentMap = _step4.value;
+	        for (var _iterator4 = this.componentHandler.getComponentTypes()[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
+	          var _componentType2 = _step4.value;
+	          var componentInstanceMap = this.componentHandler.getComponentInstanceMapByType(_componentType2);
 
-	          if (entityComponentMap.has(entityId)) {
-	            ++count;
+	          if (componentInstanceMap.has(entityId)) {
+	            dst.push(_componentType2);
 	          }
 	        }
 	      } catch (err) {
@@ -13229,17 +13428,70 @@
 	        }
 	      }
 
+	      return dst;
+	    }
+	  }, {
+	    key: "getComponent",
+	    value: function getComponent(entityId, componentType) {
+	      return this.componentHandler.getComponentInstanceMapByType(componentType).get(entityId);
+	    }
+	  }, {
+	    key: "hasComponent",
+	    value: function hasComponent(entityId) {
+	      for (var _len2 = arguments.length, componentTypes = new Array(_len2 > 1 ? _len2 - 1 : 0), _key2 = 1; _key2 < _len2; _key2++) {
+	        componentTypes[_key2 - 1] = arguments[_key2];
+	      }
+
+	      for (var _i2 = 0, _componentTypes = componentTypes; _i2 < _componentTypes.length; _i2++) {
+	        var _componentType3 = _componentTypes[_i2];
+	        if (!this.componentHandler.hasComponentType(_componentType3)) return false;
+	        if (!this.componentHandler.getComponentInstanceMapByType(_componentType3).has(entityId)) return false;
+	      }
+
+	      return true;
+	    }
+	  }, {
+	    key: "countComponents",
+	    value: function countComponents(entityId) {
+	      var count = 0;
+	      var _iteratorNormalCompletion5 = true;
+	      var _didIteratorError5 = false;
+	      var _iteratorError5 = undefined;
+
+	      try {
+	        for (var _iterator5 = this.componentHandler.getComponentInstanceMaps()[Symbol.iterator](), _step5; !(_iteratorNormalCompletion5 = (_step5 = _iterator5.next()).done); _iteratorNormalCompletion5 = true) {
+	          var componentInstanceMap = _step5.value;
+
+	          if (componentInstanceMap.has(entityId)) {
+	            ++count;
+	          }
+	        }
+	      } catch (err) {
+	        _didIteratorError5 = true;
+	        _iteratorError5 = err;
+	      } finally {
+	        try {
+	          if (!_iteratorNormalCompletion5 && _iterator5["return"] != null) {
+	            _iterator5["return"]();
+	          }
+	        } finally {
+	          if (_didIteratorError5) {
+	            throw _iteratorError5;
+	          }
+	        }
+	      }
+
 	      return count;
 	    }
 	    /**
-	     * Immediately query entity ids by its components. This is simply an alias for Query.select().
+	     * Immediately find entity ids by its components. This is simply an alias for Query.select().
 	     * @param {Array<Component>} components The component list to match entities to.
 	     * @returns {Iterable<EntityId>} A collection of all matching entity ids.
 	     */
 
 	  }, {
-	    key: "query",
-	    value: function query(components) {
+	    key: "find",
+	    value: function find(components) {
 	      return EntityQuery.select(this, components);
 	    }
 	  }, {
@@ -13490,91 +13742,49 @@
 	  _classCallCheck(this, TagComponent);
 	};
 
-	/** Cannot be directly added through world.addComponent(). Must be create with new EntityComponent(). */
-	var EntityComponent$1 =
-	/*#__PURE__*/
-	function () {
-	  function EntityComponent(world) {
-	    var entityId = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : undefined;
-
-	    _classCallCheck(this, EntityComponent);
-
-	    if (typeof entityId !== 'undefined') {
-	      throw new Error('This component cannot be added to an existing entity; it can only initialize itself.');
-	    }
-
-	    if (!world) {
-	      throw new Error('Cannot create entity in null world.');
-	    }
-
-	    var id = world.createEntity(); // Skip component creation, as we will be using ourselves :D
-
-	    world.componentHandler.putComponent(id, EntityComponent, this, undefined);
-	    this.id = id;
-	  }
-	  /** @override */
-
-
-	  _createClass(EntityComponent, [{
-	    key: "copy",
-	    value: function copy(values) {
-	      throw new Error('Unsupported operation; cannot be initialized by existing values.');
-	    }
-	    /** @override */
-
-	  }, {
-	    key: "reset",
-	    value: function reset() {
-	      return false;
-	    }
-	  }]);
-
-	  return EntityComponent;
-	}();
-
 	var EntityBase =
 	/*#__PURE__*/
 	function (_EntityComponent) {
 	  _inherits(EntityBase, _EntityComponent);
 
-	  function EntityBase(world) {
+	  function EntityBase(entityManager) {
 	    var _this;
 
 	    _classCallCheck(this, EntityBase);
 
-	    _this = _possibleConstructorReturn(this, _getPrototypeOf(EntityBase).call(this, world));
-	    _this.world = world;
+	    _this = _possibleConstructorReturn(this, _getPrototypeOf(EntityBase).call(this, entityManager));
+	    _this.entityManager = entityManager;
 	    return _this;
 	  }
 
 	  _createClass(EntityBase, [{
 	    key: "destroy",
 	    value: function destroy() {
-	      this.world.destroyEntity(this.entityId);
-	      this.world = null;
+	      this.entityManager.destroyEntity(this.entityId);
+	      this.entityManager = null;
 	    }
 	  }, {
 	    key: "addComponent",
 	    value: function addComponent(componentType) {
 	      var initialValues = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : undefined;
-	      this.world.addComponent(this.id, componentType, initialValues);
+	      this.entityManager.addComponent(this.id, componentType, initialValues);
 	      return this;
 	    }
 	  }, {
 	    key: "removeComponent",
 	    value: function removeComponent(componentType) {
-	      this.world.removeComponent(this.id, componentType);
+	      this.entityManager.removeComponent(this.id, componentType);
 	      return this;
 	    }
 	  }, {
 	    key: "hasComponent",
 	    value: function hasComponent(componentType) {
-	      return this.world.hasComponent(this.id, componentType);
+	      return this.entityManager.hasComponent(this.id, componentType);
 	    }
 	  }, {
 	    key: "getComponent",
 	    value: function getComponent(componentType) {
-	      return this.world.getComponent(this.id, componentType);
+	      return this.entityManager.getComponent(this.id, componentType);
 	    }
 	  }]);
 
@@ -13586,18 +13796,18 @@
 	function (_EntityBase) {
 	  _inherits(HybridEntity, _EntityBase);
 
-	  function HybridEntity(world) {
+	  function HybridEntity(entityManager) {
 	    var _this;
 
 	    _classCallCheck(this, HybridEntity);
 
-	    _this = _possibleConstructorReturn(this, _getPrototypeOf(HybridEntity).call(this, world));
+	    _this = _possibleConstructorReturn(this, _getPrototypeOf(HybridEntity).call(this, entityManager));
 	    _this.onComponentAdd = _this.onComponentAdd.bind(_assertThisInitialized(_this));
 	    _this.onComponentRemove = _this.onComponentRemove.bind(_assertThisInitialized(_this));
 
-	    _this.world.componentHandler.on('add', _this.onComponentAdd);
+	    _this.entityManager.entityHandler.addEntityListener(_this.id, 'componentadd', _this.onComponentAdd);
 
-	    _this.world.componentHandler.on('remove', _this.onComponentRemove);
+	    _this.entityManager.entityHandler.addEntityListener(_this.id, 'componentremove', _this.onComponentRemove);
 
 	    return _this;
 	  }
@@ -13619,14 +13829,12 @@
 	  }, {
 	    key: "onComponentRemove",
 	    value: function onComponentRemove(entityId, componentType, component) {
-	      if (entityId === this.id) {
-	        if (componentType === EntityComponent) {
-	          this.world.componentHandler.off('add', this.onComponentAdd);
-	          this.world.componentHandler.off('remove', this.onComponentRemove);
-	          this.onDestroy();
-	        } else {
-	          removeComponentProperties(this, componentType, component);
-	        }
+	      if (componentType === EntityComponent) {
+	        this.entityManager.entityHandler.removeEntityListener(this.id, 'componentadd', this.onComponentAdd);
+	        this.entityManager.entityHandler.removeEntityListener(this.id, 'componentremove', this.onComponentRemove);
+	        this.onDestroy();
+	      } else {
+	        removeComponentProperties(this, componentType, component);
 	      }
 	    }
 	  }]);
@@ -13749,6 +13957,933 @@
 		__proto__: null,
 		getEntityById: getEntityById,
 		getEntities: getEntities
+	});
+
+	var EntityWrapperBase =
+	/*#__PURE__*/
+	function () {
+	  function EntityWrapperBase(entityManager) {
+	    _classCallCheck(this, EntityWrapperBase);
+
+	    this.entityManager = entityManager;
+	    this.id = entityManager.createEntity();
+	  }
+
+	  _createClass(EntityWrapperBase, [{
+	    key: "add",
+	    value: function add(componentType) {
+	      var initialValues = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : undefined;
+	      this.entityManager.addComponent(this.id, componentType, initialValues);
+	      return this;
+	    }
+	  }, {
+	    key: "remove",
+	    value: function remove(componentType) {
+	      this.entityManager.removeComponent(this.id, componentType);
+	      return this;
+	    }
+	  }, {
+	    key: "has",
+	    value: function has() {
+	      var _this$entityManager;
+
+	      for (var _len = arguments.length, componentTypes = new Array(_len), _key = 0; _key < _len; _key++) {
+	        componentTypes[_key] = arguments[_key];
+	      }
+
+	      return (_this$entityManager = this.entityManager).hasComponent.apply(_this$entityManager, [this.id].concat(componentTypes));
+	    }
+	  }, {
+	    key: "destroy",
+	    value: function destroy() {
+	      this.entityManager.destroyEntity(this.id);
+	    }
+	  }, {
+	    key: "getEntityId",
+	    value: function getEntityId() {
+	      return this.id;
+	    }
+	  }]);
+
+	  return EntityWrapperBase;
+	}();
+	function create$1(entityManager) {
+	  return new EntityWrapperBase(entityManager);
+	}
+
+	var EntityWrapper = /*#__PURE__*/Object.freeze({
+		__proto__: null,
+		EntityWrapperBase: EntityWrapperBase,
+		create: create$1
+	});
+
+	var FUNCTION_NAME = Symbol('functionName');
+	var FUNCTION_ARGS = Symbol('functionArguments');
+	function resolveObject(target) {
+	  var path = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : [];
+	  var node = target;
+	  var _iteratorNormalCompletion = true;
+	  var _didIteratorError = false;
+	  var _iteratorError = undefined;
+
+	  try {
+	    for (var _iterator = path[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+	      var p = _step.value;
+
+	      if (_typeof(p) === 'object' && FUNCTION_NAME in p) {
+	        var _node;
+
+	        node = (_node = node)[p[FUNCTION_NAME]].apply(_node, _toConsumableArray(p[FUNCTION_ARGS]));
+	      } else {
+	        node = node[p];
+	      }
+	    }
+	  } catch (err) {
+	    _didIteratorError = true;
+	    _iteratorError = err;
+	  } finally {
+	    try {
+	      if (!_iteratorNormalCompletion && _iterator["return"] != null) {
+	        _iterator["return"]();
+	      }
+	    } finally {
+	      if (_didIteratorError) {
+	        throw _iteratorError;
+	      }
+	    }
+	  }
+
+	  return node;
+	}
+	function nextProperty(parentPath, nextKey) {
+	  return [].concat(_toConsumableArray(parentPath), [nextKey]);
+	}
+	function nextFunction(parentPath, functionName) {
+	  var _ref;
+
+	  var functionArguments = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : [];
+	  return [].concat(_toConsumableArray(parentPath), [(_ref = {}, _defineProperty(_ref, FUNCTION_NAME, functionName), _defineProperty(_ref, FUNCTION_ARGS, functionArguments), _ref)]);
+	}
+
+	var DiffList =
+	/*#__PURE__*/
+	function (_Array) {
+	  _inherits(DiffList, _Array);
+
+	  function DiffList() {
+	    _classCallCheck(this, DiffList);
+
+	    return _possibleConstructorReturn(this, _getPrototypeOf(DiffList).apply(this, arguments));
+	  }
+
+	  _createClass(DiffList, [{
+	    key: "addRecord",
+	    value: function addRecord(type, key) {
+	      var value = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : undefined;
+	      var path = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : [];
+	      var result = DiffList.createRecord(type, key, value, path);
+	      this.push(result);
+	      return result;
+	    }
+	  }, {
+	    key: "addRecords",
+	    value: function addRecords(records) {
+	      this.push.apply(this, _toConsumableArray(records));
+	    }
+	  }], [{
+	    key: "createRecord",
+	    value: function createRecord(type, key) {
+	      var value = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : undefined;
+	      var path = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : [];
+	      return {
+	        type: type,
+	        path: path,
+	        key: key,
+	        value: value
+	      };
+	    }
+	  }]);
+
+	  return DiffList;
+	}(_wrapNativeSuper(Array));
+
+	function applyDiff(source, sourceProp, diff) {
+	  switch (diff.type) {
+	    case 'new':
+	    case 'edit':
+	      sourceProp[diff.key] = diff.value;
+	      return true;
+
+	    case 'delete':
+	      delete sourceProp[diff.key];
+	      return true;
+	  }
+
+	  return false;
+	}
+	function computeDiff(source, target) {
+	  var path = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : [];
+	  var opts = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
+	  var dst = new DiffList();
+	  var sourceKeys = new Set(Object.getOwnPropertyNames(source));
+	  var _iteratorNormalCompletion = true;
+	  var _didIteratorError = false;
+	  var _iteratorError = undefined;
+
+	  try {
+	    for (var _iterator = Object.getOwnPropertyNames(target)[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+	      var key = _step.value;
+
+	      if (!sourceKeys.has(key)) {
+	        dst.addRecord('new', key, target[key], path);
+	      } else {
+	        sourceKeys["delete"](key);
+	        var result = computeDiff$4(source[key], target[key], nextProperty(path, key), opts);
+
+	        if (!result) {
+	          dst.addRecord('edit', key, target[key], path);
+	        } else {
+	          dst.addRecords(result);
+	        }
+	      }
+	    }
+	  } catch (err) {
+	    _didIteratorError = true;
+	    _iteratorError = err;
+	  } finally {
+	    try {
+	      if (!_iteratorNormalCompletion && _iterator["return"] != null) {
+	        _iterator["return"]();
+	      }
+	    } finally {
+	      if (_didIteratorError) {
+	        throw _iteratorError;
+	      }
+	    }
+	  }
+
+	  if (!opts.preserveSource) {
+	    var _iteratorNormalCompletion2 = true;
+	    var _didIteratorError2 = false;
+	    var _iteratorError2 = undefined;
+
+	    try {
+	      for (var _iterator2 = sourceKeys[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+	        var sourceKey = _step2.value;
+	        dst.addRecord('delete', sourceKey, undefined, path);
+	      }
+	    } catch (err) {
+	      _didIteratorError2 = true;
+	      _iteratorError2 = err;
+	    } finally {
+	      try {
+	        if (!_iteratorNormalCompletion2 && _iterator2["return"] != null) {
+	          _iterator2["return"]();
+	        }
+	      } finally {
+	        if (_didIteratorError2) {
+	          throw _iteratorError2;
+	        }
+	      }
+	    }
+	  }
+
+	  return dst;
+	}
+
+	function isType(arg) {
+	  return Array.isArray(arg);
+	}
+	function applyDiff$1(source, sourceProp, diff) {
+	  switch (diff.type) {
+	    case 'arrayObjectEdit':
+	      sourceProp[diff.key] = diff.value;
+	      return true;
+
+	    case 'arrayObjectAppend':
+	      ensureCapacity(diff.key);
+	      sourceProp[diff.key] = diff.value;
+	      return true;
+
+	    case 'arrayObjectSplice':
+	      sourceProp.splice(diff.key, diff.value);
+	      return true;
+	  }
+
+	  return false;
+	}
+	function computeDiff$1(source, target) {
+	  var path = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : [];
+	  var opts = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
+	  var dst = new DiffList();
+	  var length = Math.min(source.length, target.length);
+
+	  for (var i = 0; i < length; ++i) {
+	    var result = computeDiff$4(source[i], target[i], nextProperty(path, i), opts);
+
+	    if (!result) {
+	      dst.addRecord('arrayObjectEdit', i, target[i], path);
+	    } else {
+	      dst.addRecords(result);
+	    }
+	  }
+
+	  if (!opts.preserveSource && source.length > target.length) {
+	    dst.addRecord('arrayObjectSplice', target.length, source.length - target.length, path);
+	  } else if (target.length > source.length) {
+	    for (var _i = source.length; _i < target.length; ++_i) {
+	      dst.addRecord('arrayObjectAppend', _i, target[_i], path);
+	    }
+	  }
+
+	  return dst;
+	}
+
+	function ensureCapacity(array, capacity) {
+	  if (array.length < capacity) {
+	    array.length = capacity;
+	  }
+	}
+
+	var ArrayObjectDiff = /*#__PURE__*/Object.freeze({
+		__proto__: null,
+		isType: isType,
+		applyDiff: applyDiff$1,
+		computeDiff: computeDiff$1
+	});
+
+	function isType$1(arg) {
+	  return arg instanceof Set;
+	}
+	function applyDiff$2(source, sourceProp, diff) {
+	  switch (diff.type) {
+	    case 'setAdd':
+	      sourceProp.add(diff.key);
+	      return true;
+
+	    case 'setDelete':
+	      sourceProp["delete"](diff.key);
+	      return true;
+	  }
+
+	  return false;
+	} // NOTE: If the set's contents are objects, there is no way to "update" that object.
+	// Therefore, this diff only works if NEW objects are added. This is the case for
+	// any object with indexed with keys. Keys MUST be checked with '===' and CANNOT be diffed.
+
+	function computeDiff$2(source, target) {
+	  var path = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : [];
+	  var opts = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
+	  var dst = new DiffList();
+	  var _iteratorNormalCompletion = true;
+	  var _didIteratorError = false;
+	  var _iteratorError = undefined;
+
+	  try {
+	    for (var _iterator = target[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+	      var _value = _step.value;
+
+	      if (!source.has(_value)) {
+	        dst.addRecord('setAdd', _value, undefined, path);
+	      }
+	    }
+	  } catch (err) {
+	    _didIteratorError = true;
+	    _iteratorError = err;
+	  } finally {
+	    try {
+	      if (!_iteratorNormalCompletion && _iterator["return"] != null) {
+	        _iterator["return"]();
+	      }
+	    } finally {
+	      if (_didIteratorError) {
+	        throw _iteratorError;
+	      }
+	    }
+	  }
+
+	  if (!opts.preserveSource) {
+	    var _iteratorNormalCompletion2 = true;
+	    var _didIteratorError2 = false;
+	    var _iteratorError2 = undefined;
+
+	    try {
+	      for (var _iterator2 = source[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+	        var value = _step2.value;
+
+	        if (!target.has(value)) {
+	          dst.addRecord('setDelete', value, undefined, path);
+	        }
+	      }
+	    } catch (err) {
+	      _didIteratorError2 = true;
+	      _iteratorError2 = err;
+	    } finally {
+	      try {
+	        if (!_iteratorNormalCompletion2 && _iterator2["return"] != null) {
+	          _iterator2["return"]();
+	        }
+	      } finally {
+	        if (_didIteratorError2) {
+	          throw _iteratorError2;
+	        }
+	      }
+	    }
+	  }
+
+	  return dst;
+	}
+
+	var SetDiff = /*#__PURE__*/Object.freeze({
+		__proto__: null,
+		isType: isType$1,
+		applyDiff: applyDiff$2,
+		computeDiff: computeDiff$2
+	});
+
+	function isType$2(arg) {
+	  return arg instanceof Map;
+	}
+	function applyDiff$3(source, sourceProp, diff) {
+	  switch (diff.type) {
+	    case 'mapNew':
+	    case 'mapSet':
+	      sourceProp.set(diff.key, diff.value);
+	      return true;
+
+	    case 'mapDelete':
+	      sourceProp["delete"](diff.key);
+	      return true;
+	  }
+
+	  return false;
+	} // NOTE: Same as set diffing, keys MUST be checked with '===' and CANNOT be diffed.
+	// Although values can.
+
+	function computeDiff$3(source, target) {
+	  var path = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : [];
+	  var opts = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
+	  var dst = new DiffList();
+	  var _iteratorNormalCompletion = true;
+	  var _didIteratorError = false;
+	  var _iteratorError = undefined;
+
+	  try {
+	    for (var _iterator = target[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+	      var _step$value = _slicedToArray(_step.value, 2),
+	          _key = _step$value[0],
+	          value = _step$value[1];
+
+	      if (!source.has(_key)) {
+	        dst.addRecord('mapNew', _key, value, path);
+	      } else {
+	        var result = computeDiff$4(source.get(_key), value, nextFunction(path, 'get', [_key]), opts);
+
+	        if (!result) {
+	          dst.addRecord('mapSet', _key, value, path);
+	        } else {
+	          dst.addRecords(result);
+	        }
+	      }
+	    }
+	  } catch (err) {
+	    _didIteratorError = true;
+	    _iteratorError = err;
+	  } finally {
+	    try {
+	      if (!_iteratorNormalCompletion && _iterator["return"] != null) {
+	        _iterator["return"]();
+	      }
+	    } finally {
+	      if (_didIteratorError) {
+	        throw _iteratorError;
+	      }
+	    }
+	  }
+
+	  if (!opts.preserveSource) {
+	    var _iteratorNormalCompletion2 = true;
+	    var _didIteratorError2 = false;
+	    var _iteratorError2 = undefined;
+
+	    try {
+	      for (var _iterator2 = source.keys()[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+	        var key = _step2.value;
+
+	        if (!target.has(key)) {
+	          dst.addRecord('mapDelete', key, undefined, path);
+	        }
+	      }
+	    } catch (err) {
+	      _didIteratorError2 = true;
+	      _iteratorError2 = err;
+	    } finally {
+	      try {
+	        if (!_iteratorNormalCompletion2 && _iterator2["return"] != null) {
+	          _iterator2["return"]();
+	        }
+	      } finally {
+	        if (_didIteratorError2) {
+	          throw _iteratorError2;
+	        }
+	      }
+	    }
+	  }
+
+	  return dst;
+	}
+
+	var MapDiff = /*#__PURE__*/Object.freeze({
+		__proto__: null,
+		isType: isType$2,
+		applyDiff: applyDiff$3,
+		computeDiff: computeDiff$3
+	});
+
+	var DEFAULT_HANDLERS = [ArrayObjectDiff, MapDiff, SetDiff];
+	var DEFAULT_OPTS = {
+	  handlers: DEFAULT_HANDLERS,
+	  preserveSource: true,
+	  maxDepth: 1000
+	};
+	function computeDiff$4(source, target) {
+	  var path = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : [];
+	  var opts = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : DEFAULT_OPTS;
+	  // Force replacement since we have reached maximum depth...
+	  if (path.length >= opts.maxDepth) return null; // Check if type at least matches...
+
+	  if (_typeof(source) !== _typeof(target)) return null; // If it's an object...(which there are many kinds)...
+
+	  if (_typeof(source) === 'object') {
+	    var _iteratorNormalCompletion = true;
+	    var _didIteratorError = false;
+	    var _iteratorError = undefined;
+
+	    try {
+	      for (var _iterator = opts.handlers[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+	        var handler = _step.value;
+	        var type = handler.isType(source);
+	        if (type ^ handler.isType(target)) return null;
+	        if (type) return handler.computeDiff(source, target, path, opts);
+	      } // It's probably just a simple object...
+
+	    } catch (err) {
+	      _didIteratorError = true;
+	      _iteratorError = err;
+	    } finally {
+	      try {
+	        if (!_iteratorNormalCompletion && _iterator["return"] != null) {
+	          _iterator["return"]();
+	        }
+	      } finally {
+	        if (_didIteratorError) {
+	          throw _iteratorError;
+	        }
+	      }
+	    }
+
+	    return computeDiff(source, target, path, opts);
+	  } else {
+	    // Any other primitive types...
+	    if (source === target) return [];else return null;
+	  }
+	}
+	function applyDiff$4(source, diffList) {
+	  var opts = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : DEFAULT_OPTS;
+	  var sourceProp = source;
+	  var _iteratorNormalCompletion2 = true;
+	  var _didIteratorError2 = false;
+	  var _iteratorError2 = undefined;
+
+	  try {
+	    for (var _iterator2 = diffList[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+	      var diff = _step2.value;
+	      // Find property...
+	      sourceProp = resolveObject(source, diff.path); // Apply property diff...
+
+	      var flag = false;
+	      var _iteratorNormalCompletion3 = true;
+	      var _didIteratorError3 = false;
+	      var _iteratorError3 = undefined;
+
+	      try {
+	        for (var _iterator3 = opts.handlers[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
+	          var handler = _step3.value;
+	          flag = handler.applyDiff(source, sourceProp, diff);
+	          if (flag) break;
+	        } // Apply default property diff...
+
+	      } catch (err) {
+	        _didIteratorError3 = true;
+	        _iteratorError3 = err;
+	      } finally {
+	        try {
+	          if (!_iteratorNormalCompletion3 && _iterator3["return"] != null) {
+	            _iterator3["return"]();
+	          }
+	        } finally {
+	          if (_didIteratorError3) {
+	            throw _iteratorError3;
+	          }
+	        }
+	      }
+
+	      if (!flag) {
+	        applyDiff(source, sourceProp, diff);
+	      }
+	    }
+	  } catch (err) {
+	    _didIteratorError2 = true;
+	    _iteratorError2 = err;
+	  } finally {
+	    try {
+	      if (!_iteratorNormalCompletion2 && _iterator2["return"] != null) {
+	        _iterator2["return"]();
+	      }
+	    } finally {
+	      if (_didIteratorError2) {
+	        throw _iteratorError2;
+	      }
+	    }
+	  }
+
+	  return source;
+	}
+
+	/**
+	 * Performs a fine diff on the entities and reconciles any changes with the current world state.
+	 * It respects the current world state with higher precedence over the modified changes. In other
+	 * words, any properties modified by the running program will be preserved. Only properties that
+	 * have not changed will be modified to reflect the new changes.
+	 * 
+	 * This assumes entity constructors are deterministic, non-reflexive, and repeatable in a blank
+	 * test world.
+	 * 
+	 * @param {HotEntityModule} prevHotEntityModule The old source hot entity module instance.
+	 * @param {HotEntityModule} nextHotEntityModule The new target hot entity module instance.
+	 * @param {Object} [opts] Any additional options.
+	 * @param {Function} [opts.worldObjectWrapper] If defined, the function will allow you wrap the create EntityManager
+	 * and specify the shape of the "world" parameter given to the entity constructors. The function takes in an instance
+	 * of EntityManager and returns an object to pass to the constructors.
+	 */
+
+	function FineDiffStrategy(prevHotEntityModule, nextHotEntityModule) {
+	  var opts = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : undefined;
+	  var prevEntityConstructor = prevHotEntityModule.entityConstructor;
+	  var prevEntityManagers = prevHotEntityModule.entityManagers;
+	  var nextEntityConstructor = nextHotEntityModule.entityConstructor;
+	  var nextEntityManagers = nextHotEntityModule.entityManagers;
+	  var cacheEntityManager = new EntityManager();
+	  var cacheWorld = opts && opts.worldObjectWrapper ? opts.worldObjectWrapper(cacheEntityManager) : cacheEntityManager;
+	  var oldEntity = prevEntityConstructor(cacheWorld);
+	  var newEntity = nextEntityConstructor(cacheWorld); // Diff the old and new components...only update what has changed...
+
+	  var componentValues = new Map();
+	  var _iteratorNormalCompletion = true;
+	  var _didIteratorError = false;
+	  var _iteratorError = undefined;
+
+	  try {
+	    for (var _iterator = cacheEntityManager.getComponentTypesByEntityId(newEntity)[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+	      var componentType = _step.value;
+	      var newComponent = cacheEntityManager.getComponent(newEntity, componentType);
+	      var oldComponent = cacheEntityManager.getComponent(oldEntity, componentType);
+
+	      if (!oldComponent) {
+	        // ...it's an addition!
+	        componentValues.set(componentType, true);
+	      } else {
+	        // ...it's an update!
+	        var result = computeDiff$4(oldComponent, newComponent);
+	        componentValues.set(componentType, result);
+	      }
+	    }
+	  } catch (err) {
+	    _didIteratorError = true;
+	    _iteratorError = err;
+	  } finally {
+	    try {
+	      if (!_iteratorNormalCompletion && _iterator["return"] != null) {
+	        _iterator["return"]();
+	      }
+	    } finally {
+	      if (_didIteratorError) {
+	        throw _iteratorError;
+	      }
+	    }
+	  }
+
+	  var _iteratorNormalCompletion2 = true;
+	  var _didIteratorError2 = false;
+	  var _iteratorError2 = undefined;
+
+	  try {
+	    for (var _iterator2 = cacheEntityManager.getComponentTypesByEntityId(oldEntity)[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+	      var _componentType = _step2.value;
+
+	      if (!componentValues.has(_componentType)) {
+	        // ...it's a deletion!
+	        componentValues.set(_componentType, false);
+	      }
+	    } // Clean up cache entity manager...
+
+	  } catch (err) {
+	    _didIteratorError2 = true;
+	    _iteratorError2 = err;
+	  } finally {
+	    try {
+	      if (!_iteratorNormalCompletion2 && _iterator2["return"] != null) {
+	        _iterator2["return"]();
+	      }
+	    } finally {
+	      if (_didIteratorError2) {
+	        throw _iteratorError2;
+	      }
+	    }
+	  }
+
+	  cacheEntityManager.clear(); // Update all existing entity managers to the new entities...
+
+	  var _iteratorNormalCompletion3 = true;
+	  var _didIteratorError3 = false;
+	  var _iteratorError3 = undefined;
+
+	  try {
+	    for (var _iterator3 = prevEntityManagers[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
+	      var entityManager = _step3.value;
+	      // Update entities...
+	      var _iteratorNormalCompletion4 = true;
+	      var _didIteratorError4 = false;
+	      var _iteratorError4 = undefined;
+
+	      try {
+	        for (var _iterator4 = prevHotEntityModule.entities.get(entityManager).values()[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
+	          var entity = _step4.value;
+	          var _iteratorNormalCompletion5 = true;
+	          var _didIteratorError5 = false;
+	          var _iteratorError5 = undefined;
+
+	          try {
+	            for (var _iterator5 = componentValues.entries()[Symbol.iterator](), _step5; !(_iteratorNormalCompletion5 = (_step5 = _iterator5.next()).done); _iteratorNormalCompletion5 = true) {
+	              var _step5$value = _slicedToArray(_step5.value, 2),
+	                  _componentType2 = _step5$value[0],
+	                  values = _step5$value[1];
+
+	              if (typeof values === 'boolean') {
+	                if (values) {
+	                  // Addition!
+	                  entityManager.addComponent(entity, _componentType2);
+	                } else {
+	                  // Deletion!
+	                  entityManager.removeComponent(entity, _componentType2);
+	                }
+	              } else {
+	                // Update!
+	                var component = entityManager.getComponent(entity, _componentType2);
+	                applyDiff$4(component, values);
+	              }
+	            }
+	          } catch (err) {
+	            _didIteratorError5 = true;
+	            _iteratorError5 = err;
+	          } finally {
+	            try {
+	              if (!_iteratorNormalCompletion5 && _iterator5["return"] != null) {
+	                _iterator5["return"]();
+	              }
+	            } finally {
+	              if (_didIteratorError5) {
+	                throw _iteratorError5;
+	              }
+	            }
+	          }
+	        }
+	      } catch (err) {
+	        _didIteratorError4 = true;
+	        _iteratorError4 = err;
+	      } finally {
+	        try {
+	          if (!_iteratorNormalCompletion4 && _iterator4["return"] != null) {
+	            _iterator4["return"]();
+	          }
+	        } finally {
+	          if (_didIteratorError4) {
+	            throw _iteratorError4;
+	          }
+	        }
+	      }
+	    }
+	  } catch (err) {
+	    _didIteratorError3 = true;
+	    _iteratorError3 = err;
+	  } finally {
+	    try {
+	      if (!_iteratorNormalCompletion3 && _iterator3["return"] != null) {
+	        _iterator3["return"]();
+	      }
+	    } finally {
+	      if (_didIteratorError3) {
+	        throw _iteratorError3;
+	      }
+	    }
+	  }
+	}
+
+	var HotEntityModule =
+	/*#__PURE__*/
+	function () {
+	  function HotEntityModule(entityModule, entityConstructor) {
+	    _classCallCheck(this, HotEntityModule);
+
+	    this.moduleId = entityModule.id;
+	    this.entityConstructor = entityConstructor;
+	    this.entities = new Map();
+	  }
+
+	  _createClass(HotEntityModule, [{
+	    key: "addEntity",
+	    value: function addEntity(entityManager, entityId) {
+	      if (this.entities.has(entityManager)) {
+	        this.entities.get(entityManager).add(entityId);
+	      } else {
+	        var entitySet = new Set();
+	        entitySet.add(entityId);
+	        this.entities.set(entityManager, entitySet);
+	      } // Add listener...
+
+
+	      entityManager.entityHandler.addEntityListener(entityId, 'destroy', this.removeEntity.bind(this, entityManager, entityId), {
+	        handle: "".concat(this.moduleId, ":").concat(entityId)
+	      });
+	    }
+	  }, {
+	    key: "removeEntity",
+	    value: function removeEntity(entityManager, entityId) {
+	      // Remove listener...(just in case this was not triggered by a destroy event)...
+	      entityManager.entityHandler.removeEntityListener(entityId, 'destroy', "".concat(this.moduleId, ":").concat(entityId));
+	      var entitySet = this.entities.get(entityManager);
+	      entitySet["delete"](entityId);
+	      if (entitySet.size <= 0) this.entities["delete"](entityManager);
+	    }
+	    /**
+	     * Replaces the current state of with the next one. This includes all entities and entity managers.
+	     * However, it assumes both hot entity replacements are for the same module.
+	     * 
+	     * @param {HotEntityModule} nextHotEntityModule The new hot entity module object to replace this with.
+	     * @param {Object} [opts] Any additional options.
+	     * @param {Function} [opts.replaceStrategy] If defined, replacement will be handled by the passed in
+	     * function. It takes 3 arguemtns: the hot entity replacement instance, the target instance, and the replaceOpts if defined.
+	     * @param {Object} [opts.replaceOpts] This is given to the replacement strategy function, if defined.
+	     */
+
+	  }, {
+	    key: "replaceWith",
+	    value: function replaceWith(nextHotEntityModule) {
+	      var opts = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : undefined;
+	      // NOTE: Assumes more than one instance can exist at the same time.
+	      // NOTE: Assumes components do not store self references (nor their own entity id).
+	      // NOTE: Assumes you don't use objects in sets (unless they are immutable)...cause those are evil.
+	      var replaceStrategy = opts && opts.replaceStrategy || FineDiffStrategy;
+	      replaceStrategy.call(undefined, this, nextHotEntityModule, opts && opts.replaceOpts); // Copy the new constructor over...
+
+	      this.entityConstructor = nextHotEntityModule.entityConstructor; // Copy any new entities over...
+
+	      var _iteratorNormalCompletion = true;
+	      var _didIteratorError = false;
+	      var _iteratorError = undefined;
+
+	      try {
+	        for (var _iterator = nextHotEntityModule.entityManagers[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+	          var entityManager = _step.value;
+	          var _iteratorNormalCompletion2 = true;
+	          var _didIteratorError2 = false;
+	          var _iteratorError2 = undefined;
+
+	          try {
+	            for (var _iterator2 = nextHotEntityModule.entities.get(entityManager).values()[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+	              var entity = _step2.value;
+	              nextHotEntityModule.removeEntity(entityManager, entity);
+	              this.addEntity(entityManager, entity);
+	            }
+	          } catch (err) {
+	            _didIteratorError2 = true;
+	            _iteratorError2 = err;
+	          } finally {
+	            try {
+	              if (!_iteratorNormalCompletion2 && _iterator2["return"] != null) {
+	                _iterator2["return"]();
+	              }
+	            } finally {
+	              if (_didIteratorError2) {
+	                throw _iteratorError2;
+	              }
+	            }
+	          }
+	        }
+	      } catch (err) {
+	        _didIteratorError = true;
+	        _iteratorError = err;
+	      } finally {
+	        try {
+	          if (!_iteratorNormalCompletion && _iterator["return"] != null) {
+	            _iterator["return"]();
+	          }
+	        } finally {
+	          if (_didIteratorError) {
+	            throw _iteratorError;
+	          }
+	        }
+	      }
+	    }
+	  }, {
+	    key: "isEmpty",
+	    value: function isEmpty() {
+	      return this.entities.size <= 0;
+	    }
+	  }, {
+	    key: "entityManagers",
+	    get: function get() {
+	      return this.entities.keys();
+	    }
+	  }]);
+
+	  return HotEntityModule;
+	}();
+
+	var HOT_ENTITY_MODULES = new Map();
+	function enableForEntity(entityModule, entityManager, entityId) {
+	  if (!HOT_ENTITY_MODULES.has(entityModule.id)) {
+	    throw new Error('Module must be accepted first for HER to enable hot entity replacement.');
+	  }
+
+	  var hotEntityModule = HOT_ENTITY_MODULES.get(entityModule.id);
+	  hotEntityModule.addEntity(entityManager, entityId);
+	  return entityId;
+	}
+	function acceptForModule(entityModule, entityConstructor) {
+	  var worldConstructor = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : undefined;
+	  var newHotEntityModule = new HotEntityModule(entityModule, entityConstructor);
+
+	  if (HOT_ENTITY_MODULES.has(entityModule.id)) {
+	    console.log("Reloading '".concat(entityModule.id, "'..."));
+	    var oldHotEntityModule = HOT_ENTITY_MODULES.get(entityModule.id);
+	    oldHotEntityModule.replaceWith(newHotEntityModule, worldConstructor);
+	  } else {
+	    console.log("Preparing '".concat(entityModule.id, "'..."));
+	    HOT_ENTITY_MODULES.set(entityModule.id, newHotEntityModule);
+	  }
+
+	  return entityModule;
+	}
+	function getInstanceForModuleId(entityModuleId) {
+	  return HER_MODULES.get(entityModuleId);
+	}
+
+	var HotEntityReplacement = /*#__PURE__*/Object.freeze({
+		__proto__: null,
+		enableForEntity: enableForEntity,
+		acceptForModule: acceptForModule,
+		getInstanceForModuleId: getInstanceForModuleId
 	});
 
 	var NO_TRANSITION = {};
@@ -14487,10 +15622,14 @@
 	exports.EntityComponent = EntityComponent$1;
 	exports.EntityManager = EntityManager;
 	exports.EntityQuery = EntityQuery;
+	exports.EntityWrapper = EntityWrapper;
 	exports.EventKey = EventKey;
 	exports.Eventable = Eventable$1;
+	exports.FineDiffStrategy = FineDiffStrategy;
 	exports.Game = Game;
 	exports.GameLoop = GameLoop;
+	exports.HotEntityModule = HotEntityModule;
+	exports.HotEntityReplacement = HotEntityReplacement;
 	exports.HybridEntity = HybridEntity;
 	exports.Input = Input;
 	exports.Keyboard = Keyboard;

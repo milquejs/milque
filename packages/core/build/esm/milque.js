@@ -37,6 +37,8 @@ var self = /*#__PURE__*/Object.freeze({
     get ComponentFactory () { return ComponentFactory; },
     get Component () { return ComponentHelper; },
     get Entity () { return EntityHelper; },
+    get EntityWrapper () { return EntityWrapper; },
+    get HotEntityReplacement () { return HotEntityReplacement; },
     get EntityManager () { return EntityManager; },
     get EntityQuery () { return EntityQuery; },
     get ComponentBase () { return ComponentBase; },
@@ -44,6 +46,8 @@ var self = /*#__PURE__*/Object.freeze({
     get EntityComponent () { return EntityComponent$1; },
     get EntityBase () { return EntityBase; },
     get HybridEntity () { return HybridEntity; },
+    get HotEntityModule () { return HotEntityModule; },
+    get FineDiffStrategy () { return FineDiffStrategy; },
     get SceneManager () { return SceneManager; },
     get SceneBase () { return SceneBase; }
 });
@@ -1487,12 +1491,6 @@ class EntityQuery
         this._included = [];
         this._operated = {};
 
-        // NOTE: This allows single element collections to be passed-in as a "naked" element instead.
-        if (!(Symbol.iterator in components))
-        {
-            componnets = [components];
-        }
-
         for(let component of components)
         {
             if (typeof component === 'object' && OPERATOR$1 in component)
@@ -1639,7 +1637,6 @@ class EntityQuery
 }
 
 /**
- * @fires create
  * @fires destroy
  */
 class EntityHandler
@@ -1648,18 +1645,117 @@ class EntityHandler
     {
         this._entities = new Set();
         this._nextAvailableEntityId = 1;
+        this._listeners = new Map();
+    }
+
+    /**
+     * Adds a listener for entity events that occur for the passed-in id.
+     * 
+     * @param {EntityId} entityId The associated id for the entity to listen to.
+     * @param {String} eventType The event type to listen for.
+     * @param {Function} listener The listener function that will be called when the event occurs.
+     * @param {Object} [opts] Additional options.
+     * @param {Boolean} [opts.once=false] Whether the listener should be invoked at most once after being
+     * added. If true, the listener would be automatically removed when invoked.
+     * @param {Function|String|*} [opts.handle=listener] The handle to uniquely identify the listener. If set,
+     * this will be used instead of the function instance. This is usful for anonymous functions, since
+     * they are always unique and therefore cannot be removed, causing an unfortunate memory leak.
+     */
+    addEntityListener(entityId, eventType, listener, opts = undefined)
+    {
+        const handle = opts && typeof opts.handle !== 'undefined' ? opts.handle : listener;
+        
+        if (this._listeners.has(entityId))
+        {
+            let eventMap = this._listeners.get(entityId);
+            if (eventType in eventMap)
+            {
+                let listeners = eventMap[eventType];
+                listeners.set(handle, listener);
+            }
+            else
+            {
+                let listeners = new Map();
+                listeners.set(handle, listener);
+                eventMap[eventType] = listeners;
+            }
+        }
+        else
+        {
+            let onces = new Set();
+            let listeners = new Map();
+            listeners.set(handle, listener);
+            if (opts.once) onces.add(handle);
+            let eventMap = {
+                onces,
+                [eventType]: listeners
+            };
+            this._listeners.set(entityId, eventMap);
+        }
+    }
+
+    /**
+     * Removes the listener from the entity with the passed-in id.
+     * 
+     * @param {EntityId} entityId The associated id for the entity to remove from.
+     * @param {String} eventType The event type to remove from.
+     * @param {Function|String|*} handle The listener handle that will be called when the event occurs.
+     * Usually, this is the function itself.
+     * @param {Object} [opts] Additional options.
+     */
+    removeEntityListener(entityId, eventType, handle, opts = undefined)
+    {
+        if (this._listeners.has(entityId))
+        {
+            let eventMap = this._listeners.get(entityId);
+            if (eventType in eventMap)
+            {
+                eventMap[eventType].delete(handle);
+                if (eventMap.onces.has(handle))
+                {
+                    eventMap.onces.delete(handle);
+                }
+            }
+        }
+    }
+
+    /**
+     * Dispatches an event to all the entity's listeners.
+     * 
+     * @param {EntityId} entityId The id of the entity.
+     * @param {String} eventType The type of the dispatched event.
+     * @param {Array} [eventArgs] An array of arguments to be passed to the listeners.
+     */
+    dispatchEntityEvent(entityId, eventType, eventArgs = undefined)
+    {
+        if (this._listeners.has(entityId))
+        {
+            let eventMap = this._listeners.get(entityId);
+            if (eventType in eventMap)
+            {
+                let onces = eventMap.onces;
+                let listeners = eventMap[eventType];
+                for(let [handle, listener] of listeners.entries())
+                {
+                    listener.apply(undefined, eventArgs);
+                    if (onces.has(handle))
+                    {
+                        listeners.delete(handle);
+                    }
+                }
+            }
+        }
     }
 
     addEntityId(entityId)
     {
         this._entities.add(entityId);
-        this.emit('create', entityId);
     }
 
     deleteEntityId(entityId)
     {
         this._entities.delete(entityId);
-        this.emit('destroy', entityId);
+        this.dispatchEntityEvent(entityId, 'destroy', [ entityId ]);
     }
     
     getNextAvailableEntityId()
@@ -1672,20 +1768,45 @@ class EntityHandler
         return this._entities;
     }
 }
-mixin(EntityHandler);
+
+/** Cannot be directly added through world.addComponent(). Must be create with new EntityComponent(). */
+class EntityComponent$1
+{
+    constructor(world)
+    {
+        if (!world)
+        {
+            throw new Error('Cannot create entity in null world.');
+        }
+
+        const id = world.createEntity();
+
+        // Skip component creation, as we will be using ourselves :D
+        world.componentHandler.putComponent(id, EntityComponent$1, this, undefined);
+        
+        this.id = id;
+    }
+
+    /** @override */
+    copy(values) { throw new Error('Unsupported operation; cannot be initialized by existing values.'); }
+    
+    /** @override */
+    reset() { return false; }
+}
 
 /**
- * @fires add
- * @fires remove
+ * @fires componentadd
+ * @fires componentremove
  */
 class ComponentHandler
 {
-    constructor()
+    constructor(entityHandler)
     {
+        this._entityHandler = entityHandler;
         this.componentTypeInstanceMap = new Map();
     }
 
-    createComponent(entityId, componentType, initialValues)
+    createComponent(componentType, initialValues)
     {
         let component;
 
@@ -1700,11 +1821,17 @@ class ComponentHandler
                 throw new Error(`Instanced component class '${getComponentTypeName(componentType)}' must at least have a create() function.`);
             }
 
-            component = componentType.create(this, entityId);
+            component = componentType.create(this);
         }
         else if (type === 'function')
         {
-            component = new componentType(this, entityId);
+            // HACK: This is a hack debugging tool to stop wrong use.
+            if (componentType.prototype instanceof EntityComponent$1)
+            {
+                throw new Error('This component cannot be added to an existing entity; it can only initialize itself.');
+            }
+
+            component = new componentType(this);
         }
         else if (type === 'symbol')
         {
@@ -1723,24 +1850,7 @@ class ComponentHandler
         // Initialize the component...
         if (initialValues)
         {
-            // Try user-defined static copy...
-            if ('copy' in componentType)
-            {
-                componentType.copy(component, initialValues);
-            }
-            // Try user-defined instance copy...
-            else if ('copy' in component)
-            {
-                component.copy(initialValues);
-            }
-            // Try default copy...
-            else
-            {
-                for(let key of Object.getOwnPropertyNames(initialValues))
-                {
-                    component[key] = initialValues[key];
-                }
-            }
+            this.copyComponent(componentType, component, initialValues);
         }
         
         return component;
@@ -1765,7 +1875,7 @@ class ComponentHandler
 
         componentInstanceMap.set(entityId, component);
 
-        this.emit('add', entityId, componentType, component, initialValues);
+        this._entityHandler.dispatchEntityEvent(entityId, 'componentadd', [entityId, componentType, component, initialValues]);
     }
 
     deleteComponent(entityId, componentType, component)
@@ -1773,21 +1883,57 @@ class ComponentHandler
         this.componentTypeInstanceMap.get(componentType).delete(entityId);
     
         let reusable;
-        if ('reset' in componentType)
+        // It's a tag. No reuse.
+        if (componentType === component)
+        {
+            reusable = false;
+        }
+        // Try user-defined static reset...
+        else if ('reset' in componentType)
         {
             reusable = componentType.reset(component);
         }
+        // Try user-defined instance reset...
         else if ('reset' in component)
         {
             reusable = component.reset();
         }
+        // Try default reset...
         else
         {
             // Do nothing. It cannot be reset.
             reusable = false;
         }
 
-        this.emit('remove', entityId, componentType, component);
+        this._entityHandler.dispatchEntityEvent(entityId, 'componentremove', [entityId, componentType, component]);
+        return component;
+    }
+
+    copyComponent(componentType, component, targetValues)
+    {
+        // It's a tag. No need to copy.
+        if (componentType === component)
+        {
+            return;
+        }
+        // Try user-defined static copy...
+        else if ('copy' in componentType)
+        {
+            componentType.copy(component, targetValues);
+        }
+        // Try user-defined instance copy...
+        else if ('copy' in component)
+        {
+            component.copy(targetValues);
+        }
+        // Try default copy...
+        else
+        {
+            for(let key of Object.getOwnPropertyNames(targetValues))
+            {
+                component[key] = targetValues[key];
+            }
+        }
     }
 
     hasComponentType(componentType)
@@ -1810,7 +1956,6 @@ class ComponentHandler
         return this.componentTypeInstanceMap.values();
     }
 }
-mixin(ComponentHandler);
 
 /**
  * @typedef EntityId
@@ -1824,15 +1969,15 @@ class EntityManager
 {
     constructor()
     {
-        this.entityHandler = new EntityHandler(this);
-        this.componentHandler = new ComponentHandler(this);
+        this.entityHandler = new EntityHandler();
+        this.componentHandler = new ComponentHandler(this.entityHandler);
     }
 
     clear()
     {
         for(let entityId of this.entityHandler.getEntityIds())
         {
-            this.destroyEntity(entityId, opts);
+            this.destroyEntity(entityId);
         }
     }
 
@@ -1883,7 +2028,7 @@ class EntityManager
     {
         try
         {
-            let component = this.componentHandler.createComponent(entityId, componentType, initialValues);
+            let component = this.componentHandler.createComponent(componentType, initialValues);
             this.componentHandler.putComponent(entityId, componentType, component, initialValues);
             return component;
         }
@@ -1893,13 +2038,14 @@ class EntityManager
             console.error(e);
         }
     }
-
+    
     removeComponent(entityId, componentType)
     {
         try
         {
             let component = this.getComponent(entityId, componentType);
             this.componentHandler.deleteComponent(entityId, componentType, component);
+            return component;
         }
         catch(e)
         {
@@ -1910,14 +2056,28 @@ class EntityManager
 
     clearComponents(entityId)
     {
-        for(let entityComponentMap of this.componentHandler.getComponentInstanceMaps())
+        for(let componentInstanceMap of this.componentHandler.getComponentInstanceMaps())
         {
-            if (entityComponentMap.has(entityId))
+            if (componentInstanceMap.has(entityId))
             {
-                let component = entityComponentMap.get(entityId);
+                let component = componentInstanceMap.get(entityId);
                 this.componentHandler.deleteComponent(entityId, componentType, component);
             }
         }
+    }
+
+    getComponentTypesByEntityId(entityId)
+    {
+        let dst = [];
+        for(let componentType of this.componentHandler.getComponentTypes())
+        {
+            let componentInstanceMap = this.componentHandler.getComponentInstanceMapByType(componentType);
+            if (componentInstanceMap.has(entityId))
+            {
+                dst.push(componentType);
+            }
+        }
+        return dst;
     }
 
     getComponent(entityId, componentType)
@@ -1938,9 +2098,9 @@ class EntityManager
     countComponents(entityId)
     {
         let count = 0;
-        for(let entityComponentMap of this.componentHandler.getComponentInstanceMaps())
+        for(let componentInstanceMap of this.componentHandler.getComponentInstanceMaps())
         {
-            if (entityComponentMap.has(entityId))
+            if (componentInstanceMap.has(entityId))
             {
                 ++count;
             }
@@ -1949,11 +2109,11 @@ class EntityManager
     }
 
     /**
-     * Immediately query entity ids by its components. This is simply an alias for Query.select().
+     * Immediately find entity ids by its components. This is simply an alias for Query.select().
      * @param {Array<Component>} components The component list to match entities to.
      * @returns {Iterable<EntityId>} A collection of all matching entity ids.
      */
-    query(components)
+    find(components)
     {
         return EntityQuery.select(this, components);
     }
@@ -2148,87 +2308,57 @@ class ComponentBase
  */
 class TagComponent {}
 
-/** Cannot be directly added through world.addComponent(). Must be create with new EntityComponent(). */
-class EntityComponent$1
-{
-    constructor(world, entityId = undefined)
-    {
-        if (typeof entityId !== 'undefined')
-        {
-            throw new Error('This component cannot be added to an existing entity; it can only initialize itself.');
-        }
-        
-        if (!world)
-        {
-            throw new Error('Cannot create entity in null world.');
-        }
-
-        const id = world.createEntity();
-
-        // Skip component creation, as we will be using ourselves :D
-        world.componentHandler.putComponent(id, EntityComponent$1, this, undefined);
-        
-        this.id = id;
-    }
-
-    /** @override */
-    copy(values) { throw new Error('Unsupported operation; cannot be initialized by existing values.'); }
-    
-    /** @override */
-    reset() { return false; }
-}
-
 class EntityBase extends EntityComponent$1
 {
-    constructor(world)
+    constructor(entityManager)
     {
-        super(world);
+        super(entityManager);
 
-        this.world = world;
+        this.entityManager = entityManager;
     }
 
     destroy()
     {
-        this.world.destroyEntity(this.entityId);
-        this.world = null;
+        this.entityManager.destroyEntity(this.entityId);
+        this.entityManager = null;
     }
 
     addComponent(componentType, initialValues = undefined)
     {
-        this.world.addComponent(this.id, componentType, initialValues);
+        this.entityManager.addComponent(this.id, componentType, initialValues);
         return this;
     }
 
     removeComponent(componentType)
     {
-        this.world.removeComponent(this.id, componentType);
+        this.entityManager.removeComponent(this.id, componentType);
         return this;
     }
 
     hasComponent(componentType)
     {
-        return this.world.hasComponent(this.id, componentType);
+        return this.entityManager.hasComponent(this.id, componentType);
     }
 
     getComponent(componentType)
     {
-        return this.world.getComponent(this.id, componentType);
+        return this.entityManager.getComponent(this.id, componentType);
     }
 }
 
 class HybridEntity extends EntityBase
 {
-    constructor(world)
+    constructor(entityManager)
     {
-        super(world);
+        super(entityManager);
 
         this.onComponentAdd = this.onComponentAdd.bind(this);
         this.onComponentRemove = this.onComponentRemove.bind(this);
 
-        this.world.componentHandler.on('add', this.onComponentAdd);
-        this.world.componentHandler.on('remove', this.onComponentRemove);
+        this.entityManager.entityHandler.addEntityListener(this.id, 'componentadd', this.onComponentAdd);
+        this.entityManager.entityHandler.addEntityListener(this.id, 'componentremove', this.onComponentRemove);
     }
-
+    
     /** @abstract */
     onDestroy() {}
 
@@ -2244,19 +2374,16 @@ class HybridEntity extends EntityBase
 
     onComponentRemove(entityId, componentType, component)
     {
-        if (entityId === this.id)
+        if (componentType === EntityComponent)
         {
-            if (componentType === EntityComponent)
-            {
-                this.world.componentHandler.off('add', this.onComponentAdd);
-                this.world.componentHandler.off('remove', this.onComponentRemove);
-
-                this.onDestroy();
-            }
-            else
-            {
-                removeComponentProperties(this, componentType, component);
-            }
+            this.entityManager.entityHandler.removeEntityListener(this.id, 'componentadd', this.onComponentAdd);
+            this.entityManager.entityHandler.removeEntityListener(this.id, 'componentremove', this.onComponentRemove);
+            
+            this.onDestroy();
+        }
+        else
+        {
+            removeComponentProperties(this, componentType, component);
         }
     }
 }
@@ -2316,6 +2443,644 @@ var EntityHelper = /*#__PURE__*/Object.freeze({
     __proto__: null,
     getEntityById: getEntityById,
     getEntities: getEntities
+});
+
+class EntityWrapperBase
+{
+    constructor(entityManager)
+    {
+        this.entityManager = entityManager;
+
+        this.id = entityManager.createEntity();
+    }
+
+    add(componentType, initialValues = undefined)
+    {
+        this.entityManager.addComponent(this.id, componentType, initialValues);
+        return this;
+    }
+
+    remove(componentType)
+    {
+        this.entityManager.removeComponent(this.id, componentType);
+        return this;
+    }
+
+    has(...componentTypes)
+    {
+        return this.entityManager.hasComponent(this.id, ...componentTypes);
+    }
+
+    destroy()
+    {
+        this.entityManager.destroyEntity(this.id);
+    }
+
+    getEntityId() { return this.id; }
+}
+
+function create$1(entityManager)
+{
+    return new EntityWrapperBase(entityManager);
+}
+
+var EntityWrapper = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    EntityWrapperBase: EntityWrapperBase,
+    create: create$1
+});
+
+const FUNCTION_NAME = Symbol('functionName');
+const FUNCTION_ARGS = Symbol('functionArguments');
+
+function resolveObject(target, path = [])
+{
+    let node = target;
+    for(let p of path)
+    {
+        if (typeof p === 'object' && FUNCTION_NAME in p)
+        {
+            node = node[p[FUNCTION_NAME]](...p[FUNCTION_ARGS]);
+        }
+        else
+        {
+            node = node[p];
+        }
+    }
+    return node;
+}
+
+function nextProperty(parentPath, nextKey)
+{
+    return [
+        ...parentPath,
+        nextKey,
+    ];
+}
+
+function nextFunction(parentPath, functionName, functionArguments = [])
+{
+    return [
+        ...parentPath,
+        {
+            [FUNCTION_NAME]: functionName,
+            [FUNCTION_ARGS]: functionArguments,
+        }
+    ];
+}
+
+class DiffList extends Array
+{
+    static createRecord(type, key, value = undefined, path = [])
+    {
+        return {
+            type,
+            path,
+            key,
+            value,
+        };
+    }
+
+    addRecord(type, key, value = undefined, path = [])
+    {
+        let result = DiffList.createRecord(type, key, value, path);
+        this.push(result);
+        return result;
+    }
+
+    addRecords(records)
+    {
+        this.push(...records);
+    }
+}
+
+function applyDiff(source, sourceProp, diff)
+{
+    switch(diff.type)
+    {
+        case 'new':
+        case 'edit':
+            sourceProp[diff.key] = diff.value;
+            return true;
+        case 'delete':
+            delete sourceProp[diff.key];
+            return true;
+    }
+    return false;
+}
+
+function computeDiff(source, target, path = [], opts = {})
+{
+    let dst = new DiffList();
+    let sourceKeys = new Set(Object.getOwnPropertyNames(source));
+    for(let key of Object.getOwnPropertyNames(target))
+    {
+        if (!sourceKeys.has(key))
+        {
+            dst.addRecord('new', key, target[key], path);
+        }
+        else
+        {
+            sourceKeys.delete(key);
+            let result = computeDiff$4(source[key], target[key], nextProperty(path, key), opts);
+            if (!result)
+            {
+                dst.addRecord('edit', key, target[key], path);
+            }
+            else
+            {
+                dst.addRecords(result);
+            }
+        }
+    }
+    if (!opts.preserveSource)
+    {
+        for(let sourceKey of sourceKeys)
+        {
+            dst.addRecord('delete', sourceKey, undefined, path);
+        }
+    }
+    return dst;
+}
+
+function isType(arg)
+{
+    return Array.isArray(arg);
+}
+
+function applyDiff$1(source, sourceProp, diff)
+{
+    switch(diff.type)
+    {
+        case 'arrayObjectEdit':
+            sourceProp[diff.key] = diff.value;
+            return true;
+        case 'arrayObjectAppend':
+            ensureCapacity(diff.key);
+            sourceProp[diff.key] = diff.value;
+            return true;
+        case 'arrayObjectSplice':
+            sourceProp.splice(diff.key, diff.value);
+            return true;
+    }
+    return false;
+}
+
+function computeDiff$1(source, target, path = [], opts = {})
+{
+    let dst = new DiffList();
+    const length = Math.min(source.length, target.length);
+    for(let i = 0; i < length; ++i)
+    {
+        let result = computeDiff$4(source[i], target[i], nextProperty(path, i), opts);
+        if (!result)
+        {
+            dst.addRecord('arrayObjectEdit', i, target[i], path);
+        }
+        else
+        {
+            dst.addRecords(result);
+        }
+    }
+
+    if (!opts.preserveSource && source.length > target.length)
+    {
+        dst.addRecord('arrayObjectSplice', target.length, source.length - target.length, path);
+    }
+    else if (target.length > source.length)
+    {
+        for(let i = source.length; i < target.length; ++i)
+        {
+            dst.addRecord('arrayObjectAppend', i, target[i], path);
+        }
+    }
+    return dst;
+}
+
+function ensureCapacity(array, capacity)
+{
+    if (array.length < capacity)
+    {
+        array.length = capacity;
+    }
+}
+
+var ArrayObjectDiff = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    isType: isType,
+    applyDiff: applyDiff$1,
+    computeDiff: computeDiff$1
+});
+
+function isType$1(arg)
+{
+    return arg instanceof Set;
+}
+
+function applyDiff$2(source, sourceProp, diff)
+{
+    switch(diff.type)
+    {
+        case 'setAdd':
+            sourceProp.add(diff.key);
+            return true;
+        case 'setDelete':
+            sourceProp.delete(diff.key);
+            return true;
+    }
+    return false;
+}
+
+// NOTE: If the set's contents are objects, there is no way to "update" that object.
+// Therefore, this diff only works if NEW objects are added. This is the case for
+// any object with indexed with keys. Keys MUST be checked with '===' and CANNOT be diffed.
+function computeDiff$2(source, target, path = [], opts = {})
+{
+    let dst = new DiffList();
+    for(let value of target)
+    {
+        if (!source.has(value))
+        {
+            dst.addRecord('setAdd', value, undefined, path);
+        }
+    }
+    if (!opts.preserveSource)
+    {
+        for(let value of source)
+        {
+            if (!target.has(value))
+            {
+                dst.addRecord('setDelete', value, undefined, path);
+            }
+        }
+    }
+    return dst;
+}
+
+var SetDiff = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    isType: isType$1,
+    applyDiff: applyDiff$2,
+    computeDiff: computeDiff$2
+});
+
+function isType$2(arg)
+{
+    return arg instanceof Map;
+}
+
+function applyDiff$3(source, sourceProp, diff)
+{
+    switch(diff.type)
+    {
+        case 'mapNew':
+        case 'mapSet':
+            sourceProp.set(diff.key, diff.value);
+            return true;
+        case 'mapDelete':
+            sourceProp.delete(diff.key);
+            return true;
+    }
+    return false;
+}
+
+// NOTE: Same as set diffing, keys MUST be checked with '===' and CANNOT be diffed.
+// Although values can.
+function computeDiff$3(source, target, path = [], opts = {})
+{
+    let dst = new DiffList();
+    for(let [key, value] of target)
+    {
+        if (!source.has(key))
+        {
+            dst.addRecord('mapNew', key, value, path);
+        }
+        else
+        {
+            let result = computeDiff$4(source.get(key), value, nextFunction(path, 'get', [ key ]), opts);
+            if (!result)
+            {
+                dst.addRecord('mapSet', key, value, path);
+            }
+            else
+            {
+                dst.addRecords(result);
+            }
+        }
+    }
+    if (!opts.preserveSource)
+    {
+        for(let key of source.keys())
+        {
+            if (!target.has(key))
+            {
+                dst.addRecord('mapDelete', key, undefined, path);
+            }
+        }
+    }
+    return dst;
+}
+
+var MapDiff = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    isType: isType$2,
+    applyDiff: applyDiff$3,
+    computeDiff: computeDiff$3
+});
+
+const DEFAULT_HANDLERS = [
+    ArrayObjectDiff,
+    MapDiff,
+    SetDiff,
+];
+
+const DEFAULT_OPTS = {
+    handlers: DEFAULT_HANDLERS,
+    preserveSource: true,
+    maxDepth: 1000,
+};
+
+function computeDiff$4(source, target, path = [], opts = DEFAULT_OPTS)
+{
+    // Force replacement since we have reached maximum depth...
+    if (path.length >= opts.maxDepth) return null;
+    // Check if type at least matches...
+    if (typeof source !== typeof target) return null;
+    // If it's an object...(which there are many kinds)...
+    if (typeof source === 'object')
+    {
+        for(let handler of opts.handlers)
+        {
+            let type = handler.isType(source);
+            if (type ^ (handler.isType(target))) return null;
+            if (type) return handler.computeDiff(source, target, path, opts);
+        }
+
+        // It's probably just a simple object...
+        return computeDiff(source, target, path, opts);
+    }
+    else
+    {
+        // Any other primitive types...
+        if (source === target) return [];
+        else return null;
+    }
+}
+
+function applyDiff$4(source, diffList, opts = DEFAULT_OPTS)
+{
+    let sourceProp = source;
+    for(let diff of diffList)
+    {
+        // Find property...
+        sourceProp = resolveObject(source, diff.path);
+
+        // Apply property diff...
+        let flag = false;
+        for(let handler of opts.handlers)
+        {
+            flag = handler.applyDiff(source, sourceProp, diff);
+            if (flag) break;
+        }
+
+        // Apply default property diff...
+        if (!flag)
+        {
+            applyDiff(source, sourceProp, diff);
+        }
+    }
+    return source;
+}
+
+/**
+ * Performs a fine diff on the entities and reconciles any changes with the current world state.
+ * It respects the current world state with higher precedence over the modified changes. In other
+ * words, any properties modified by the running program will be preserved. Only properties that
+ * have not changed will be modified to reflect the new changes.
+ * 
+ * This assumes entity constructors are deterministic, non-reflexive, and repeatable in a blank
+ * test world.
+ * 
+ * @param {HotEntityModule} prevHotEntityModule The old source hot entity module instance.
+ * @param {HotEntityModule} nextHotEntityModule The new target hot entity module instance.
+ * @param {Object} [opts] Any additional options.
+ * @param {Function} [opts.worldObjectWrapper] If defined, the function will allow you wrap the create EntityManager
+ * and specify the shape of the "world" parameter given to the entity constructors. The function takes in an instance
+ * of EntityManager and returns an object to pass to the constructors.
+ */
+function FineDiffStrategy(prevHotEntityModule, nextHotEntityModule, opts = undefined)
+{
+    const prevEntityConstructor = prevHotEntityModule.entityConstructor;
+    const prevEntityManagers = prevHotEntityModule.entityManagers;
+    const nextEntityConstructor = nextHotEntityModule.entityConstructor;
+    const nextEntityManagers = nextHotEntityModule.entityManagers;
+
+    let cacheEntityManager = new EntityManager();
+    let cacheWorld = (opts && opts.worldObjectWrapper)
+        ? opts.worldObjectWrapper(cacheEntityManager)
+        : cacheEntityManager;
+    let oldEntity = prevEntityConstructor(cacheWorld);
+    let newEntity = nextEntityConstructor(cacheWorld);
+
+    // Diff the old and new components...only update what has changed...
+    let componentValues = new Map();
+    for(let componentType of cacheEntityManager.getComponentTypesByEntityId(newEntity))
+    {
+        let newComponent = cacheEntityManager.getComponent(newEntity, componentType);
+        let oldComponent = cacheEntityManager.getComponent(oldEntity, componentType);
+
+        if (!oldComponent)
+        {
+            // ...it's an addition!
+            componentValues.set(componentType, true);
+        }
+        else
+        {
+            // ...it's an update!
+            let result = computeDiff$4(oldComponent, newComponent);
+            componentValues.set(componentType, result);
+        }
+    }
+    for(let componentType of cacheEntityManager.getComponentTypesByEntityId(oldEntity))
+    {
+        if (!componentValues.has(componentType))
+        {
+            // ...it's a deletion!
+            componentValues.set(componentType, false);
+        }
+    }
+
+    // Clean up cache entity manager...
+    cacheEntityManager.clear();
+
+    // Update all existing entity managers to the new entities...
+    for(let entityManager of prevEntityManagers)
+    {
+        // Update entities...
+        for(let entity of prevHotEntityModule.entities.get(entityManager).values())
+        {
+            for(let [componentType, values] of componentValues.entries())
+            {
+                if (typeof values === 'boolean')
+                {
+                    if (values)
+                    {
+                        // Addition!
+                        entityManager.addComponent(entity, componentType);
+                    }
+                    else
+                    {
+                        // Deletion!
+                        entityManager.removeComponent(entity, componentType);
+                    }
+                }
+                else
+                {
+                    // Update!
+                    let component = entityManager.getComponent(entity, componentType);
+                    applyDiff$4(component, values);
+                }
+            }
+        }
+    }
+}
+
+class HotEntityModule
+{
+    constructor(entityModule, entityConstructor)
+    {
+        this.moduleId = entityModule.id;
+        this.entityConstructor = entityConstructor;
+
+        this.entities = new Map();
+    }
+
+    addEntity(entityManager, entityId)
+    {
+        if (this.entities.has(entityManager))
+        {
+            this.entities.get(entityManager).add(entityId);
+        }
+        else
+        {
+            let entitySet = new Set();
+            entitySet.add(entityId);
+            this.entities.set(entityManager, entitySet);
+        }
+
+        // Add listener...
+        entityManager.entityHandler.addEntityListener(
+            entityId,
+            'destroy',
+            this.removeEntity.bind(this, entityManager, entityId),
+            { handle: `${this.moduleId}:${entityId}` }
+        );
+    }
+
+    removeEntity(entityManager, entityId)
+    {
+        // Remove listener...(just in case this was not triggered by a destroy event)...
+        entityManager.entityHandler.removeEntityListener(
+            entityId,
+            'destroy',
+            `${this.moduleId}:${entityId}`);
+        
+        let entitySet = this.entities.get(entityManager);
+        entitySet.delete(entityId);
+        if (entitySet.size <= 0) this.entities.delete(entityManager);
+    }
+
+    /**
+     * Replaces the current state of with the next one. This includes all entities and entity managers.
+     * However, it assumes both hot entity replacements are for the same module.
+     * 
+     * @param {HotEntityModule} nextHotEntityModule The new hot entity module object to replace this with.
+     * @param {Object} [opts] Any additional options.
+     * @param {Function} [opts.replaceStrategy] If defined, replacement will be handled by the passed in
+     * function. It takes 3 arguemtns: the hot entity replacement instance, the target instance, and the replaceOpts if defined.
+     * @param {Object} [opts.replaceOpts] This is given to the replacement strategy function, if defined.
+     */
+    replaceWith(nextHotEntityModule, opts = undefined)
+    {
+        // NOTE: Assumes more than one instance can exist at the same time.
+        // NOTE: Assumes components do not store self references (nor their own entity id).
+        // NOTE: Assumes you don't use objects in sets (unless they are immutable)...cause those are evil.
+
+        const replaceStrategy = (opts && opts.replaceStrategy) || FineDiffStrategy;
+        replaceStrategy.call(
+            undefined,
+            this,
+            nextHotEntityModule,
+            opts && opts.replaceOpts,
+        );
+
+        // Copy the new constructor over...
+        this.entityConstructor = nextHotEntityModule.entityConstructor;
+
+        // Copy any new entities over...
+        for(let entityManager of nextHotEntityModule.entityManagers)
+        {
+            for(let entity of nextHotEntityModule.entities.get(entityManager).values())
+            {
+                nextHotEntityModule.removeEntity(entityManager, entity);
+                this.addEntity(entityManager, entity);
+            }
+        }
+    }
+
+    isEmpty()
+    {
+        return this.entities.size <= 0;
+    }
+
+    get entityManagers()
+    {
+        return this.entities.keys();
+    }
+}
+
+const HOT_ENTITY_MODULES = new Map();
+
+function enableForEntity(entityModule, entityManager, entityId)
+{
+    if (!HOT_ENTITY_MODULES.has(entityModule.id))
+    {
+        throw new Error('Module must be accepted first for HER to enable hot entity replacement.');
+    }
+
+    let hotEntityModule = HOT_ENTITY_MODULES.get(entityModule.id);
+    hotEntityModule.addEntity(entityManager, entityId);
+    return entityId;
+}
+
+function acceptForModule(entityModule, entityConstructor, worldConstructor = undefined)
+{
+    let newHotEntityModule = new HotEntityModule(entityModule, entityConstructor);
+    if (HOT_ENTITY_MODULES.has(entityModule.id))
+    {
+        console.log(`Reloading '${entityModule.id}'...`);
+        let oldHotEntityModule = HOT_ENTITY_MODULES.get(entityModule.id);
+        oldHotEntityModule.replaceWith(newHotEntityModule, worldConstructor);
+    }
+    else
+    {
+        console.log(`Preparing '${entityModule.id}'...`);
+        HOT_ENTITY_MODULES.set(entityModule.id, newHotEntityModule);
+    }
+
+    return entityModule;
+}
+
+function getInstanceForModuleId(entityModuleId)
+{
+    return HER_MODULES.get(entityModuleId);
+}
+
+var HotEntityReplacement = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    enableForEntity: enableForEntity,
+    acceptForModule: acceptForModule,
+    getInstanceForModuleId: getInstanceForModuleId
 });
 
 const NO_TRANSITION = {};
@@ -3053,4 +3818,4 @@ var Game = /*#__PURE__*/Object.freeze({
 
 
 export default self;
-export { AbstractCamera, AbstractInputAdapter, ActionInputAdapter, Audio, ComponentHelper as Component, ComponentBase, ComponentFactory, DOUBLE_ACTION_TIME, Display, DisplayPort, DoubleActionInputAdapter, EntityHelper as Entity, EntityBase, EntityComponent$1 as EntityComponent, EntityManager, EntityQuery, EventKey, Eventable$1 as Eventable, Game, GameLoop, HybridEntity, Input, Keyboard, MAX_CONTEXT_PRIORITY, MIN_CONTEXT_PRIORITY, MODE_CENTER, MODE_FIT, MODE_NOSCALE, MODE_STRETCH, Mouse, QueryOperator, Random, RandomGenerator, RangeInputAdapter, SceneBase, SceneManager, SimpleRandomGenerator, StateInputAdapter, TagComponent, Utils, View, ViewHelper, ViewPort, createContext, createSource };
+export { AbstractCamera, AbstractInputAdapter, ActionInputAdapter, Audio, ComponentHelper as Component, ComponentBase, ComponentFactory, DOUBLE_ACTION_TIME, Display, DisplayPort, DoubleActionInputAdapter, EntityHelper as Entity, EntityBase, EntityComponent$1 as EntityComponent, EntityManager, EntityQuery, EntityWrapper, EventKey, Eventable$1 as Eventable, FineDiffStrategy, Game, GameLoop, HotEntityModule, HotEntityReplacement, HybridEntity, Input, Keyboard, MAX_CONTEXT_PRIORITY, MIN_CONTEXT_PRIORITY, MODE_CENTER, MODE_FIT, MODE_NOSCALE, MODE_STRETCH, Mouse, QueryOperator, Random, RandomGenerator, RangeInputAdapter, SceneBase, SceneManager, SimpleRandomGenerator, StateInputAdapter, TagComponent, Utils, View, ViewHelper, ViewPort, createContext, createSource };

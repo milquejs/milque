@@ -1,4 +1,4 @@
-import { replace as fineDiffStrategy } from './strategies/FineDiffStrategy.js';
+import { FineDiffStrategy } from './strategies/FineDiffStrategy.js';
 
 export class HotEntityModule
 {
@@ -61,7 +61,7 @@ export class HotEntityModule
         // NOTE: Assumes components do not store self references (nor their own entity id).
         // NOTE: Assumes you don't use objects in sets (unless they are immutable)...cause those are evil.
 
-        const replaceStrategy = (opts && opts.replaceStrategy) || fineDiffStrategy;
+        const replaceStrategy = (opts && opts.replaceStrategy) || FineDiffStrategy;
         replaceStrategy.call(
             undefined,
             this,
