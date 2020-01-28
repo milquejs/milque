@@ -9,6 +9,11 @@ export class Camera2D extends AbstractCamera
         ctx.setTransform(...camera.getProjectionMatrix());
         ctx.transform(...camera.getViewMatrix());
     }
+
+    static resetTransform(ctx)
+    {
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+    }
     
     static followTarget(camera, target, speed = 1)
     {
