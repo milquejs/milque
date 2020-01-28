@@ -3,8 +3,7 @@
  * @version 1.0.1
  */
 
-import * as InputSource from '../input/InputSource.js';
-import * as InputContext from '../input/InputContext.js';
+import { InputSource, InputContext } from '@milque/input';
 import * as Utils from './Utils.js';
 
 var source = InputSource.createSource();

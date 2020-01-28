@@ -5,11 +5,7 @@ import {
 } from './package.json';
 
 const INPUT_PATH = 'src/index.js';
-const MODULE_NAME = 'Mogli';
-const BROWSER_GLOBALS = {
-    'gl-matrix': 'glMatrix'
-};
-const EXTERNALS = Object.keys(BROWSER_GLOBALS);
+const MODULE_NAME = 'Display';
 
 function getMinifiedFileName(filename)
 {
@@ -21,7 +17,6 @@ function getMinifiedFileName(filename)
 export default [
     {
         input: INPUT_PATH,
-        external: EXTERNALS,
         output: [
             {
                 file: MODULE_PATH,
@@ -38,15 +33,13 @@ export default [
                 file: BROWSER_PATH,
                 format: 'umd',
                 name: MODULE_NAME,
-                exports: 'named',
-                globals: BROWSER_GLOBALS
+                exports: 'named'
             },
             {
                 file: getMinifiedFileName(BROWSER_PATH),
                 format: 'umd',
                 name: MODULE_NAME,
                 exports: 'named',
-                globals: BROWSER_GLOBALS,
                 plugins: [
                     terser()
                 ]

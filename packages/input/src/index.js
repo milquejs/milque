@@ -1,6 +1,8 @@
 export * from './EventKey.js';
-export * from './InputContext.js';
-export * from './InputSource.js';
+import * as InputContext from './InputContext.js';
+export { InputContext };
+import * as InputSource from './InputSource.js';
+export { InputSource };
 // adapters
 export * from './adapters/AbstractInputAdapter.js';
 export * from './adapters/ActionInputAdapter.js';

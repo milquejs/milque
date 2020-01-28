@@ -1,14 +1,13 @@
+import resolve from '@rollup/plugin-node-resolve';
 import { terser } from 'rollup-plugin-terser';
 import {
     module as MODULE_PATH,
     browser as BROWSER_PATH,
 } from './package.json';
 
-const INPUT_PATH = 'src/index.js';
-const MODULE_NAME = 'Mogli';
-const BROWSER_GLOBALS = {
-    'gl-matrix': 'glMatrix'
-};
+const INPUT_PATH = 'index.js';
+const MODULE_NAME = 'Milque';
+const BROWSER_GLOBALS = {};
 const EXTERNALS = Object.keys(BROWSER_GLOBALS);
 
 function getMinifiedFileName(filename)
@@ -38,19 +37,18 @@ export default [
                 file: BROWSER_PATH,
                 format: 'umd',
                 name: MODULE_NAME,
-                exports: 'named',
-                globals: BROWSER_GLOBALS
+                exports: 'named'
             },
             {
                 file: getMinifiedFileName(BROWSER_PATH),
                 format: 'umd',
                 name: MODULE_NAME,
                 exports: 'named',
-                globals: BROWSER_GLOBALS,
                 plugins: [
                     terser()
                 ]
             }
-        ]
+        ],
+        plugins: [ resolve() ]
     }
 ];

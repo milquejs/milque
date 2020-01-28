@@ -1,8 +1,3 @@
-/**
- * @module Entity
- * @version 1.2
- */
-
 export * from './EntityManager.js';
 export * from './query/EntityQuery.js';
 

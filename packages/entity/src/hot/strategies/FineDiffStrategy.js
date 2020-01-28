@@ -1,5 +1,5 @@
 import { EntityManager } from '../../EntityManager.js';
-import { computeDiff, applyDiff } from '../../../diff/Diff.js';
+import { computeDiff, applyDiff } from '../diff/Diff.js';
 
 /**
  * Performs a fine diff on the entities and reconciles any changes with the current world state.

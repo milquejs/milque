@@ -11,7 +11,7 @@ export async function load(game)
     this.tileSet = {
         ...dungeonSheet
     };
-    this.tileMap = new TileMap(1, 1, 8);
+    this.tileMap = new TileMap(10, 10, 8);
 }
 
 export function onStart()

@@ -5,7 +5,11 @@ import {
 } from './package.json';
 
 const INPUT_PATH = 'src/index.js';
-const MODULE_NAME = 'Milque';
+const MODULE_NAME = 'Core';
+const BROWSER_GLOBALS = {
+    '@milque/input': 'Input'
+};
+const EXTERNALS = Object.keys(BROWSER_GLOBALS);
 
 function getMinifiedFileName(filename)
 {
@@ -17,10 +21,11 @@ function getMinifiedFileName(filename)
 export default [
     {
         input: INPUT_PATH,
+        external: EXTERNALS,
         output: [
             {
                 file: MODULE_PATH,
-                format: 'esm'
+                format: 'esm',
             },
             {
                 file: getMinifiedFileName(MODULE_PATH),
@@ -33,13 +38,15 @@ export default [
                 file: BROWSER_PATH,
                 format: 'umd',
                 name: MODULE_NAME,
-                exports: 'named'
+                exports: 'named',
+                globals: BROWSER_GLOBALS
             },
             {
                 file: getMinifiedFileName(BROWSER_PATH),
                 format: 'umd',
                 name: MODULE_NAME,
                 exports: 'named',
+                globals: BROWSER_GLOBALS,
                 plugins: [
                     terser()
                 ]
