@@ -1,16 +1,11 @@
-/**
- * @module Input
- * @version 1.0.1
- */
-
-import { InputSource, InputContext } from '@milque/input';
-import * as Utils from './Utils.js';
+import * as InputContext from './InputContext.js';
+import * as InputSource from './InputSource.js';
 
 var source = InputSource.createSource();
 var context = InputContext.createContext().attach(source);
 
 // Default setup...
-Utils.onDOMLoaded(() => {
+window.addEventListener('DOMContentLoaded', () => {
     if (!source.element)
     {
         let canvasElement = null;

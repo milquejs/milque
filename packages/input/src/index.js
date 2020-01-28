@@ -1,3 +1,4 @@
+// inputs
 export * from './EventKey.js';
 import * as InputContext from './InputContext.js';
 export { InputContext };
@@ -12,3 +13,6 @@ export * from './adapters/StateInputAdapter.js';
 // devices
 export * from './devices/Keyboard.js';
 export * from './devices/Mouse.js';
+// defaults
+import * as Input from './default.js';
+export { Input };

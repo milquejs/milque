@@ -1,10 +1,7 @@
-import { InputSource, InputContext } from '@milque/input';
-
 var self = /*#__PURE__*/Object.freeze({
     __proto__: null,
     get Display () { return Display; },
     get Audio () { return Audio; },
-    get Input () { return Input; },
     get Random () { return Random; },
     get Utils () { return Utils; },
     get Game () { return Game; },
@@ -1054,98 +1051,6 @@ var Audio = /*#__PURE__*/Object.freeze({
     createSound: createSound
 });
 
-/**
- * @module Input
- * @version 1.0.1
- */
-
-var source = InputSource.createSource();
-var context$1 = InputContext.createContext().attach(source);
-
-// Default setup...
-onDOMLoaded(() => {
-    if (!source.element)
-    {
-        let canvasElement = null;
-
-        // Try resolve to <display-port> if exists...
-        let displayElement = document.querySelector('display-port');
-        if (displayElement)
-        {
-            canvasElement = displayElement.getCanvas();
-        }
-        // Otherwise, find a <canvas> element...
-        else
-        {
-            canvasElement = document.querySelector('canvas');
-        }
-
-        if (canvasElement)
-        {
-            attachCanvas$1(canvasElement);
-        }
-    }
-});
-
-function attachCanvas$1(canvasElement)
-{
-    if (source.element) source.detach();
-    return source.attach(canvasElement);
-}
-
-function createContext(priority = 0, active = true)
-{
-    return InputContext.createContext().setPriority(priority).toggle(active).attach(source);
-}
-
-function createInput(adapter)
-{
-    return context$1.registerInput(getNextInputName(), adapter);
-}
-
-function createAction(...eventKeyStrings)
-{
-    return context$1.registerAction(getNextInputName(), ...eventKeyStrings);
-}
-
-function createRange(eventKeyString)
-{
-    return context$1.registerRange(getNextInputName(), eventKeyString);
-}
-
-function createState(eventKeyMap)
-{
-    return context$1.registerState(getNextInputName(), eventKeyMap);
-}
-
-function poll()
-{
-    return source.poll();
-}
-
-function handleEvent(eventKeyString, value)
-{
-    return source.handleEvent(eventKeyString, value);
-}
-
-var nextInputNameId = 1;
-function getNextInputName()
-{
-    return `__input#${nextInputNameId++}`;
-}
-
-var Input = /*#__PURE__*/Object.freeze({
-    __proto__: null,
-    attachCanvas: attachCanvas$1,
-    createContext: createContext,
-    createInput: createInput,
-    createAction: createAction,
-    createRange: createRange,
-    createState: createState,
-    poll: poll,
-    handleEvent: handleEvent
-});
-
 const DEFAULT_RNG = new RandomGenerator();
 
 function createRandom(seed = 0)
@@ -1277,4 +1182,4 @@ var Game = /*#__PURE__*/Object.freeze({
 
 
 export default self;
-export { AbstractCamera, Audio, Display, Eventable$1 as Eventable, Game, GameLoop, Input, Random, RandomGenerator, SceneBase, SceneManager, SimpleRandomGenerator, Utils, View, ViewHelper, ViewPort };
+export { AbstractCamera, Audio, Display, Eventable$1 as Eventable, Game, GameLoop, Random, RandomGenerator, SceneBase, SceneManager, SimpleRandomGenerator, Utils, View, ViewHelper, ViewPort };

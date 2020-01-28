@@ -8,8 +8,6 @@ import * as Display from './modules/Display.js';
 export { Display };
 import * as Audio from './modules/Audio.js';
 export { Audio };
-import * as Input from './modules/Input.js';
-export { Input };
 import * as Random from './modules/Random.js';
 export { Random };
 import * as Utils from './modules/Utils.js';

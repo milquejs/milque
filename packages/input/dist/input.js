@@ -579,11 +579,99 @@
         }
     }
 
+    var source = createSource();
+    var context = createContext().attach(source);
+
+    // Default setup...
+    window.addEventListener('DOMContentLoaded', () => {
+        if (!source.element)
+        {
+            let canvasElement = null;
+
+            // Try resolve to <display-port> if exists...
+            let displayElement = document.querySelector('display-port');
+            if (displayElement)
+            {
+                canvasElement = displayElement.getCanvas();
+            }
+            // Otherwise, find a <canvas> element...
+            else
+            {
+                canvasElement = document.querySelector('canvas');
+            }
+
+            if (canvasElement)
+            {
+                attachCanvas(canvasElement);
+            }
+        }
+    });
+
+    function attachCanvas(canvasElement)
+    {
+        if (source.element) source.detach();
+        return source.attach(canvasElement);
+    }
+
+    function createContext$1(priority = 0, active = true)
+    {
+        return createContext().setPriority(priority).toggle(active).attach(source);
+    }
+
+    function createInput(adapter)
+    {
+        return context.registerInput(getNextInputName(), adapter);
+    }
+
+    function createAction(...eventKeyStrings)
+    {
+        return context.registerAction(getNextInputName(), ...eventKeyStrings);
+    }
+
+    function createRange(eventKeyString)
+    {
+        return context.registerRange(getNextInputName(), eventKeyString);
+    }
+
+    function createState(eventKeyMap)
+    {
+        return context.registerState(getNextInputName(), eventKeyMap);
+    }
+
+    function poll()
+    {
+        return source.poll();
+    }
+
+    function handleEvent(eventKeyString, value)
+    {
+        return source.handleEvent(eventKeyString, value);
+    }
+
+    var nextInputNameId = 1;
+    function getNextInputName()
+    {
+        return `__input#${nextInputNameId++}`;
+    }
+
+    var _default = /*#__PURE__*/Object.freeze({
+        __proto__: null,
+        attachCanvas: attachCanvas,
+        createContext: createContext$1,
+        createInput: createInput,
+        createAction: createAction,
+        createRange: createRange,
+        createState: createState,
+        poll: poll,
+        handleEvent: handleEvent
+    });
+
     exports.AbstractInputAdapter = AbstractInputAdapter;
     exports.ActionInputAdapter = ActionInputAdapter;
     exports.DOUBLE_ACTION_TIME = DOUBLE_ACTION_TIME;
     exports.DoubleActionInputAdapter = DoubleActionInputAdapter;
     exports.EventKey = EventKey;
+    exports.Input = _default;
     exports.InputContext = InputContext;
     exports.InputSource = InputSource;
     exports.Keyboard = Keyboard;

@@ -6,9 +6,7 @@ import {
 
 const INPUT_PATH = 'src/index.js';
 const MODULE_NAME = 'Core';
-const BROWSER_GLOBALS = {
-    '@milque/input': 'Input'
-};
+const BROWSER_GLOBALS = {};
 const EXTERNALS = Object.keys(BROWSER_GLOBALS);
 
 function getMinifiedFileName(filename)
