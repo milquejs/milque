@@ -1,3 +1,7 @@
+/**
+ * @module Input
+ */
+
 import * as InputContext from './InputContext.js';
 import * as InputSource from './InputSource.js';
 

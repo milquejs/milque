@@ -4,6 +4,58 @@
     (global = global || self, factory(global.Milque = {}));
 }(this, (function (exports) { 'use strict';
 
+    var self = /*#__PURE__*/Object.freeze({
+        __proto__: null,
+        get default () { return self; },
+        get Audio () { return Audio; },
+        get Random () { return Random; },
+        get Game () { return Game; },
+        get RandomGenerator () { return RandomGenerator; },
+        get SimpleRandomGenerator () { return SimpleRandomGenerator; },
+        get Eventable () { return Eventable$1; },
+        get View () { return View; },
+        get ViewHelper () { return ViewHelper; },
+        get ViewPort () { return ViewPort; },
+        get AbstractCamera () { return AbstractCamera; },
+        get GameLoop () { return GameLoop; },
+        get SceneManager () { return SceneManager; },
+        get SceneBase () { return SceneBase; },
+        get Display () { return _default; },
+        get MODE_NOSCALE () { return MODE_NOSCALE; },
+        get MODE_CENTER () { return MODE_CENTER; },
+        get MODE_FIT () { return MODE_FIT; },
+        get MODE_STRETCH () { return MODE_STRETCH; },
+        get DisplayPort () { return DisplayPort; },
+        get QueryOperator () { return QueryOperator; },
+        get ComponentFactory () { return ComponentFactory; },
+        get Component () { return ComponentHelper; },
+        get Entity () { return EntityHelper; },
+        get EntityWrapper () { return EntityWrapper; },
+        get HotEntityReplacement () { return HotEntityReplacement; },
+        get EntityManager () { return EntityManager; },
+        get EntityQuery () { return EntityQuery; },
+        get ComponentBase () { return ComponentBase; },
+        get TagComponent () { return TagComponent; },
+        get EntityComponent () { return EntityComponent$1; },
+        get EntityBase () { return EntityBase; },
+        get HybridEntity () { return HybridEntity; },
+        get HotEntityModule () { return HotEntityModule; },
+        get FineDiffStrategy () { return FineDiffStrategy; },
+        get InputContext () { return InputContext; },
+        get InputSource () { return InputSource; },
+        get Input () { return _default$1; },
+        get EventKey () { return EventKey; },
+        get AbstractInputAdapter () { return AbstractInputAdapter; },
+        get ActionInputAdapter () { return ActionInputAdapter; },
+        get DOUBLE_ACTION_TIME () { return DOUBLE_ACTION_TIME; },
+        get DoubleActionInputAdapter () { return DoubleActionInputAdapter; },
+        get RangeInputAdapter () { return RangeInputAdapter; },
+        get StateInputAdapter () { return StateInputAdapter; },
+        get Keyboard () { return Keyboard; },
+        get Mouse () { return Mouse; },
+        get Util () { return _default$2; }
+    });
+
     class RandomGenerator
     {
         constructor(seed)
@@ -709,280 +761,6 @@
         onPostUpdate(dt) {}
     }
 
-    /**
-     * @module Utils
-     * @version 1.0.2
-     * 
-     * # Changelog
-     * ## 1.0.2
-     * - Added outline parameter for drawBox()
-     * - Added uuid()
-     */
-
-    function randomHexColor()
-    {
-        return '#' + Math.floor(Math.random() * 16777215).toString(16);
-    }
-
-    function loadImage(url)
-    {
-        let image = new Image();
-        image.src = url;
-        return image;
-    }
-
-    function clampRange(value, min, max)
-    {
-        if (value < min) return min;
-        if (value > max) return max;
-        return value;
-    }
-
-    function clearScreen(ctx, width, height)
-    {
-        ctx.fillStyle = 'black';
-        ctx.fillRect(0, 0, width, height);
-    }
-
-    function drawText(ctx, text, x, y, radians = 0, fontSize = 16, color = 'white')
-    {
-        ctx.translate(x, y);
-        if (radians) ctx.rotate(radians);
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.font = `${fontSize}px sans-serif`;
-        ctx.fillStyle = color;
-        ctx.fillText(text, 0, 0);
-        if (radians) ctx.rotate(-radians);
-        ctx.translate(-x, -y);
-    }
-
-    function drawBox(ctx, x, y, radians = 0, w = 16, h = w, color = 'white', outline = false)
-    {
-        ctx.translate(x, y);
-        if (radians) ctx.rotate(radians);
-        if (!outline)
-        {
-            ctx.fillStyle = color;
-            ctx.fillRect(-w / 2, -h / 2, w, h);
-        }
-        else
-        {
-            ctx.strokeStyle = color;
-            ctx.strokeRect(-w / 2, -h / 2, w, h);
-        }
-        if (radians) ctx.rotate(-radians);
-        ctx.translate(-x, -y);
-    }
-
-    function intersectBox(a, b)
-    {
-        return (Math.abs(a.x - b.x) * 2 < (a.width + b.width)) &&
-            (Math.abs(a.y - b.y) * 2 < (a.height + b.height));
-    }
-
-    function applyMotion(entity, inverseFrictionX = 1, inverseFrictionY = inverseFrictionX)
-    {
-        if (inverseFrictionX !== 1)
-        {
-            entity.dx *= inverseFrictionX;
-        }
-        if (inverseFrictionY !== 1)
-        {
-            entity.dy *= inverseFrictionY;
-        }
-        
-        entity.x += entity.dx;
-        entity.y += entity.dy;
-    }
-
-    function withinRadius(from, to, radius)
-    {
-        const dx = from.x - to.x;
-        const dy = from.y - to.y;
-        return dx * dx + dy * dy <= radius * radius
-    }
-
-    function onDOMLoaded(listener)
-    {
-        window.addEventListener('DOMContentLoaded', listener);
-    }
-
-    function lerp(a, b, dt)
-    {
-        return a + (b - a) * dt;
-    }
-
-    function distance2D(from, to)
-    {
-        let dx = to.x - from.x;
-        let dy = to.y - from.y;
-        return Math.sqrt(dx * dx + dy * dy);
-    }
-
-    function direction2D(from, to)
-    {
-        let dx = to.x - from.x;
-        let dy = to.y - from.y;
-        return Math.atan2(dy, dx);
-    }
-
-    function lookAt2D(radians, target, dt)
-    {
-        let step = cycleRange(target - radians, -Math.PI, Math.PI);
-        return clampRange(radians + step, radians - dt, radians + dt);
-    }
-
-    function cycleRange(value, min, max)
-    {
-        let range = max - min;
-        let result = (value - min) % range;
-        if (result < 0) result += range;
-        return result + min;
-    }
-
-    function drawCircle(ctx, x, y, radius = 16, color = 'white', outline = false)
-    {
-        ctx.fillStyle = color;
-        ctx.strokeStyle = color;
-        ctx.beginPath();
-        ctx.arc(x, y, radius, 0, 2 * Math.PI);
-        if (outline) ctx.stroke();
-        else ctx.fill();
-    }
-
-    /**
-     * Generates a uuid v4.
-     * 
-     * @param {number} a The placeholder (serves for recursion within function).
-     * @returns {string} The universally unique id.
-     */
-    function uuid(a = undefined)
-    {
-        // https://gist.github.com/jed/982883
-        return a?(a^Math.random()*16>>a/4).toString(16):([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,uuid);
-    }
-
-    var Utils = /*#__PURE__*/Object.freeze({
-        __proto__: null,
-        randomHexColor: randomHexColor,
-        loadImage: loadImage,
-        clampRange: clampRange,
-        clearScreen: clearScreen,
-        drawText: drawText,
-        drawBox: drawBox,
-        intersectBox: intersectBox,
-        applyMotion: applyMotion,
-        withinRadius: withinRadius,
-        onDOMLoaded: onDOMLoaded,
-        lerp: lerp,
-        distance2D: distance2D,
-        direction2D: direction2D,
-        lookAt2D: lookAt2D,
-        cycleRange: cycleRange,
-        drawCircle: drawCircle,
-        uuid: uuid
-    });
-
-    /**
-     * @module Display
-     * @version 1.0.1
-     */
-
-    var canvas;
-    var context;
-
-    // Default setup...
-    onDOMLoaded(() => {
-        if (!canvas)
-        {
-            let canvasElement = null;
-            let canvasContext = null;
-
-            // Try resolve to <display-port> if exists...
-            let displayElement = document.querySelector('display-port');
-            if (displayElement)
-            {
-                canvasElement = displayElement.getCanvas();
-                canvasContext = displayElement.getContext();
-            }
-            // Otherwise, find a <canvas> element...
-            else
-            {
-                canvasElement = document.querySelector('canvas');
-            }
-
-            if (canvasElement)
-            {
-                if (!canvasContext) canvasContext = canvasElement.getContext('2d');
-                attachCanvas(canvasElement, canvasContext);
-            }
-        }
-    });
-
-    function createCanvas(width = 320, height = width, parentElement = document.body)
-    {
-        const canvasElement = document.createElement('canvas');
-        parentElement.appendChild(canvasElement);
-        attachCanvas(canvasElement, width, height);
-    }
-
-    function attachCanvas(canvasElement, canvasContext, width = 320, height = width)
-    {
-        canvas = canvasElement;
-        context = canvasContext;
-        canvas.width = width;
-        canvas.height = height;
-    }
-
-    function drawBufferToScreen(ctx, viewportOffsetX = 0, viewportOffsetY = 0, viewportWidth = getClientWidth(), viewportHeight = getClientHeight())
-    {
-        getDrawContext().drawImage(ctx.canvas, viewportOffsetX, viewportOffsetY, viewportWidth, viewportHeight);
-    }
-
-    function getCanvas()
-    {
-        return canvas;
-    }
-
-    function getDrawContext()
-    {
-        return context;
-    }
-
-    function getClientWidth()
-    {
-        return canvas.clientWidth;
-    }
-
-    function getClientHeight()
-    {
-        return canvas.clientHeight;
-    }
-
-    function getClientOffsetX()
-    {
-        return canvas.offsetLeft;
-    }
-
-    function getClientOffsetY()
-    {
-        return canvas.offsetTop;
-    }
-
-    var Display = /*#__PURE__*/Object.freeze({
-        __proto__: null,
-        createCanvas: createCanvas,
-        attachCanvas: attachCanvas,
-        drawBufferToScreen: drawBufferToScreen,
-        getCanvas: getCanvas,
-        getDrawContext: getDrawContext,
-        getClientWidth: getClientWidth,
-        getClientHeight: getClientHeight,
-        getClientOffsetX: getClientOffsetX,
-        getClientOffsetY: getClientOffsetY
-    });
-
     var audioContext = new AudioContext();
 
     function createSound(filepath, loop = false)
@@ -1474,6 +1252,104 @@
         set debug(value) { if (value) this.setAttribute('debug', ''); else this.removeAttribute('debug'); }
     }
     window.customElements.define('display-port', DisplayPort);
+
+    /**
+     * @module Display
+     */
+
+    var canvas;
+    var context;
+
+    // Default setup...
+    window.addEventListener('DOMContentLoaded', () => {
+        if (!canvas)
+        {
+            let canvasElement = null;
+            let canvasContext = null;
+
+            // Try resolve to <display-port> if exists...
+            let displayElement = document.querySelector('display-port');
+            if (displayElement)
+            {
+                canvasElement = displayElement.getCanvas();
+                canvasContext = displayElement.getContext();
+            }
+            // Otherwise, find a <canvas> element...
+            else
+            {
+                canvasElement = document.querySelector('canvas');
+            }
+
+            if (canvasElement)
+            {
+                if (!canvasContext) canvasContext = canvasElement.getContext('2d');
+                attachCanvas(canvasElement, canvasContext);
+            }
+        }
+    });
+
+    function createCanvas(width = 320, height = width, parentElement = document.body)
+    {
+        const canvasElement = document.createElement('canvas');
+        parentElement.appendChild(canvasElement);
+        attachCanvas(canvasElement, width, height);
+    }
+
+    function attachCanvas(canvasElement, canvasContext, width = 320, height = width)
+    {
+        canvas = canvasElement;
+        context = canvasContext;
+        canvas.width = width;
+        canvas.height = height;
+    }
+
+    function drawBufferToScreen(ctx, viewportOffsetX = 0, viewportOffsetY = 0, viewportWidth = getClientWidth(), viewportHeight = getClientHeight())
+    {
+        getDrawContext().drawImage(ctx.canvas, viewportOffsetX, viewportOffsetY, viewportWidth, viewportHeight);
+    }
+
+    function getCanvas()
+    {
+        return canvas;
+    }
+
+    function getDrawContext()
+    {
+        return context;
+    }
+
+    function getClientWidth()
+    {
+        return canvas.clientWidth;
+    }
+
+    function getClientHeight()
+    {
+        return canvas.clientHeight;
+    }
+
+    function getClientOffsetX()
+    {
+        return canvas.offsetLeft;
+    }
+
+    function getClientOffsetY()
+    {
+        return canvas.offsetTop;
+    }
+
+    var _default = /*#__PURE__*/Object.freeze({
+        __proto__: null,
+        createCanvas: createCanvas,
+        attachCanvas: attachCanvas,
+        drawBufferToScreen: drawBufferToScreen,
+        getCanvas: getCanvas,
+        getDrawContext: getDrawContext,
+        getClientWidth: getClientWidth,
+        getClientHeight: getClientHeight,
+        getClientOffsetX: getClientOffsetX,
+        getClientOffsetY: getClientOffsetY
+    });
 
     function getComponentTypeName$1(componentType)
     {
@@ -3687,6 +3563,10 @@
         }
     }
 
+    /**
+     * @module Input
+     */
+
     var source = createSource();
     var context$1 = createContext().attach(source);
 
@@ -3762,7 +3642,7 @@
         return `__input#${nextInputNameId++}`;
     }
 
-    var _default = /*#__PURE__*/Object.freeze({
+    var _default$1 = /*#__PURE__*/Object.freeze({
         __proto__: null,
         attachCanvas: attachCanvas$1,
         createContext: createContext$1,
@@ -3774,6 +3654,177 @@
         handleEvent: handleEvent
     });
 
+    /**
+     * Generates a uuid v4.
+     * 
+     * @param {number} a The placeholder (serves for recursion within function).
+     * @returns {string} The universally unique id.
+     */
+    function uuid(a = undefined)
+    {
+        // https://gist.github.com/jed/982883
+        return a?(a^Math.random()*16>>a/4).toString(16):([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,uuid);
+    }
+
+    function clampRange(value, min, max)
+    {
+        if (value < min) return min;
+        if (value > max) return max;
+        return value;
+    }
+
+    function withinRadius(from, to, radius)
+    {
+        const dx = from.x - to.x;
+        const dy = from.y - to.y;
+        return dx * dx + dy * dy <= radius * radius
+    }
+
+    function lerp(a, b, dt)
+    {
+        return a + (b - a) * dt;
+    }
+
+    function distance2D(from, to)
+    {
+        let dx = to.x - from.x;
+        let dy = to.y - from.y;
+        return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    function direction2D(from, to)
+    {
+        let dx = to.x - from.x;
+        let dy = to.y - from.y;
+        return Math.atan2(dy, dx);
+    }
+
+    function lookAt2D(radians, target, dt)
+    {
+        let step = cycleRange(target - radians, -Math.PI, Math.PI);
+        return clampRange(radians + step, radians - dt, radians + dt);
+    }
+
+    function cycleRange(value, min, max)
+    {
+        let range = max - min;
+        let result = (value - min) % range;
+        if (result < 0) result += range;
+        return result + min;
+    }
+
+    function randomHexColor()
+    {
+        return '#' + Math.floor(Math.random() * 16777215).toString(16);
+    }
+
+    function loadImage(url)
+    {
+        let image = new Image();
+        image.src = url;
+        return image;
+    }
+
+    function clearScreen(ctx, width, height)
+    {
+        ctx.fillStyle = 'black';
+        ctx.fillRect(0, 0, width, height);
+    }
+
+    function drawText(ctx, text, x, y, radians = 0, fontSize = 16, color = 'white')
+    {
+        ctx.translate(x, y);
+        if (radians) ctx.rotate(radians);
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.font = `${fontSize}px sans-serif`;
+        ctx.fillStyle = color;
+        ctx.fillText(text, 0, 0);
+        if (radians) ctx.rotate(-radians);
+        ctx.translate(-x, -y);
+    }
+
+    function drawBox(ctx, x, y, radians = 0, w = 16, h = w, color = 'white', outline = false)
+    {
+        ctx.translate(x, y);
+        if (radians) ctx.rotate(radians);
+        if (!outline)
+        {
+            ctx.fillStyle = color;
+            ctx.fillRect(-w / 2, -h / 2, w, h);
+        }
+        else
+        {
+            ctx.strokeStyle = color;
+            ctx.strokeRect(-w / 2, -h / 2, w, h);
+        }
+        if (radians) ctx.rotate(-radians);
+        ctx.translate(-x, -y);
+    }
+
+    function intersectBox(a, b)
+    {
+        return (Math.abs(a.x - b.x) * 2 < (a.width + b.width)) &&
+            (Math.abs(a.y - b.y) * 2 < (a.height + b.height));
+    }
+
+    function applyMotion(entity, inverseFrictionX = 1, inverseFrictionY = inverseFrictionX)
+    {
+        if (inverseFrictionX !== 1)
+        {
+            entity.dx *= inverseFrictionX;
+        }
+        if (inverseFrictionY !== 1)
+        {
+            entity.dy *= inverseFrictionY;
+        }
+        
+        entity.x += entity.dx;
+        entity.y += entity.dy;
+    }
+
+    function onDOMLoaded(listener)
+    {
+        window.addEventListener('DOMContentLoaded', listener);
+    }
+
+    function drawCircle(ctx, x, y, radius = 16, color = 'white', outline = false)
+    {
+        ctx.fillStyle = color;
+        ctx.strokeStyle = color;
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, 2 * Math.PI);
+        if (outline) ctx.stroke();
+        else ctx.fill();
+    }
+
+    /**
+     * @module Util
+     */
+
+    var _default$2 = /*#__PURE__*/Object.freeze({
+        __proto__: null,
+        uuid: uuid,
+        clampRange: clampRange,
+        withinRadius: withinRadius,
+        lerp: lerp,
+        distance2D: distance2D,
+        direction2D: direction2D,
+        lookAt2D: lookAt2D,
+        cycleRange: cycleRange,
+        randomHexColor: randomHexColor,
+        loadImage: loadImage,
+        clearScreen: clearScreen,
+        drawText: drawText,
+        drawBox: drawBox,
+        intersectBox: intersectBox,
+        applyMotion: applyMotion,
+        onDOMLoaded: onDOMLoaded,
+        drawCircle: drawCircle
+    });
+
+
+
     exports.AbstractCamera = AbstractCamera;
     exports.AbstractInputAdapter = AbstractInputAdapter;
     exports.ActionInputAdapter = ActionInputAdapter;
@@ -3782,7 +3833,7 @@
     exports.ComponentBase = ComponentBase;
     exports.ComponentFactory = ComponentFactory;
     exports.DOUBLE_ACTION_TIME = DOUBLE_ACTION_TIME;
-    exports.Display = Display;
+    exports.Display = _default;
     exports.DisplayPort = DisplayPort;
     exports.DoubleActionInputAdapter = DoubleActionInputAdapter;
     exports.Entity = EntityHelper;
@@ -3799,7 +3850,7 @@
     exports.HotEntityModule = HotEntityModule;
     exports.HotEntityReplacement = HotEntityReplacement;
     exports.HybridEntity = HybridEntity;
-    exports.Input = _default;
+    exports.Input = _default$1;
     exports.InputContext = InputContext;
     exports.InputSource = InputSource;
     exports.Keyboard = Keyboard;
@@ -3817,10 +3868,11 @@
     exports.SimpleRandomGenerator = SimpleRandomGenerator;
     exports.StateInputAdapter = StateInputAdapter;
     exports.TagComponent = TagComponent;
-    exports.Utils = Utils;
+    exports.Util = _default$2;
     exports.View = View;
     exports.ViewHelper = ViewHelper;
     exports.ViewPort = ViewPort;
+    exports.default = self;
 
     Object.defineProperty(exports, '__esModule', { value: true });
 

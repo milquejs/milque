@@ -579,6 +579,10 @@
         }
     }
 
+    /**
+     * @module Input
+     */
+
     var source = createSource();
     var context = createContext().attach(source);
 

@@ -1,15 +1,12 @@
 /**
  * @module Display
- * @version 1.0.1
  */
-
-import * as Utils from './Utils.js';
 
 var canvas;
 var context;
 
 // Default setup...
-Utils.onDOMLoaded(() => {
+window.addEventListener('DOMContentLoaded', () => {
     if (!canvas)
     {
         let canvasElement = null;
