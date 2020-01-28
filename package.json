@@ -1,21 +1,11 @@
 {
   "name": "milque",
   "version": "1.0.0",
-  "description": "The monorepo for Milque.js",
-  "main": "index.js",
+  "description": "",
   "scripts": {
-    "build": "npm run build --prefix packages/core",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/andykuo1/milque.git"
-  },
+  "keywords": [],
   "author": "Andrew Kuo",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/andykuo1/milque/issues"
-  },
-  "homepage": "https://github.com/andykuo1/milque#readme",
-  "dependencies": {}
+  "license": "MIT"
 }
