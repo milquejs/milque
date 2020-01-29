@@ -1,3 +1,2 @@
-// defaults
-import * as Util from './default.js';
+import * as Util from './util/index.js';
 export { Util };
