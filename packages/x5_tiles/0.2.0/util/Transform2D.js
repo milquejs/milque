@@ -25,20 +25,17 @@ export class Transform2D
 
     setRotation(radians)
     {
-        let scaleX = this.scaleX;
-        let scaleY = this.scaleY;
-        this.matrix[0] = Math.cos(radians) * scaleX;
-        this.matrix[1] = Math.sin(radians);
-        this.matrix[2] = -this.matrix[1];
-        this.matrix[3] = Math.cos(radians) * scaleY;
+        this.rotation = radians;
         return this;
     }
 
     setScale(sx, sy = sx)
     {
-        let rcos = Math.cos(this.rotation);
-        this.matrix[0] = rcos * sx;
-        this.matrix[3] = rcos * sy;
+        let rsin = Math.sin(this.rotation);
+        this.matrix[0] = sx;
+        this.matrix[1] = rsin * sy;
+        this.matrix[2] = -rsin * sx;
+        this.matrix[3] = sy;
         return this;
     }
 
@@ -47,19 +44,30 @@ export class Transform2D
     set x(value) { this.matrix[4] = value; }
     get y() { return this.matrix[5]; }
     set y(value) { this.matrix[5] = value; }
-    get rotation() { return Math.asin(this.matrix[1]); }
-    set rotation(value) {
+    get rotation() { return Math.atan2(-this.matrix[2], this.matrix[0]); }
+    set rotation(value)
+    {
         let scaleX = this.scaleX;
         let scaleY = this.scaleY;
-        this.matrix[0] = Math.cos(value) * scaleX;
-        this.matrix[1] = Math.sin(value);
-        this.matrix[2] = -this.matrix[1];
-        this.matrix[3] = Math.cos(value) * scaleY;
+        // HACK: Rolling doesn't work...
+        value = Math.abs(value);
+        this.matrix[1] = Math.sin(value) * scaleY;
+        this.matrix[2] = -Math.sin(value) * scaleX;
     }
-    get scaleX() { return this.matrix[0] / Math.cos(this.rotation); }
-    set scaleX(value) { this.matrix[0] = Math.cos(this.rotation) * value; }
-    get scaleY() { return this.matrix[3] / Math.cos(this.rotation); }
-    set scaleY(value) { this.matrix[3] = Math.cos(this.rotation) * value; }
+    get scaleX() { return this.matrix[0]; }
+    set scaleX(value)
+    {
+        let rotation = this.rotation;
+        this.matrix[0] = value;
+        this.matrix[2] = -Math.sin(rotation) * value;
+    }
+    get scaleY() { return this.matrix[3]; }
+    set scaleY(value)
+    {
+        let rotation = this.rotation;
+        this.matrix[1] = Math.sin(rotation) * value;
+        this.matrix[3] = value;
+    }
 
     // NOTE: This supports 2D DOMMatrix manipulation (such as transform() or setTransform())
     get a() { return this.matrix[0]; }
