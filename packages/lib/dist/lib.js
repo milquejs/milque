@@ -4,7 +4,7 @@
     (global = global || self, factory(global.Lib = {}, global.input, global.util, global.entity, global.display, global.core));
 }(this, (function (exports, input, util, entity, display, core) { 'use strict';
 
-    const CONTEXT = input.Input.createContext();
+    const CONTEXT = input.Input.createContext().disable();
     const POS_X = CONTEXT.registerRange('x', 'mouse[pos].x');
     const POS_Y = CONTEXT.registerRange('y', 'mouse[pos].y');
     /*
@@ -38,7 +38,7 @@
         RIGHT_CLICK: RIGHT_CLICK
     });
 
-    const CONTEXT$1 = input.Input.createContext();
+    const CONTEXT$1 = input.Input.createContext().disable();
     const UP = CONTEXT$1.registerState('up', {
         'key[ArrowUp].up': 0,
         'key[ArrowUp].down': 1,
@@ -73,7 +73,7 @@
         RIGHT: RIGHT
     });
 
-    const CONTEXT$2 = input.Input.createContext();
+    const CONTEXT$2 = input.Input.createContext().disable();
     const UP$1 = CONTEXT$2.registerState('up', {
         'key[ArrowUp].up': 0,
         'key[ArrowUp].down': 1,

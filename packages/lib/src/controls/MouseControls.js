@@ -1,6 +1,6 @@
 import { Input } from '@milque/input';
 
-export const CONTEXT = Input.createContext();
+export const CONTEXT = Input.createContext().disable();
 export const POS_X = CONTEXT.registerRange('x', 'mouse[pos].x');
 export const POS_Y = CONTEXT.registerRange('y', 'mouse[pos].y');
 /*

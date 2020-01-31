@@ -3873,7 +3873,7 @@
         PriorityQueue: PriorityQueue
     });
 
-    const CONTEXT = _default$1.createContext();
+    const CONTEXT = _default$1.createContext().disable();
     const POS_X = CONTEXT.registerRange('x', 'mouse[pos].x');
     const POS_Y = CONTEXT.registerRange('y', 'mouse[pos].y');
     /*
@@ -3907,7 +3907,7 @@
         RIGHT_CLICK: RIGHT_CLICK
     });
 
-    const CONTEXT$1 = _default$1.createContext();
+    const CONTEXT$1 = _default$1.createContext().disable();
     const UP = CONTEXT$1.registerState('up', {
         'key[ArrowUp].up': 0,
         'key[ArrowUp].down': 1,
@@ -3942,7 +3942,7 @@
         RIGHT: RIGHT
     });
 
-    const CONTEXT$2 = _default$1.createContext();
+    const CONTEXT$2 = _default$1.createContext().disable();
     const UP$1 = CONTEXT$2.registerState('up', {
         'key[ArrowUp].up': 0,
         'key[ArrowUp].down': 1,

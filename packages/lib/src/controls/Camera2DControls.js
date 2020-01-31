@@ -1,6 +1,6 @@
 import { Input } from '@milque/input';
 
-export const CONTEXT = Input.createContext();
+export const CONTEXT = Input.createContext().disable();
 export const UP = CONTEXT.registerState('up', {
     'key[ArrowUp].up': 0,
     'key[ArrowUp].down': 1,
