@@ -1,8 +1,8 @@
 (function (global, factory) {
-    typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('@milque/input'), require('@milque/core'), require('@milque/entity'), require('@milque/display')) :
-    typeof define === 'function' && define.amd ? define(['exports', '@milque/input', '@milque/core', '@milque/entity', '@milque/display'], factory) :
-    (global = global || self, factory(global.Lib = {}, global.input, global.core, global.entity, global.display));
-}(this, (function (exports, input, core, entity, display) { 'use strict';
+    typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('@milque/input'), require('@milque/util'), require('@milque/entity'), require('@milque/display'), require('@milque/core')) :
+    typeof define === 'function' && define.amd ? define(['exports', '@milque/input', '@milque/util', '@milque/entity', '@milque/display', '@milque/core'], factory) :
+    (global = global || self, factory(global.Lib = {}, global.input, global.util, global.entity, global.display, global.core));
+}(this, (function (exports, input, util, entity, display, core) { 'use strict';
 
     const CONTEXT = input.Input.createContext();
     const POS_X = CONTEXT.registerRange('x', 'mouse[pos].x');
@@ -150,6 +150,8 @@
         doCameraMove: doCameraMove
     });
 
+    var game;
+
     const DEFAULT_VIEW = core.View.createView();
 
     function registerScene(name, scene)
@@ -258,7 +260,7 @@
                 // TODO: Something more elegant please? I don't think we need the flag.
                 if (first)
                 {
-                    core.Utils.clearScreen(view.context, view.width, view.height);
+                    util.Utils.clearScreen(view.context, view.width, view.height);
                 }
                 else
                 {
@@ -359,7 +361,7 @@
             {
                 opacity = 1;
             }
-            core.Utils.drawText(ctx, this.splashText, view.width / 2, view.height / 2, 0, 16, `rgba(255, 255, 255, ${opacity})`);
+            util.Utils.drawText(ctx, this.splashText, view.width / 2, view.height / 2, 0, 16, `rgba(255, 255, 255, ${opacity})`);
         }
     }
 
@@ -480,8 +482,8 @@
         {
             if (target)
             {
-                camera.transform.x = core.Utils.lerp(camera.transform.x, target.x, speed);
-                camera.transform.y = core.Utils.lerp(camera.transform.y, target.y, speed);
+                camera.transform.x = util.Utils.lerp(camera.transform.x, target.x, speed);
+                camera.transform.y = util.Utils.lerp(camera.transform.y, target.y, speed);
             }
         }
 

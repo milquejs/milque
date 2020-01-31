@@ -1,7 +1,10 @@
 import { EntityManager } from '@milque/entity';
 import { Input } from '@milque/input';
 import { Display } from '@milque/display';
-import { GameLoop, Utils, SceneManager, View } from '@milque/core';
+import { GameLoop, SceneManager, View } from '@milque/core';
+import { Utils } from '@milque/util';
+
+var game;
 
 export const DEFAULT_VIEW = View.createView();
 

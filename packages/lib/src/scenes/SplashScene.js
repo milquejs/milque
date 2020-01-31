@@ -1,4 +1,4 @@
-import { Utils } from '@milque/core';
+import { Utils } from '@milque/util';
 import { Input } from '@milque/input';
 
 import * as Game from '../util/Game.js';

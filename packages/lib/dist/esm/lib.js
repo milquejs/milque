@@ -1,7 +1,8 @@
 import { Input } from '@milque/input';
-import { View, GameLoop, SceneManager, Utils, AbstractCamera } from '@milque/core';
+import { Utils } from '@milque/util';
 import { EntityManager } from '@milque/entity';
 import { Display } from '@milque/display';
+import { View, GameLoop, SceneManager, AbstractCamera } from '@milque/core';
 
 const CONTEXT = Input.createContext();
 const POS_X = CONTEXT.registerRange('x', 'mouse[pos].x');
@@ -148,6 +149,8 @@ var Camera2DControls = /*#__PURE__*/Object.freeze({
     ROLL_RIGHT: ROLL_RIGHT,
     doCameraMove: doCameraMove
 });
+
+var game;
 
 const DEFAULT_VIEW = View.createView();
 

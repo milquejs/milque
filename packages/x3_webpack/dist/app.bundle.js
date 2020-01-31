@@ -86,17 +86,6 @@
 /************************************************************************/
 /******/ ({
 
-/***/ "../../node_modules/webpack/buildin/harmony-module.js":
-/*!*******************************************!*\
-  !*** (webpack)/buildin/harmony-module.js ***!
-  \*******************************************/
-/*! no static exports found */
-/***/ (function(module, exports) {
-
-eval("module.exports = function(originalModule) {\n\tif (!originalModule.webpackPolyfill) {\n\t\tvar module = Object.create(originalModule);\n\t\t// module.parent = undefined by default\n\t\tif (!module.children) module.children = [];\n\t\tObject.defineProperty(module, \"loaded\", {\n\t\t\tenumerable: true,\n\t\t\tget: function() {\n\t\t\t\treturn module.l;\n\t\t\t}\n\t\t});\n\t\tObject.defineProperty(module, \"id\", {\n\t\t\tenumerable: true,\n\t\t\tget: function() {\n\t\t\t\treturn module.i;\n\t\t\t}\n\t\t});\n\t\tObject.defineProperty(module, \"exports\", {\n\t\t\tenumerable: true\n\t\t});\n\t\tmodule.webpackPolyfill = 1;\n\t}\n\treturn module;\n};\n\n\n//# sourceURL=webpack:///(webpack)/buildin/harmony-module.js?");
-
-/***/ }),
-
 /***/ "./lib/milque.js":
 /*!***********************!*\
   !*** ./lib/milque.js ***!
@@ -109,6 +98,17 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) *
 
 /***/ }),
 
+/***/ "./node_modules/webpack/buildin/harmony-module.js":
+/*!*******************************************!*\
+  !*** (webpack)/buildin/harmony-module.js ***!
+  \*******************************************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+eval("module.exports = function(originalModule) {\n\tif (!originalModule.webpackPolyfill) {\n\t\tvar module = Object.create(originalModule);\n\t\t// module.parent = undefined by default\n\t\tif (!module.children) module.children = [];\n\t\tObject.defineProperty(module, \"loaded\", {\n\t\t\tenumerable: true,\n\t\t\tget: function() {\n\t\t\t\treturn module.l;\n\t\t\t}\n\t\t});\n\t\tObject.defineProperty(module, \"id\", {\n\t\t\tenumerable: true,\n\t\t\tget: function() {\n\t\t\t\treturn module.i;\n\t\t\t}\n\t\t});\n\t\tObject.defineProperty(module, \"exports\", {\n\t\t\tenumerable: true\n\t\t});\n\t\tmodule.webpackPolyfill = 1;\n\t}\n\treturn module;\n};\n\n\n//# sourceURL=webpack:///(webpack)/buildin/harmony-module.js?");
+
+/***/ }),
+
 /***/ "./src/Player.js":
 /*!***********************!*\
   !*** ./src/Player.js ***!
@@ -117,7 +117,7 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) *
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-eval("__webpack_require__.r(__webpack_exports__);\n/* WEBPACK VAR INJECTION */(function(module) {/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"create\", function() { return create; });\n/* harmony import */ var _lib_milque_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../lib/milque.js */ \"./lib/milque.js\");\n/* harmony import */ var _Transform_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./Transform.js */ \"./src/Transform.js\");\n/* harmony import */ var _ShapeRenderer_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./ShapeRenderer.js */ \"./src/ShapeRenderer.js\");\n/* harmony import */ var _RainbowColor_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./RainbowColor.js */ \"./src/RainbowColor.js\");\n\n\n\n\n\nfunction create(world)\n{\n    let result = _lib_milque_js__WEBPACK_IMPORTED_MODULE_0__[\"EntityWrapper\"].create(world.entities)\n        .add(_Transform_js__WEBPACK_IMPORTED_MODULE_1__[\"Transform\"], { x: 16, y: 16 })\n        .add(_ShapeRenderer_js__WEBPACK_IMPORTED_MODULE_2__[\"ShapeRenderer\"], { shape: 'box', radius: 32 })\n        .add(_RainbowColor_js__WEBPACK_IMPORTED_MODULE_3__[\"RainbowColor\"], { text: 'woot?' })\n        .getEntityId();\n    return _lib_milque_js__WEBPACK_IMPORTED_MODULE_0__[\"HotEntityReplacement\"].enableForEntity(module, world.entities, result);\n}\n\nif (false)\n{}\n\n/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! ./../../../node_modules/webpack/buildin/harmony-module.js */ \"../../node_modules/webpack/buildin/harmony-module.js\")(module)))\n\n//# sourceURL=webpack:///./src/Player.js?");
+eval("__webpack_require__.r(__webpack_exports__);\n/* WEBPACK VAR INJECTION */(function(module) {/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"create\", function() { return create; });\n/* harmony import */ var _lib_milque_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../lib/milque.js */ \"./lib/milque.js\");\n/* harmony import */ var _Transform_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./Transform.js */ \"./src/Transform.js\");\n/* harmony import */ var _ShapeRenderer_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./ShapeRenderer.js */ \"./src/ShapeRenderer.js\");\n/* harmony import */ var _RainbowColor_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./RainbowColor.js */ \"./src/RainbowColor.js\");\n\n\n\n\n\nfunction create(world)\n{\n    let result = _lib_milque_js__WEBPACK_IMPORTED_MODULE_0__[\"EntityWrapper\"].create(world.entities)\n        .add(_Transform_js__WEBPACK_IMPORTED_MODULE_1__[\"Transform\"], { x: 16, y: 16 })\n        .add(_ShapeRenderer_js__WEBPACK_IMPORTED_MODULE_2__[\"ShapeRenderer\"], { shape: 'box', radius: 32 })\n        .add(_RainbowColor_js__WEBPACK_IMPORTED_MODULE_3__[\"RainbowColor\"], { text: 'woot?' })\n        .getEntityId();\n    return _lib_milque_js__WEBPACK_IMPORTED_MODULE_0__[\"HotEntityReplacement\"].enableForEntity(module, world.entities, result);\n}\n\nif (false)\n{}\n\n/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! ./../node_modules/webpack/buildin/harmony-module.js */ \"./node_modules/webpack/buildin/harmony-module.js\")(module)))\n\n//# sourceURL=webpack:///./src/Player.js?");
 
 /***/ }),
 

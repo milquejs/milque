@@ -301,4 +301,4 @@ var index = /*#__PURE__*/Object.freeze({
     PriorityQueue: PriorityQueue
 });
 
-export { index as Util };
+export { index as Utils };

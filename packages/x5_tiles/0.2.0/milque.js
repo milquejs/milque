@@ -1,3 +1,63 @@
+var self = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    get default () { return self; },
+    get AbstractCamera () { return AbstractCamera; },
+    get Audio () { return Audio; },
+    get Eventable () { return Eventable$1; },
+    get GameLoop () { return GameLoop; },
+    get Random () { return Random; },
+    get RandomGenerator () { return RandomGenerator; },
+    get SceneBase () { return SceneBase; },
+    get SceneManager () { return SceneManager; },
+    get SimpleRandomGenerator () { return SimpleRandomGenerator; },
+    get View () { return View; },
+    get ViewHelper () { return ViewHelper; },
+    get ViewPort () { return ViewPort; },
+    get Display () { return _default; },
+    get DisplayPort () { return DisplayPort; },
+    get MODE_CENTER () { return MODE_CENTER; },
+    get MODE_FIT () { return MODE_FIT; },
+    get MODE_NOSCALE () { return MODE_NOSCALE; },
+    get MODE_STRETCH () { return MODE_STRETCH; },
+    get Component () { return ComponentHelper; },
+    get ComponentBase () { return ComponentBase; },
+    get ComponentFactory () { return ComponentFactory; },
+    get Entity () { return EntityHelper; },
+    get EntityBase () { return EntityBase; },
+    get EntityComponent () { return EntityComponent$1; },
+    get EntityManager () { return EntityManager; },
+    get EntityQuery () { return EntityQuery; },
+    get EntityWrapper () { return EntityWrapper; },
+    get FineDiffStrategy () { return FineDiffStrategy; },
+    get HotEntityModule () { return HotEntityModule; },
+    get HotEntityReplacement () { return HotEntityReplacement; },
+    get HybridEntity () { return HybridEntity; },
+    get QueryOperator () { return QueryOperator; },
+    get TagComponent () { return TagComponent; },
+    get AbstractInputAdapter () { return AbstractInputAdapter; },
+    get ActionInputAdapter () { return ActionInputAdapter; },
+    get DOUBLE_ACTION_TIME () { return DOUBLE_ACTION_TIME; },
+    get DoubleActionInputAdapter () { return DoubleActionInputAdapter; },
+    get EventKey () { return EventKey; },
+    get Input () { return _default$1; },
+    get InputContext () { return InputContext; },
+    get InputSource () { return InputSource; },
+    get Keyboard () { return Keyboard; },
+    get Mouse () { return Mouse; },
+    get RangeInputAdapter () { return RangeInputAdapter; },
+    get StateInputAdapter () { return StateInputAdapter; },
+    get Utils () { return index; },
+    get Camera2D () { return Camera2D; },
+    get Camera2DControls () { return Camera2DControls; },
+    get CameraHelper () { return CameraHelper; },
+    get EntitySpawner () { return EntitySpawner; },
+    get Game () { return Game; },
+    get MouseControls () { return MouseControls; },
+    get MoveControls () { return MoveControls; },
+    get SplashScene () { return SplashScene; },
+    get Transform2D () { return Transform2D; }
+});
+
 class RandomGenerator
 {
     constructor(seed)
@@ -703,280 +763,6 @@ class SceneBase
     onPostUpdate(dt) {}
 }
 
-/**
- * @module Utils
- * @version 1.0.2
- * 
- * # Changelog
- * ## 1.0.2
- * - Added outline parameter for drawBox()
- * - Added uuid()
- */
-
-function randomHexColor()
-{
-    return '#' + Math.floor(Math.random() * 16777215).toString(16);
-}
-
-function loadImage(url)
-{
-    let image = new Image();
-    image.src = url;
-    return image;
-}
-
-function clampRange(value, min, max)
-{
-    if (value < min) return min;
-    if (value > max) return max;
-    return value;
-}
-
-function clearScreen(ctx, width, height)
-{
-    ctx.fillStyle = 'black';
-    ctx.fillRect(0, 0, width, height);
-}
-
-function drawText(ctx, text, x, y, radians = 0, fontSize = 16, color = 'white')
-{
-    ctx.translate(x, y);
-    if (radians) ctx.rotate(radians);
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.font = `${fontSize}px sans-serif`;
-    ctx.fillStyle = color;
-    ctx.fillText(text, 0, 0);
-    if (radians) ctx.rotate(-radians);
-    ctx.translate(-x, -y);
-}
-
-function drawBox(ctx, x, y, radians = 0, w = 16, h = w, color = 'white', outline = false)
-{
-    ctx.translate(x, y);
-    if (radians) ctx.rotate(radians);
-    if (!outline)
-    {
-        ctx.fillStyle = color;
-        ctx.fillRect(-w / 2, -h / 2, w, h);
-    }
-    else
-    {
-        ctx.strokeStyle = color;
-        ctx.strokeRect(-w / 2, -h / 2, w, h);
-    }
-    if (radians) ctx.rotate(-radians);
-    ctx.translate(-x, -y);
-}
-
-function intersectBox(a, b)
-{
-    return (Math.abs(a.x - b.x) * 2 < (a.width + b.width)) &&
-        (Math.abs(a.y - b.y) * 2 < (a.height + b.height));
-}
-
-function applyMotion(entity, inverseFrictionX = 1, inverseFrictionY = inverseFrictionX)
-{
-    if (inverseFrictionX !== 1)
-    {
-        entity.dx *= inverseFrictionX;
-    }
-    if (inverseFrictionY !== 1)
-    {
-        entity.dy *= inverseFrictionY;
-    }
-    
-    entity.x += entity.dx;
-    entity.y += entity.dy;
-}
-
-function withinRadius(from, to, radius)
-{
-    const dx = from.x - to.x;
-    const dy = from.y - to.y;
-    return dx * dx + dy * dy <= radius * radius
-}
-
-function onDOMLoaded(listener)
-{
-    window.addEventListener('DOMContentLoaded', listener);
-}
-
-function lerp(a, b, dt)
-{
-    return a + (b - a) * dt;
-}
-
-function distance2D(from, to)
-{
-    let dx = to.x - from.x;
-    let dy = to.y - from.y;
-    return Math.sqrt(dx * dx + dy * dy);
-}
-
-function direction2D(from, to)
-{
-    let dx = to.x - from.x;
-    let dy = to.y - from.y;
-    return Math.atan2(dy, dx);
-}
-
-function lookAt2D(radians, target, dt)
-{
-    let step = cycleRange(target - radians, -Math.PI, Math.PI);
-    return clampRange(radians + step, radians - dt, radians + dt);
-}
-
-function cycleRange(value, min, max)
-{
-    let range = max - min;
-    let result = (value - min) % range;
-    if (result < 0) result += range;
-    return result + min;
-}
-
-function drawCircle(ctx, x, y, radius = 16, color = 'white', outline = false)
-{
-    ctx.fillStyle = color;
-    ctx.strokeStyle = color;
-    ctx.beginPath();
-    ctx.arc(x, y, radius, 0, 2 * Math.PI);
-    if (outline) ctx.stroke();
-    else ctx.fill();
-}
-
-/**
- * Generates a uuid v4.
- * 
- * @param {number} a The placeholder (serves for recursion within function).
- * @returns {string} The universally unique id.
- */
-function uuid(a = undefined)
-{
-    // https://gist.github.com/jed/982883
-    return a?(a^Math.random()*16>>a/4).toString(16):([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,uuid);
-}
-
-var Utils = /*#__PURE__*/Object.freeze({
-    __proto__: null,
-    randomHexColor: randomHexColor,
-    loadImage: loadImage,
-    clampRange: clampRange,
-    clearScreen: clearScreen,
-    drawText: drawText,
-    drawBox: drawBox,
-    intersectBox: intersectBox,
-    applyMotion: applyMotion,
-    withinRadius: withinRadius,
-    onDOMLoaded: onDOMLoaded,
-    lerp: lerp,
-    distance2D: distance2D,
-    direction2D: direction2D,
-    lookAt2D: lookAt2D,
-    cycleRange: cycleRange,
-    drawCircle: drawCircle,
-    uuid: uuid
-});
-
-/**
- * @module Display
- * @version 1.0.1
- */
-
-var canvas;
-var context;
-
-// Default setup...
-onDOMLoaded(() => {
-    if (!canvas)
-    {
-        let canvasElement = null;
-        let canvasContext = null;
-
-        // Try resolve to <display-port> if exists...
-        let displayElement = document.querySelector('display-port');
-        if (displayElement)
-        {
-            canvasElement = displayElement.getCanvas();
-            canvasContext = displayElement.getContext();
-        }
-        // Otherwise, find a <canvas> element...
-        else
-        {
-            canvasElement = document.querySelector('canvas');
-        }
-
-        if (canvasElement)
-        {
-            if (!canvasContext) canvasContext = canvasElement.getContext('2d');
-            attachCanvas(canvasElement, canvasContext);
-        }
-    }
-});
-
-function createCanvas(width = 320, height = width, parentElement = document.body)
-{
-    const canvasElement = document.createElement('canvas');
-    parentElement.appendChild(canvasElement);
-    attachCanvas(canvasElement, width, height);
-}
-
-function attachCanvas(canvasElement, canvasContext, width = 320, height = width)
-{
-    canvas = canvasElement;
-    context = canvasContext;
-    canvas.width = width;
-    canvas.height = height;
-}
-
-function drawBufferToScreen(ctx, viewportOffsetX = 0, viewportOffsetY = 0, viewportWidth = getClientWidth(), viewportHeight = getClientHeight())
-{
-    getDrawContext().drawImage(ctx.canvas, viewportOffsetX, viewportOffsetY, viewportWidth, viewportHeight);
-}
-
-function getCanvas()
-{
-    return canvas;
-}
-
-function getDrawContext()
-{
-    return context;
-}
-
-function getClientWidth()
-{
-    return canvas.clientWidth;
-}
-
-function getClientHeight()
-{
-    return canvas.clientHeight;
-}
-
-function getClientOffsetX()
-{
-    return canvas.offsetLeft;
-}
-
-function getClientOffsetY()
-{
-    return canvas.offsetTop;
-}
-
-var Display = /*#__PURE__*/Object.freeze({
-    __proto__: null,
-    createCanvas: createCanvas,
-    attachCanvas: attachCanvas,
-    drawBufferToScreen: drawBufferToScreen,
-    getCanvas: getCanvas,
-    getDrawContext: getDrawContext,
-    getClientWidth: getClientWidth,
-    getClientHeight: getClientHeight,
-    getClientOffsetX: getClientOffsetX,
-    getClientOffsetY: getClientOffsetY
-});
-
 var audioContext = new AudioContext();
 
 function createSound(filepath, loop = false)
@@ -1031,629 +817,6 @@ var Audio = /*#__PURE__*/Object.freeze({
     createSound: createSound
 });
 
-const ANY = Symbol('any');
-
-class EventKey
-{
-    static parse(eventKeyString)
-    {
-        let startCodeIndex = eventKeyString.indexOf('[');
-        let endCodeIndex = eventKeyString.indexOf(']');
-        let modeIndex = eventKeyString.indexOf('.');
-    
-        let source = null;
-        let code = null;
-        let mode = null;
-    
-        // For ANY source, use `[code].mode` or `.mode`
-        // For ONLY codes and modes from source, use `source`
-        if (startCodeIndex <= 0 || modeIndex === 0) source = ANY;
-        else source = eventKeyString.substring(0, startCodeIndex);
-    
-        // For ANY code, use `source.mode` or `source[].mode`
-        // For ONLY sources and modes for code, use `[code]`
-        if (startCodeIndex < 0 || endCodeIndex < 0 || startCodeIndex + 1 === endCodeIndex) code = ANY;
-        else code = eventKeyString.substring(startCodeIndex + 1, endCodeIndex);
-    
-        // For ANY mode, use `source[code]` or `source[code].`
-        // For ONLY sources and codes for mode, use `.mode`
-        if (modeIndex < 0 || eventKeyString.trim().endsWith('.')) mode = ANY;
-        else mode = eventKeyString.substring(modeIndex + 1);
-    
-        return new EventKey(
-            source,
-            code,
-            mode
-        );
-    }
-
-    constructor(source, code, mode)
-    {
-        this.source = source;
-        this.code = code;
-        this.mode = mode;
-
-        this.string = `${this.source.toString()}[${this.code.toString()}].${this.mode.toString()}`;
-    }
-
-    matches(eventKey)
-    {
-        if (this.source === ANY || eventKey.source === ANY || this.source === eventKey.source)
-        {
-            if (this.code === ANY || eventKey.code === ANY || this.code === eventKey.code)
-            {
-                if (this.mode === ANY || eventKey.mode === ANY || this.mode === eventKey.mode)
-                {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    /** @override */
-    toString() { return this.string; }
-}
-// NOTE: Exported as a static variable of EventKey
-EventKey.ANY = ANY;
-
-class AbstractInputAdapter
-{
-    constructor(defaultValue)
-    {
-        this.prev = defaultValue;
-        this.value = defaultValue;
-        this.next = defaultValue;
-    }
-
-    update(eventKey, value) { return false; }
-    consume() { return this.next; }
-
-    poll()
-    {
-        this.prev = this.value;
-        this.value = this.next;
-        this.next = this.consume();
-        return this;
-    }
-}
-
-class ActionInputAdapter extends AbstractInputAdapter
-{
-    constructor(eventKeyStrings)
-    {
-        super(false);
-
-        this.eventKeys = [];
-        for(let eventKeyString of eventKeyStrings)
-        {
-            this.eventKeys.push(EventKey.parse(eventKeyString));
-        }
-    }
-
-    /** @override */
-    consume() { return false; }
-
-    /** @override */
-    update(eventKey, value = true)
-    {
-        for(let targetEventKey of this.eventKeys)
-        {
-            if (targetEventKey.matches(eventKey))
-            {
-                this.next = value;
-                return true;
-            }
-        }
-        return false;
-    }
-}
-
-class RangeInputAdapter extends AbstractInputAdapter
-{
-    constructor(eventKeyString)
-    {
-        super(0);
-
-        this.eventKey = EventKey.parse(eventKeyString);
-    }
-
-    /** @override */
-    consume()
-    {
-        switch(this.eventKey.string)
-        {
-            case 'mouse[pos].dx':
-            case 'mouse[pos].dy':
-                return 0;
-            case 'mouse[pos].x':
-            case 'mouse[pos].y':
-            default:
-                return this.next;
-        }
-    }
-
-    /** @override */
-    update(eventKey, value = 1)
-    {
-        if (this.eventKey.matches(eventKey))
-        {
-            this.next = value;
-            return true;
-        }
-        return false;
-    }
-}
-
-class StateInputAdapter extends AbstractInputAdapter
-{
-    constructor(eventKeyMap)
-    {
-        super(0);
-        
-        this.eventKeyEntries = [];
-        for(let eventKey of Object.keys(eventKeyMap))
-        {
-            this.eventKeyEntries.push({
-                key: EventKey.parse(eventKey),
-                value: eventKeyMap[eventKey]
-            });
-        }
-    }
-
-    /** @override */
-    update(eventKey, value = true)
-    {
-        if (value)
-        {
-            for(let eventKeyEntry of this.eventKeyEntries)
-            {
-                if (eventKeyEntry.key.matches(eventKey))
-                {
-                    this.next = eventKeyEntry.value;
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-}
-
-const MIN_CONTEXT_PRIORITY = -100;
-const MAX_CONTEXT_PRIORITY = 100;
-
-function createContext()
-{
-    return {
-        _source: null,
-        _priority: 0,
-        _active: true,
-        inputs: new Map(),
-        get active() { return this._active; },
-        get source() { return this._source; },
-        get priority() { return this._priority; },
-        attach(inputSource)
-        {
-            this._source = inputSource;
-            this._source.addContext(this);
-            return this;
-        },
-        detach()
-        {
-            this._source.removeContext(this);
-            this._source = null;
-            return this;
-        },
-        setPriority(priority)
-        {
-            if (priority > MAX_CONTEXT_PRIORITY || priority < MIN_CONTEXT_PRIORITY)
-            {
-                throw new Error(`Context priority must be between [${MIN_CONTEXT_PRIORITY}, ${MAX_CONTEXT_PRIORITY}].`);
-            }
-            
-            if (this._priority !== priority)
-            {
-                if (this._source)
-                {
-                    this._source.removeContext(this);
-                    this._priority = priority;
-                    this._source.addContext(this);
-                }
-                else
-                {
-                    this._priority = priority;
-                }
-            }
-            return this;
-        },
-        registerInput(name, adapter)
-        {
-            this.inputs.set(name, adapter);
-            return adapter;
-        },
-        registerAction(name, ...eventKeyStrings)
-        {
-            return this.registerInput(name, new ActionInputAdapter(eventKeyStrings));
-        },
-        registerRange(name, eventKeyString)
-        {
-            return this.registerInput(name, new RangeInputAdapter(eventKeyString));
-        },
-        registerState(name, eventKeyMap)
-        {
-            return this.registerInput(name, new StateInputAdapter(eventKeyMap));
-        },
-        toggle(force = undefined)
-        {
-            if (typeof force === 'undefined') force = !this._active;
-            this._active = force;
-            return this;
-        },
-        enable() { return this.toggle(true); },
-        disable() { return this.toggle(false); },
-        poll()
-        {
-            for(let adapter of this.inputs.values())
-            {
-                adapter.poll();
-            }
-        },
-        update(eventKey, value)
-        {
-            let result;
-            for(let adapter of this.inputs.values())
-            {
-                result |= adapter.update(eventKey, value);
-            }
-            return result;
-        }
-    };
-}
-
-var InputContext = /*#__PURE__*/Object.freeze({
-    __proto__: null,
-    MIN_CONTEXT_PRIORITY: MIN_CONTEXT_PRIORITY,
-    MAX_CONTEXT_PRIORITY: MAX_CONTEXT_PRIORITY,
-    createContext: createContext
-});
-
-class Mouse
-{
-    constructor()
-    {
-        this.sourceElement = null;
-        this.eventHandler = null;
-
-        this.onMouseDown = this.onMouseDown.bind(this);
-        this.onMouseUp = this.onMouseUp.bind(this);
-        this.onMouseMove = this.onMouseMove.bind(this);
-    }
-
-    attach(sourceElement = document)
-    {
-        this.sourceElement = sourceElement;
-        this.sourceElement.addEventListener('mousedown', this.onMouseDown);
-        this.sourceElement.addEventListener('mouseup', this.onMouseUp);
-        this.sourceElement.addEventListener('contextmenu', this.onContextMenu);
-        document.addEventListener('mousemove', this.onMouseMove);
-        return this;
-    }
-
-    detach()
-    {
-        this.sourceElement.removeEventListener('mousedown', this.onMouseDown);
-        this.sourceElement.removeEventListener('mouseup', this.onMouseUp);
-        this.sourceElement.removeEventListener('contextmenu', this.onContextMenu);
-        document.removeEventListener('mousemove', this.onMouseMove);
-        this.sourceElement = null;
-        return this;
-    }
-
-    setEventHandler(eventHandler)
-    {
-        this.eventHandler = eventHandler;
-        return this;
-    }
-
-    onMouseDown(e)
-    {
-        if (!this.eventHandler) return;
-
-        let result;
-        result = this.eventHandler.call(this, `mouse[${e.button}].down`, true);
-
-        if (result)
-        {
-            e.preventDefault();
-            e.stopPropagation();
-        }
-    }
-
-    onMouseUp(e)
-    {
-        if (!this.eventHandler) return;
-
-        e.preventDefault();
-        e.stopPropagation();
-        
-        this.eventHandler.call(this, `mouse[${e.button}].up`, true);
-    }
-
-    onMouseMove(e)
-    {
-        if (!this.eventHandler) return;
-
-        const clientCanvas = this.sourceElement;
-        const clientWidth = clientCanvas.clientWidth;
-        const clientHeight = clientCanvas.clientHeight;
-        
-        this.eventHandler.call(this, 'mouse[pos].x', (e.pageX - clientCanvas.offsetLeft) / clientWidth);
-        this.eventHandler.call(this, 'mouse[pos].y', (e.pageY - clientCanvas.offsetTop) / clientHeight);
-        this.eventHandler.call(this, 'mouse[pos].dx', e.movementX / clientWidth);
-        this.eventHandler.call(this, 'mouse[pos].dy', e.movementY / clientHeight);
-    }
-
-    onContextMenu(e)
-    {
-        e.preventDefault();
-        e.stopPropagation();
-    }
-}
-
-class Keyboard
-{
-    constructor()
-    {
-        this.sourceElement = null;
-        this.eventHandler = null;
-
-        this.onKeyDown = this.onKeyDown.bind(this);
-        this.onKeyUp = this.onKeyUp.bind(this);
-    }
-
-    attach(sourceElement = document)
-    {
-        this.sourceElement = sourceElement;
-        this.sourceElement.addEventListener('keydown', this.onKeyDown);
-        this.sourceElement.addEventListener('keyup', this.onKeyUp);
-        return this;
-    }
-
-    detach()
-    {
-        this.sourceElement.removeEventListener('keydown', this.onKeyDown);
-        this.sourceElement.removeEventListener('keyup', this.onKeyUp);
-        this.sourceElement = null;
-        return this;
-    }
-
-    setEventHandler(eventHandler)
-    {
-        this.eventHandler = eventHandler;
-        return this;
-    }
-
-    onKeyDown(e)
-    {
-        if (!this.eventHandler) return;
-
-        let result;
-        if (e.repeat)
-        {
-            result = this.eventHandler.call(this, `key[${e.key}].repeat`, true);
-        }
-        else
-        {
-            result = this.eventHandler.call(this, `key[${e.key}].down`, true);
-        }
-
-        if (result)
-        {
-            e.preventDefault();
-            e.stopPropagation();
-        }
-    }
-
-    onKeyUp(e)
-    {
-        if (!this.eventHandler) return;
-
-        let result;
-        result = this.eventHandler.call(this, `key[${e.key}].up`, true);
-        
-        if (result)
-        {
-            e.preventDefault();
-            e.stopPropagation();
-        }
-    }
-}
-
-/**
- * @module InputSource
- */
-
-function createSource()
-{
-    let result = {
-        _contexts: new Array(MAX_CONTEXT_PRIORITY - MIN_CONTEXT_PRIORITY),
-        element: null,
-        keyboard: new Keyboard(),
-        mouse: new Mouse(),
-        attach(element)
-        {
-            this.element = element;
-            this.keyboard.attach();
-            this.mouse.attach(element);
-            return this;
-        },
-        detach()
-        {
-            this.element = null;
-            this.keyboard.detach();
-            this.mouse.detach();
-            return this;
-        },
-        addContext(context)
-        {
-            const priority = context.priority - MIN_CONTEXT_PRIORITY;
-            if (!this._contexts[priority]) this._contexts[priority] = [];
-            this._contexts[priority].push(context);
-            return this;
-        },
-        removeContext(context)
-        {
-            const priority = context.priority - MIN_CONTEXT_PRIORITY;
-            let contexts = this._contexts[priority];
-            if (contexts)
-            {
-                contexts.splice(contexts.indexOf(context), 1);
-            }
-            return this;
-        },
-        poll()
-        {
-            for(let contexts of this._contexts)
-            {
-                if (contexts)
-                {
-                    for(let context of contexts)
-                    {
-                        if (context.active)
-                        {
-                            context.poll();
-                        }
-                    }
-                }
-            }
-        },
-        handleEvent(eventKeyString, value)
-        {
-            const eventKey = EventKey.parse(eventKeyString);
-            for(let contexts of this._contexts)
-            {
-                if (contexts)
-                {
-                    for(let context of contexts)
-                    {
-                        if (context.active)
-                        {
-                            let result;
-                            result = context.update(eventKey, value);
-                            if (result)
-                            {
-                                return true;
-                            }
-                        }
-                    }
-                }
-            }
-            return false;
-        }
-    };
-    result.handleEvent = result.handleEvent.bind(result);
-    result.keyboard.setEventHandler(result.handleEvent);
-    result.mouse.setEventHandler(result.handleEvent);
-    return result;
-}
-
-var InputSource = /*#__PURE__*/Object.freeze({
-    __proto__: null,
-    createSource: createSource
-});
-
-/**
- * @module Input
- * @version 1.0.1
- */
-
-var source = InputSource.createSource();
-var context$1 = InputContext.createContext().attach(source);
-
-// Default setup...
-onDOMLoaded(() => {
-    if (!source.element)
-    {
-        let canvasElement = null;
-
-        // Try resolve to <display-port> if exists...
-        let displayElement = document.querySelector('display-port');
-        if (displayElement)
-        {
-            canvasElement = displayElement.getCanvas();
-        }
-        // Otherwise, find a <canvas> element...
-        else
-        {
-            canvasElement = document.querySelector('canvas');
-        }
-
-        if (canvasElement)
-        {
-            attachCanvas$1(canvasElement);
-        }
-    }
-});
-
-function attachCanvas$1(canvasElement)
-{
-    if (source.element) source.detach();
-    return source.attach(canvasElement);
-}
-
-function createContext$1(priority = 0, active = true)
-{
-    return InputContext.createContext().setPriority(priority).toggle(active).attach(source);
-}
-
-function createInput(adapter)
-{
-    return context$1.registerInput(getNextInputName(), adapter);
-}
-
-function createAction(...eventKeyStrings)
-{
-    return context$1.registerAction(getNextInputName(), ...eventKeyStrings);
-}
-
-function createRange(eventKeyString)
-{
-    return context$1.registerRange(getNextInputName(), eventKeyString);
-}
-
-function createState(eventKeyMap)
-{
-    return context$1.registerState(getNextInputName(), eventKeyMap);
-}
-
-function poll()
-{
-    return source.poll();
-}
-
-function handleEvent(eventKeyString, value)
-{
-    return source.handleEvent(eventKeyString, value);
-}
-
-var nextInputNameId = 1;
-function getNextInputName()
-{
-    return `__input#${nextInputNameId++}`;
-}
-
-var Input = /*#__PURE__*/Object.freeze({
-    __proto__: null,
-    attachCanvas: attachCanvas$1,
-    createContext: createContext$1,
-    createInput: createInput,
-    createAction: createAction,
-    createRange: createRange,
-    createState: createState,
-    poll: poll,
-    handleEvent: handleEvent
-});
-
 const DEFAULT_RNG = new RandomGenerator();
 
 function createRandom(seed = 0)
@@ -1688,98 +851,6 @@ var Random = /*#__PURE__*/Object.freeze({
     randomRange: randomRange,
     randomChoose: randomChoose,
     randomSign: randomSign
-});
-
-const GAME_LOOPS = new Map();
-
-/**
- * Starts a game loop. This is not required to start a loop, but is
- * here for ease of use.
- * 
- * @example
- * let context = {
- *   start() {
- *     // Start code here...
- *   },
- *   update(dt) {
- *     // Update code here...
- *   }
- * };
- * GameLoop.start(context);
- * 
- * @example
- * GameLoop.start()
- *   .on('start', function start() {
- *     // Start code here...
- *   })
- *   .on('update', function update(dt) {
- *     // Update code here...
- *   });
- * 
- * @example
- * let gameLoop = new GameLoop();
- * gameLoop
- *   .on('start', ...)
- *   .on('update', ...)
- *   .on('stop', ...);
- * 
- * @param {Object} [handle] The handle that refers to the registered game
- * loop. If the handle has not been previously registered, it will
- * register the handle with a new game loop, with the handle serving as
- * both the new game loop's handle and context (only if the handle is
- * an object, otherwise, it will create an empty context).
- * 
- * @returns {GameLoop} The started game loop instance.
- */
-function start(handle = undefined)
-{
-    let result;
-    if (GAME_LOOPS.has(handle))
-    {
-        throw new Error('Cannot start game loop with duplicate handle.');
-    }
-    else
-    {
-        let context;
-        if (typeof handle === 'object') context = handle;
-        else context = {};
-
-        result = new GameLoop(context);
-    }
-    GAME_LOOPS.set(handle, result);
-
-    // Start the loop (right after any chained method calls, like event listeners)
-    setTimeout(() => result.start(), 0);
-    return result;
-}
-
-/**
- * Stops a game loop. This is not required to stop a loop, but is
- * here for ease of use.
- */
-function stop(handle)
-{
-    if (GAME_LOOPS.has(handle))
-    {
-        let gameLoop = GAME_LOOPS.get(handle);
-        gameLoop.stop();
-        GAME_LOOPS.delete(handle);
-        return gameLoop;
-    }
-
-    return null;
-}
-
-function createGameLoop(context = {})
-{
-    return new GameLoop(context);
-}
-
-var Game = /*#__PURE__*/Object.freeze({
-    __proto__: null,
-    start: start,
-    stop: stop,
-    createGameLoop: createGameLoop
 });
 
 /**
@@ -2091,6 +1162,104 @@ class DisplayPort extends HTMLElement
     set debug(value) { if (value) this.setAttribute('debug', ''); else this.removeAttribute('debug'); }
 }
 window.customElements.define('display-port', DisplayPort);
+
+/**
+ * @module Display
+ */
+
+var canvas;
+var context;
+
+// Default setup...
+window.addEventListener('DOMContentLoaded', () => {
+    if (!canvas)
+    {
+        let canvasElement = null;
+        let canvasContext = null;
+
+        // Try resolve to <display-port> if exists...
+        let displayElement = document.querySelector('display-port');
+        if (displayElement)
+        {
+            canvasElement = displayElement.getCanvas();
+            canvasContext = displayElement.getContext();
+        }
+        // Otherwise, find a <canvas> element...
+        else
+        {
+            canvasElement = document.querySelector('canvas');
+        }
+
+        if (canvasElement)
+        {
+            if (!canvasContext) canvasContext = canvasElement.getContext('2d');
+            attachCanvas(canvasElement, canvasContext);
+        }
+    }
+});
+
+function createCanvas(width = 320, height = width, parentElement = document.body)
+{
+    const canvasElement = document.createElement('canvas');
+    parentElement.appendChild(canvasElement);
+    attachCanvas(canvasElement, width, height);
+}
+
+function attachCanvas(canvasElement, canvasContext, width = 320, height = width)
+{
+    canvas = canvasElement;
+    context = canvasContext;
+    canvas.width = width;
+    canvas.height = height;
+}
+
+function drawBufferToScreen(ctx, viewportOffsetX = 0, viewportOffsetY = 0, viewportWidth = getClientWidth(), viewportHeight = getClientHeight())
+{
+    getDrawContext().drawImage(ctx.canvas, viewportOffsetX, viewportOffsetY, viewportWidth, viewportHeight);
+}
+
+function getCanvas()
+{
+    return canvas;
+}
+
+function getDrawContext()
+{
+    return context;
+}
+
+function getClientWidth()
+{
+    return canvas.clientWidth;
+}
+
+function getClientHeight()
+{
+    return canvas.clientHeight;
+}
+
+function getClientOffsetX()
+{
+    return canvas.offsetLeft;
+}
+
+function getClientOffsetY()
+{
+    return canvas.offsetTop;
+}
+
+var _default = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    createCanvas: createCanvas,
+    attachCanvas: attachCanvas,
+    drawBufferToScreen: drawBufferToScreen,
+    getCanvas: getCanvas,
+    getDrawContext: getDrawContext,
+    getClientWidth: getClientWidth,
+    getClientHeight: getClientHeight,
+    getClientOffsetX: getClientOffsetX,
+    getClientOffsetY: getClientOffsetY
+});
 
 function getComponentTypeName$1(componentType)
 {
@@ -3729,9 +2898,9 @@ var HotEntityReplacement = /*#__PURE__*/Object.freeze({
     getInstanceForModuleId: getInstanceForModuleId
 });
 
-const ANY$1 = Symbol('any');
+const ANY = Symbol('any');
 
-class EventKey$1
+class EventKey
 {
     static parse(eventKeyString)
     {
@@ -3745,20 +2914,20 @@ class EventKey$1
     
         // For ANY source, use `[code].mode` or `.mode`
         // For ONLY codes and modes from source, use `source`
-        if (startCodeIndex <= 0 || modeIndex === 0) source = ANY$1;
+        if (startCodeIndex <= 0 || modeIndex === 0) source = ANY;
         else source = eventKeyString.substring(0, startCodeIndex);
     
         // For ANY code, use `source.mode` or `source[].mode`
         // For ONLY sources and modes for code, use `[code]`
-        if (startCodeIndex < 0 || endCodeIndex < 0 || startCodeIndex + 1 === endCodeIndex) code = ANY$1;
+        if (startCodeIndex < 0 || endCodeIndex < 0 || startCodeIndex + 1 === endCodeIndex) code = ANY;
         else code = eventKeyString.substring(startCodeIndex + 1, endCodeIndex);
     
         // For ANY mode, use `source[code]` or `source[code].`
         // For ONLY sources and codes for mode, use `.mode`
-        if (modeIndex < 0 || eventKeyString.trim().endsWith('.')) mode = ANY$1;
+        if (modeIndex < 0 || eventKeyString.trim().endsWith('.')) mode = ANY;
         else mode = eventKeyString.substring(modeIndex + 1);
     
-        return new EventKey$1(
+        return new EventKey(
             source,
             code,
             mode
@@ -3776,11 +2945,11 @@ class EventKey$1
 
     matches(eventKey)
     {
-        if (this.source === ANY$1 || eventKey.source === ANY$1 || this.source === eventKey.source)
+        if (this.source === ANY || eventKey.source === ANY || this.source === eventKey.source)
         {
-            if (this.code === ANY$1 || eventKey.code === ANY$1 || this.code === eventKey.code)
+            if (this.code === ANY || eventKey.code === ANY || this.code === eventKey.code)
             {
-                if (this.mode === ANY$1 || eventKey.mode === ANY$1 || this.mode === eventKey.mode)
+                if (this.mode === ANY || eventKey.mode === ANY || this.mode === eventKey.mode)
                 {
                     return true;
                 }
@@ -3793,9 +2962,9 @@ class EventKey$1
     toString() { return this.string; }
 }
 // NOTE: Exported as a static variable of EventKey
-EventKey$1.ANY = ANY$1;
+EventKey.ANY = ANY;
 
-class AbstractInputAdapter$1
+class AbstractInputAdapter
 {
     constructor(defaultValue)
     {
@@ -3816,7 +2985,7 @@ class AbstractInputAdapter$1
     }
 }
 
-class ActionInputAdapter$1 extends AbstractInputAdapter$1
+class ActionInputAdapter extends AbstractInputAdapter
 {
     constructor(eventKeyStrings)
     {
@@ -3825,7 +2994,7 @@ class ActionInputAdapter$1 extends AbstractInputAdapter$1
         this.eventKeys = [];
         for(let eventKeyString of eventKeyStrings)
         {
-            this.eventKeys.push(EventKey$1.parse(eventKeyString));
+            this.eventKeys.push(EventKey.parse(eventKeyString));
         }
     }
 
@@ -3847,13 +3016,13 @@ class ActionInputAdapter$1 extends AbstractInputAdapter$1
     }
 }
 
-class RangeInputAdapter$1 extends AbstractInputAdapter$1
+class RangeInputAdapter extends AbstractInputAdapter
 {
     constructor(eventKeyString)
     {
         super(0);
 
-        this.eventKey = EventKey$1.parse(eventKeyString);
+        this.eventKey = EventKey.parse(eventKeyString);
     }
 
     /** @override */
@@ -3883,7 +3052,7 @@ class RangeInputAdapter$1 extends AbstractInputAdapter$1
     }
 }
 
-class StateInputAdapter$1 extends AbstractInputAdapter$1
+class StateInputAdapter extends AbstractInputAdapter
 {
     constructor(eventKeyMap)
     {
@@ -3893,7 +3062,7 @@ class StateInputAdapter$1 extends AbstractInputAdapter$1
         for(let eventKey of Object.keys(eventKeyMap))
         {
             this.eventKeyEntries.push({
-                key: EventKey$1.parse(eventKey),
+                key: EventKey.parse(eventKey),
                 value: eventKeyMap[eventKey]
             });
         }
@@ -3917,10 +3086,10 @@ class StateInputAdapter$1 extends AbstractInputAdapter$1
     }
 }
 
-const MIN_CONTEXT_PRIORITY$1 = -100;
-const MAX_CONTEXT_PRIORITY$1 = 100;
+const MIN_CONTEXT_PRIORITY = -100;
+const MAX_CONTEXT_PRIORITY = 100;
 
-function createContext$2()
+function createContext()
 {
     return {
         _source: null,
@@ -3944,9 +3113,9 @@ function createContext$2()
         },
         setPriority(priority)
         {
-            if (priority > MAX_CONTEXT_PRIORITY$1 || priority < MIN_CONTEXT_PRIORITY$1)
+            if (priority > MAX_CONTEXT_PRIORITY || priority < MIN_CONTEXT_PRIORITY)
             {
-                throw new Error(`Context priority must be between [${MIN_CONTEXT_PRIORITY$1}, ${MAX_CONTEXT_PRIORITY$1}].`);
+                throw new Error(`Context priority must be between [${MIN_CONTEXT_PRIORITY}, ${MAX_CONTEXT_PRIORITY}].`);
             }
             
             if (this._priority !== priority)
@@ -3971,15 +3140,15 @@ function createContext$2()
         },
         registerAction(name, ...eventKeyStrings)
         {
-            return this.registerInput(name, new ActionInputAdapter$1(eventKeyStrings));
+            return this.registerInput(name, new ActionInputAdapter(eventKeyStrings));
         },
         registerRange(name, eventKeyString)
         {
-            return this.registerInput(name, new RangeInputAdapter$1(eventKeyString));
+            return this.registerInput(name, new RangeInputAdapter(eventKeyString));
         },
         registerState(name, eventKeyMap)
         {
-            return this.registerInput(name, new StateInputAdapter$1(eventKeyMap));
+            return this.registerInput(name, new StateInputAdapter(eventKeyMap));
         },
         toggle(force = undefined)
         {
@@ -4008,14 +3177,14 @@ function createContext$2()
     };
 }
 
-var InputContext$1 = /*#__PURE__*/Object.freeze({
+var InputContext = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    MIN_CONTEXT_PRIORITY: MIN_CONTEXT_PRIORITY$1,
-    MAX_CONTEXT_PRIORITY: MAX_CONTEXT_PRIORITY$1,
-    createContext: createContext$2
+    MIN_CONTEXT_PRIORITY: MIN_CONTEXT_PRIORITY,
+    MAX_CONTEXT_PRIORITY: MAX_CONTEXT_PRIORITY,
+    createContext: createContext
 });
 
-class Mouse$1
+class Mouse
 {
     constructor()
     {
@@ -4098,7 +3267,7 @@ class Mouse$1
     }
 }
 
-class Keyboard$1
+class Keyboard
 {
     constructor()
     {
@@ -4171,13 +3340,13 @@ class Keyboard$1
  * @module InputSource
  */
 
-function createSource$1()
+function createSource()
 {
     let result = {
-        _contexts: new Array(MAX_CONTEXT_PRIORITY$1 - MIN_CONTEXT_PRIORITY$1),
+        _contexts: new Array(MAX_CONTEXT_PRIORITY - MIN_CONTEXT_PRIORITY),
         element: null,
-        keyboard: new Keyboard$1(),
-        mouse: new Mouse$1(),
+        keyboard: new Keyboard(),
+        mouse: new Mouse(),
         attach(element)
         {
             this.element = element;
@@ -4194,14 +3363,14 @@ function createSource$1()
         },
         addContext(context)
         {
-            const priority = context.priority - MIN_CONTEXT_PRIORITY$1;
+            const priority = context.priority - MIN_CONTEXT_PRIORITY;
             if (!this._contexts[priority]) this._contexts[priority] = [];
             this._contexts[priority].push(context);
             return this;
         },
         removeContext(context)
         {
-            const priority = context.priority - MIN_CONTEXT_PRIORITY$1;
+            const priority = context.priority - MIN_CONTEXT_PRIORITY;
             let contexts = this._contexts[priority];
             if (contexts)
             {
@@ -4227,7 +3396,7 @@ function createSource$1()
         },
         handleEvent(eventKeyString, value)
         {
-            const eventKey = EventKey$1.parse(eventKeyString);
+            const eventKey = EventKey.parse(eventKeyString);
             for(let contexts of this._contexts)
             {
                 if (contexts)
@@ -4255,14 +3424,14 @@ function createSource$1()
     return result;
 }
 
-var InputSource$1 = /*#__PURE__*/Object.freeze({
+var InputSource = /*#__PURE__*/Object.freeze({
     __proto__: null,
-    createSource: createSource$1
+    createSource: createSource
 });
 
 let DOUBLE_ACTION_TIME = 300;
 
-class DoubleActionInputAdapter extends ActionInputAdapter$1
+class DoubleActionInputAdapter extends ActionInputAdapter
 {
     constructor(eventKeyStrings)
     {
@@ -4304,4 +3473,1074 @@ class DoubleActionInputAdapter extends ActionInputAdapter$1
     }
 }
 
-export { AbstractCamera, AbstractInputAdapter$1 as AbstractInputAdapter, ActionInputAdapter$1 as ActionInputAdapter, Audio, ComponentHelper as Component, ComponentBase, ComponentFactory, DOUBLE_ACTION_TIME, Display, DisplayPort, DoubleActionInputAdapter, EntityHelper as Entity, EntityBase, EntityComponent$1 as EntityComponent, EntityManager, EntityQuery, EntityWrapper, EventKey$1 as EventKey, Eventable$1 as Eventable, FineDiffStrategy, Game, GameLoop, HotEntityModule, HotEntityReplacement, HybridEntity, Input, InputContext$1 as InputContext, InputSource$1 as InputSource, Keyboard$1 as Keyboard, MODE_CENTER, MODE_FIT, MODE_NOSCALE, MODE_STRETCH, Mouse$1 as Mouse, QueryOperator, Random, RandomGenerator, RangeInputAdapter$1 as RangeInputAdapter, SceneBase, SceneManager, SimpleRandomGenerator, StateInputAdapter$1 as StateInputAdapter, TagComponent, Utils, View, ViewHelper, ViewPort };
+/**
+ * @module Input
+ */
+
+var source = createSource();
+var context$1 = createContext().attach(source);
+
+// Default setup...
+window.addEventListener('DOMContentLoaded', () => {
+    if (!source.element)
+    {
+        let canvasElement = null;
+
+        // Try resolve to <display-port> if exists...
+        let displayElement = document.querySelector('display-port');
+        if (displayElement)
+        {
+            canvasElement = displayElement.getCanvas();
+        }
+        // Otherwise, find a <canvas> element...
+        else
+        {
+            canvasElement = document.querySelector('canvas');
+        }
+
+        if (canvasElement)
+        {
+            attachCanvas$1(canvasElement);
+        }
+    }
+});
+
+function attachCanvas$1(canvasElement)
+{
+    if (source.element) source.detach();
+    return source.attach(canvasElement);
+}
+
+function createContext$1(priority = 0, active = true)
+{
+    return createContext().setPriority(priority).toggle(active).attach(source);
+}
+
+function createInput(adapter)
+{
+    return context$1.registerInput(getNextInputName(), adapter);
+}
+
+function createAction(...eventKeyStrings)
+{
+    return context$1.registerAction(getNextInputName(), ...eventKeyStrings);
+}
+
+function createRange(eventKeyString)
+{
+    return context$1.registerRange(getNextInputName(), eventKeyString);
+}
+
+function createState(eventKeyMap)
+{
+    return context$1.registerState(getNextInputName(), eventKeyMap);
+}
+
+function poll()
+{
+    return source.poll();
+}
+
+function handleEvent(eventKeyString, value)
+{
+    return source.handleEvent(eventKeyString, value);
+}
+
+var nextInputNameId = 1;
+function getNextInputName()
+{
+    return `__input#${nextInputNameId++}`;
+}
+
+var _default$1 = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    attachCanvas: attachCanvas$1,
+    createContext: createContext$1,
+    createInput: createInput,
+    createAction: createAction,
+    createRange: createRange,
+    createState: createState,
+    poll: poll,
+    handleEvent: handleEvent
+});
+
+/**
+ * Generates a uuid v4.
+ * 
+ * @param {number} a The placeholder (serves for recursion within function).
+ * @returns {string} The universally unique id.
+ */
+function uuid(a = undefined)
+{
+    // https://gist.github.com/jed/982883
+    return a?(a^Math.random()*16>>a/4).toString(16):([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,uuid);
+}
+
+function clampRange(value, min, max)
+{
+    if (value < min) return min;
+    if (value > max) return max;
+    return value;
+}
+
+function withinRadius(from, to, radius)
+{
+    const dx = from.x - to.x;
+    const dy = from.y - to.y;
+    return dx * dx + dy * dy <= radius * radius
+}
+
+function lerp(a, b, dt)
+{
+    return a + (b - a) * dt;
+}
+
+function distance2D(from, to)
+{
+    let dx = to.x - from.x;
+    let dy = to.y - from.y;
+    return Math.sqrt(dx * dx + dy * dy);
+}
+
+function direction2D(from, to)
+{
+    let dx = to.x - from.x;
+    let dy = to.y - from.y;
+    return Math.atan2(dy, dx);
+}
+
+function lookAt2D(radians, target, dt)
+{
+    let step = cycleRange(target - radians, -Math.PI, Math.PI);
+    return clampRange(radians + step, radians - dt, radians + dt);
+}
+
+function cycleRange(value, min, max)
+{
+    let range = max - min;
+    let result = (value - min) % range;
+    if (result < 0) result += range;
+    return result + min;
+}
+
+function randomHexColor()
+{
+    return '#' + Math.floor(Math.random() * 16777215).toString(16);
+}
+
+function loadImage(url)
+{
+    let image = new Image();
+    image.src = url;
+    return image;
+}
+
+function clearScreen(ctx, width, height)
+{
+    ctx.fillStyle = 'black';
+    ctx.fillRect(0, 0, width, height);
+}
+
+function drawText(ctx, text, x, y, radians = 0, fontSize = 16, color = 'white')
+{
+    ctx.translate(x, y);
+    if (radians) ctx.rotate(radians);
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = `${fontSize}px sans-serif`;
+    ctx.fillStyle = color;
+    ctx.fillText(text, 0, 0);
+    if (radians) ctx.rotate(-radians);
+    ctx.translate(-x, -y);
+}
+
+function drawBox(ctx, x, y, radians = 0, w = 16, h = w, color = 'white', outline = false)
+{
+    ctx.translate(x, y);
+    if (radians) ctx.rotate(radians);
+    if (!outline)
+    {
+        ctx.fillStyle = color;
+        ctx.fillRect(-w / 2, -h / 2, w, h);
+    }
+    else
+    {
+        ctx.strokeStyle = color;
+        ctx.strokeRect(-w / 2, -h / 2, w, h);
+    }
+    if (radians) ctx.rotate(-radians);
+    ctx.translate(-x, -y);
+}
+
+function intersectBox(a, b)
+{
+    return (Math.abs(a.x - b.x) * 2 < (a.width + b.width)) &&
+        (Math.abs(a.y - b.y) * 2 < (a.height + b.height));
+}
+
+function applyMotion(entity, inverseFrictionX = 1, inverseFrictionY = inverseFrictionX)
+{
+    if (inverseFrictionX !== 1)
+    {
+        entity.dx *= inverseFrictionX;
+    }
+    if (inverseFrictionY !== 1)
+    {
+        entity.dy *= inverseFrictionY;
+    }
+    
+    entity.x += entity.dx;
+    entity.y += entity.dy;
+}
+
+function onDOMLoaded(listener)
+{
+    window.addEventListener('DOMContentLoaded', listener);
+}
+
+function drawCircle(ctx, x, y, radius = 16, color = 'white', outline = false)
+{
+    ctx.fillStyle = color;
+    ctx.strokeStyle = color;
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, 2 * Math.PI);
+    if (outline) ctx.stroke();
+    else ctx.fill();
+}
+
+const TOP_INDEX = 0;
+
+// NOTE: Uses a binary heap to sort.
+class PriorityQueue
+{
+    constructor(comparator)
+    {
+        this._heap = [];
+        this._comparator = comparator;
+    }
+
+    get size() { return this._heap.length; }
+
+    clear()
+    {
+        this._heap.length = 0;
+    }
+
+    push(...values)
+    {
+        for (const value of values)
+        {
+            this._heap.push(value);
+            this._shiftUp();
+        }
+    }
+
+    pop()
+    {
+        const result = this.peek();
+        let bottom = bottomIndex(this);
+        if (bottom > TOP_INDEX)
+        {
+            this._swap(TOP_INDEX, bottom);
+        }
+        this._heap.pop();
+        this._shiftDown();
+        return result;
+    }
+
+    /** Replaces the top value with the new value. */
+    replace(value)
+    {
+        const result = this.peek();
+        this._heap[TOP_INDEX] = value;
+        this._shiftDown();
+        return result;
+    }
+
+    peek()
+    {
+        return this._heap[TOP_INDEX];
+    }
+
+    _compare(i, j)
+    {
+        return this._comparator(this._heap[i], this._heap[j]);
+    }
+
+    _swap(i, j)
+    {
+        let result = this._heap[i];
+        this._heap[i] = this._heap[j];
+        this._heap[j] = result;
+    }
+
+    _shiftUp()
+    {
+        let node = this._heap.length - 1;
+        let nodeParent;
+        while (node > TOP_INDEX && this._compare(node, nodeParent = parentIndex(node)))
+        {
+            this._swap(node, nodeParent);
+            node = nodeParent;
+        }
+    }
+
+    _shiftDown()
+    {
+        const length = this._heap.length;
+        let node = TOP_INDEX;
+        let nodeMax;
+
+        let nodeLeft = leftIndex(node);
+        let flagLeft = nodeLeft < length;
+        let nodeRight = rightIndex(node);
+        let flagRight = nodeRight < length;
+
+        while ((flagLeft && this._compare(nodeLeft, node))
+            || (flagRight && this._compare(nodeRight, node)))
+        {
+            nodeMax = (flagRight && this._compare(nodeRight, nodeLeft)) ? nodeRight : nodeLeft;
+            this._swap(node, nodeMax);
+            node = nodeMax;
+
+            nodeLeft = leftIndex(node);
+            flagLeft = nodeLeft < length;
+            nodeRight = rightIndex(node);
+            flagRight = nodeRight < length;
+        }
+    }
+
+    values()
+    {
+        return this._heap;
+    }
+
+    [Symbol.iterator]()
+    {
+        return this._heap[Symbol.iterator]();
+    }
+}
+
+function bottomIndex(queue)
+{
+    return queue._heap.length - 1;
+}
+
+function parentIndex(i)
+{
+    return ((i + 1) >>> 1) - 1;
+}
+
+function leftIndex(i)
+{
+    return (i << 1) + 1;
+}
+
+function rightIndex(i)
+{
+    return (i + 1) << 1;
+}
+
+/**
+ * @module Util
+ */
+
+var index = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    uuid: uuid,
+    clampRange: clampRange,
+    withinRadius: withinRadius,
+    lerp: lerp,
+    distance2D: distance2D,
+    direction2D: direction2D,
+    lookAt2D: lookAt2D,
+    cycleRange: cycleRange,
+    randomHexColor: randomHexColor,
+    loadImage: loadImage,
+    clearScreen: clearScreen,
+    drawText: drawText,
+    drawBox: drawBox,
+    intersectBox: intersectBox,
+    applyMotion: applyMotion,
+    onDOMLoaded: onDOMLoaded,
+    drawCircle: drawCircle,
+    PriorityQueue: PriorityQueue
+});
+
+const CONTEXT = _default$1.createContext();
+const POS_X = CONTEXT.registerRange('x', 'mouse[pos].x');
+const POS_Y = CONTEXT.registerRange('y', 'mouse[pos].y');
+/*
+// FIXME: This consumes all input for some reason...
+export const DOWN = CONTEXT.registerState('down', {
+    'mouse.up': 0,
+    'mouse.down': 1,
+});
+*/
+const LEFT_DOWN = CONTEXT.registerState('ldown', {
+    'mouse[0].up': 0,
+    'mouse[0].down': 1,
+});
+const RIGHT_DOWN = CONTEXT.registerState('rdown', {
+    'mouse[2].up': 0,
+    'mouse[2].down': 1,
+});
+const CLICK = CONTEXT.registerAction('click', 'mouse.up');
+const LEFT_CLICK = CONTEXT.registerAction('lclick', 'mouse[0].up');
+const RIGHT_CLICK = CONTEXT.registerAction('rclick', 'mouse[2].up');
+
+var MouseControls = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    CONTEXT: CONTEXT,
+    POS_X: POS_X,
+    POS_Y: POS_Y,
+    LEFT_DOWN: LEFT_DOWN,
+    RIGHT_DOWN: RIGHT_DOWN,
+    CLICK: CLICK,
+    LEFT_CLICK: LEFT_CLICK,
+    RIGHT_CLICK: RIGHT_CLICK
+});
+
+const CONTEXT$1 = _default$1.createContext();
+const UP = CONTEXT$1.registerState('up', {
+    'key[ArrowUp].up': 0,
+    'key[ArrowUp].down': 1,
+    'key[w].up': 0,
+    'key[w].down': 1
+});
+const DOWN = CONTEXT$1.registerState('down', {
+    'key[ArrowDown].up': 0,
+    'key[ArrowDown].down': 1,
+    'key[s].up': 0,
+    'key[s].down': 1
+});
+const LEFT = CONTEXT$1.registerState('left', {
+    'key[ArrowLeft].up': 0,
+    'key[ArrowLeft].down': 1,
+    'key[a].up': 0,
+    'key[a].down': 1
+});
+const RIGHT = CONTEXT$1.registerState('right', {
+    'key[ArrowRight].up': 0,
+    'key[ArrowRight].down': 1,
+    'key[d].up': 0,
+    'key[d].down': 1
+});
+
+var MoveControls = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    CONTEXT: CONTEXT$1,
+    UP: UP,
+    DOWN: DOWN,
+    LEFT: LEFT,
+    RIGHT: RIGHT
+});
+
+const CONTEXT$2 = _default$1.createContext();
+const UP$1 = CONTEXT$2.registerState('up', {
+    'key[ArrowUp].up': 0,
+    'key[ArrowUp].down': 1,
+    'key[w].up': 0,
+    'key[w].down': 1
+});
+const DOWN$1 = CONTEXT$2.registerState('down', {
+    'key[ArrowDown].up': 0,
+    'key[ArrowDown].down': 1,
+    'key[s].up': 0,
+    'key[s].down': 1
+});
+const LEFT$1 = CONTEXT$2.registerState('left', {
+    'key[ArrowLeft].up': 0,
+    'key[ArrowLeft].down': 1,
+    'key[a].up': 0,
+    'key[a].down': 1
+});
+const RIGHT$1 = CONTEXT$2.registerState('right', {
+    'key[ArrowRight].up': 0,
+    'key[ArrowRight].down': 1,
+    'key[d].up': 0,
+    'key[d].down': 1
+});
+const ZOOM_IN = CONTEXT$2.registerState('zoomin', {
+    'key[z].up': 0,
+    'key[z].down': 1
+});
+const ZOOM_OUT = CONTEXT$2.registerState('zoomout', {
+    'key[x].up': 0,
+    'key[x].down': 1
+});
+const ROLL_LEFT = CONTEXT$2.registerState('rollleft', {
+    'key[q].up': 0,
+    'key[q].down': 1
+});
+const ROLL_RIGHT = CONTEXT$2.registerState('rollright', {
+    'key[e].up': 0,
+    'key[e].down': 1
+});
+
+function doCameraMove(camera, moveSpeed = 6, zoomSpeed = 0.02, rotSpeed = 0.01)
+{
+    const xControl = RIGHT$1.value - LEFT$1.value;
+    const yControl = DOWN$1.value - UP$1.value;
+    const zoomControl = ZOOM_OUT.value - ZOOM_IN.value; 
+    const rollControl = ROLL_RIGHT.value - ROLL_LEFT.value;
+
+    // let roll = rollControl * rotSpeed;
+    // camera.transform.rotation += roll;
+
+    let scale = (zoomControl * zoomSpeed) + 1;
+    let scaleX = camera.transform.scaleX * scale;
+    let scaleY = camera.transform.scaleY * scale;
+    camera.transform.setScale(scaleX, scaleY);
+
+    let moveX = (xControl * moveSpeed) / scaleX;
+    let moveY = (yControl * moveSpeed) / scaleY;
+    camera.transform.x += moveX;
+    camera.transform.y += moveY;
+}
+
+var Camera2DControls = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    CONTEXT: CONTEXT$2,
+    UP: UP$1,
+    DOWN: DOWN$1,
+    LEFT: LEFT$1,
+    RIGHT: RIGHT$1,
+    ZOOM_IN: ZOOM_IN,
+    ZOOM_OUT: ZOOM_OUT,
+    ROLL_LEFT: ROLL_LEFT,
+    ROLL_RIGHT: ROLL_RIGHT,
+    doCameraMove: doCameraMove
+});
+
+var game;
+
+const DEFAULT_VIEW = View.createView();
+
+function registerScene(name, scene)
+{
+    if (!game) game = createGame(scene);
+    game.scenes.register(name, scene);
+}
+
+function start(scene = undefined)
+{
+    if (!game) game = createGame(scene);
+    return game.start();
+}
+
+function nextScene(scene, transition = null, loadOpts = {})
+{
+    game.nextScene(scene, transition, loadOpts);
+}
+
+function stop()
+{
+    game.stop();
+}
+
+function getScene()
+{
+    return game.scenes.getCurrentScene();
+}
+
+function createGame(scene)
+{
+    let result = {
+        loop: new GameLoop(),
+        scenes: new SceneManager(),
+        entities: new EntityManager(),
+        _renderTargets: new Map(),
+        addRenderTarget(view, renderer = null, viewPort = null, context = null, handle = view)
+        {
+            this._renderTargets.set(handle, { view, renderer, viewPort, context });
+            return this;
+        },
+        removeRenderTarget(handle)
+        {
+            this._renderTargets.delete(handle);
+            return this;
+        },
+        clearRenderTargets()
+        {
+            this._renderTargets.clear();
+            return this;
+        },
+        nextScene(scene, transition = null, loadOpts = {})
+        {
+            this.scenes.nextScene(scene, transition, loadOpts);
+        },
+        start()
+        {
+            this.loop.start();
+            return this;
+        },
+        stop()
+        {
+            this.loop.stop();
+            return this;
+        },
+        update(dt)
+        {
+            this.scenes.update(dt);
+
+            // Do render regardless of loading...
+            this.render();
+        },
+        render()
+        {
+            if (this._renderTargets.size <= 0)
+            {
+                let scene = this.scenes.getCurrentScene();
+                this._renderStep(DEFAULT_VIEW,
+                    scene ? scene.onRender : null,
+                    null,
+                    scene,
+                    true);
+            }
+            else
+            {
+                // TODO: In the future, renderer should be completely separate from the scene.
+                // Perhaps not even handled in Game.js ...
+                let scene = this.scenes.getCurrentScene();
+                let first = true;
+                for(let renderTarget of this._renderTargets.values())
+                {
+                    let view = renderTarget.view;
+                    let renderer = renderTarget.renderer || (scene ? scene.onRender : null);
+                    let viewPort = renderTarget.viewPort;
+                    let renderContext = renderTarget.context || scene;
+                    this._renderStep(view, renderer, viewPort, renderContext, first);
+                    first = false;
+                }
+            }
+        },
+        _renderStep(view, renderer = null, viewPort = null, renderContext = null, first = true)
+        {
+            // Reset any transformations...
+            view.context.setTransform(1, 0, 0, 1, 0, 0);
+
+            // TODO: Something more elegant please? I don't think we need the flag.
+            if (first)
+            {
+                index.clearScreen(view.context, view.width, view.height);
+            }
+            else
+            {
+                view.context.clearRect(0, 0, view.width, view.height);
+            }
+            
+            if (renderer) renderer.call(renderContext, view.context, view, this.scenes.getCurrentScene());
+
+            // NOTE: The renderer can define a custom viewport to draw to
+            if (viewPort)
+            {
+                View.drawBufferToCanvas(viewPort.getContext(), view.canvas, viewPort.getX(), viewPort.getY(), viewPort.getWidth(), viewPort.getHeight());
+            }
+            // TODO: Is there a way to get rid of this?
+            else if (_default.getDrawContext())
+            {
+                View.drawBufferToCanvas(_default.getDrawContext(), view.canvas);
+            }
+        }
+    };
+    result.loop.on('update', result.update.bind(result));
+    result.scenes.on('preupdate', () => _default$1.poll());
+    result.scenes.setSharedContext(result);
+    result.scenes.nextScene(scene);
+    return result;
+}
+
+var Game = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    DEFAULT_VIEW: DEFAULT_VIEW,
+    registerScene: registerScene,
+    start: start,
+    nextScene: nextScene,
+    stop: stop,
+    getScene: getScene,
+    createGame: createGame
+});
+
+const LOAD_TIME = 250;
+const FADE_IN_TIME = LOAD_TIME * 0.3;
+const FADE_OUT_TIME = LOAD_TIME * 0.9;
+
+const CONTEXT$3 = _default$1.createContext();
+const ANY_KEY = CONTEXT$3.registerAction('continue', 'key.down', 'mouse.down');
+
+class SplashScene
+{
+    constructor(splashText, nextScene)
+    {
+        this.splashText = splashText;
+        this.nextScene = nextScene;
+    }
+
+    /** @override */
+    async load(game)
+    {
+        CONTEXT$3.enable();
+    }
+
+    /** @override */
+    async unload(game)
+    {
+        CONTEXT$3.disable();
+    }
+
+    /** @override */
+    onStart()
+    {
+        this.time = 0;
+    }
+    
+    /** @override */
+    onUpdate(dt)
+    {
+        this.time += dt;
+        // Skip loading...
+        if (ANY_KEY.value && this.time > FADE_IN_TIME && this.time < FADE_OUT_TIME)
+        {
+            this.time = FADE_OUT_TIME;
+        }
+        // Continue to next scene...
+        if (this.time > LOAD_TIME) nextScene(this.nextScene);
+    }
+    
+    /** @override */
+    onRender(ctx, view, world)
+    {
+        let opacity = 0;
+        if (world.time < FADE_IN_TIME)
+        {
+            opacity = world.time / (FADE_IN_TIME);
+        }
+        else if (world.time > FADE_OUT_TIME)
+        {
+            opacity = (LOAD_TIME - world.time) / (LOAD_TIME - FADE_OUT_TIME);
+        }
+        else
+        {
+            opacity = 1;
+        }
+        index.drawText(ctx, this.splashText, view.width / 2, view.height / 2, 0, 16, `rgba(255, 255, 255, ${opacity})`);
+    }
+}
+
+class Transform2D
+{
+    constructor(x = 0, y = 0)
+    {
+        this.matrix = [1, 0, 0, 1, x, y];
+    }
+
+    setMatrix(m11, m12, m21, m22, m31, m32)
+    {
+        this.matrix[0] = m11;
+        this.matrix[1] = m12;
+        this.matrix[2] = m21;
+        this.matrix[3] = m22;
+        this.matrix[4] = m31;
+        this.matrix[5] = m32;
+        return this;
+    }
+
+    setPosition(x, y)
+    {
+        this.matrix[4] = x;
+        this.matrix[5] = y;
+        return this;
+    }
+
+    setRotation(radians)
+    {
+        this.rotation = radians;
+        return this;
+    }
+
+    setScale(sx, sy = sx)
+    {
+        let rsin = Math.sin(this.rotation);
+        this.matrix[0] = sx;
+        this.matrix[1] = rsin * sy;
+        this.matrix[2] = -rsin * sx;
+        this.matrix[3] = sy;
+        return this;
+    }
+
+    // NOTE: This is for ease of access
+    get x() { return this.matrix[4]; }
+    set x(value) { this.matrix[4] = value; }
+    get y() { return this.matrix[5]; }
+    set y(value) { this.matrix[5] = value; }
+    get rotation() { return Math.atan2(-this.matrix[2], this.matrix[0]); }
+    set rotation(value)
+    {
+        let scaleX = this.scaleX;
+        let scaleY = this.scaleY;
+        // HACK: Rolling doesn't work...
+        value = Math.abs(value);
+        this.matrix[1] = Math.sin(value) * scaleY;
+        this.matrix[2] = -Math.sin(value) * scaleX;
+    }
+    get scaleX() { return this.matrix[0]; }
+    set scaleX(value)
+    {
+        let rotation = this.rotation;
+        this.matrix[0] = value;
+        this.matrix[2] = -Math.sin(rotation) * value;
+    }
+    get scaleY() { return this.matrix[3]; }
+    set scaleY(value)
+    {
+        let rotation = this.rotation;
+        this.matrix[1] = Math.sin(rotation) * value;
+        this.matrix[3] = value;
+    }
+
+    // NOTE: This supports 2D DOMMatrix manipulation (such as transform() or setTransform())
+    get a() { return this.matrix[0]; }
+    get b() { return this.matrix[1]; }
+    get c() { return this.matrix[2]; }
+    get d() { return this.matrix[3]; }
+    get e() { return this.matrix[4]; }
+    get f() { return this.matrix[5]; }
+
+    // NOTE: This supports array access (such as gl-matrix)
+    get 0() { return this.matrix[0]; }
+    set 0(value) { this.matrix[0] = value; }
+    get 1() { return this.matrix[1]; }
+    set 1(value) { this.matrix[1] = value; }
+    get 2() { return this.matrix[2]; }
+    set 2(value) { this.matrix[2] = value; }
+    get 3() { return this.matrix[3]; }
+    set 3(value) { this.matrix[3] = value; }
+    get 4() { return this.matrix[4]; }
+    set 4(value) { this.matrix[4] = value; }
+    get 5() { return this.matrix[5]; }
+    set 5(value) { this.matrix[5] = value; }
+    // NOTE: These should never change for 2D transformations
+    get 6() { return 0; }
+    get 7() { return 0; }
+    get 8() { return 1; }
+    get length() { return 9; }
+}
+
+class Camera2D extends AbstractCamera
+{
+    static applyTransform(ctx, camera, viewOffsetX = 0, viewOffsetY = 0)
+    {
+        camera.setOffset(viewOffsetX, viewOffsetY);
+        ctx.setTransform(...camera.getProjectionMatrix());
+        ctx.transform(...camera.getViewMatrix());
+    }
+
+    static resetTransform(ctx)
+    {
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+    }
+    
+    static followTarget(camera, target, speed = 1)
+    {
+        if (target)
+        {
+            camera.transform.x = index.lerp(camera.transform.x, target.x, speed);
+            camera.transform.y = index.lerp(camera.transform.y, target.y, speed);
+        }
+    }
+
+    constructor(offsetX = 0, offsetY = 0, speed = 1)
+    {
+        super();
+        this.target = null;
+        this.speed = speed;
+        this.transform = new Transform2D();
+
+        this.offsetX = offsetX;
+        this.offsetY = offsetY;
+    }
+
+    setOffset(x, y)
+    {
+        this.offsetX = x;
+        this.offsetY = y;
+        return this;
+    }
+
+    /** @override */
+    getProjectionMatrix()
+    {
+        // NOTE: Scaling must be applied here, instead of the view
+        return [this.transform.matrix[0], 0, 0, this.transform.matrix[3],
+            this.offsetX, this.offsetY];
+    }
+
+    /** @override */
+    getViewMatrix()
+    {
+        let dst = [ ...this.transform.matrix ];
+        dst[0] = Math.cos(this.transform.rotation);
+        dst[3] = dst[0];
+        dst[4] = -dst[4];
+        dst[5] = -dst[5];
+        return dst;
+    }
+}
+
+const CELL_SIZE = 32;
+const ORIGIN_POINT = new DOMPointReadOnly(0, 0, 0, 1);
+const CELL_POINT = new DOMPointReadOnly(CELL_SIZE, CELL_SIZE, 0, 1);
+const INV_NATURAL_LOG_2 = 1 / Math.log(2);
+
+function drawWorldGrid(ctx, view, camera)
+{
+    const viewMatrix = new DOMMatrixReadOnly(camera.getViewMatrix());
+    const projMatrix = new DOMMatrixReadOnly(camera.getProjectionMatrix());
+    const transformMatrix = projMatrix.multiply(viewMatrix);
+    const offsetPoint = transformMatrix.transformPoint(ORIGIN_POINT);
+    const cellPoint = transformMatrix.transformPoint(CELL_POINT);
+
+    const minCellWidth = cellPoint.x - offsetPoint.x;
+    const minCellHeight = cellPoint.y - offsetPoint.y;
+    const maxCellSize = Math.floor((Math.log(view.width) - Math.log(minCellWidth)) * INV_NATURAL_LOG_2);
+    
+    let cellWidth = Math.pow(2, maxCellSize) * minCellWidth;
+    let cellHeight = Math.pow(2, maxCellSize) * minCellHeight;
+    if (cellWidth === 0 || cellHeight === 0) return;
+    drawGrid(ctx, view, offsetPoint.x, offsetPoint.y, cellWidth, cellHeight, 1, false);
+    drawGrid(ctx, view, offsetPoint.x, offsetPoint.y, cellWidth / 2, cellHeight / 2, 3 / 4, false);
+    drawGrid(ctx, view, offsetPoint.x, offsetPoint.y, cellWidth / 4, cellHeight / 4, 2 / 4, false);
+    drawGrid(ctx, view, offsetPoint.x, offsetPoint.y, cellWidth / 8, cellHeight / 8, 1 / 4, false);
+}
+
+function drawWorldTransformGizmo(ctx, view, camera)
+{
+    const viewMatrix = new DOMMatrixReadOnly(camera.getViewMatrix());
+    const worldPoint = viewMatrix.transformPoint(ORIGIN_POINT);
+    const fontSize = view.width / CELL_SIZE;
+    ctx.fillStyle = '#666666';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.font = `${fontSize}px monospace`;
+    ctx.fillText(`(${-Math.floor(worldPoint.x)},${-Math.floor(worldPoint.y)})`, CELL_SIZE, CELL_SIZE);
+    drawTransformGizmo(ctx, CELL_SIZE / 4, CELL_SIZE / 4, CELL_SIZE, CELL_SIZE);
+}
+
+function drawGrid(ctx, view, offsetX, offsetY, cellWidth = 32, cellHeight = cellWidth, lineWidth = 1, showCoords = false)
+{
+    ctx.beginPath();
+    for(let y = offsetY % cellHeight; y < view.height; y += cellHeight)
+    {
+        ctx.moveTo(0, y);
+        ctx.lineTo(view.width, y);
+    }
+    for(let x = offsetX % cellWidth; x < view.width; x += cellWidth)
+    {
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, view.height);
+    }
+    ctx.strokeStyle = '#333333';
+    ctx.lineWidth = lineWidth;
+    ctx.stroke();
+    ctx.lineWidth = 1;
+
+    if (showCoords)
+    {
+        const fontSize = Math.min(cellWidth / 4, 16);
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+        ctx.font = `bold ${fontSize}px monospace`;
+        ctx.fillStyle = '#333333';
+
+        for(let y = offsetY % cellHeight; y < view.height; y += cellHeight)
+        {
+            for(let x = offsetX % cellWidth; x < view.width; x += cellWidth)
+            {
+                ctx.fillText(`(${Math.round((x - offsetX) / cellWidth)},${Math.round((y - offsetY) / cellHeight)})`, x + lineWidth * 2, y + lineWidth * 2);
+            }
+        }
+    }
+}
+
+function drawTransformGizmo(ctx, x, y, width, height = width)
+{
+    const fontSize = width * 0.6;
+
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = `${fontSize}px monospace`;
+
+    ctx.translate(x, y);
+
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(width, 0);
+    ctx.strokeStyle = '#FF0000';
+    ctx.stroke();
+    ctx.fillStyle = '#FF0000';
+    ctx.fillText('x', width + fontSize, 0);
+
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(0, height);
+    ctx.strokeStyle = '#00FF00';
+    ctx.stroke();
+    ctx.fillStyle = '#00FF00';
+    ctx.fillText('y', 0, height + fontSize);
+
+    const zSize = fontSize / 4;
+    ctx.fillStyle = '#0000FF';
+    ctx.fillRect(-zSize / 2, -zSize / 2, zSize, zSize);
+    ctx.fillText('z', fontSize / 2, fontSize / 2);
+
+    ctx.translate(-x, -y);
+}
+
+var CameraHelper = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    drawWorldGrid: drawWorldGrid,
+    drawWorldTransformGizmo: drawWorldTransformGizmo,
+    drawGrid: drawGrid,
+    drawTransformGizmo: drawTransformGizmo
+});
+
+function createSpawner(entityFactory)
+{
+    return {
+        entities: new Set(),
+        factory: entityFactory,
+        create(...args)
+        {
+            return this.factory.apply(null, args);
+        },
+        destroy(entity)
+        {
+            this.entities.delete(entity);
+        },
+        spawn(...args)
+        {
+            let entity = this.create(...args);
+            this.entities.add(entity);
+            return entity;
+        },
+        clear()
+        {
+            this.entities.clear();
+        },
+        [Symbol.iterator]()
+        {
+            return this.entities.values();
+        }
+    };
+}
+
+var EntitySpawner = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    createSpawner: createSpawner
+});
+
+
+
+export default self;
+export { AbstractCamera, AbstractInputAdapter, ActionInputAdapter, Audio, Camera2D, Camera2DControls, CameraHelper, ComponentHelper as Component, ComponentBase, ComponentFactory, DOUBLE_ACTION_TIME, _default as Display, DisplayPort, DoubleActionInputAdapter, EntityHelper as Entity, EntityBase, EntityComponent$1 as EntityComponent, EntityManager, EntityQuery, EntitySpawner, EntityWrapper, EventKey, Eventable$1 as Eventable, FineDiffStrategy, Game, GameLoop, HotEntityModule, HotEntityReplacement, HybridEntity, _default$1 as Input, InputContext, InputSource, Keyboard, MODE_CENTER, MODE_FIT, MODE_NOSCALE, MODE_STRETCH, Mouse, MouseControls, MoveControls, QueryOperator, Random, RandomGenerator, RangeInputAdapter, SceneBase, SceneManager, SimpleRandomGenerator, SplashScene, StateInputAdapter, TagComponent, Transform2D, index as Utils, View, ViewHelper, ViewPort };

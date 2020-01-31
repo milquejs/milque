@@ -1,7 +1,4 @@
-import { SceneBase, Utils } from './milque.js';
-import { Camera2D } from './util/Camera2D.js';
-import * as Camera2DControls from './controls/Camera2DControls.js';
-import * as CameraHelper from './util/CameraHelper.js';
+import { SceneBase, Utils, Camera2D, Camera2DControls, CameraHelper } from './milque.js';
 import { TileMap } from './tile/TileMap.js';
 import { TileSet } from './tile/TileSet.js';
 

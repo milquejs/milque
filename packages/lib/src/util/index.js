@@ -1,4 +1,4 @@
-export { Camera2D } from './Camera2D.js';
+export * from './Camera2D.js';
 
 import * as CameraHelper from './CameraHelper.js';
 export { CameraHelper };

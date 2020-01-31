@@ -1,4 +1,5 @@
-import { Utils, AbstractCamera } from '@milque/core';
+import { Utils } from '@milque/util';
+import { AbstractCamera } from '@milque/core';
 import { Transform2D } from './Transform2D.js';
 
 export class Camera2D extends AbstractCamera

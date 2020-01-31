@@ -1,2 +1,2 @@
-import * as Util from './util/index.js';
-export { Util };
+import * as Utils from './util/index.js';
+export { Utils };

@@ -1,3 +1,0 @@
-class Render2DManager
-{
-}

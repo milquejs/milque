@@ -307,7 +307,7 @@
         PriorityQueue: PriorityQueue
     });
 
-    exports.Util = index;
+    exports.Utils = index;
 
     Object.defineProperty(exports, '__esModule', { value: true });
 
