@@ -3,7 +3,6 @@ var self = /*#__PURE__*/Object.freeze({
     get default () { return self; },
     get Audio () { return Audio; },
     get Random () { return Random; },
-    get Game () { return Game; },
     get RandomGenerator () { return RandomGenerator; },
     get SimpleRandomGenerator () { return SimpleRandomGenerator; },
     get Eventable () { return Eventable$1; },
@@ -843,98 +842,6 @@ var Random = /*#__PURE__*/Object.freeze({
     randomRange: randomRange,
     randomChoose: randomChoose,
     randomSign: randomSign
-});
-
-const GAME_LOOPS = new Map();
-
-/**
- * Starts a game loop. This is not required to start a loop, but is
- * here for ease of use.
- * 
- * @example
- * let context = {
- *   start() {
- *     // Start code here...
- *   },
- *   update(dt) {
- *     // Update code here...
- *   }
- * };
- * GameLoop.start(context);
- * 
- * @example
- * GameLoop.start()
- *   .on('start', function start() {
- *     // Start code here...
- *   })
- *   .on('update', function update(dt) {
- *     // Update code here...
- *   });
- * 
- * @example
- * let gameLoop = new GameLoop();
- * gameLoop
- *   .on('start', ...)
- *   .on('update', ...)
- *   .on('stop', ...);
- * 
- * @param {Object} [handle] The handle that refers to the registered game
- * loop. If the handle has not been previously registered, it will
- * register the handle with a new game loop, with the handle serving as
- * both the new game loop's handle and context (only if the handle is
- * an object, otherwise, it will create an empty context).
- * 
- * @returns {GameLoop} The started game loop instance.
- */
-function start(handle = undefined)
-{
-    let result;
-    if (GAME_LOOPS.has(handle))
-    {
-        throw new Error('Cannot start game loop with duplicate handle.');
-    }
-    else
-    {
-        let context;
-        if (typeof handle === 'object') context = handle;
-        else context = {};
-
-        result = new GameLoop(context);
-    }
-    GAME_LOOPS.set(handle, result);
-
-    // Start the loop (right after any chained method calls, like event listeners)
-    setTimeout(() => result.start(), 0);
-    return result;
-}
-
-/**
- * Stops a game loop. This is not required to stop a loop, but is
- * here for ease of use.
- */
-function stop(handle)
-{
-    if (GAME_LOOPS.has(handle))
-    {
-        let gameLoop = GAME_LOOPS.get(handle);
-        gameLoop.stop();
-        GAME_LOOPS.delete(handle);
-        return gameLoop;
-    }
-
-    return null;
-}
-
-function createGameLoop(context = {})
-{
-    return new GameLoop(context);
-}
-
-var Game = /*#__PURE__*/Object.freeze({
-    __proto__: null,
-    start: start,
-    stop: stop,
-    createGameLoop: createGameLoop
 });
 
 /**
@@ -3954,4 +3861,4 @@ var index = /*#__PURE__*/Object.freeze({
 
 
 export default self;
-export { AbstractCamera, AbstractInputAdapter, ActionInputAdapter, Audio, ComponentHelper as Component, ComponentBase, ComponentFactory, DOUBLE_ACTION_TIME, _default as Display, DisplayPort, DoubleActionInputAdapter, EntityHelper as Entity, EntityBase, EntityComponent$1 as EntityComponent, EntityManager, EntityQuery, EntityWrapper, EventKey, Eventable$1 as Eventable, FineDiffStrategy, Game, GameLoop, HotEntityModule, HotEntityReplacement, HybridEntity, _default$1 as Input, InputContext, InputSource, Keyboard, MODE_CENTER, MODE_FIT, MODE_NOSCALE, MODE_STRETCH, Mouse, QueryOperator, Random, RandomGenerator, RangeInputAdapter, SceneBase, SceneManager, SimpleRandomGenerator, StateInputAdapter, TagComponent, index as Util, View, ViewHelper, ViewPort };
+export { AbstractCamera, AbstractInputAdapter, ActionInputAdapter, Audio, ComponentHelper as Component, ComponentBase, ComponentFactory, DOUBLE_ACTION_TIME, _default as Display, DisplayPort, DoubleActionInputAdapter, EntityHelper as Entity, EntityBase, EntityComponent$1 as EntityComponent, EntityManager, EntityQuery, EntityWrapper, EventKey, Eventable$1 as Eventable, FineDiffStrategy, GameLoop, HotEntityModule, HotEntityReplacement, HybridEntity, _default$1 as Input, InputContext, InputSource, Keyboard, MODE_CENTER, MODE_FIT, MODE_NOSCALE, MODE_STRETCH, Mouse, QueryOperator, Random, RandomGenerator, RangeInputAdapter, SceneBase, SceneManager, SimpleRandomGenerator, StateInputAdapter, TagComponent, index as Util, View, ViewHelper, ViewPort };

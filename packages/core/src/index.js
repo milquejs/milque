@@ -8,5 +8,3 @@ import * as Audio from './modules/Audio.js';
 export { Audio };
 import * as Random from './modules/Random.js';
 export { Random };
-import * as Game from './modules/Game.js';
-export { Game };
