@@ -47,7 +47,7 @@ var self = /*#__PURE__*/Object.freeze({
     get StateInputAdapter () { return StateInputAdapter; },
     get Keyboard () { return Keyboard; },
     get Mouse () { return Mouse; },
-    get Util () { return _default$2; }
+    get Util () { return index; }
 });
 
 class RandomGenerator
@@ -3792,11 +3792,144 @@ function drawCircle(ctx, x, y, radius = 16, color = 'white', outline = false)
     else ctx.fill();
 }
 
+const TOP_INDEX = 0;
+
+// NOTE: Uses a binary heap to sort.
+class PriorityQueue
+{
+    constructor(comparator)
+    {
+        this._heap = [];
+        this._comparator = comparator;
+    }
+
+    get size() { return this._heap.length; }
+
+    clear()
+    {
+        this._heap.length = 0;
+    }
+
+    push(...values)
+    {
+        for (const value of values)
+        {
+            this._heap.push(value);
+            this._shiftUp();
+        }
+    }
+
+    pop()
+    {
+        const result = this.peek();
+        let bottom = bottomIndex(this);
+        if (bottom > TOP_INDEX)
+        {
+            this._swap(TOP_INDEX, bottom);
+        }
+        this._heap.pop();
+        this._shiftDown();
+        return result;
+    }
+
+    /** Replaces the top value with the new value. */
+    replace(value)
+    {
+        const result = this.peek();
+        this._heap[TOP_INDEX] = value;
+        this._shiftDown();
+        return result;
+    }
+
+    peek()
+    {
+        return this._heap[TOP_INDEX];
+    }
+
+    _compare(i, j)
+    {
+        return this._comparator(this._heap[i], this._heap[j]);
+    }
+
+    _swap(i, j)
+    {
+        let result = this._heap[i];
+        this._heap[i] = this._heap[j];
+        this._heap[j] = result;
+    }
+
+    _shiftUp()
+    {
+        let node = this._heap.length - 1;
+        let nodeParent;
+        while (node > TOP_INDEX && this._compare(node, nodeParent = parentIndex(node)))
+        {
+            this._swap(node, nodeParent);
+            node = nodeParent;
+        }
+    }
+
+    _shiftDown()
+    {
+        const length = this._heap.length;
+        let node = TOP_INDEX;
+        let nodeMax;
+
+        let nodeLeft = leftIndex(node);
+        let flagLeft = nodeLeft < length;
+        let nodeRight = rightIndex(node);
+        let flagRight = nodeRight < length;
+
+        while ((flagLeft && this._compare(nodeLeft, node))
+            || (flagRight && this._compare(nodeRight, node)))
+        {
+            nodeMax = (flagRight && this._compare(nodeRight, nodeLeft)) ? nodeRight : nodeLeft;
+            this._swap(node, nodeMax);
+            node = nodeMax;
+
+            nodeLeft = leftIndex(node);
+            flagLeft = nodeLeft < length;
+            nodeRight = rightIndex(node);
+            flagRight = nodeRight < length;
+        }
+    }
+
+    values()
+    {
+        return this._heap;
+    }
+
+    [Symbol.iterator]()
+    {
+        return this._heap[Symbol.iterator]();
+    }
+}
+
+function bottomIndex(queue)
+{
+    return queue._heap.length - 1;
+}
+
+function parentIndex(i)
+{
+    return ((i + 1) >>> 1) - 1;
+}
+
+function leftIndex(i)
+{
+    return (i << 1) + 1;
+}
+
+function rightIndex(i)
+{
+    return (i + 1) << 1;
+}
+
 /**
  * @module Util
  */
 
-var _default$2 = /*#__PURE__*/Object.freeze({
+var index = /*#__PURE__*/Object.freeze({
     __proto__: null,
     uuid: uuid,
     clampRange: clampRange,
@@ -3814,10 +3947,11 @@ var _default$2 = /*#__PURE__*/Object.freeze({
     intersectBox: intersectBox,
     applyMotion: applyMotion,
     onDOMLoaded: onDOMLoaded,
-    drawCircle: drawCircle
+    drawCircle: drawCircle,
+    PriorityQueue: PriorityQueue
 });
 
 
 
 export default self;
-export { AbstractCamera, AbstractInputAdapter, ActionInputAdapter, Audio, ComponentHelper as Component, ComponentBase, ComponentFactory, DOUBLE_ACTION_TIME, _default as Display, DisplayPort, DoubleActionInputAdapter, EntityHelper as Entity, EntityBase, EntityComponent$1 as EntityComponent, EntityManager, EntityQuery, EntityWrapper, EventKey, Eventable$1 as Eventable, FineDiffStrategy, Game, GameLoop, HotEntityModule, HotEntityReplacement, HybridEntity, _default$1 as Input, InputContext, InputSource, Keyboard, MODE_CENTER, MODE_FIT, MODE_NOSCALE, MODE_STRETCH, Mouse, QueryOperator, Random, RandomGenerator, RangeInputAdapter, SceneBase, SceneManager, SimpleRandomGenerator, StateInputAdapter, TagComponent, _default$2 as Util, View, ViewHelper, ViewPort };
+export { AbstractCamera, AbstractInputAdapter, ActionInputAdapter, Audio, ComponentHelper as Component, ComponentBase, ComponentFactory, DOUBLE_ACTION_TIME, _default as Display, DisplayPort, DoubleActionInputAdapter, EntityHelper as Entity, EntityBase, EntityComponent$1 as EntityComponent, EntityManager, EntityQuery, EntityWrapper, EventKey, Eventable$1 as Eventable, FineDiffStrategy, Game, GameLoop, HotEntityModule, HotEntityReplacement, HybridEntity, _default$1 as Input, InputContext, InputSource, Keyboard, MODE_CENTER, MODE_FIT, MODE_NOSCALE, MODE_STRETCH, Mouse, QueryOperator, Random, RandomGenerator, RangeInputAdapter, SceneBase, SceneManager, SimpleRandomGenerator, StateInputAdapter, TagComponent, index as Util, View, ViewHelper, ViewPort };
