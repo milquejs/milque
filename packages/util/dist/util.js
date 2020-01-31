@@ -152,7 +152,7 @@
      * @module Util
      */
 
-    var _default = /*#__PURE__*/Object.freeze({
+    var index = /*#__PURE__*/Object.freeze({
         __proto__: null,
         uuid: uuid,
         clampRange: clampRange,
@@ -173,7 +173,7 @@
         drawCircle: drawCircle
     });
 
-    exports.Util = _default;
+    exports.Util = index;
 
     Object.defineProperty(exports, '__esModule', { value: true });
 

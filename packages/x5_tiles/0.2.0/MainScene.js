@@ -42,38 +42,39 @@ export class MainScene extends SceneBase
         CameraHelper.drawWorldGrid(ctx, view, world.camera);
         Camera2D.applyTransform(ctx, world.camera, view.width / 2, view.height / 2);
         {
-            renderTiles(ctx, world.tileMap);
+            renderTiles(ctx, world, world.tileMap);
         }
         Camera2D.resetTransform(ctx);
         CameraHelper.drawWorldTransformGizmo(ctx, view, world.camera);
     }
 }
 
-function renderTiles(ctx, tileMap, offsetX = 0, offsetY = 0, tileWidth = 16, tileHeight = 16)
+function renderTiles(ctx, world, tileMap, offsetX = 0, offsetY = 0, tileWidth = 16, tileHeight = 16)
 {
     for(let x = 0; x < tileMap.width; ++x)
     {
         for(let y = 0; y < tileMap.height; ++y)
         {
-            renderTile(ctx, tileMap.get(x, y), offsetX + x * tileWidth, offsetY + y * tileHeight, tileWidth, tileHeight);
+            renderTile(ctx, world, tileMap.get(x, y), offsetX + x * tileWidth, offsetY + y * tileHeight, tileWidth, tileHeight);
         }
     }
 }
 
-function renderTile(ctx, tileValue, offsetX = 0, offsetY = 0, width = 16, height = 16)
+function renderTile(ctx, world, tileValue, offsetX = 0, offsetY = 0, width = 16, height = 16)
 {
     switch(tileValue)
     {
         case 0:
             break;
         case 1:
-            ctx.fillStyle = 'green';
-            ctx.fillRect(offsetX, offsetY, width, height);
+            let image = world.tileSheet.weapon_knife;
+            ctx.drawImage(image.source, image.u, image.v, image.w, image.h, offsetX, offsetY, width, height);
             break;
         case 2:
             ctx.fillStyle = 'dodgerblue';
             ctx.fillRect(offsetX, offsetY, width, height);
             break;
+
     }
 }
 

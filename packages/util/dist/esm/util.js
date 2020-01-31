@@ -146,7 +146,7 @@ function drawCircle(ctx, x, y, radius = 16, color = 'white', outline = false)
  * @module Util
  */
 
-var _default = /*#__PURE__*/Object.freeze({
+var index = /*#__PURE__*/Object.freeze({
     __proto__: null,
     uuid: uuid,
     clampRange: clampRange,
@@ -167,4 +167,4 @@ var _default = /*#__PURE__*/Object.freeze({
     drawCircle: drawCircle
 });
 
-export { _default as Util };
+export { index as Util };
