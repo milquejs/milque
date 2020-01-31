@@ -84,6 +84,36 @@ export class EntityManager
             console.error(e);
         }
     }
+
+    addTagComponent(entityId, componentType)
+    {
+        try
+        {
+            let type = typeof componentType;
+            if (type === 'symbol')
+            {
+                throw new Error('Symbols are not yet supported as tag components.');
+            }
+            else if (type === 'number')
+            {
+                throw new Error('Numbers are not yet supported as tag components.');
+            }
+            else if (type === 'string')
+            {
+                this.componentHandler.putComponent(entityId, componentType);
+            }
+            else
+            {
+                throw new Error(`Component of type '${type}' cannot be a tag component.`);
+            }
+            return componentType;
+        }
+        catch(e)
+        {
+            console.error(`Failed to add tag component '${getComponentTypeName(componentType)}' to entity '${entityId}'.`);
+            console.error(e);
+        }
+    }
     
     removeComponent(entityId, componentType)
     {

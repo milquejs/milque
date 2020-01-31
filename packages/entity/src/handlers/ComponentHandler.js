@@ -62,7 +62,7 @@ export class ComponentHandler
         return component;
     }
 
-    putComponent(entityId, componentType, component, initialValues)
+    putComponent(entityId, componentType, component = componentType, initialValues = undefined)
     {
         let componentInstanceMap;
         if (this.componentTypeInstanceMap.has(componentType))
