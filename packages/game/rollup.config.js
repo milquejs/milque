@@ -1,3 +1,3 @@
 import { createConfig } from '../../scripts/BaseRollupConfig.js';
 import * as pkg from './package.json';
-export default createConfig(pkg, 'Entity');
+export default createConfig(pkg, 'Game');

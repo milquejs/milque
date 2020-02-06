@@ -119,6 +119,11 @@ export class EntityHandler
         this._entities.delete(entityId);
         this.dispatchEntityEvent(entityId, 'destroy', [ entityId ]);
     }
+
+    hasEntityId(entityId)
+    {
+        return this._entities.has(entityId);
+    }
     
     getNextAvailableEntityId()
     {

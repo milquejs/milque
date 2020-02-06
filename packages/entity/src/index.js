@@ -12,7 +12,7 @@ export * from './tag/TagComponent.js';
 export * from './hybrid/EntityComponent.js';
 
 export * from './hybrid/EntityBase.js';
-export * from './hybrid/HybridEntity.js';
+export * from './hybrid/ReflexiveEntity.js';
 
 import * as Component from './component/ComponentHelper.js';
 export { Component };

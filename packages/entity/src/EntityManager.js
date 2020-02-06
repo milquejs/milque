@@ -56,6 +56,11 @@ export class EntityManager
         this.entityHandler.deleteEntityId(entityId);
     }
 
+    hasEntity(entityId)
+    {
+        return this.entityHandler.hasEntityId(entityId);
+    }
+
     getEntityIds()
     {
         return this.entityHandler.getEntityIds();

@@ -1,24 +1,21 @@
 /**
  * @module DisplayPort
- * @version 1.4
- * 
+ * @version 1.4.0
+ * @description
  * # Changelog
- * ## 1.4
+ * ## 1.4.0
+ * - Added onframe and onresize attribute callbacks
  * - Added "stretch" mode
- * 
- * ## 1.3
+ * ## 1.3.0
  * - Changed "topleft" to "noscale"
  * - Changed default size to 640 x 480
  * - Changed "center" and "fit" to fill container instead of viewport
  * - Added "full" property to override and fill viewport
- * 
- * ## 1.2
+ * ## 1.2.0
  * - Moved default values to the top
- * 
- * ## 1.1
+ * ## 1.1.0
  * - Fixed scaling issues when dimensions do not match
- * 
- * ## 1.0
+ * ## 1.0.0
  * - Created DisplayPort
  */
 
@@ -95,6 +92,10 @@ const INNER_STYLE = `
     }
 </style>`;
 
+/**
+ * @fires frame Every time a new frame is rendered.
+ * @fires resize When the display is resized.
+ */
 export class DisplayPort extends HTMLElement
 {
     /** @override */
@@ -104,6 +105,12 @@ export class DisplayPort extends HTMLElement
             'width',
             'height',
             'disabled',
+            // Event handlers...
+            'onframe',
+            /*
+            // NOTE: Already handled by GlobalEventHandlers...
+            'onresize',
+            */
             // NOTE: For debuggin purposes...
             'debug',
             // ...listening for built-in attribs...
@@ -133,9 +140,15 @@ export class DisplayPort extends HTMLElement
         this._width = DEFAULT_WIDTH;
         this._height = DEFAULT_HEIGHT;
 
+        this._onframe = null;
+        /*
+        // NOTE: Already handled by GlobalEventHandlers...
+        this._onresize = null;
+        */
+
         this.update = this.update.bind(this);
     }
-
+    
     /** @override */
     connectedCallback()
     {
@@ -173,6 +186,16 @@ export class DisplayPort extends HTMLElement
                     this.resume();
                 }
                 break;
+            // Event handlers...
+            case 'onframe':
+                this.onframe = new Function('event', `with(document){with(this){${value}}}`).bind(this);
+                break;
+            /*
+            // NOTE: Already handled by GlobalEventHandlers...
+            case 'onresize':
+                this.onresize = new Function('event', `with(document){with(this){${value}}}`).bind(this);
+                break;
+            */
             // NOTE: For debugging purposes...
             case 'id':
             case 'class':
@@ -282,13 +305,31 @@ export class DisplayPort extends HTMLElement
             canvas.width = canvasWidth;
             canvas.height = canvasHeight;
             canvas.style = `width: ${canvasWidth}px; height: ${canvasHeight}px`;
-
             this.dispatchEvent(new CustomEvent('resize', { detail: { width: canvasWidth, height: canvasHeight }, bubbles: false, composed: true }));
         }
     }
 
     getCanvas() { return this._canvasElement; }
     getContext() { return this._canvasContext; }
+
+    /*
+    // NOTE: Already handled by GlobalEventHandlers...
+    get onresize() { return this._onresize; }
+    set onresize(value)
+    {
+        if (this._onresize) this.removeEventListener('resize', this._onresize);
+        this._onresize = value;
+        if (this._onresize) this.addEventListener('resize', value);
+    }
+    */
+
+    get onframe() { return this._onframe; }
+    set onframe(value)
+    {
+        if (this._onframe) this.removeEventListener('frame', this._onframe);
+        this._onframe = value;
+        if (this._onframe) this.addEventListener('frame', value);
+    }
 
     get width() { return this._width; }
     set width(value) { this.setAttribute('width', value); }

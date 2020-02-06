@@ -315,6 +315,11 @@
             this._entities.delete(entityId);
             this.dispatchEntityEvent(entityId, 'destroy', [ entityId ]);
         }
+
+        hasEntityId(entityId)
+        {
+            return this._entities.has(entityId);
+        }
         
         getNextAvailableEntityId()
         {
@@ -376,7 +381,7 @@
                 // checks on the class object, which should NOT have a chain.
                 if (!('create' in componentType))
                 {
-                    throw new Error(`Instanced component class '${getComponentTypeName(componentType)}' must at least have a create() function.`);
+                    throw new Error(`Instanced component class '${getComponentTypeName(componentType)}' must at least have a static create() function.`);
                 }
 
                 component = componentType.create(this);
@@ -414,7 +419,7 @@
             return component;
         }
 
-        putComponent(entityId, componentType, component, initialValues)
+        putComponent(entityId, componentType, component = componentType, initialValues = undefined)
         {
             let componentInstanceMap;
             if (this.componentTypeInstanceMap.has(componentType))
@@ -568,6 +573,11 @@
             this.entityHandler.deleteEntityId(entityId);
         }
 
+        hasEntity(entityId)
+        {
+            return this.entityHandler.hasEntityId(entityId);
+        }
+
         getEntityIds()
         {
             return this.entityHandler.getEntityIds();
@@ -593,6 +603,36 @@
             catch(e)
             {
                 console.error(`Failed to add component '${getComponentTypeName$1(componentType)}' to entity '${entityId}'.`);
+                console.error(e);
+            }
+        }
+
+        addTagComponent(entityId, componentType)
+        {
+            try
+            {
+                let type = typeof componentType;
+                if (type === 'symbol')
+                {
+                    throw new Error('Symbols are not yet supported as tag components.');
+                }
+                else if (type === 'number')
+                {
+                    throw new Error('Numbers are not yet supported as tag components.');
+                }
+                else if (type === 'string')
+                {
+                    this.componentHandler.putComponent(entityId, componentType);
+                }
+                else
+                {
+                    throw new Error(`Component of type '${type}' cannot be a tag component.`);
+                }
+                return componentType;
+            }
+            catch(e)
+            {
+                console.error(`Failed to add tag component '${getComponentTypeName$1(componentType)}' to entity '${entityId}'.`);
                 console.error(e);
             }
         }
@@ -877,13 +917,18 @@
 
         destroy()
         {
-            this.entityManager.destroyEntity(this.entityId);
-            this.entityManager = null;
+            this.entityManager.destroyEntity(this.id);
         }
 
         addComponent(componentType, initialValues = undefined)
         {
             this.entityManager.addComponent(this.id, componentType, initialValues);
+            return this;
+        }
+
+        addTagComponent(componentType)
+        {
+            this.entityManager.addTagComponent(this.id, componentType);
             return this;
         }
 
@@ -904,7 +949,7 @@
         }
     }
 
-    class HybridEntity extends EntityBase
+    class ReflexiveEntity extends EntityBase
     {
         constructor(entityManager)
         {
@@ -922,17 +967,18 @@
 
         onComponentAdd(entityId, componentType, component, initialValues)
         {
-            if (entityId === this.id)
-            {
-                // NOTE: Since this callback is connected only AFTER EntityComponent has been added
-                // we can safely assume that it cannot be added again.
-                addComponentProperties(this, componentType, component);
-            }
+            if (this.id !== entityId) return;
+
+            // NOTE: Since this callback is connected only AFTER EntityComponent has been added
+            // we can safely assume that it cannot be added again.
+            addComponentProperties(this, componentType, component);
         }
 
         onComponentRemove(entityId, componentType, component)
         {
-            if (componentType === EntityComponent)
+            if (this.id !== entityId) return;
+            
+            if (componentType === EntityComponent$1)
             {
                 this.entityManager.entityHandler.removeEntityListener(this.id, 'componentadd', this.onComponentAdd);
                 this.entityManager.entityHandler.removeEntityListener(this.id, 'componentremove', this.onComponentRemove);
@@ -1653,8 +1699,8 @@
     exports.FineDiffStrategy = FineDiffStrategy;
     exports.HotEntityModule = HotEntityModule;
     exports.HotEntityReplacement = HotEntityReplacement;
-    exports.HybridEntity = HybridEntity;
     exports.QueryOperator = QueryOperator;
+    exports.ReflexiveEntity = ReflexiveEntity;
     exports.TagComponent = TagComponent;
 
     Object.defineProperty(exports, '__esModule', { value: true });

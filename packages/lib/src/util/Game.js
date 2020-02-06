@@ -98,7 +98,8 @@ export function createGame(scene)
                 for(let renderTarget of this._renderTargets.values())
                 {
                     let view = renderTarget.view;
-                    let renderer = renderTarget.renderer || (scene ? scene.onRender : null);
+                    let renderer = renderTarget.renderer
+                        || (scene ? scene.onRender : null);
                     let viewPort = renderTarget.viewPort;
                     let renderContext = renderTarget.context || scene;
                     this._renderStep(view, renderer, viewPort, renderContext, first);

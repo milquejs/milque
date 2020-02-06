@@ -1,6 +1,7 @@
 import { EntityBase } from './EntityBase.js';
+import { EntityComponent } from './EntityComponent.js';
 
-export class HybridEntity extends EntityBase
+export class ReflexiveEntity extends EntityBase
 {
     constructor(entityManager)
     {
@@ -18,16 +19,17 @@ export class HybridEntity extends EntityBase
 
     onComponentAdd(entityId, componentType, component, initialValues)
     {
-        if (entityId === this.id)
-        {
-            // NOTE: Since this callback is connected only AFTER EntityComponent has been added
-            // we can safely assume that it cannot be added again.
-            addComponentProperties(this, componentType, component);
-        }
+        if (this.id !== entityId) return;
+
+        // NOTE: Since this callback is connected only AFTER EntityComponent has been added
+        // we can safely assume that it cannot be added again.
+        addComponentProperties(this, componentType, component);
     }
 
     onComponentRemove(entityId, componentType, component)
     {
+        if (this.id !== entityId) return;
+        
         if (componentType === EntityComponent)
         {
             this.entityManager.entityHandler.removeEntityListener(this.id, 'componentadd', this.onComponentAdd);

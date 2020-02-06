@@ -24,7 +24,7 @@ export class ComponentHandler
             // checks on the class object, which should NOT have a chain.
             if (!('create' in componentType))
             {
-                throw new Error(`Instanced component class '${getComponentTypeName(componentType)}' must at least have a create() function.`);
+                throw new Error(`Instanced component class '${getComponentTypeName(componentType)}' must at least have a static create() function.`);
             }
 
             component = componentType.create(this);

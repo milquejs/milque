@@ -11,13 +11,18 @@ export class EntityBase extends EntityComponent
 
     destroy()
     {
-        this.entityManager.destroyEntity(this.entityId);
-        this.entityManager = null;
+        this.entityManager.destroyEntity(this.id);
     }
 
     addComponent(componentType, initialValues = undefined)
     {
         this.entityManager.addComponent(this.id, componentType, initialValues);
+        return this;
+    }
+
+    addTagComponent(componentType)
+    {
+        this.entityManager.addTagComponent(this.id, componentType);
         return this;
     }
 

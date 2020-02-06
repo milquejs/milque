@@ -37,8 +37,8 @@
         get FineDiffStrategy () { return FineDiffStrategy; },
         get HotEntityModule () { return HotEntityModule; },
         get HotEntityReplacement () { return HotEntityReplacement; },
-        get HybridEntity () { return HybridEntity; },
         get QueryOperator () { return QueryOperator; },
+        get ReflexiveEntity () { return ReflexiveEntity; },
         get TagComponent () { return TagComponent; },
         get AbstractInputAdapter () { return AbstractInputAdapter; },
         get ActionInputAdapter () { return ActionInputAdapter; },
@@ -449,142 +449,6 @@
         getViewMatrix() { return [1, 0, 0, 1, 0, 0]; }
     }
 
-    /**
-     * @version 1.3.0
-     * @description
-     * Handles a steady update loop.
-     * 
-     * # Changelog
-     * ## 1.3.0
-     * - Removed frameTime in favor of deltaTimeFactor
-     * - Moved static start()/stop() for game loop to modules
-     * 
-     * ## 1.2.0
-     * - Fixed incrementing dt on window blur
-     * - Fixed large dt on first frame
-     * 
-     * ## 1.1.0
-     * - Added pause and resume
-     * 
-     * ## 1.0.0
-     * - Create GameLoop
-     * 
-     * @property {Number} prevFrameTime The time of the previous frame in milliseconds.
-     * @property {Object} animationFrameHandle The handle for the animation frame request. Used by cancelAnimationRequest().
-     * @property {Object} gameContext The context of the game loop to run in.
-     * @property {Object} deltaTimeFactor The value multiplied to dt for the update call.
-     * @property {Object} started Whether the game has started.
-     * @property {Object} paused Whether the game is paused.
-     * 
-     * @fires start
-     * @fires stop
-     * @fires pause
-     * @fires resume
-     * @fires update
-     */
-    class GameLoop
-    {
-        constructor(context = {})
-        {
-            this.prevFrameTime = 0;
-            this.animationFrameHandle = null;
-            this.started = false;
-            this.paused = false;
-            this.deltaTimeFactor = 1 / 1000;
-
-            this.gameContext = context;
-
-            this.run = this.run.bind(this);
-            this.start = this.start.bind(this);
-            this.stop = this.stop.bind(this);
-            this.pause = this.pause.bind(this);
-            this.resume = this.resume.bind(this);
-
-            // HACK: This overrides Eventable's callback context.
-            this.__context = context;
-        }
-
-        setDeltaTimeFactor(value)
-        {
-            this.deltaTimeFactor = value;
-            return this;
-        }
-
-        /** Runs the game loop. Will call itself. */
-        run(now)
-        {
-            this.animationFrameHandle = requestAnimationFrame(this.run);
-            const dt = (now - this.prevFrameTime) * this.deltaTimeFactor;
-            this.prevFrameTime = now;
-
-            if (typeof this.gameContext.update === 'function') this.gameContext.update.call(this.gameContext, dt);
-            this.emit('update', dt);
-        }
-
-        /** Starts the game loop. Calls run(). */
-        start()
-        {
-            if (this.started) throw new Error('Loop already started.');
-
-            // If the window is out of focus, just ignore the time.
-            window.addEventListener('focus', this.resume);
-            window.addEventListener('blur', this.pause);
-
-            this.prevFrameTime = performance.now();
-            this.started = true;
-
-            if (typeof this.gameContext.start === 'function') this.gameContext.start.call(this.gameContext);
-            this.emit('start');
-
-            this.run(this.prevFrameTime);
-        }
-
-        /** Stops the game loop. */
-        stop()
-        {
-            if (!this.started) throw new Error('Loop not yet started.');
-
-            // If the window is out of focus, just ignore the time.
-            window.removeEventListener('focus', this.resume);
-            window.removeEventListener('blur', this.pause);
-
-            cancelAnimationFrame(this.animationFrameHandle);
-            this.animationFrameHandle = null;
-            this.started = false;
-
-            if (typeof this.gameContext.stop === 'function') this.gameContext.stop.call(this.gameContext);
-            this.emit('stop');
-        }
-
-        /** Pauses the game loop. */
-        pause()
-        {
-            if (!this.started || this.paused) return;
-
-            cancelAnimationFrame(this.animationFrameHandle);
-            this.animationFrameHandle = null;
-            this.paused = true;
-
-            if (typeof this.gameContext.pause === 'function') this.gameContext.pause.call(this.gameContext);
-            this.emit('pause');
-        }
-
-        /** Resumes the game loop. */
-        resume()
-        {
-            if (!this.started || !this.pause) return;
-
-            this.prevFrameTime = performance.now();
-            this.paused = false;
-
-            if (typeof this.gameContext.resume === 'function') this.gameContext.resume.call(this.gameContext);
-            this.emit('resume');
-
-            this.run(this.prevFrameTime);
-        }
-    }
-    mixin(GameLoop);
-
     const NO_TRANSITION = {};
 
     class SceneManager
@@ -769,6 +633,142 @@
         onPostUpdate(dt) {}
     }
 
+    /**
+     * @version 1.3.0
+     * @description
+     * Handles a steady update loop.
+     * 
+     * # Changelog
+     * ## 1.3.0
+     * - Removed frameTime in favor of deltaTimeFactor
+     * - Moved static start()/stop() for game loop to modules
+     * 
+     * ## 1.2.0
+     * - Fixed incrementing dt on window blur
+     * - Fixed large dt on first frame
+     * 
+     * ## 1.1.0
+     * - Added pause and resume
+     * 
+     * ## 1.0.0
+     * - Create GameLoop
+     * 
+     * @property {Number} prevFrameTime The time of the previous frame in milliseconds.
+     * @property {Object} animationFrameHandle The handle for the animation frame request. Used by cancelAnimationRequest().
+     * @property {Object} gameContext The context of the game loop to run in.
+     * @property {Object} deltaTimeFactor The value multiplied to dt for the update call.
+     * @property {Object} started Whether the game has started.
+     * @property {Object} paused Whether the game is paused.
+     * 
+     * @fires start
+     * @fires stop
+     * @fires pause
+     * @fires resume
+     * @fires update
+     */
+    class GameLoop
+    {
+        constructor(context = {})
+        {
+            this.prevFrameTime = 0;
+            this.animationFrameHandle = null;
+            this.started = false;
+            this.paused = false;
+            this.deltaTimeFactor = 1 / 1000;
+
+            this.gameContext = context;
+
+            this.run = this.run.bind(this);
+            this.start = this.start.bind(this);
+            this.stop = this.stop.bind(this);
+            this.pause = this.pause.bind(this);
+            this.resume = this.resume.bind(this);
+
+            // HACK: This overrides Eventable's callback context.
+            this.__context = context;
+        }
+
+        setDeltaTimeFactor(value)
+        {
+            this.deltaTimeFactor = value;
+            return this;
+        }
+
+        /** Runs the game loop. Will call itself. */
+        run(now)
+        {
+            this.animationFrameHandle = requestAnimationFrame(this.run);
+            const dt = (now - this.prevFrameTime) * this.deltaTimeFactor;
+            this.prevFrameTime = now;
+
+            if (typeof this.gameContext.update === 'function') this.gameContext.update.call(this.gameContext, dt);
+            this.emit('update', dt);
+        }
+
+        /** Starts the game loop. Calls run(). */
+        start()
+        {
+            if (this.started) throw new Error('Loop already started.');
+
+            // If the window is out of focus, just ignore the time.
+            window.addEventListener('focus', this.resume);
+            window.addEventListener('blur', this.pause);
+
+            this.prevFrameTime = performance.now();
+            this.started = true;
+
+            if (typeof this.gameContext.start === 'function') this.gameContext.start.call(this.gameContext);
+            this.emit('start');
+
+            this.run(this.prevFrameTime);
+        }
+
+        /** Stops the game loop. */
+        stop()
+        {
+            if (!this.started) throw new Error('Loop not yet started.');
+
+            // If the window is out of focus, just ignore the time.
+            window.removeEventListener('focus', this.resume);
+            window.removeEventListener('blur', this.pause);
+
+            cancelAnimationFrame(this.animationFrameHandle);
+            this.animationFrameHandle = null;
+            this.started = false;
+
+            if (typeof this.gameContext.stop === 'function') this.gameContext.stop.call(this.gameContext);
+            this.emit('stop');
+        }
+
+        /** Pauses the game loop. */
+        pause()
+        {
+            if (!this.started || this.paused) return;
+
+            cancelAnimationFrame(this.animationFrameHandle);
+            this.animationFrameHandle = null;
+            this.paused = true;
+
+            if (typeof this.gameContext.pause === 'function') this.gameContext.pause.call(this.gameContext);
+            this.emit('pause');
+        }
+
+        /** Resumes the game loop. */
+        resume()
+        {
+            if (!this.started || !this.pause) return;
+
+            this.prevFrameTime = performance.now();
+            this.paused = false;
+
+            if (typeof this.gameContext.resume === 'function') this.gameContext.resume.call(this.gameContext);
+            this.emit('resume');
+
+            this.run(this.prevFrameTime);
+        }
+    }
+    mixin(GameLoop);
+
     var audioContext = new AudioContext();
 
     function createSound(filepath, loop = false)
@@ -861,25 +861,22 @@
 
     /**
      * @module DisplayPort
-     * @version 1.4
-     * 
+     * @version 1.4.0
+     * @description
      * # Changelog
-     * ## 1.4
+     * ## 1.4.0
+     * - Added onframe and onresize attribute callbacks
      * - Added "stretch" mode
-     * 
-     * ## 1.3
+     * ## 1.3.0
      * - Changed "topleft" to "noscale"
      * - Changed default size to 640 x 480
      * - Changed "center" and "fit" to fill container instead of viewport
      * - Added "full" property to override and fill viewport
-     * 
-     * ## 1.2
+     * ## 1.2.0
      * - Moved default values to the top
-     * 
-     * ## 1.1
+     * ## 1.1.0
      * - Fixed scaling issues when dimensions do not match
-     * 
-     * ## 1.0
+     * ## 1.0.0
      * - Created DisplayPort
      */
 
@@ -956,6 +953,10 @@
     }
 </style>`;
 
+    /**
+     * @fires frame Every time a new frame is rendered.
+     * @fires resize When the display is resized.
+     */
     class DisplayPort extends HTMLElement
     {
         /** @override */
@@ -965,6 +966,12 @@
                 'width',
                 'height',
                 'disabled',
+                // Event handlers...
+                'onframe',
+                /*
+                // NOTE: Already handled by GlobalEventHandlers...
+                'onresize',
+                */
                 // NOTE: For debuggin purposes...
                 'debug',
                 // ...listening for built-in attribs...
@@ -994,9 +1001,15 @@
             this._width = DEFAULT_WIDTH;
             this._height = DEFAULT_HEIGHT;
 
+            this._onframe = null;
+            /*
+            // NOTE: Already handled by GlobalEventHandlers...
+            this._onresize = null;
+            */
+
             this.update = this.update.bind(this);
         }
-
+        
         /** @override */
         connectedCallback()
         {
@@ -1034,6 +1047,16 @@
                         this.resume();
                     }
                     break;
+                // Event handlers...
+                case 'onframe':
+                    this.onframe = new Function('event', `with(document){with(this){${value}}}`).bind(this);
+                    break;
+                /*
+                // NOTE: Already handled by GlobalEventHandlers...
+                case 'onresize':
+                    this.onresize = new Function('event', `with(document){with(this){${value}}}`).bind(this);
+                    break;
+                */
                 // NOTE: For debugging purposes...
                 case 'id':
                 case 'class':
@@ -1143,13 +1166,31 @@
                 canvas.width = canvasWidth;
                 canvas.height = canvasHeight;
                 canvas.style = `width: ${canvasWidth}px; height: ${canvasHeight}px`;
-
                 this.dispatchEvent(new CustomEvent('resize', { detail: { width: canvasWidth, height: canvasHeight }, bubbles: false, composed: true }));
             }
         }
 
         getCanvas() { return this._canvasElement; }
         getContext() { return this._canvasContext; }
+
+        /*
+        // NOTE: Already handled by GlobalEventHandlers...
+        get onresize() { return this._onresize; }
+        set onresize(value)
+        {
+            if (this._onresize) this.removeEventListener('resize', this._onresize);
+            this._onresize = value;
+            if (this._onresize) this.addEventListener('resize', value);
+        }
+        */
+
+        get onframe() { return this._onframe; }
+        set onframe(value)
+        {
+            if (this._onframe) this.removeEventListener('frame', this._onframe);
+            this._onframe = value;
+            if (this._onframe) this.addEventListener('frame', value);
+        }
 
         get width() { return this._width; }
         set width(value) { this.setAttribute('width', value); }
@@ -1578,6 +1619,11 @@
             this._entities.delete(entityId);
             this.dispatchEntityEvent(entityId, 'destroy', [ entityId ]);
         }
+
+        hasEntityId(entityId)
+        {
+            return this._entities.has(entityId);
+        }
         
         getNextAvailableEntityId()
         {
@@ -1639,7 +1685,7 @@
                 // checks on the class object, which should NOT have a chain.
                 if (!('create' in componentType))
                 {
-                    throw new Error(`Instanced component class '${getComponentTypeName(componentType)}' must at least have a create() function.`);
+                    throw new Error(`Instanced component class '${getComponentTypeName(componentType)}' must at least have a static create() function.`);
                 }
 
                 component = componentType.create(this);
@@ -1677,7 +1723,7 @@
             return component;
         }
 
-        putComponent(entityId, componentType, component, initialValues)
+        putComponent(entityId, componentType, component = componentType, initialValues = undefined)
         {
             let componentInstanceMap;
             if (this.componentTypeInstanceMap.has(componentType))
@@ -1831,6 +1877,11 @@
             this.entityHandler.deleteEntityId(entityId);
         }
 
+        hasEntity(entityId)
+        {
+            return this.entityHandler.hasEntityId(entityId);
+        }
+
         getEntityIds()
         {
             return this.entityHandler.getEntityIds();
@@ -1856,6 +1907,36 @@
             catch(e)
             {
                 console.error(`Failed to add component '${getComponentTypeName$1(componentType)}' to entity '${entityId}'.`);
+                console.error(e);
+            }
+        }
+
+        addTagComponent(entityId, componentType)
+        {
+            try
+            {
+                let type = typeof componentType;
+                if (type === 'symbol')
+                {
+                    throw new Error('Symbols are not yet supported as tag components.');
+                }
+                else if (type === 'number')
+                {
+                    throw new Error('Numbers are not yet supported as tag components.');
+                }
+                else if (type === 'string')
+                {
+                    this.componentHandler.putComponent(entityId, componentType);
+                }
+                else
+                {
+                    throw new Error(`Component of type '${type}' cannot be a tag component.`);
+                }
+                return componentType;
+            }
+            catch(e)
+            {
+                console.error(`Failed to add tag component '${getComponentTypeName$1(componentType)}' to entity '${entityId}'.`);
                 console.error(e);
             }
         }
@@ -2140,13 +2221,18 @@
 
         destroy()
         {
-            this.entityManager.destroyEntity(this.entityId);
-            this.entityManager = null;
+            this.entityManager.destroyEntity(this.id);
         }
 
         addComponent(componentType, initialValues = undefined)
         {
             this.entityManager.addComponent(this.id, componentType, initialValues);
+            return this;
+        }
+
+        addTagComponent(componentType)
+        {
+            this.entityManager.addTagComponent(this.id, componentType);
             return this;
         }
 
@@ -2167,7 +2253,7 @@
         }
     }
 
-    class HybridEntity extends EntityBase
+    class ReflexiveEntity extends EntityBase
     {
         constructor(entityManager)
         {
@@ -2185,17 +2271,18 @@
 
         onComponentAdd(entityId, componentType, component, initialValues)
         {
-            if (entityId === this.id)
-            {
-                // NOTE: Since this callback is connected only AFTER EntityComponent has been added
-                // we can safely assume that it cannot be added again.
-                addComponentProperties(this, componentType, component);
-            }
+            if (this.id !== entityId) return;
+
+            // NOTE: Since this callback is connected only AFTER EntityComponent has been added
+            // we can safely assume that it cannot be added again.
+            addComponentProperties(this, componentType, component);
         }
 
         onComponentRemove(entityId, componentType, component)
         {
-            if (componentType === EntityComponent)
+            if (this.id !== entityId) return;
+            
+            if (componentType === EntityComponent$1)
             {
                 this.entityManager.entityHandler.removeEntityListener(this.id, 'componentadd', this.onComponentAdd);
                 this.entityManager.entityHandler.removeEntityListener(this.id, 'componentremove', this.onComponentRemove);
@@ -4113,7 +4200,8 @@
                     for(let renderTarget of this._renderTargets.values())
                     {
                         let view = renderTarget.view;
-                        let renderer = renderTarget.renderer || (scene ? scene.onRender : null);
+                        let renderer = renderTarget.renderer
+                            || (scene ? scene.onRender : null);
                         let viewPort = renderTarget.viewPort;
                         let renderContext = renderTarget.context || scene;
                         this._renderStep(view, renderer, viewPort, renderContext, first);
@@ -4576,7 +4664,6 @@
     exports.GameLoop = GameLoop;
     exports.HotEntityModule = HotEntityModule;
     exports.HotEntityReplacement = HotEntityReplacement;
-    exports.HybridEntity = HybridEntity;
     exports.Input = _default$1;
     exports.InputContext = InputContext;
     exports.InputSource = InputSource;
@@ -4592,6 +4679,7 @@
     exports.Random = Random;
     exports.RandomGenerator = RandomGenerator;
     exports.RangeInputAdapter = RangeInputAdapter;
+    exports.ReflexiveEntity = ReflexiveEntity;
     exports.SceneBase = SceneBase;
     exports.SceneManager = SceneManager;
     exports.SimpleRandomGenerator = SimpleRandomGenerator;
