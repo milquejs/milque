@@ -1,7 +1,7 @@
 const { say, ask, pause, branch } = require('./output/index.js');
 const { StarMap } = require('./world/index.js');
 const { GameSequence } = require('./game/index.js');
-const { random } = require('./util/index.js');
+const { Random } = require('./lib/random.js');
 
 const MenuMainCommand = require('./MenuMainCommand.js');
 const MenuMarket = require('./MenuMarket.js');
