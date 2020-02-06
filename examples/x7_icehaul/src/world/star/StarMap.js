@@ -1,4 +1,4 @@
-const { distance2 } = require('../../util/math.js');
+const { distance2 } = require('../../lib/math.js');
 const { StarSystem } = require('./StarSystem.js');
 
 class StarMap

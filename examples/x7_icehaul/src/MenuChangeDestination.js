@@ -1,5 +1,5 @@
 const { say, style, branch } = require('./output/index.js');
-const { math } = require('./util/index.js');
+const { distance2 } = require('./lib/math.js');
 
 module.exports = async function run(world, fromX, fromY, fromLocation, searchRadius)
 {
@@ -12,7 +12,7 @@ module.exports = async function run(world, fromX, fromY, fromLocation, searchRad
     if (currentSystemIndex >= 0) systems.splice(currentSystemIndex, 1);
     for(let system of systems)
     {
-        let dist = Math.max(1, Math.round(math.distance2(fromX, fromY, system.x, system.y) * 100) / 100);
+        let dist = Math.max(1, Math.round(distance2(fromX, fromY, system.x, system.y) * 100) / 100);
         options[`${style.system(system)} (${dist}u away)`] = () => setDestination(world, system, null, Math.ceil(dist));
     }
     
