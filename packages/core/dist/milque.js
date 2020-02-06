@@ -4,51 +4,6 @@
     (global = global || self, factory(global.Core = {}));
 }(this, (function (exports) { 'use strict';
 
-    class RandomGenerator
-    {
-        constructor(seed)
-        {
-            this._seed = seed;
-        }
-
-        get seed() { return this._seed; }
-
-        random() { return Math.random(); }
-
-        randomRange(min, max)
-        {
-            return this.random() * (max - min) + min;
-        }
-
-        randomChoose(choices)
-        {
-            return choices[Math.floor(this.random() * choices.length)];
-        }
-
-        randomSign()
-        {
-            return this.random() < 0.5 ? -1 : 1;
-        }
-    }
-
-    // SOURCE: https://gist.github.com/blixt/f17b47c62508be59987b
-    class SimpleRandomGenerator extends RandomGenerator
-    {
-        constructor(seed = 0)
-        {
-            super(Math.abs(seed % 2147483647));
-            
-            this._next = this.seed;
-        }
-
-        /** @override */
-        random()
-        {
-            this._next = Math.abs(this._next * 16807 % 2147483647 - 1);
-            return this._next / 2147483646;
-        }
-    }
-
     /**
      * @typedef Eventable
      * @property {function} on
@@ -763,51 +718,12 @@
         createSound: createSound
     });
 
-    const DEFAULT_RNG = new RandomGenerator();
-
-    function createRandom(seed = 0)
-    {
-        return new SimpleRandomGenerator(seed);
-    }
-
-    function random()
-    {
-        return DEFAULT_RNG.random();
-    }
-
-    function randomRange(min, max)
-    {
-        return DEFAULT_RNG.randomRange(min, max);
-    }
-
-    function randomChoose(choices)
-    {
-        return DEFAULT_RNG.randomChoose(choices);
-    }
-
-    function randomSign()
-    {
-        return DEFAULT_RNG.randomSign();
-    }
-
-    var Random = /*#__PURE__*/Object.freeze({
-        __proto__: null,
-        createRandom: createRandom,
-        random: random,
-        randomRange: randomRange,
-        randomChoose: randomChoose,
-        randomSign: randomSign
-    });
-
     exports.AbstractCamera = AbstractCamera;
     exports.Audio = Audio;
     exports.Eventable = Eventable$1;
     exports.GameLoop = GameLoop;
-    exports.Random = Random;
-    exports.RandomGenerator = RandomGenerator;
     exports.SceneBase = SceneBase;
     exports.SceneManager = SceneManager;
-    exports.SimpleRandomGenerator = SimpleRandomGenerator;
     exports.View = View;
     exports.ViewHelper = ViewHelper;
     exports.ViewPort = ViewPort;

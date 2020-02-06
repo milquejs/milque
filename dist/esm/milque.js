@@ -5,11 +5,8 @@ var self = /*#__PURE__*/Object.freeze({
     get Audio () { return Audio; },
     get Eventable () { return Eventable$1; },
     get GameLoop () { return GameLoop; },
-    get Random () { return Random; },
-    get RandomGenerator () { return RandomGenerator; },
     get SceneBase () { return SceneBase; },
     get SceneManager () { return SceneManager; },
-    get SimpleRandomGenerator () { return SimpleRandomGenerator; },
     get View () { return View; },
     get ViewHelper () { return ViewHelper; },
     get ViewPort () { return ViewPort; },
@@ -55,53 +52,12 @@ var self = /*#__PURE__*/Object.freeze({
     get MouseControls () { return MouseControls; },
     get MoveControls () { return MoveControls; },
     get SplashScene () { return SplashScene; },
-    get Transform2D () { return Transform2D; }
+    get Transform2D () { return Transform2D; },
+    get Random () { return DEFAULT_RANDOM_INTERFACE; },
+    get RandomGenerator () { return RandomGenerator; },
+    get RandomInterface () { return RandomInterface; },
+    get SimpleRandomGenerator () { return SimpleRandomGenerator; }
 });
-
-class RandomGenerator
-{
-    constructor(seed)
-    {
-        this._seed = seed;
-    }
-
-    get seed() { return this._seed; }
-
-    random() { return Math.random(); }
-
-    randomRange(min, max)
-    {
-        return this.random() * (max - min) + min;
-    }
-
-    randomChoose(choices)
-    {
-        return choices[Math.floor(this.random() * choices.length)];
-    }
-
-    randomSign()
-    {
-        return this.random() < 0.5 ? -1 : 1;
-    }
-}
-
-// SOURCE: https://gist.github.com/blixt/f17b47c62508be59987b
-class SimpleRandomGenerator extends RandomGenerator
-{
-    constructor(seed = 0)
-    {
-        super(Math.abs(seed % 2147483647));
-        
-        this._next = this.seed;
-    }
-
-    /** @override */
-    random()
-    {
-        this._next = Math.abs(this._next * 16807 % 2147483647 - 1);
-        return this._next / 2147483646;
-    }
-}
 
 /**
  * @typedef Eventable
@@ -815,42 +771,6 @@ function createSound(filepath, loop = false)
 var Audio = /*#__PURE__*/Object.freeze({
     __proto__: null,
     createSound: createSound
-});
-
-const DEFAULT_RNG = new RandomGenerator();
-
-function createRandom(seed = 0)
-{
-    return new SimpleRandomGenerator(seed);
-}
-
-function random()
-{
-    return DEFAULT_RNG.random();
-}
-
-function randomRange(min, max)
-{
-    return DEFAULT_RNG.randomRange(min, max);
-}
-
-function randomChoose(choices)
-{
-    return DEFAULT_RNG.randomChoose(choices);
-}
-
-function randomSign()
-{
-    return DEFAULT_RNG.randomSign();
-}
-
-var Random = /*#__PURE__*/Object.freeze({
-    __proto__: null,
-    createRandom: createRandom,
-    random: random,
-    randomRange: randomRange,
-    randomChoose: randomChoose,
-    randomSign: randomSign
 });
 
 /**
@@ -4628,7 +4548,69 @@ var EntitySpawner = /*#__PURE__*/Object.freeze({
     createSpawner: createSpawner
 });
 
+class RandomGenerator
+{
+    /** @abstract */
+    next() { return Math.random(); }
+}
+
+// SOURCE: https://gist.github.com/blixt/f17b47c62508be59987b
+class SimpleRandomGenerator extends RandomGenerator
+{
+    constructor(seed = 0)
+    {
+        super();
+
+        this._seed = Math.abs(seed % 2147483647);
+        this._next = this._seed;
+    }
+
+    /** @override */
+    next()
+    {
+        this._next = Math.abs(this._next * 16807 % 2147483647 - 1);
+        return this._next / 2147483646;
+    }
+
+    get seed() { return this._seed; }
+}
+
+class RandomInterface
+{
+    constructor(generator)
+    {
+        this.generator = generator;
+    }
+
+    next() { return this.generator.next(); }
+
+    choose(list)
+    {
+        return list[Math.floor(this.next() * list.length)];
+    }
+
+    range(min, max)
+    {
+        return ((max - min) * this.next()) + min;
+    }
+
+    sign()
+    {
+        return this.next() < 0.5 ? -1 : 1;
+    }
+}
+
+class DefaultRandomInterface extends RandomInterface
+{
+    constructor() { super(new RandomGenerator()); }
+
+    withGenerator(generator) { return new RandomInterface(generator); }
+    withSeed(seed) { return new RandomInterface(new SimpleRandomGenerator(seed)); }
+}
+
+const DEFAULT_RANDOM_INTERFACE = new DefaultRandomInterface();
+
 
 
 export default self;
-export { AbstractCamera, AbstractInputAdapter, ActionInputAdapter, Audio, Camera2D, Camera2DControls, CameraHelper, ComponentHelper as Component, ComponentBase, ComponentFactory, DOUBLE_ACTION_TIME, _default as Display, DisplayPort, DoubleActionInputAdapter, EntityHelper as Entity, EntityBase, EntityComponent$1 as EntityComponent, EntityManager, EntityQuery, EntitySpawner, EntityWrapper, EventKey, Eventable$1 as Eventable, FineDiffStrategy, Game, GameLoop, HotEntityModule, HotEntityReplacement, _default$1 as Input, InputContext, InputSource, Keyboard, MODE_CENTER, MODE_FIT, MODE_NOSCALE, MODE_STRETCH, Mouse, MouseControls, MoveControls, QueryOperator, Random, RandomGenerator, RangeInputAdapter, ReflexiveEntity, SceneBase, SceneManager, SimpleRandomGenerator, SplashScene, StateInputAdapter, TagComponent, Transform2D, index as Utils, View, ViewHelper, ViewPort };
+export { AbstractCamera, AbstractInputAdapter, ActionInputAdapter, Audio, Camera2D, Camera2DControls, CameraHelper, ComponentHelper as Component, ComponentBase, ComponentFactory, DOUBLE_ACTION_TIME, _default as Display, DisplayPort, DoubleActionInputAdapter, EntityHelper as Entity, EntityBase, EntityComponent$1 as EntityComponent, EntityManager, EntityQuery, EntitySpawner, EntityWrapper, EventKey, Eventable$1 as Eventable, FineDiffStrategy, Game, GameLoop, HotEntityModule, HotEntityReplacement, _default$1 as Input, InputContext, InputSource, Keyboard, MODE_CENTER, MODE_FIT, MODE_NOSCALE, MODE_STRETCH, Mouse, MouseControls, MoveControls, QueryOperator, DEFAULT_RANDOM_INTERFACE as Random, RandomGenerator, RandomInterface, RangeInputAdapter, ReflexiveEntity, SceneBase, SceneManager, SimpleRandomGenerator, SplashScene, StateInputAdapter, TagComponent, Transform2D, index as Utils, View, ViewHelper, ViewPort };
