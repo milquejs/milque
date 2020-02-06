@@ -1,4 +1,4 @@
-import * as Utils from './util/index.js';
-export { Utils };
+export * from './id/index.js';
 
 export * from './PriorityQueue.js';
+export * from './Eventable.js';

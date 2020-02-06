@@ -1,7 +1,7 @@
 (function (global, factory) {
     typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
     typeof define === 'function' && define.amd ? define(['exports'], factory) :
-    (global = global || self, factory(global.Util = {}));
+    (global = global || self, factory(global.Utils = {}));
 }(this, (function (exports) { 'use strict';
 
     /**
@@ -13,111 +13,10 @@
     function uuid(a = undefined)
     {
         // https://gist.github.com/jed/982883
-        return a?(a^Math.random()*16>>a/4).toString(16):([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,uuid);
+        return a
+            ? (a ^ Math.random() * 16 >> a / 4).toString(16)
+            : ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, uuid);
     }
-
-    function randomHexColor()
-    {
-        return '#' + Math.floor(Math.random() * 16777215).toString(16);
-    }
-
-    function loadImage(url)
-    {
-        let image = new Image();
-        image.src = url;
-        return image;
-    }
-
-    function clearScreen(ctx, width, height)
-    {
-        ctx.fillStyle = 'black';
-        ctx.fillRect(0, 0, width, height);
-    }
-
-    function drawText(ctx, text, x, y, radians = 0, fontSize = 16, color = 'white')
-    {
-        ctx.translate(x, y);
-        if (radians) ctx.rotate(radians);
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.font = `${fontSize}px sans-serif`;
-        ctx.fillStyle = color;
-        ctx.fillText(text, 0, 0);
-        if (radians) ctx.rotate(-radians);
-        ctx.translate(-x, -y);
-    }
-
-    function drawBox(ctx, x, y, radians = 0, w = 16, h = w, color = 'white', outline = false)
-    {
-        ctx.translate(x, y);
-        if (radians) ctx.rotate(radians);
-        if (!outline)
-        {
-            ctx.fillStyle = color;
-            ctx.fillRect(-w / 2, -h / 2, w, h);
-        }
-        else
-        {
-            ctx.strokeStyle = color;
-            ctx.strokeRect(-w / 2, -h / 2, w, h);
-        }
-        if (radians) ctx.rotate(-radians);
-        ctx.translate(-x, -y);
-    }
-
-    function intersectBox(a, b)
-    {
-        return (Math.abs(a.x - b.x) * 2 < (a.width + b.width)) &&
-            (Math.abs(a.y - b.y) * 2 < (a.height + b.height));
-    }
-
-    function applyMotion(entity, inverseFrictionX = 1, inverseFrictionY = inverseFrictionX)
-    {
-        if (inverseFrictionX !== 1)
-        {
-            entity.dx *= inverseFrictionX;
-        }
-        if (inverseFrictionY !== 1)
-        {
-            entity.dy *= inverseFrictionY;
-        }
-        
-        entity.x += entity.dx;
-        entity.y += entity.dy;
-    }
-
-    function onDOMLoaded(listener)
-    {
-        window.addEventListener('DOMContentLoaded', listener);
-    }
-
-    function drawCircle(ctx, x, y, radius = 16, color = 'white', outline = false)
-    {
-        ctx.fillStyle = color;
-        ctx.strokeStyle = color;
-        ctx.beginPath();
-        ctx.arc(x, y, radius, 0, 2 * Math.PI);
-        if (outline) ctx.stroke();
-        else ctx.fill();
-    }
-
-    /**
-     * @module Util
-     */
-
-    var index = /*#__PURE__*/Object.freeze({
-        __proto__: null,
-        uuid: uuid,
-        randomHexColor: randomHexColor,
-        loadImage: loadImage,
-        clearScreen: clearScreen,
-        drawText: drawText,
-        drawBox: drawBox,
-        intersectBox: intersectBox,
-        applyMotion: applyMotion,
-        onDOMLoaded: onDOMLoaded,
-        drawCircle: drawCircle
-    });
 
     const TOP_INDEX = 0;
 
@@ -252,8 +151,189 @@
         return (i + 1) << 1;
     }
 
+    /**
+     * @typedef Eventable
+     * @property {function} on
+     * @property {function} off
+     * @property {function} once
+     * @property {function} emit
+     */
+
+    /**
+     * @version 1.2
+     * 
+     * # Changelog
+     * ## 1.2
+     * - Added named exports
+     * - Added custom this context
+     * - Added some needed explanations for the functions
+     * 
+     * ## 1.1
+     * - Started versioning
+     */
+    const EventableInstance = {
+        /**
+         * Registers an event handler to continually listen for the event.
+         * 
+         * @param {string} event The name of the event to listen for.
+         * @param {function} callback The callback function to handle the event.
+         * @param {*} [handle = callback] The handle to refer to this registered callback.
+         * Used by off() to remove handlers. If none specified, it will use the callback
+         * itself as the handle. This must be unique.
+         * @return {Eventable} Self for method-chaining.
+         */
+        on(event, callback, handle = callback)
+        {
+            let callbacks;
+            if (!this.__events.has(event))
+            {
+                callbacks = new Map();
+                this.__events.set(event, callbacks);
+            }
+            else
+            {
+                callbacks = this.__events.get(event);
+            }
+
+            if (!callbacks.has(handle))
+            {
+                callbacks.set(handle, callback);
+            }
+            else
+            {
+                throw new Error(`Found callback for event '${event}' with the same handle '${handle}'.`);
+            }
+            return this;
+        },
+
+        /**
+         * Unregisters an event handler to stop listening for the event.
+         * 
+         * @param {string} event The name of the event listened for.
+         * @param {*} handle The registered handle to refer to the registered
+         * callback. If no handle was provided when calling on(), the callback
+         * is used as the handle instead.
+         * @return {Eventable} Self for method-chaining.
+         */
+        off(event, handle)
+        {
+            if (this.__events.has(event))
+            {
+                const callbacks = this.__events.get(event);
+                if (callbacks.has(handle))
+                {
+                    callbacks.delete(handle);
+                }
+                else
+                {
+                    throw new Error(`Unable to find callback for event '${event}' with handle '${handle}'.`);
+                }
+            }
+            else
+            {
+                throw new Error(`Unable to find event '${event}'.`);
+            }
+            return this;
+        },
+        
+        /**
+         * Registers a one-off event handler to start listening for the next,
+         * and only the next, event.
+         * 
+         * @param {string} event The name of the event to listen for.
+         * @param {function} callback The callback function to handle the event.
+         * @param {*} [handle = callback] The handle to refer to this registered callback.
+         * Used by off() to remove handlers. If none specified, it will use the callback
+         * itself as the handle. This must be unique.
+         * @return {Eventable} Self for method-chaining.
+         */
+        once(event, callback, handle = callback)
+        {
+            const func = (...args) => {
+                this.off(event, handle);
+                callback.apply(this.__context || this, args);
+            };
+            return this.on(event, func, handle);
+        },
+
+        /**
+         * Emits the event with the arguments passed on to the registered handlers.
+         * The context of the handlers, if none were initially bound, could be
+         * defined upon calling the Eventable's creation function. Otherwise, the
+         * handler is called with `this` context of the Eventable instance.
+         * 
+         * @param {string} event The name of the event to emit.
+         * @param  {...any} args Any arguments to pass to registered handlers.
+         * @return {Eventable} Self for method-chaining.
+         */
+        emit(event, ...args)
+        {
+            if (this.__events.has(event))
+            {
+                const callbacks = Array.from(this.__events.get(event).values());
+                for(const callback of callbacks)
+                {
+                    callback.apply(this.__context || this, args);
+                }
+            }
+            else
+            {
+                this.__events.set(event, new Map());
+            }
+            return this;
+        }
+    };
+
+    /**
+     * Creates an eventable object.
+     * 
+     * @param {Object} [context] The context used for the event handlers.
+     * @return {Eventable} The created eventable object.
+     */
+    function create(context = undefined)
+    {
+        const result = Object.create(EventableInstance);
+        result.__events = new Map();
+        result.__context = context;
+        return result;
+    }
+
+    /**
+     * Assigns the passed-in object with eventable properties.
+     * 
+     * @param {Object} dst The object to assign with eventable properties.
+     * @param {Object} [context] The context used for the event handlers.
+     * @return {Eventable} The resultant eventable object.
+     */
+    function assign(dst, context = undefined)
+    {
+        const result = Object.assign(dst, EventableInstance);
+        result.__events = new Map();
+        result.__context = context;
+        return result;
+    }
+
+    /**
+     * Mixins eventable properties into the passed-in class.
+     * 
+     * @param {Class} targetClass The class to mixin eventable properties.
+     * @param {Object} [context] The context used for the event handlers.
+     * @return {Class<Eventable>} The resultant eventable-mixed-in class.
+     */
+    function mixin(targetClass, context = undefined)
+    {
+        const targetPrototype = targetClass.prototype;
+        Object.assign(targetPrototype, EventableInstance);
+        targetPrototype.__events = new Map();
+        targetPrototype.__context = context;
+        return targetPrototype;
+    }
+
     exports.PriorityQueue = PriorityQueue;
-    exports.Utils = index;
+    exports.assign = assign;
+    exports.create = create;
+    exports.mixin = mixin;
+    exports.uuid = uuid;
 
     Object.defineProperty(exports, '__esModule', { value: true });
 

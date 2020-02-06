@@ -1,5 +1,5 @@
-import { Utils } from '@milque/util';
 import { AbstractCamera } from '@milque/core';
+import { lerp } from '@milque/math';
 import { Transform2D } from './Transform2D.js';
 
 export class Camera2D extends AbstractCamera
@@ -20,8 +20,8 @@ export class Camera2D extends AbstractCamera
     {
         if (target)
         {
-            camera.transform.x = Utils.lerp(camera.transform.x, target.x, speed);
-            camera.transform.y = Utils.lerp(camera.transform.y, target.y, speed);
+            camera.transform.x = lerp(camera.transform.x, target.x, speed);
+            camera.transform.y = lerp(camera.transform.y, target.y, speed);
         }
     }
 

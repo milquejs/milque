@@ -1,8 +1,8 @@
 import { Input } from '@milque/input';
-import { Utils } from '@milque/util';
 import { EntityManager } from '@milque/entity';
 import { Display } from '@milque/display';
 import { View, GameLoop, SceneManager, AbstractCamera } from '@milque/core';
+import { lerp } from '@milque/math';
 
 const CONTEXT = Input.createContext().disable();
 const POS_X = CONTEXT.registerRange('x', 'mouse[pos].x');
@@ -150,6 +150,25 @@ var Camera2DControls = /*#__PURE__*/Object.freeze({
     doCameraMove: doCameraMove
 });
 
+function clearScreen(ctx, width, height)
+{
+    ctx.fillStyle = 'black';
+    ctx.fillRect(0, 0, width, height);
+}
+
+function drawText(ctx, text, x, y, radians = 0, fontSize = 16, color = 'white')
+{
+    ctx.translate(x, y);
+    if (radians) ctx.rotate(radians);
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = `${fontSize}px sans-serif`;
+    ctx.fillStyle = color;
+    ctx.fillText(text, 0, 0);
+    if (radians) ctx.rotate(-radians);
+    ctx.translate(-x, -y);
+}
+
 var game;
 
 const DEFAULT_VIEW = View.createView();
@@ -261,7 +280,7 @@ function createGame(scene)
             // TODO: Something more elegant please? I don't think we need the flag.
             if (first)
             {
-                Utils.clearScreen(view.context, view.width, view.height);
+                clearScreen(view.context, view.width, view.height);
             }
             else
             {
@@ -362,7 +381,7 @@ class SplashScene
         {
             opacity = 1;
         }
-        Utils.drawText(ctx, this.splashText, view.width / 2, view.height / 2, 0, 16, `rgba(255, 255, 255, ${opacity})`);
+        drawText(ctx, this.splashText, view.width / 2, view.height / 2, 0, 16, `rgba(255, 255, 255, ${opacity})`);
     }
 }
 
@@ -483,8 +502,8 @@ class Camera2D extends AbstractCamera
     {
         if (target)
         {
-            camera.transform.x = Utils.lerp(camera.transform.x, target.x, speed);
-            camera.transform.y = Utils.lerp(camera.transform.y, target.y, speed);
+            camera.transform.x = lerp(camera.transform.x, target.x, speed);
+            camera.transform.y = lerp(camera.transform.y, target.y, speed);
         }
     }
 

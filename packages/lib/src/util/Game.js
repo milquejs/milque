@@ -2,7 +2,7 @@ import { EntityManager } from '@milque/entity';
 import { Input } from '@milque/input';
 import { Display } from '@milque/display';
 import { GameLoop, SceneManager, View } from '@milque/core';
-import { Utils } from '@milque/util';
+import { Utils } from '../utils/index.js';
 
 var game;
 

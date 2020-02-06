@@ -1,8 +1,8 @@
 (function (global, factory) {
-    typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('@milque/input'), require('@milque/util'), require('@milque/entity'), require('@milque/display'), require('@milque/core')) :
-    typeof define === 'function' && define.amd ? define(['exports', '@milque/input', '@milque/util', '@milque/entity', '@milque/display', '@milque/core'], factory) :
-    (global = global || self, factory(global.Lib = {}, global.input, global.util, global.entity, global.display, global.core));
-}(this, (function (exports, input, util, entity, display, core) { 'use strict';
+    typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('@milque/input'), require('@milque/entity'), require('@milque/display'), require('@milque/core'), require('@milque/math')) :
+    typeof define === 'function' && define.amd ? define(['exports', '@milque/input', '@milque/entity', '@milque/display', '@milque/core', '@milque/math'], factory) :
+    (global = global || self, factory(global.Lib = {}, global.input, global.entity, global.display, global.core, global.math));
+}(this, (function (exports, input, entity, display, core, math) { 'use strict';
 
     const CONTEXT = input.Input.createContext().disable();
     const POS_X = CONTEXT.registerRange('x', 'mouse[pos].x');
@@ -150,6 +150,25 @@
         doCameraMove: doCameraMove
     });
 
+    function clearScreen(ctx, width, height)
+    {
+        ctx.fillStyle = 'black';
+        ctx.fillRect(0, 0, width, height);
+    }
+
+    function drawText(ctx, text, x, y, radians = 0, fontSize = 16, color = 'white')
+    {
+        ctx.translate(x, y);
+        if (radians) ctx.rotate(radians);
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.font = `${fontSize}px sans-serif`;
+        ctx.fillStyle = color;
+        ctx.fillText(text, 0, 0);
+        if (radians) ctx.rotate(-radians);
+        ctx.translate(-x, -y);
+    }
+
     var game;
 
     const DEFAULT_VIEW = core.View.createView();
@@ -261,7 +280,7 @@
                 // TODO: Something more elegant please? I don't think we need the flag.
                 if (first)
                 {
-                    util.Utils.clearScreen(view.context, view.width, view.height);
+                    clearScreen(view.context, view.width, view.height);
                 }
                 else
                 {
@@ -362,7 +381,7 @@
             {
                 opacity = 1;
             }
-            util.Utils.drawText(ctx, this.splashText, view.width / 2, view.height / 2, 0, 16, `rgba(255, 255, 255, ${opacity})`);
+            drawText(ctx, this.splashText, view.width / 2, view.height / 2, 0, 16, `rgba(255, 255, 255, ${opacity})`);
         }
     }
 
@@ -483,8 +502,8 @@
         {
             if (target)
             {
-                camera.transform.x = util.Utils.lerp(camera.transform.x, target.x, speed);
-                camera.transform.y = util.Utils.lerp(camera.transform.y, target.y, speed);
+                camera.transform.x = math.lerp(camera.transform.x, target.x, speed);
+                camera.transform.y = math.lerp(camera.transform.y, target.y, speed);
             }
         }
 

@@ -50,7 +50,10 @@
         get RangeInputAdapter () { return RangeInputAdapter; },
         get StateInputAdapter () { return StateInputAdapter; },
         get PriorityQueue () { return PriorityQueue; },
-        get Utils () { return index; },
+        get assign () { return assign$1; },
+        get create () { return create$2; },
+        get mixin () { return mixin$1; },
+        get uuid () { return uuid; },
         get Camera2D () { return Camera2D; },
         get Camera2DControls () { return Camera2DControls; },
         get CameraHelper () { return CameraHelper; },
@@ -3594,111 +3597,10 @@
     function uuid(a = undefined)
     {
         // https://gist.github.com/jed/982883
-        return a?(a^Math.random()*16>>a/4).toString(16):([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,uuid);
+        return a
+            ? (a ^ Math.random() * 16 >> a / 4).toString(16)
+            : ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, uuid);
     }
-
-    function randomHexColor()
-    {
-        return '#' + Math.floor(Math.random() * 16777215).toString(16);
-    }
-
-    function loadImage(url)
-    {
-        let image = new Image();
-        image.src = url;
-        return image;
-    }
-
-    function clearScreen(ctx, width, height)
-    {
-        ctx.fillStyle = 'black';
-        ctx.fillRect(0, 0, width, height);
-    }
-
-    function drawText(ctx, text, x, y, radians = 0, fontSize = 16, color = 'white')
-    {
-        ctx.translate(x, y);
-        if (radians) ctx.rotate(radians);
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.font = `${fontSize}px sans-serif`;
-        ctx.fillStyle = color;
-        ctx.fillText(text, 0, 0);
-        if (radians) ctx.rotate(-radians);
-        ctx.translate(-x, -y);
-    }
-
-    function drawBox(ctx, x, y, radians = 0, w = 16, h = w, color = 'white', outline = false)
-    {
-        ctx.translate(x, y);
-        if (radians) ctx.rotate(radians);
-        if (!outline)
-        {
-            ctx.fillStyle = color;
-            ctx.fillRect(-w / 2, -h / 2, w, h);
-        }
-        else
-        {
-            ctx.strokeStyle = color;
-            ctx.strokeRect(-w / 2, -h / 2, w, h);
-        }
-        if (radians) ctx.rotate(-radians);
-        ctx.translate(-x, -y);
-    }
-
-    function intersectBox(a, b)
-    {
-        return (Math.abs(a.x - b.x) * 2 < (a.width + b.width)) &&
-            (Math.abs(a.y - b.y) * 2 < (a.height + b.height));
-    }
-
-    function applyMotion(entity, inverseFrictionX = 1, inverseFrictionY = inverseFrictionX)
-    {
-        if (inverseFrictionX !== 1)
-        {
-            entity.dx *= inverseFrictionX;
-        }
-        if (inverseFrictionY !== 1)
-        {
-            entity.dy *= inverseFrictionY;
-        }
-        
-        entity.x += entity.dx;
-        entity.y += entity.dy;
-    }
-
-    function onDOMLoaded(listener)
-    {
-        window.addEventListener('DOMContentLoaded', listener);
-    }
-
-    function drawCircle(ctx, x, y, radius = 16, color = 'white', outline = false)
-    {
-        ctx.fillStyle = color;
-        ctx.strokeStyle = color;
-        ctx.beginPath();
-        ctx.arc(x, y, radius, 0, 2 * Math.PI);
-        if (outline) ctx.stroke();
-        else ctx.fill();
-    }
-
-    /**
-     * @module Util
-     */
-
-    var index = /*#__PURE__*/Object.freeze({
-        __proto__: null,
-        uuid: uuid,
-        randomHexColor: randomHexColor,
-        loadImage: loadImage,
-        clearScreen: clearScreen,
-        drawText: drawText,
-        drawBox: drawBox,
-        intersectBox: intersectBox,
-        applyMotion: applyMotion,
-        onDOMLoaded: onDOMLoaded,
-        drawCircle: drawCircle
-    });
 
     const TOP_INDEX = 0;
 
@@ -3831,6 +3733,231 @@
     function rightIndex(i)
     {
         return (i + 1) << 1;
+    }
+
+    /**
+     * @typedef Eventable
+     * @property {function} on
+     * @property {function} off
+     * @property {function} once
+     * @property {function} emit
+     */
+
+    /**
+     * @version 1.2
+     * 
+     * # Changelog
+     * ## 1.2
+     * - Added named exports
+     * - Added custom this context
+     * - Added some needed explanations for the functions
+     * 
+     * ## 1.1
+     * - Started versioning
+     */
+    const EventableInstance$1 = {
+        /**
+         * Registers an event handler to continually listen for the event.
+         * 
+         * @param {string} event The name of the event to listen for.
+         * @param {function} callback The callback function to handle the event.
+         * @param {*} [handle = callback] The handle to refer to this registered callback.
+         * Used by off() to remove handlers. If none specified, it will use the callback
+         * itself as the handle. This must be unique.
+         * @return {Eventable} Self for method-chaining.
+         */
+        on(event, callback, handle = callback)
+        {
+            let callbacks;
+            if (!this.__events.has(event))
+            {
+                callbacks = new Map();
+                this.__events.set(event, callbacks);
+            }
+            else
+            {
+                callbacks = this.__events.get(event);
+            }
+
+            if (!callbacks.has(handle))
+            {
+                callbacks.set(handle, callback);
+            }
+            else
+            {
+                throw new Error(`Found callback for event '${event}' with the same handle '${handle}'.`);
+            }
+            return this;
+        },
+
+        /**
+         * Unregisters an event handler to stop listening for the event.
+         * 
+         * @param {string} event The name of the event listened for.
+         * @param {*} handle The registered handle to refer to the registered
+         * callback. If no handle was provided when calling on(), the callback
+         * is used as the handle instead.
+         * @return {Eventable} Self for method-chaining.
+         */
+        off(event, handle)
+        {
+            if (this.__events.has(event))
+            {
+                const callbacks = this.__events.get(event);
+                if (callbacks.has(handle))
+                {
+                    callbacks.delete(handle);
+                }
+                else
+                {
+                    throw new Error(`Unable to find callback for event '${event}' with handle '${handle}'.`);
+                }
+            }
+            else
+            {
+                throw new Error(`Unable to find event '${event}'.`);
+            }
+            return this;
+        },
+        
+        /**
+         * Registers a one-off event handler to start listening for the next,
+         * and only the next, event.
+         * 
+         * @param {string} event The name of the event to listen for.
+         * @param {function} callback The callback function to handle the event.
+         * @param {*} [handle = callback] The handle to refer to this registered callback.
+         * Used by off() to remove handlers. If none specified, it will use the callback
+         * itself as the handle. This must be unique.
+         * @return {Eventable} Self for method-chaining.
+         */
+        once(event, callback, handle = callback)
+        {
+            const func = (...args) => {
+                this.off(event, handle);
+                callback.apply(this.__context || this, args);
+            };
+            return this.on(event, func, handle);
+        },
+
+        /**
+         * Emits the event with the arguments passed on to the registered handlers.
+         * The context of the handlers, if none were initially bound, could be
+         * defined upon calling the Eventable's creation function. Otherwise, the
+         * handler is called with `this` context of the Eventable instance.
+         * 
+         * @param {string} event The name of the event to emit.
+         * @param  {...any} args Any arguments to pass to registered handlers.
+         * @return {Eventable} Self for method-chaining.
+         */
+        emit(event, ...args)
+        {
+            if (this.__events.has(event))
+            {
+                const callbacks = Array.from(this.__events.get(event).values());
+                for(const callback of callbacks)
+                {
+                    callback.apply(this.__context || this, args);
+                }
+            }
+            else
+            {
+                this.__events.set(event, new Map());
+            }
+            return this;
+        }
+    };
+
+    /**
+     * Creates an eventable object.
+     * 
+     * @param {Object} [context] The context used for the event handlers.
+     * @return {Eventable} The created eventable object.
+     */
+    function create$2(context = undefined)
+    {
+        const result = Object.create(EventableInstance$1);
+        result.__events = new Map();
+        result.__context = context;
+        return result;
+    }
+
+    /**
+     * Assigns the passed-in object with eventable properties.
+     * 
+     * @param {Object} dst The object to assign with eventable properties.
+     * @param {Object} [context] The context used for the event handlers.
+     * @return {Eventable} The resultant eventable object.
+     */
+    function assign$1(dst, context = undefined)
+    {
+        const result = Object.assign(dst, EventableInstance$1);
+        result.__events = new Map();
+        result.__context = context;
+        return result;
+    }
+
+    /**
+     * Mixins eventable properties into the passed-in class.
+     * 
+     * @param {Class} targetClass The class to mixin eventable properties.
+     * @param {Object} [context] The context used for the event handlers.
+     * @return {Class<Eventable>} The resultant eventable-mixed-in class.
+     */
+    function mixin$1(targetClass, context = undefined)
+    {
+        const targetPrototype = targetClass.prototype;
+        Object.assign(targetPrototype, EventableInstance$1);
+        targetPrototype.__events = new Map();
+        targetPrototype.__context = context;
+        return targetPrototype;
+    }
+
+    function clampRange(value, min, max)
+    {
+        if (value < min) return min;
+        if (value > max) return max;
+        return value;
+    }
+
+    function withinRadius(from, to, radius)
+    {
+        const dx = from.x - to.x;
+        const dy = from.y - to.y;
+        return dx * dx + dy * dy <= radius * radius
+    }
+
+    function lerp(a, b, dt)
+    {
+        return a + (b - a) * dt;
+    }
+
+    function distance2(from, to)
+    {
+        let dx = to.x - from.x;
+        let dy = to.y - from.y;
+        return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    function direction2(from, to)
+    {
+        let dx = to.x - from.x;
+        let dy = to.y - from.y;
+        return Math.atan2(dy, dx);
+    }
+
+    function lookAt2(radians, target, dt)
+    {
+        let step = cycleRange(target - radians, -Math.PI, Math.PI);
+        return clampRange(radians + step, radians - dt, radians + dt);
+    }
+
+    function cycleRange(value, min, max)
+    {
+        let range = max - min;
+        let result = (value - min) % range;
+        if (result < 0) result += range;
+        return result + min;
     }
 
     const CONTEXT = _default$1.createContext().disable();
@@ -3979,6 +4106,25 @@
         doCameraMove: doCameraMove
     });
 
+    function clearScreen(ctx, width, height)
+    {
+        ctx.fillStyle = 'black';
+        ctx.fillRect(0, 0, width, height);
+    }
+
+    function drawText(ctx, text, x, y, radians = 0, fontSize = 16, color = 'white')
+    {
+        ctx.translate(x, y);
+        if (radians) ctx.rotate(radians);
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.font = `${fontSize}px sans-serif`;
+        ctx.fillStyle = color;
+        ctx.fillText(text, 0, 0);
+        if (radians) ctx.rotate(-radians);
+        ctx.translate(-x, -y);
+    }
+
     var game;
 
     const DEFAULT_VIEW = View.createView();
@@ -4090,7 +4236,7 @@
                 // TODO: Something more elegant please? I don't think we need the flag.
                 if (first)
                 {
-                    index.clearScreen(view.context, view.width, view.height);
+                    clearScreen(view.context, view.width, view.height);
                 }
                 else
                 {
@@ -4191,7 +4337,7 @@
             {
                 opacity = 1;
             }
-            index.drawText(ctx, this.splashText, view.width / 2, view.height / 2, 0, 16, `rgba(255, 255, 255, ${opacity})`);
+            drawText(ctx, this.splashText, view.width / 2, view.height / 2, 0, 16, `rgba(255, 255, 255, ${opacity})`);
         }
     }
 
@@ -4312,8 +4458,8 @@
         {
             if (target)
             {
-                camera.transform.x = index.lerp(camera.transform.x, target.x, speed);
-                camera.transform.y = index.lerp(camera.transform.y, target.y, speed);
+                camera.transform.x = lerp(camera.transform.x, target.x, speed);
+                camera.transform.y = lerp(camera.transform.y, target.y, speed);
             }
         }
 
@@ -4569,53 +4715,6 @@
 
     const DEFAULT_RANDOM_INTERFACE = new DefaultRandomInterface();
 
-    function clampRange(value, min, max)
-    {
-        if (value < min) return min;
-        if (value > max) return max;
-        return value;
-    }
-
-    function withinRadius(from, to, radius)
-    {
-        const dx = from.x - to.x;
-        const dy = from.y - to.y;
-        return dx * dx + dy * dy <= radius * radius
-    }
-
-    function lerp(a, b, dt)
-    {
-        return a + (b - a) * dt;
-    }
-
-    function distance2(from, to)
-    {
-        let dx = to.x - from.x;
-        let dy = to.y - from.y;
-        return Math.sqrt(dx * dx + dy * dy);
-    }
-
-    function direction2(from, to)
-    {
-        let dx = to.x - from.x;
-        let dy = to.y - from.y;
-        return Math.atan2(dy, dx);
-    }
-
-    function lookAt2(radians, target, dt)
-    {
-        let step = cycleRange(target - radians, -Math.PI, Math.PI);
-        return clampRange(radians + step, radians - dt, radians + dt);
-    }
-
-    function cycleRange(value, min, max)
-    {
-        let range = max - min;
-        let result = (value - min) % range;
-        if (result < 0) result += range;
-        return result + min;
-    }
-
 
 
     exports.AbstractCamera = AbstractCamera;
@@ -4671,17 +4770,20 @@
     exports.StateInputAdapter = StateInputAdapter;
     exports.TagComponent = TagComponent;
     exports.Transform2D = Transform2D;
-    exports.Utils = index;
     exports.View = View;
     exports.ViewHelper = ViewHelper;
     exports.ViewPort = ViewPort;
+    exports.assign = assign$1;
     exports.clampRange = clampRange;
+    exports.create = create$2;
     exports.cycleRange = cycleRange;
     exports.default = self;
     exports.direction2 = direction2;
     exports.distance2 = distance2;
     exports.lerp = lerp;
     exports.lookAt2 = lookAt2;
+    exports.mixin = mixin$1;
+    exports.uuid = uuid;
     exports.withinRadius = withinRadius;
 
     Object.defineProperty(exports, '__esModule', { value: true });

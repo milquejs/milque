@@ -1,5 +1,5 @@
-import { Utils } from '@milque/util';
 import { Input } from '@milque/input';
+import { Utils } from '../utils/index.js';
 
 import * as Game from '../util/Game.js';
 
