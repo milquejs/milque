@@ -1,0 +1,24 @@
+{
+  "name": "@milque/math",
+  "version": "0.1.0",
+  "description": "The math package for Milque.",
+  "module": "dist/esm/math.js",
+  "browser": "dist/math.js",
+  "scripts": {
+    "build": "rollup --config",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "milque",
+    "math"
+  ],
+  "author": "Andrew Kuo",
+  "license": "MIT",
+  "devDependencies": {
+    "rollup": "^1.30.1",
+    "rollup-plugin-terser": "^5.2.0"
+  },
+  "dependencies": {
+    "gl-matrix": "^3.1.0"
+  }
+}

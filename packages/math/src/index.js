@@ -17,21 +17,21 @@ export function lerp(a, b, dt)
     return a + (b - a) * dt;
 }
 
-export function distance2D(from, to)
+export function distance2(from, to)
 {
     let dx = to.x - from.x;
     let dy = to.y - from.y;
     return Math.sqrt(dx * dx + dy * dy);
 }
 
-export function direction2D(from, to)
+export function direction2(from, to)
 {
     let dx = to.x - from.x;
     let dy = to.y - from.y;
     return Math.atan2(dy, dx);
 }
 
-export function lookAt2D(radians, target, dt)
+export function lookAt2(radians, target, dt)
 {
     let step = cycleRange(target - radians, -Math.PI, Math.PI);
     return clampRange(radians + step, radians - dt, radians + dt);
