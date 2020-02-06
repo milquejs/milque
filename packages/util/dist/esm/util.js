@@ -323,4 +323,18 @@ function mixin(targetClass, context = undefined)
     return targetPrototype;
 }
 
-export { PriorityQueue, assign, create, mixin, uuid };
+var Eventable = {
+    create,
+    assign,
+    mixin
+};
+
+var Eventable$1 = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    create: create,
+    assign: assign,
+    mixin: mixin,
+    'default': Eventable
+});
+
+export { Eventable$1 as Eventable, PriorityQueue, uuid };

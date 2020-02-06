@@ -329,10 +329,22 @@
         return targetPrototype;
     }
 
+    var Eventable = {
+        create,
+        assign,
+        mixin
+    };
+
+    var Eventable$1 = /*#__PURE__*/Object.freeze({
+        __proto__: null,
+        create: create,
+        assign: assign,
+        mixin: mixin,
+        'default': Eventable
+    });
+
+    exports.Eventable = Eventable$1;
     exports.PriorityQueue = PriorityQueue;
-    exports.assign = assign;
-    exports.create = create;
-    exports.mixin = mixin;
     exports.uuid = uuid;
 
     Object.defineProperty(exports, '__esModule', { value: true });

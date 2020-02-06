@@ -1,4 +1,5 @@
 export * from './id/index.js';
-
 export * from './PriorityQueue.js';
-export * from './Eventable.js';
+
+import * as Eventable from './Eventable.js';
+export { Eventable };

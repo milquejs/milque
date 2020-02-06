@@ -50,9 +50,6 @@
         get RangeInputAdapter () { return RangeInputAdapter; },
         get StateInputAdapter () { return StateInputAdapter; },
         get PriorityQueue () { return PriorityQueue; },
-        get assign () { return assign$1; },
-        get create () { return create$2; },
-        get mixin () { return mixin$1; },
         get uuid () { return uuid; },
         get Camera2D () { return Camera2D; },
         get Camera2DControls () { return Camera2DControls; },
@@ -3735,184 +3732,6 @@
         return (i + 1) << 1;
     }
 
-    /**
-     * @typedef Eventable
-     * @property {function} on
-     * @property {function} off
-     * @property {function} once
-     * @property {function} emit
-     */
-
-    /**
-     * @version 1.2
-     * 
-     * # Changelog
-     * ## 1.2
-     * - Added named exports
-     * - Added custom this context
-     * - Added some needed explanations for the functions
-     * 
-     * ## 1.1
-     * - Started versioning
-     */
-    const EventableInstance$1 = {
-        /**
-         * Registers an event handler to continually listen for the event.
-         * 
-         * @param {string} event The name of the event to listen for.
-         * @param {function} callback The callback function to handle the event.
-         * @param {*} [handle = callback] The handle to refer to this registered callback.
-         * Used by off() to remove handlers. If none specified, it will use the callback
-         * itself as the handle. This must be unique.
-         * @return {Eventable} Self for method-chaining.
-         */
-        on(event, callback, handle = callback)
-        {
-            let callbacks;
-            if (!this.__events.has(event))
-            {
-                callbacks = new Map();
-                this.__events.set(event, callbacks);
-            }
-            else
-            {
-                callbacks = this.__events.get(event);
-            }
-
-            if (!callbacks.has(handle))
-            {
-                callbacks.set(handle, callback);
-            }
-            else
-            {
-                throw new Error(`Found callback for event '${event}' with the same handle '${handle}'.`);
-            }
-            return this;
-        },
-
-        /**
-         * Unregisters an event handler to stop listening for the event.
-         * 
-         * @param {string} event The name of the event listened for.
-         * @param {*} handle The registered handle to refer to the registered
-         * callback. If no handle was provided when calling on(), the callback
-         * is used as the handle instead.
-         * @return {Eventable} Self for method-chaining.
-         */
-        off(event, handle)
-        {
-            if (this.__events.has(event))
-            {
-                const callbacks = this.__events.get(event);
-                if (callbacks.has(handle))
-                {
-                    callbacks.delete(handle);
-                }
-                else
-                {
-                    throw new Error(`Unable to find callback for event '${event}' with handle '${handle}'.`);
-                }
-            }
-            else
-            {
-                throw new Error(`Unable to find event '${event}'.`);
-            }
-            return this;
-        },
-        
-        /**
-         * Registers a one-off event handler to start listening for the next,
-         * and only the next, event.
-         * 
-         * @param {string} event The name of the event to listen for.
-         * @param {function} callback The callback function to handle the event.
-         * @param {*} [handle = callback] The handle to refer to this registered callback.
-         * Used by off() to remove handlers. If none specified, it will use the callback
-         * itself as the handle. This must be unique.
-         * @return {Eventable} Self for method-chaining.
-         */
-        once(event, callback, handle = callback)
-        {
-            const func = (...args) => {
-                this.off(event, handle);
-                callback.apply(this.__context || this, args);
-            };
-            return this.on(event, func, handle);
-        },
-
-        /**
-         * Emits the event with the arguments passed on to the registered handlers.
-         * The context of the handlers, if none were initially bound, could be
-         * defined upon calling the Eventable's creation function. Otherwise, the
-         * handler is called with `this` context of the Eventable instance.
-         * 
-         * @param {string} event The name of the event to emit.
-         * @param  {...any} args Any arguments to pass to registered handlers.
-         * @return {Eventable} Self for method-chaining.
-         */
-        emit(event, ...args)
-        {
-            if (this.__events.has(event))
-            {
-                const callbacks = Array.from(this.__events.get(event).values());
-                for(const callback of callbacks)
-                {
-                    callback.apply(this.__context || this, args);
-                }
-            }
-            else
-            {
-                this.__events.set(event, new Map());
-            }
-            return this;
-        }
-    };
-
-    /**
-     * Creates an eventable object.
-     * 
-     * @param {Object} [context] The context used for the event handlers.
-     * @return {Eventable} The created eventable object.
-     */
-    function create$2(context = undefined)
-    {
-        const result = Object.create(EventableInstance$1);
-        result.__events = new Map();
-        result.__context = context;
-        return result;
-    }
-
-    /**
-     * Assigns the passed-in object with eventable properties.
-     * 
-     * @param {Object} dst The object to assign with eventable properties.
-     * @param {Object} [context] The context used for the event handlers.
-     * @return {Eventable} The resultant eventable object.
-     */
-    function assign$1(dst, context = undefined)
-    {
-        const result = Object.assign(dst, EventableInstance$1);
-        result.__events = new Map();
-        result.__context = context;
-        return result;
-    }
-
-    /**
-     * Mixins eventable properties into the passed-in class.
-     * 
-     * @param {Class} targetClass The class to mixin eventable properties.
-     * @param {Object} [context] The context used for the event handlers.
-     * @return {Class<Eventable>} The resultant eventable-mixed-in class.
-     */
-    function mixin$1(targetClass, context = undefined)
-    {
-        const targetPrototype = targetClass.prototype;
-        Object.assign(targetPrototype, EventableInstance$1);
-        targetPrototype.__events = new Map();
-        targetPrototype.__context = context;
-        return targetPrototype;
-    }
-
     function clampRange(value, min, max)
     {
         if (value < min) return min;
@@ -4773,16 +4592,13 @@
     exports.View = View;
     exports.ViewHelper = ViewHelper;
     exports.ViewPort = ViewPort;
-    exports.assign = assign$1;
     exports.clampRange = clampRange;
-    exports.create = create$2;
     exports.cycleRange = cycleRange;
     exports.default = self;
     exports.direction2 = direction2;
     exports.distance2 = distance2;
     exports.lerp = lerp;
     exports.lookAt2 = lookAt2;
-    exports.mixin = mixin$1;
     exports.uuid = uuid;
     exports.withinRadius = withinRadius;
 
