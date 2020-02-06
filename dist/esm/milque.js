@@ -43,6 +43,7 @@ var self = /*#__PURE__*/Object.freeze({
     get Mouse () { return Mouse; },
     get RangeInputAdapter () { return RangeInputAdapter; },
     get StateInputAdapter () { return StateInputAdapter; },
+    get PriorityQueue () { return PriorityQueue; },
     get Utils () { return index; },
     get Camera2D () { return Camera2D; },
     get Camera2DControls () { return Camera2DControls; },
@@ -56,7 +57,14 @@ var self = /*#__PURE__*/Object.freeze({
     get Random () { return DEFAULT_RANDOM_INTERFACE; },
     get RandomGenerator () { return RandomGenerator; },
     get RandomInterface () { return RandomInterface; },
-    get SimpleRandomGenerator () { return SimpleRandomGenerator; }
+    get SimpleRandomGenerator () { return SimpleRandomGenerator; },
+    get clampRange () { return clampRange; },
+    get cycleRange () { return cycleRange; },
+    get direction2 () { return direction2; },
+    get distance2 () { return distance2; },
+    get lerp () { return lerp; },
+    get lookAt2 () { return lookAt2; },
+    get withinRadius () { return withinRadius; }
 });
 
 /**
@@ -3583,53 +3591,6 @@ function uuid(a = undefined)
     return a?(a^Math.random()*16>>a/4).toString(16):([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,uuid);
 }
 
-function clampRange(value, min, max)
-{
-    if (value < min) return min;
-    if (value > max) return max;
-    return value;
-}
-
-function withinRadius(from, to, radius)
-{
-    const dx = from.x - to.x;
-    const dy = from.y - to.y;
-    return dx * dx + dy * dy <= radius * radius
-}
-
-function lerp(a, b, dt)
-{
-    return a + (b - a) * dt;
-}
-
-function distance2D(from, to)
-{
-    let dx = to.x - from.x;
-    let dy = to.y - from.y;
-    return Math.sqrt(dx * dx + dy * dy);
-}
-
-function direction2D(from, to)
-{
-    let dx = to.x - from.x;
-    let dy = to.y - from.y;
-    return Math.atan2(dy, dx);
-}
-
-function lookAt2D(radians, target, dt)
-{
-    let step = cycleRange(target - radians, -Math.PI, Math.PI);
-    return clampRange(radians + step, radians - dt, radians + dt);
-}
-
-function cycleRange(value, min, max)
-{
-    let range = max - min;
-    let result = (value - min) % range;
-    if (result < 0) result += range;
-    return result + min;
-}
-
 function randomHexColor()
 {
     return '#' + Math.floor(Math.random() * 16777215).toString(16);
@@ -3714,6 +3675,24 @@ function drawCircle(ctx, x, y, radius = 16, color = 'white', outline = false)
     if (outline) ctx.stroke();
     else ctx.fill();
 }
+
+/**
+ * @module Util
+ */
+
+var index = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    uuid: uuid,
+    randomHexColor: randomHexColor,
+    loadImage: loadImage,
+    clearScreen: clearScreen,
+    drawText: drawText,
+    drawBox: drawBox,
+    intersectBox: intersectBox,
+    applyMotion: applyMotion,
+    onDOMLoaded: onDOMLoaded,
+    drawCircle: drawCircle
+});
 
 const TOP_INDEX = 0;
 
@@ -3847,32 +3826,6 @@ function rightIndex(i)
 {
     return (i + 1) << 1;
 }
-
-/**
- * @module Util
- */
-
-var index = /*#__PURE__*/Object.freeze({
-    __proto__: null,
-    uuid: uuid,
-    clampRange: clampRange,
-    withinRadius: withinRadius,
-    lerp: lerp,
-    distance2D: distance2D,
-    direction2D: direction2D,
-    lookAt2D: lookAt2D,
-    cycleRange: cycleRange,
-    randomHexColor: randomHexColor,
-    loadImage: loadImage,
-    clearScreen: clearScreen,
-    drawText: drawText,
-    drawBox: drawBox,
-    intersectBox: intersectBox,
-    applyMotion: applyMotion,
-    onDOMLoaded: onDOMLoaded,
-    drawCircle: drawCircle,
-    PriorityQueue: PriorityQueue
-});
 
 const CONTEXT = _default$1.createContext().disable();
 const POS_X = CONTEXT.registerRange('x', 'mouse[pos].x');
@@ -4610,7 +4563,54 @@ class DefaultRandomInterface extends RandomInterface
 
 const DEFAULT_RANDOM_INTERFACE = new DefaultRandomInterface();
 
+function clampRange(value, min, max)
+{
+    if (value < min) return min;
+    if (value > max) return max;
+    return value;
+}
+
+function withinRadius(from, to, radius)
+{
+    const dx = from.x - to.x;
+    const dy = from.y - to.y;
+    return dx * dx + dy * dy <= radius * radius
+}
+
+function lerp(a, b, dt)
+{
+    return a + (b - a) * dt;
+}
+
+function distance2(from, to)
+{
+    let dx = to.x - from.x;
+    let dy = to.y - from.y;
+    return Math.sqrt(dx * dx + dy * dy);
+}
+
+function direction2(from, to)
+{
+    let dx = to.x - from.x;
+    let dy = to.y - from.y;
+    return Math.atan2(dy, dx);
+}
+
+function lookAt2(radians, target, dt)
+{
+    let step = cycleRange(target - radians, -Math.PI, Math.PI);
+    return clampRange(radians + step, radians - dt, radians + dt);
+}
+
+function cycleRange(value, min, max)
+{
+    let range = max - min;
+    let result = (value - min) % range;
+    if (result < 0) result += range;
+    return result + min;
+}
+
 
 
 export default self;
-export { AbstractCamera, AbstractInputAdapter, ActionInputAdapter, Audio, Camera2D, Camera2DControls, CameraHelper, ComponentHelper as Component, ComponentBase, ComponentFactory, DOUBLE_ACTION_TIME, _default as Display, DisplayPort, DoubleActionInputAdapter, EntityHelper as Entity, EntityBase, EntityComponent$1 as EntityComponent, EntityManager, EntityQuery, EntitySpawner, EntityWrapper, EventKey, Eventable$1 as Eventable, FineDiffStrategy, Game, GameLoop, HotEntityModule, HotEntityReplacement, _default$1 as Input, InputContext, InputSource, Keyboard, MODE_CENTER, MODE_FIT, MODE_NOSCALE, MODE_STRETCH, Mouse, MouseControls, MoveControls, QueryOperator, DEFAULT_RANDOM_INTERFACE as Random, RandomGenerator, RandomInterface, RangeInputAdapter, ReflexiveEntity, SceneBase, SceneManager, SimpleRandomGenerator, SplashScene, StateInputAdapter, TagComponent, Transform2D, index as Utils, View, ViewHelper, ViewPort };
+export { AbstractCamera, AbstractInputAdapter, ActionInputAdapter, Audio, Camera2D, Camera2DControls, CameraHelper, ComponentHelper as Component, ComponentBase, ComponentFactory, DOUBLE_ACTION_TIME, _default as Display, DisplayPort, DoubleActionInputAdapter, EntityHelper as Entity, EntityBase, EntityComponent$1 as EntityComponent, EntityManager, EntityQuery, EntitySpawner, EntityWrapper, EventKey, Eventable$1 as Eventable, FineDiffStrategy, Game, GameLoop, HotEntityModule, HotEntityReplacement, _default$1 as Input, InputContext, InputSource, Keyboard, MODE_CENTER, MODE_FIT, MODE_NOSCALE, MODE_STRETCH, Mouse, MouseControls, MoveControls, PriorityQueue, QueryOperator, DEFAULT_RANDOM_INTERFACE as Random, RandomGenerator, RandomInterface, RangeInputAdapter, ReflexiveEntity, SceneBase, SceneManager, SimpleRandomGenerator, SplashScene, StateInputAdapter, TagComponent, Transform2D, index as Utils, View, ViewHelper, ViewPort, clampRange, cycleRange, direction2, distance2, lerp, lookAt2, withinRadius };

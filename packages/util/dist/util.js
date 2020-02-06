@@ -16,53 +16,6 @@
         return a?(a^Math.random()*16>>a/4).toString(16):([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,uuid);
     }
 
-    function clampRange(value, min, max)
-    {
-        if (value < min) return min;
-        if (value > max) return max;
-        return value;
-    }
-
-    function withinRadius(from, to, radius)
-    {
-        const dx = from.x - to.x;
-        const dy = from.y - to.y;
-        return dx * dx + dy * dy <= radius * radius
-    }
-
-    function lerp(a, b, dt)
-    {
-        return a + (b - a) * dt;
-    }
-
-    function distance2D(from, to)
-    {
-        let dx = to.x - from.x;
-        let dy = to.y - from.y;
-        return Math.sqrt(dx * dx + dy * dy);
-    }
-
-    function direction2D(from, to)
-    {
-        let dx = to.x - from.x;
-        let dy = to.y - from.y;
-        return Math.atan2(dy, dx);
-    }
-
-    function lookAt2D(radians, target, dt)
-    {
-        let step = cycleRange(target - radians, -Math.PI, Math.PI);
-        return clampRange(radians + step, radians - dt, radians + dt);
-    }
-
-    function cycleRange(value, min, max)
-    {
-        let range = max - min;
-        let result = (value - min) % range;
-        if (result < 0) result += range;
-        return result + min;
-    }
-
     function randomHexColor()
     {
         return '#' + Math.floor(Math.random() * 16777215).toString(16);
@@ -147,6 +100,24 @@
         if (outline) ctx.stroke();
         else ctx.fill();
     }
+
+    /**
+     * @module Util
+     */
+
+    var index = /*#__PURE__*/Object.freeze({
+        __proto__: null,
+        uuid: uuid,
+        randomHexColor: randomHexColor,
+        loadImage: loadImage,
+        clearScreen: clearScreen,
+        drawText: drawText,
+        drawBox: drawBox,
+        intersectBox: intersectBox,
+        applyMotion: applyMotion,
+        onDOMLoaded: onDOMLoaded,
+        drawCircle: drawCircle
+    });
 
     const TOP_INDEX = 0;
 
@@ -281,32 +252,7 @@
         return (i + 1) << 1;
     }
 
-    /**
-     * @module Util
-     */
-
-    var index = /*#__PURE__*/Object.freeze({
-        __proto__: null,
-        uuid: uuid,
-        clampRange: clampRange,
-        withinRadius: withinRadius,
-        lerp: lerp,
-        distance2D: distance2D,
-        direction2D: direction2D,
-        lookAt2D: lookAt2D,
-        cycleRange: cycleRange,
-        randomHexColor: randomHexColor,
-        loadImage: loadImage,
-        clearScreen: clearScreen,
-        drawText: drawText,
-        drawBox: drawBox,
-        intersectBox: intersectBox,
-        applyMotion: applyMotion,
-        onDOMLoaded: onDOMLoaded,
-        drawCircle: drawCircle,
-        PriorityQueue: PriorityQueue
-    });
-
+    exports.PriorityQueue = PriorityQueue;
     exports.Utils = index;
 
     Object.defineProperty(exports, '__esModule', { value: true });
