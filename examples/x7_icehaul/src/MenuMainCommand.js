@@ -1,9 +1,6 @@
 const { say, ask, pause, style, branch } = require('./output/index.js');
 const { GameSequence } = require('./game/index.js');
 
-const MenuChangeDestination = require('./MenuChangeDestination.js');
-const MenuMarket = require('./MenuMarket.js');
-
 module.exports = async function run(world)
 {
     await say('...running system diagnostics...');
@@ -13,18 +10,18 @@ module.exports = async function run(world)
 
     // Communication
     options['[COMMUNICATION] Open link with local station...'] = () => console.log('Nothin happened.');
-    options['[COMMUNICATION] Open trade with local market...'] = () => MenuMarket(world);
+    options['[COMMUNICATION] Open trade with local market...'] = () => require('./MenuInventory.js')(world,  world.player.inventory);
 
     // Navigation
     if (world.player.fuel > 0)
     {
         if (!world.player.destination.system)
         {
-            options['[NAVIGATION] Set course for...'] = () => MenuChangeDestination(world, world.player.x, world.player.y, world.player.location, world.player.fuel - 1);
+            options['[NAVIGATION] Set course for...'] = () => require('./MenuChangeDestination.js')(world, world.player.x, world.player.y, world.player.location, world.player.fuel - 1);
         }
         else
         {
-            options['[NAVIGATION] Change course...'] = () => MenuChangeDestination(world, world.player.x, world.player.y, world.player.location, world.player.fuel - 1);
+            options['[NAVIGATION] Change course...'] = () => require('./MenuChangeDestination.js')(world, world.player.x, world.player.y, world.player.location, world.player.fuel - 1);
             options['[COMMAND] Continue to destination.'] = () => gotoDestination(world);
         }
     }

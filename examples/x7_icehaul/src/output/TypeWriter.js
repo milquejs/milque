@@ -1,3 +1,7 @@
+const HARD_PUNCTUATION_PATTERN = /[.!:]/;
+const SOFT_PUNCTUATION_PATTERN = /[,;]/;
+const WHITESPACE_PATTERN = /\s/;
+
 class TypeWriter
 {
     constructor(opts = {})
@@ -18,6 +22,7 @@ class TypeWriter
             message,
             index: 0,
             next: 1,
+            ticks: 0,
 
             oninput: null,
             oninterval: null,
@@ -57,20 +62,40 @@ class TypeWriter
         }
         else
         {
+            if (ctx.ticks > 0)
+            {
+                --ctx.ticks;
+                return;
+            }
+
             let str = message.substring(index, next);
             this.stream.write(str);
 
             ctx.index = next;
             ctx.next = next + 1;
+
+            if (str.length === 1)
+            {
+                if (HARD_PUNCTUATION_PATTERN.test(str))
+                {
+                    ctx.ticks = 6;
+                }
+                else if (SOFT_PUNCTUATION_PATTERN.test(str))
+                {
+                    ctx.ticks = 2;
+                }
+                else
+                {
+                    ctx.ticks = 0;
+                }
+            }
         }
     }
 
     _onInputData(ctx, key)
     {
-        if (key.includes(32))
-        {
-            ctx.next = ctx.message.length;
-        }
+        // NOTE: Press any key
+        ctx.next = ctx.message.length;
     }
 }
 
