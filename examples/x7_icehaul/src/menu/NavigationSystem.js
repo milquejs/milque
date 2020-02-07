@@ -1,40 +1,51 @@
+const { ModuleSystem } = require('./ModuleSystem.js');
+const { SimpleCommand } = require('./SimpleCommand.js');
+
 const { say, pause, style, branch } = require('../output/index.js');
 const { distance2 } = require('../lib/math.js');
 
-module.exports = { init };
-
-async function init(world)
+class NavigationSystem extends ModuleSystem
 {
-    if (!world.state.commands) throw new Error('Missing dependency.');
+    /** @override */
+    onAttach(commandCenter)
+    {
+        commandCenter.registerCommand('nav-destination', new SimpleCommand(
+            '[NAVIGATION] Set destination...',
+            async world =>
+                setDestination(world, world.player.x, world.player.y, world.player.location, 10),
+        ));
+        commandCenter.registerCommand('nav-continue', new SimpleCommand(
+            '[NAVIGATION] Continue to destination.',
+            async world => gotoDestination(world),
+            world => Boolean(world.player.destination.system),
+        ).setAlwaysVisible(false));
+    }
 
-    world.state.commands.on('poweron', async () => {
-        world.state.commands.addCommand({
-            message: '[NAVIGATION] Set destination...',
-            callback: () => commandSetDestination(world, world.player.x, world.player.y, world.player.location, 10),
-        }, 'setdest');
-    });
+    /** @override */
+    onDetach(commandCenter)
+    {
+        commandCenter.unregisterCommand('nav-continue');
+        commandCenter.unregisterCommand('nav-destination');
+    }
 
-    world.state.commands.on('poweron', async () => {
-        world.state.commands.addCommand({
-            message: '[NAVIGATION] Continue to destination.',
-            callback: () => gotoDestination(world),
-            get disabled() { return !world.player.destination.system; }
-        }, 'gotodest');
-    });
-
-    world.state.commands.on('info', async () => {
-        await say(
-            `\n${'=-'.repeat(20)} Day ${world.day + 1}`
+    /** @override */
+    async onBanner(world)
+    {
+        console.log(
+            `${'=-'.repeat(20)} Day ${world.day + 1}`
             + `\n= Current System: ${style.system(world.player.system)}`
             + `\n= Current Location: ${style.location(world.player.location)}`
             + `\n= Destination: ${style.destination(world.player.destination)}`
             + `\n= Fuel: ${style.fuel(world.player.fuel, world.player.maxFuel, -world.player.destination.cost)}`
             + `\n${'=-'.repeat(20)}`
         );
-    });
+        await say.newline();
+    }
 }
 
-async function commandSetDestination(world, fromX, fromY, fromLocation, searchRadius)
+module.exports = { NavigationSystem };
+
+async function setDestination(world, fromX, fromY, fromLocation, searchRadius)
 {
     let fromSystem = world.starmap.getNearestStarSystem(fromX, fromY);
 
@@ -46,7 +57,7 @@ async function commandSetDestination(world, fromX, fromY, fromLocation, searchRa
     for(let system of systems)
     {
         let dist = Math.max(1, Math.round(distance2(fromX, fromY, system.x, system.y) * 100) / 100);
-        options[`${style.system(system)} (${dist}u away)`] = () => setDestination(world, system, null, Math.ceil(dist));
+        options[`${style.system(system)} (${dist}u away)`] = () => _setDestination(world, system, null, Math.ceil(dist));
     }
     
     let locations = world.starmap.getLocationsForStarSystem(fromSystem);
@@ -54,13 +65,13 @@ async function commandSetDestination(world, fromX, fromY, fromLocation, searchRa
     if (currentLocationIndex >= 0) locations.splice(currentLocationIndex, 1);
     for(let location of locations)
     {
-        options[`${style.location(location)}`] = () => setDestination(world, fromSystem, location);
+        options[`${style.location(location)}`] = () => _setDestination(world, fromSystem, location);
     }
 
     await branch('To where?', options);
 }
 
-async function setDestination(world, targetSystem, targetLocation = null, cost = 1)
+async function _setDestination(world, targetSystem, targetLocation = null, cost = 1)
 {
     world.player.destination.system = targetSystem;
     world.player.destination.location = targetLocation;

@@ -15,7 +15,7 @@ async function input(message, initial = '')
         new enquirer.Input({
             message,
             initial,
-        }).run()
+        }).run().catch(e => null)
     );
 }
 
@@ -26,7 +26,7 @@ async function choose(message, options)
             message,
             choices: options,
             limit: 10,
-        }).run()
+        }).run().catch(e => null)
     );
 }
 
@@ -35,7 +35,7 @@ async function confirm(message)
     return await(
         new enquirer.Confirm({
             message
-        }).run()
+        }).run().catch(e => null)
     );
 }
 
