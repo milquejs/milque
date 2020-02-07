@@ -258,23 +258,26 @@ const EventableInstance = {
      * 
      * @param {string} event The name of the event to emit.
      * @param  {...any} args Any arguments to pass to registered handlers.
-     * @return {Eventable} Self for method-chaining.
+     * @return {Array<any>} Array of any returned values of the callbacks.
      */
     emit(event, ...args)
     {
         if (this.__events.has(event))
         {
+            let results = [];
             const callbacks = Array.from(this.__events.get(event).values());
             for(const callback of callbacks)
             {
-                callback.apply(this.__context || this, args);
+                let result = callback.apply(this.__context || this, args);
+                if (result) results.push(result);
             }
+            return results;
         }
         else
         {
             this.__events.set(event, new Map());
+            return [];
         }
-        return this;
     }
 };
 

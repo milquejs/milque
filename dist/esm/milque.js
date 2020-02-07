@@ -3733,10 +3733,10 @@ function clampRange(value, min, max)
     return value;
 }
 
-function withinRadius(from, to, radius)
+function withinRadius(fromX, fromY, toX, toY, radius)
 {
-    const dx = from.x - to.x;
-    const dy = from.y - to.y;
+    const dx = fromX - toX;
+    const dy = fromY - toY;
     return dx * dx + dy * dy <= radius * radius
 }
 
@@ -3745,17 +3745,17 @@ function lerp(a, b, dt)
     return a + (b - a) * dt;
 }
 
-function distance2(from, to)
+function distance2(fromX, fromY, toX, toY)
 {
-    let dx = to.x - from.x;
-    let dy = to.y - from.y;
+    let dx = toX - fromX;
+    let dy = toY - fromY;
     return Math.sqrt(dx * dx + dy * dy);
 }
 
-function direction2(from, to)
+function direction2(fromX, fromY, toX, toY)
 {
-    let dx = to.x - from.x;
-    let dy = to.y - from.y;
+    let dx = toX - fromX;
+    let dy = toY - fromY;
     return Math.atan2(dy, dx);
 }
 

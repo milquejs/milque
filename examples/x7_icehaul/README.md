@@ -171,3 +171,9 @@ Command Center
 - Prints Stats
 - Shows command target / queue / destination
 - Lists commands to execute
+
+=-=-=-=-=-= POSSIBLE FEATURE =-=-=-=
+Command discovery System
+- Every command is ??? until used.
+- Or you find the manual for it.
+=-=-=-=-==-=-===-=-=-=-=-=-=-=-=-=-=
