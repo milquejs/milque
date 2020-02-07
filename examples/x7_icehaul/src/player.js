@@ -12,10 +12,10 @@ function init(world)
             system: null,
             location: null,
         },
-        inventory: new ItemContainer(),
+        inventory: new ItemContainer(world.itemManager),
     };
 
-    world.player.inventory.addItemStack(world.items.createItemStack('fuel'));
+    world.player.inventory.addItemStack(world.itemManager.createItemStack('fuel'));
 }
 
 module.exports = { init };

@@ -5,6 +5,7 @@ const items = require('./items.js');
 const player = require('./player.js');
 const modules = require('./modules.js');
 
+const { ItemManager } = require('./world/item/ItemManager.js');
 const { CommandCenter } = require('./menu/CommandCenter.js');
 const CommandCenterMenu = require('./menu/CommandCenterMenu.js');
 
@@ -13,6 +14,7 @@ async function main()
     let world = {
         day: 0,
         state: {},
+        itemManager: new ItemManager(),
         commandCenter: new CommandCenter(),
     };
 

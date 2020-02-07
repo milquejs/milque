@@ -74,10 +74,13 @@ module.exports = async function run(world)
         await say('Welcome back, captain.');
         await say.newline();
 
+        console.log(`${'=-'.repeat(20)} Day ${world.day + 1}`);
         for(let system of commandCenter.getSystemModules())
         {
             await system.onBanner(world);
-        } 
+        }
+        console.log(`${'=-'.repeat(20)}`);
+        await say.newline();
 
         commandOptions.push(...getCommandOptions(world, commandCenter));
         let option = getCommandOption(world, commandPowerOff);

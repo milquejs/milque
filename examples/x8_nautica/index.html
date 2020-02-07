@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Arena</title>
+
+        <style>body { margin: 0; }</style>
+    </head>
+    <body>
+        <display-port debug full></display-port>
+        <script type="module">
+            import * as Milque from './milque.js';
+            let gameLoop = new Milque.GameLoop();
+            gameLoop.addEventListener('update', e => {
+                console.log('update', e.detail.dt);
+            });
+            gameLoop.start();
+        </script>
+    </body>
+</html>

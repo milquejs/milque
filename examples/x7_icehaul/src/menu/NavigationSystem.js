@@ -28,15 +28,10 @@ class NavigationSystem extends ModuleSystem
     /** @override */
     async onBanner(world)
     {
-        console.log(
-            `${'=-'.repeat(20)} Day ${world.day + 1}`
-            + `\n= Current System: ${style.system(world.player.system)}`
-            + `\n= Current Location: ${style.location(world.player.location)}`
-            + `\n= Destination: ${style.destination(world.player.destination)}`
-            + `\n= Fuel: ${style.fuel(world.player.fuel, world.player.maxFuel, -world.player.destination.cost)}`
-            + `\n${'=-'.repeat(20)}`
-        );
-        await say.newline();
+        console.log(`Current System: ${style.system(world.player.system)}`);
+        console.log(`Current Location: ${style.location(world.player.location)}`);
+        console.log(`Destination: ${style.destination(world.player.destination)}`);
+        console.log(`Fuel: ${style.fuel(world.player.fuel, world.player.maxFuel, -world.player.destination.cost)}`);
     }
 }
 
