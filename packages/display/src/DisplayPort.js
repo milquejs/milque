@@ -214,14 +214,14 @@ export class DisplayPort extends HTMLElement
         this._animationRequestHandle = requestAnimationFrame(this.update);
 
         this.updateCanvasSize();
+        const delta = now - this._prevAnimationFrameTime;
+        this._prevAnimationFrameTime = now;
 
         // NOTE: For debugging purposes...
         if (this.debug)
         {
             // Update FPS...
-            const dt = now - this._prevAnimationFrameTime;
-            const frames = dt <= 0 ? '--' : String(Math.round(1000 / dt)).padStart(2, '0');
-            this._prevAnimationFrameTime = now;
+            const frames = delta <= 0 ? '--' : String(Math.round(1000 / delta)).padStart(2, '0');
             if (this._fpsElement.innerText !== frames)
             {
                 this._fpsElement.innerText = frames;
@@ -246,7 +246,16 @@ export class DisplayPort extends HTMLElement
             }
         }
 
-        this.dispatchEvent(new CustomEvent('frame', { detail: { now, context: this._canvasContext }, bubbles: false, composed: true }));
+        this.dispatchEvent(new CustomEvent('frame', {
+            detail: {
+                now,
+                prev: this._prevAnimationFrameTime,
+                delta,
+                context: this._canvasContext
+            },
+            bubbles: false,
+            composed: true
+        }));
     }
 
     pause()

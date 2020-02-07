@@ -656,7 +656,7 @@ const LOAD_TIME = 250;
 const FADE_IN_TIME = LOAD_TIME * 0.3;
 const FADE_OUT_TIME = LOAD_TIME * 0.9;
 
-const CONTEXT$3 = Input.createContext();
+const CONTEXT$3 = Input.createContext().disable();
 const ANY_KEY = CONTEXT$3.registerAction('continue', 'key.down', 'mouse.down');
 
 class SplashScene

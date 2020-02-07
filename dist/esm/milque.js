@@ -337,14 +337,14 @@ class DisplayPort extends HTMLElement
         this._animationRequestHandle = requestAnimationFrame(this.update);
 
         this.updateCanvasSize();
+        const delta = now - this._prevAnimationFrameTime;
+        this._prevAnimationFrameTime = now;
 
         // NOTE: For debugging purposes...
         if (this.debug)
         {
             // Update FPS...
-            const dt = now - this._prevAnimationFrameTime;
-            const frames = dt <= 0 ? '--' : String(Math.round(1000 / dt)).padStart(2, '0');
-            this._prevAnimationFrameTime = now;
+            const frames = delta <= 0 ? '--' : String(Math.round(1000 / delta)).padStart(2, '0');
             if (this._fpsElement.innerText !== frames)
             {
                 this._fpsElement.innerText = frames;
@@ -369,7 +369,16 @@ class DisplayPort extends HTMLElement
             }
         }
 
-        this.dispatchEvent(new CustomEvent('frame', { detail: { now, context: this._canvasContext }, bubbles: false, composed: true }));
+        this.dispatchEvent(new CustomEvent('frame', {
+            detail: {
+                now,
+                prev: this._prevAnimationFrameTime,
+                delta,
+                context: this._canvasContext
+            },
+            bubbles: false,
+            composed: true
+        }));
     }
 
     pause()
@@ -3305,6 +3314,7 @@ class GameLoop extends HTMLElement
         this.paused = false;
         this.deltaTimeFactor = 1 / 1000;
 
+        this.onAnimationFrame = this.onAnimationFrame.bind(this);
         this.onWindowFocus = this.onWindowFocus.bind(this);
         this.onWindowBlur = this.onWindowBlur.bind(this);
     }
@@ -3351,12 +3361,12 @@ class GameLoop extends HTMLElement
      * Runs the game loop. If this is a controlled game loop, it will call itself
      * continuously until stop() or pause().
      */
-    run(now)
+    onAnimationFrame(now)
     {
         if (this._controlled) throw new Error('Cannot run controlled game loop; call step() instead.');
-        if (!this.started) throw new Error('Must call start() before run().');
+        if (!this.started) throw new Error('Must be called after start().');
 
-        this.animationFrameHandle = requestAnimationFrame(this.run);
+        this.animationFrameHandle = requestAnimationFrame(this.onAnimationFrame);
         this.step(now);
     }
 
@@ -3392,7 +3402,7 @@ class GameLoop extends HTMLElement
         
         if (!this.controlled)
         {
-            this.run(this.prevFrameTime);
+            this.onAnimationFrame(this.prevFrameTime);
         }
     }
 
@@ -4144,7 +4154,7 @@ const LOAD_TIME = 250;
 const FADE_IN_TIME = LOAD_TIME * 0.3;
 const FADE_OUT_TIME = LOAD_TIME * 0.9;
 
-const CONTEXT$3 = _default$1.createContext();
+const CONTEXT$3 = _default$1.createContext().disable();
 const ANY_KEY = CONTEXT$3.registerAction('continue', 'key.down', 'mouse.down');
 
 class SplashScene

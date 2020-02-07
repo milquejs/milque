@@ -47,6 +47,7 @@
             this.paused = false;
             this.deltaTimeFactor = 1 / 1000;
 
+            this.onAnimationFrame = this.onAnimationFrame.bind(this);
             this.onWindowFocus = this.onWindowFocus.bind(this);
             this.onWindowBlur = this.onWindowBlur.bind(this);
         }
@@ -93,12 +94,12 @@
          * Runs the game loop. If this is a controlled game loop, it will call itself
          * continuously until stop() or pause().
          */
-        run(now)
+        onAnimationFrame(now)
         {
             if (this._controlled) throw new Error('Cannot run controlled game loop; call step() instead.');
-            if (!this.started) throw new Error('Must call start() before run().');
+            if (!this.started) throw new Error('Must be called after start().');
 
-            this.animationFrameHandle = requestAnimationFrame(this.run);
+            this.animationFrameHandle = requestAnimationFrame(this.onAnimationFrame);
             this.step(now);
         }
 
@@ -134,7 +135,7 @@
             
             if (!this.controlled)
             {
-                this.run(this.prevFrameTime);
+                this.onAnimationFrame(this.prevFrameTime);
             }
         }
 
