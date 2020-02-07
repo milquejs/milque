@@ -24,6 +24,7 @@
     "@milque/entity": "^0.1.0",
     "@milque/input": "^0.1.0",
     "@milque/util": "^0.1.0",
-    "@milque/math": "^0.1.0"
+    "@milque/math": "^0.1.0",
+    "@milque/game": "^0.1.0"
   }
 }

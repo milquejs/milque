@@ -1,4 +1,4 @@
-import { AbstractCamera } from '@milque/core';
+import { AbstractCamera } from '../view/AbstractCamera.js';
 import { lerp } from '@milque/math';
 import { Transform2D } from './Transform2D.js';
 

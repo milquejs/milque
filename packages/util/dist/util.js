@@ -160,15 +160,16 @@
      */
 
     /**
-     * @version 1.2
-     * 
+     * @version 1.3.0
+     * @description
      * # Changelog
-     * ## 1.2
+     * ## 1.3.0
+     * - Return results for emit()
+     * ## 1.2.0
      * - Added named exports
      * - Added custom this context
      * - Added some needed explanations for the functions
-     * 
-     * ## 1.1
+     * ## 1.1.0
      * - Started versioning
      */
     const EventableInstance = {

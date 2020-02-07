@@ -1,7 +1,8 @@
 import { Input } from '@milque/input';
 import { EntityManager } from '@milque/entity';
 import { Display } from '@milque/display';
-import { View, GameLoop, SceneManager, AbstractCamera } from '@milque/core';
+import { GameLoop } from '@milque/game';
+import { Eventable } from '@milque/util';
 import { lerp } from '@milque/math';
 
 const CONTEXT = Input.createContext().disable();
@@ -169,9 +170,341 @@ function drawText(ctx, text, x, y, radians = 0, fontSize = 16, color = 'white')
     ctx.translate(-x, -y);
 }
 
+const NO_TRANSITION = {};
+
+class SceneManager
+{
+    constructor()
+    {
+        this.registry = new Map();
+        this.sharedContext = {};
+
+        this._scene = null;
+        this._nextScene = null;
+        this._nextLoadOpts = null;
+        this._nextTransition = null;
+    }
+
+    /** Shared contexts are persistent across scenes of this manager. */
+    setSharedContext(context)
+    {
+        this.sharedContext = context;
+        return this;
+    }
+
+    register(name, scene)
+    {
+        if (typeof name !== 'string')
+        {
+            throw new Error('Scene name must be a string.');
+        }
+
+        this.registry.set(name, scene);
+        return this;
+    }
+
+    unregister(name)
+    {
+        this.registry.delete(name);
+        return this;
+    }
+
+    nextScene(scene, transition = null, loadOpts = {})
+    {
+        if (this._nextScene)
+        {
+            throw new Error('Cannot change scenes during a scene transition.');
+        }
+
+        // Whether to check the registry for the associated scene
+        if (typeof scene === 'string')
+        {
+            if (!this.registry.has(scene))
+            {
+                throw new Error(`Cannot find scene with name '${scene}'.`);
+            }
+
+            scene = this.registry.get(scene);
+        }
+
+        // For class-like scene structure
+        if (typeof scene === 'function')
+        {
+            scene = new scene();
+        }
+        // For object-like scene structure (includes modules)
+        else if (typeof scene === 'object')
+        {
+            // Whether the scene is non-extensible and should be converted to an object
+            if (!Object.isExtensible(scene))
+            {
+                scene = createExtensibleSceneFromModule(scene);
+            }
+        }
+        // For anything else...
+        else
+        {
+            throw new Error('Scene type not supported.');
+        }
+
+        this._nextScene = scene;
+        this._nextLoadOpts = loadOpts;
+
+        // NOTE: Transition MUST NEVER be null while switching scenes as it
+        // also serves as the flag to stop scene updates.
+        this._nextTransition = transition || NO_TRANSITION;
+    }
+
+    update(dt)
+    {
+        if (this._transition)
+        {
+            // TODO: Transitions should have their own methods and not just be tiny scenes...
+            
+            // Waiting for scene load...
+            this._updateStep(dt, this._transition);
+        }
+        else if (this._nextScene)
+        {
+            // Starting next scene request...
+            const nextScene = this._nextScene;
+            const nextLoadOpts = this._nextLoadOpts;
+            const nextTransition = this._nextTransition;
+
+            this._nextScene = null;
+            this._nextLoadOpts = null;
+            this._nextTransition = null;
+
+            this._transition = nextTransition;
+
+            let result = Promise.resolve();
+            let currentScene = this._scene;
+            if (currentScene)
+            {
+                if ('onStop' in currentScene) currentScene.onStop(this.sharedContext);
+                if ('unload' in currentScene) result = result.then(() =>
+                    currentScene.unload(this.sharedContext));
+            }
+
+            if ('load' in nextScene) result = result.then(() =>
+                nextScene.load(this.sharedContext, nextLoadOpts));
+            
+            result = result.then(() => {
+                this._scene = nextScene;
+                this._transition = null;
+
+                if ('onStart' in this._scene) this._scene.onStart(this.sharedContext);
+            });
+        }
+        else if (this._scene)
+        {
+            this._updateStep(dt, this._scene);
+        }
+    }
+
+    _updateStep(dt, target)
+    {
+        if ('onPreUpdate' in target) target.onPreUpdate(dt);
+        this.emit('preupdate', dt);
+        if ('onUpdate' in target) target.onUpdate(dt);
+        this.emit('update', dt);
+        if ('onPostUpdate' in target) target.onPostUpdate(dt);
+        this.emit('postupdate', dt);
+    }
+
+    getCurrentScene() { return this._scene; }
+    getNextScene() { return this._nextScene; }
+
+    [Symbol.iterator]()
+    {
+        return this.registry[Symbol.iterator]();
+    }
+}
+Eventable.mixin(SceneManager);
+
+function createExtensibleSceneFromModule(sceneModule)
+{
+    return {
+        ...sceneModule
+    };
+}
+
+/**
+ * This is not required to create a scene. Any object or class
+ * with any of the defined functions can be considered a valid
+ * scene. This is for ease of use and readability.
+ */
+class SceneBase
+{
+    /** @abstract */
+    async load(world, opts) {}
+    /** @abstract */
+    async unload(world) {}
+
+    /** @abstract */
+    onStart(world) {}
+    /** @abstract */
+    onStop(world) {}
+
+    /** @abstract */
+    onPreUpdate(dt) {}
+    /** @abstract */
+    onUpdate(dt) {}
+    /** @abstract */
+    onPostUpdate(dt) {}
+}
+
+/**
+ * @module View
+ * @version 1.1.0
+ * 
+ * A view is a section of a world that is drawn onto a section of a
+ * display. For every view, there must exist a camera and viewport.
+ * However, there could exist multiple cameras in the same view
+ * (albeit inactive).
+ * 
+ * A viewport is the section of the display that shows the content.
+ * Since viewports generally change with the display, it is calculated
+ * when needed rather than stored. Usually, you only want the full display
+ * as a viewport.
+ * 
+ * A camera is the view in the world space itself. This usually means
+ * it has the view and projection matrix. And because of its existance
+ * within the world, it is often manipulated to change the world view.
+ * 
+ * Another way to look at it is that viewports hold the destination
+ * dimensions of a view, whilst the camera holds the source transformations
+ * that are applied to a view's source canvas (its buffer) dimension.
+ * The size of the view buffer should never change (unless game resolution
+ * and aspect ratio changes).
+ */
+
+/**
+ * Creates a view which facilitates rendering from world to screen space.
+ */
+function createView(width = 640, height = 480)
+{
+    let { canvas, context } = createViewBuffer(width, height);
+    return {
+        _canvas: canvas,
+        _context: context,
+        _width: width,
+        _height: height,
+
+        get canvas() { return this._canvas; },
+        get context() { return this._context; },
+
+        get width() { return this._width; },
+        set width(value)
+        {
+            this._width = value;
+            this._canvas.width = value;
+        },
+        get height() { return this._height; },
+        set height(value)
+        {
+            this._height = value;
+            this._canvas.height = value;
+        },
+    };
+}
+
+function createViewBuffer(width, height)
+{
+    let canvasElement = document.createElement('canvas');
+    canvasElement.width = width;
+    canvasElement.height = height;
+    canvasElement.style = 'image-rendering: pixelated';
+    let canvasContext = canvasElement.getContext('2d');
+    canvasContext.imageSmoothingEnabled = false;
+    return { canvas: canvasElement, context: canvasContext };
+}
+
+function drawBufferToCanvas(
+    targetCanvasContext,
+    bufferCanvasElement,
+    viewPortX = 0,
+    viewPortY = 0,
+    viewPortWidth = targetCanvasContext.canvas.clientWidth,
+    viewPortHeight = targetCanvasContext.canvas.clientHeight)
+{
+    targetCanvasContext.drawImage(bufferCanvasElement,
+        viewPortX, viewPortY, viewPortWidth, viewPortHeight);
+}
+
+var View = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    createView: createView,
+    createViewBuffer: createViewBuffer,
+    drawBufferToCanvas: drawBufferToCanvas
+});
+
+function setViewTransform(view, camera = undefined)
+{
+    if (camera)
+    {
+        view.context.setTransform(...camera.getProjectionMatrix());
+        view.context.transform(...camera.getViewMatrix());
+    }
+    else
+    {
+        view.context.setTransform(1, 0, 0, 1, 0, 0);
+    }
+}
+
+var ViewHelper = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    setViewTransform: setViewTransform
+});
+
+/**
+ * A viewport for a display output. This serves as the output dimensions of a view.
+ * @param {HTMLElement} canvasElement The output canvas (or the display).
+ * @param {RenderingContext} canvasContext The output canvas context.
+ */
+class ViewPort
+{
+    constructor(canvasElement, canvasContext)
+    {
+        this._canvas = canvasElement;
+        this._context = canvasContext;
+    }
+
+    // NOTE: We use function getters instead of property getters here because
+    // this can easily be overridden for a different implementation. These
+    // values are expected to support both computed and stored values. Whereas
+    // property getters imply a static, or stored, value.
+
+    /** The x position offset in the output. */
+    getX() { return 0; }
+    /** The y position offset in the output. */
+    getY() { return 0; }
+    /** The width of the viewport in the output. */
+    getWidth() { return this._canvas.clientWidth; }
+    /** The height of the viewport in the output. */
+    getHeight() { return this._canvas.clientHeight; }
+    
+    /** The output canvas element. */
+    getCanvas() { return this._canvas; }
+    /** The output canvas context. */
+    getContext() { return this._context; }
+}
+
+/**
+ * A camera for a view. This serves as the in-world representation of the
+ * view. This is usually manipulated to move the world, zoom in, etc.
+ */
+class AbstractCamera
+{
+    /** @abstract */
+    getProjectionMatrix() { return [1, 0, 0, 1, 0, 0]; }
+    /** @abstract */
+    getViewMatrix() { return [1, 0, 0, 1, 0, 0]; }
+}
+
 var game;
 
-const DEFAULT_VIEW = View.createView();
+const DEFAULT_VIEW = createView();
 
 function registerScene(name, scene)
 {
@@ -292,12 +625,12 @@ function createGame(scene)
             // NOTE: The renderer can define a custom viewport to draw to
             if (viewPort)
             {
-                View.drawBufferToCanvas(viewPort.getContext(), view.canvas, viewPort.getX(), viewPort.getY(), viewPort.getWidth(), viewPort.getHeight());
+                drawBufferToCanvas(viewPort.getContext(), view.canvas, viewPort.getX(), viewPort.getY(), viewPort.getWidth(), viewPort.getHeight());
             }
             // TODO: Is there a way to get rid of this?
             else if (Display.getDrawContext())
             {
-                View.drawBufferToCanvas(Display.getDrawContext(), view.canvas);
+                drawBufferToCanvas(Display.getDrawContext(), view.canvas);
             }
         }
     };
@@ -697,4 +1030,4 @@ var EntitySpawner = /*#__PURE__*/Object.freeze({
     createSpawner: createSpawner
 });
 
-export { Camera2D, Camera2DControls, CameraHelper, EntitySpawner, Game, MouseControls, MoveControls, SplashScene, Transform2D };
+export { AbstractCamera, Camera2D, Camera2DControls, CameraHelper, EntitySpawner, Game, MouseControls, MoveControls, SceneBase, SceneManager, SplashScene, Transform2D, View, ViewHelper, ViewPort };

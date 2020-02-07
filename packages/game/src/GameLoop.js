@@ -24,7 +24,7 @@
  * @fires resume
  * @fires update
  */
-class GameLoop extends HTMLElement
+export class GameLoop extends HTMLElement
 {
     static currentTime() { return performance.now(); }
 
@@ -181,5 +181,4 @@ class GameLoop extends HTMLElement
     }
 }
 window.customElements.define('game-loop', GameLoop);
-
-export { GameLoop };
+export default GameLoop;

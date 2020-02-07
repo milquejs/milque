@@ -1,4 +1,4 @@
-import * as Eventable from '../util/Eventable.js';
+import { Eventable } from '@milque/util';
 
 const NO_TRANSITION = {};
 

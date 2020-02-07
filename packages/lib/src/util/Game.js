@@ -1,7 +1,9 @@
 import { EntityManager } from '@milque/entity';
 import { Input } from '@milque/input';
 import { Display } from '@milque/display';
-import { GameLoop, SceneManager, View } from '@milque/core';
+import { GameLoop } from '@milque/game';
+import { SceneManager } from '../scene/index.js';
+import { View } from '../view/index.js';
 import { Utils } from '../utils/index.js';
 
 var game;
