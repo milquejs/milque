@@ -1,4 +1,4 @@
-import { GameLoop } from '@milque/game';
+import { ApplicationLoop } from '@milque/game';
 import { View, DisplayPort } from '@milque/display';
 
 const GAME_INFO_PROPERTY = Symbol('gameInfo');
@@ -20,27 +20,26 @@ export async function startGame(game)
         || (Object.isExtensible(game) && game)
         || {};
     
-    let view = instance.view || View.createView();
+    let view = instance.view || new View();
     let viewport = instance.viewport || {
         x: 0, y: 0,
         get width() { return displayPort.getCanvas().clientWidth; },
         get height() { return displayPort.getCanvas().clientHeight; },
     };
 
-    let gameLoop = new GameLoop();
+    let applicationLoop = new ApplicationLoop();
 
     let gameInfo = {
         game,
         view,
         viewport,
         display: displayPort,
-        loop: gameLoop,
-        fixed: {
-            time: 0,
-            step: instance.fixedStep || 0.016667,
-        },
+        loop: applicationLoop,
         onframe: onFrame.bind(undefined, instance),
+        onpreupdate: onPreUpdate.bind(undefined, instance),
         onupdate: onUpdate.bind(undefined, instance),
+        onfixedupdate: onFixedUpdate.bind(undefined, instance),
+        onpostupdate: onPostUpdate.bind(undefined, instance),
         onfirstupdate: onFirstUpdate.bind(undefined, instance),
     };
     
@@ -50,44 +49,54 @@ export async function startGame(game)
         configurable: true,
     });
     
-    gameLoop.addEventListener('update', gameInfo.onfirstupdate, { once: true });
-    gameLoop.start();
+    applicationLoop.addEventListener('update', gameInfo.onfirstupdate, { once: true });
+    applicationLoop.start();
 
     return instance;
 }
 
 function onFirstUpdate(instance, e)
 {
-    let { display, loop, onupdate, onframe } = instance[GAME_INFO_PROPERTY];
-    console.log('FIRST');
+    let { game, display, loop, onpreupdate, onupdate, onpostupdate, onfixedupdate, onframe } = instance[GAME_INFO_PROPERTY];
+
     if (game.start) game.start.call(instance);
 
+    onpreupdate.call(instance,e);
     onupdate.call(instance, e);
+    onfixedupdate.call(instance, e);
+    onpostupdate.call(instance, e);
+
+    loop.addEventListener('preupdate', onpreupdate);
     loop.addEventListener('update', onupdate);
+    loop.addEventListener('fixedupdate', onfixedupdate);
+    loop.addEventListener('postupdate', onpostupdate);
     display.addEventListener('frame', onframe);
+}
+
+function onPreUpdate(instance, e)
+{
+    let { game } = instance[GAME_INFO_PROPERTY];
+    let dt = e.detail.delta;
+    if (game.preupdate) game.preupdate.call(instance, dt);
 }
 
 function onUpdate(instance, e)
 {
-    let { game, fixed } = instance[GAME_INFO_PROPERTY];
+    let { game } = instance[GAME_INFO_PROPERTY];
     let dt = e.detail.delta;
-
-    if (game.preupdate) game.preupdate.call(instance, dt);
     if (game.update) game.update.call(instance, dt);
+}
 
-    if (game.fixedupdate)
-    {
-        let timeStep = fixed.step;
-        let maxTime = timeStep * 250;
-        if (fixed.time > maxTime) fixed.time = maxTime;
-        else fixed.time += dt;
-        while (fixed.time >= timeStep)
-        {
-            fixed.time -= timeStep;
-            game.fixedupdate.call(instance);
-        }
-    }
+function onFixedUpdate(instance, e)
+{
+    let { game } = instance[GAME_INFO_PROPERTY];
+    if (game.fixedupdate) game.fixedupdate.call(instance);
+}
 
+function onPostUpdate(instance, e)
+{
+    let { game } = instance[GAME_INFO_PROPERTY];
+    let dt = e.detail.delta;
     if (game.postupdate) game.postupdate.call(instance, dt);
 }
 
@@ -126,19 +135,22 @@ export async function resumeGame(instance)
 
 export async function stopGame(instance)
 {
-    let { game, onframe, onupdate, onfirstupdate } = instance[GAME_INFO_PROPERTY];
+    let { game, loop, display, onframe, onpreupdate, onupdate, onfixedupdate, onpostupdate, onfirstupdate } = instance[GAME_INFO_PROPERTY];
 
-    game.loop.removeEventListener('update', onfirstupdate);
-    game.loop.removeEventListener('update', onupdate);
-    game.display.removeEventListener('frame', onframe);
+    loop.removeEventListener('update', onfirstupdate);
+    loop.removeEventListener('preupdate', onpreupdate);
+    loop.removeEventListener('update', onupdate);
+    loop.removeEventListener('fixedupdate', onfixedupdate);
+    loop.removeEventListener('postupdate', onpostupdate);
+    display.removeEventListener('frame', onframe);
 
     return await new Promise(resolve => {
-        game.loop.addEventListener('stop', async () => {
+        loop.addEventListener('stop', async () => {
             if (game.stop) game.stop();
             if (game.unload) await game.unload(instance);
             resolve(instance);
         }, { once: true });
-        game.loop.stop();
+        loop.stop();
     });
 }
 

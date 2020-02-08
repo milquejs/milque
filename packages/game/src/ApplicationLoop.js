@@ -32,7 +32,7 @@ const MAX_FIXED_UPDATES = 250;
  * @fires postupdate
  * @fires fixedupdate
  */
-class ApplicationLoop extends HTMLElement
+export class ApplicationLoop extends HTMLElement
 {
     static currentTime() { return performance.now(); }
 
@@ -343,5 +343,4 @@ class ApplicationLoop extends HTMLElement
     }
 }
 window.customElements.define('application-loop', ApplicationLoop);
-
-export { ApplicationLoop };
+export default ApplicationLoop;

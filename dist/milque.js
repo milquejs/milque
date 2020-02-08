@@ -45,6 +45,10 @@
         get Eventable () { return Eventable$1; },
         get PriorityQueue () { return PriorityQueue; },
         get uuid () { return uuid; },
+        get AbstractCamera () { return AbstractCamera; },
+        get Camera2D () { return Camera2D; },
+        get Camera2DControls () { return Camera2DControls; },
+        get CameraHelper () { return CameraHelper; },
         get EntitySpawner () { return EntitySpawner; },
         get Game () { return Game; },
         get MouseControls () { return MouseControls; },
@@ -52,11 +56,12 @@
         get SceneBase () { return SceneBase; },
         get SceneManager () { return SceneManager; },
         get SplashScene () { return SplashScene; },
+        get Transform2D () { return Transform2D; },
         get Random () { return DEFAULT_RANDOM_INTERFACE; },
         get RandomGenerator () { return RandomGenerator; },
         get RandomInterface () { return RandomInterface; },
         get SimpleRandomGenerator () { return SimpleRandomGenerator; },
-        get GameLoop () { return GameLoop; },
+        get ApplicationLoop () { return ApplicationLoop; },
         get clampRange () { return clampRange; },
         get cycleRange () { return cycleRange; },
         get direction2 () { return direction2; },
@@ -3357,12 +3362,17 @@
         'default': Eventable
     });
 
+    const DELTA_TIME_FACTOR = 1 / 1000;
+    const MAX_FIXED_UPDATES = 250;
+
     /**
      * @version 1.4.0
      * @description
      * Handles a steady update loop.
      * 
      * # Changelog
+     * ## 1.5.0
+     * - Renamed to ApplicationLoop
      * ## 1.4.0
      * - Removed Eventable in favor of addEventListener()
      * - Changed GameLoop into a web component
@@ -3382,10 +3392,29 @@
      * @fires pause
      * @fires resume
      * @fires update
+     * @fires preupdate
+     * @fires postupdate
+     * @fires fixedupdate
      */
-    class GameLoop extends HTMLElement
+    class ApplicationLoop extends HTMLElement
     {
         static currentTime() { return performance.now(); }
+
+        /** @override */
+        static get observedAttributes()
+        {
+            return [
+                // Event handlers...
+                'onstart',
+                'onstop',
+                'onpreupdate',
+                'onupdate',
+                'onfixedupdate',
+                'onpostupdate',
+                'onpause',
+                'onresume',
+            ];
+        }
 
         constructor(startImmediately = true, controlled = false)
         {
@@ -3398,18 +3427,28 @@
             this.prevFrameTime = 0;
             this.started = false;
             this.paused = false;
-            this.deltaTimeFactor = 1 / 1000;
+            this.fixedTimeStep = 1 / 60;
+            this.prevAccumulatedTime = 0;
+
+            this._onstart = null;
+            this._onstop = null;
+            this._onpreupdate = null;
+            this._onupdate = null;
+            this._onfixedupdate = null;
+            this._onpostupdate = null;
+            this._onpause = null;
+            this._onresume = null;
 
             this.onAnimationFrame = this.onAnimationFrame.bind(this);
             this.onWindowFocus = this.onWindowFocus.bind(this);
             this.onWindowBlur = this.onWindowBlur.bind(this);
         }
 
-        setDeltaTimeFactor(value)
+        setFixedUpdatesPerSecond(count)
         {
-            this.deltaTimeFactor = value;
+            this.fixedTimeStep = 1 / count;
             return this;
-        }
+        } 
 
         /** @override */
         connectedCallback()
@@ -3429,6 +3468,39 @@
             window.removeEventListener('blur', this.onWindowBlur);
 
             this.stop();
+        }
+
+        /** @override */
+        attributeChangedCallback(attribute, prev, value)
+        {
+            switch(attribute)
+            {
+                // Event handlers...
+                case 'onstart':
+                    this._onstart = new Function('event', `with(document){with(this){${value}}}`).bind(this);
+                    break;
+                case 'onstop':
+                    this._onstop = new Function('event', `with(document){with(this){${value}}}`).bind(this);
+                    break;
+                case 'onpreupdate':
+                    this._onpreupdate = new Function('event', `with(document){with(this){${value}}}`).bind(this);
+                    break;
+                case 'onupdate':
+                    this._onupdate = new Function('event', `with(document){with(this){${value}}}`).bind(this);
+                    break;
+                case 'onfixedupdate':
+                    this._onfixedupdate = new Function('event', `with(document){with(this){${value}}}`).bind(this);
+                    break;
+                case 'onpostupdate':
+                    this._onpostupdate = new Function('event', `with(document){with(this){${value}}}`).bind(this);
+                    break;
+                case 'onpause':
+                    this._onpause = new Function('event', `with(document){with(this){${value}}}`).bind(this);
+                    break;
+                case 'onresume':
+                    this._onresume = new Function('event', `with(document){with(this){${value}}}`).bind(this);
+                    break;
+            }
         }
 
         onWindowFocus()
@@ -3457,16 +3529,46 @@
         }
 
         /** Runs one update step for the game loop. This is usually called 60 times a second. */
-        step(now = GameLoop.currentTime())
+        step(now = ApplicationLoop.currentTime())
         {
-            if (!this.started) return;
+            if (!this.started) return false;
 
-            const delta = (now - this.prevFrameTime) * this.deltaTimeFactor;
+            const delta = (now - this.prevFrameTime) * DELTA_TIME_FACTOR;
             this.prevFrameTime = now;
             
-            if (this.paused) return;
+            if (this.paused) return false;
+
+            this.dispatchEvent(new CustomEvent('preupdate', {
+                detail: { delta },
+                bubbles: false,
+                composed: true
+            }));
 
             this.dispatchEvent(new CustomEvent('update', {
+                detail: { delta },
+                bubbles: false,
+                composed: true
+            }));
+
+            this.prevAccumulatedTime += delta;
+            if (this.prevAccumulatedTime > MAX_FIXED_UPDATES * this.fixedTimeStep)
+            {
+                let max = MAX_FIXED_UPDATES * this.fixedTimeStep;
+                let count = (this.prevAccumulatedTime - max) / this.fixedTimeStep;
+                this.prevAccumulatedTime = max;
+                console.error(`[ApplicationLoop] Too many updates! Skipped ${count} fixed updates.`);
+            }
+
+            while(this.prevAccumulatedTime >= this.fixedTimeStep)
+            {
+                this.prevAccumulatedTime -= this.fixedTimeStep;
+                this.dispatchEvent(new CustomEvent('fixedupdate', {
+                    bubbles: false,
+                    composed: true
+                }));
+            }
+
+            this.dispatchEvent(new CustomEvent('postupdate', {
                 detail: { delta },
                 bubbles: false,
                 composed: true
@@ -3479,7 +3581,7 @@
             if (this.started) throw new Error('Loop already started.');
 
             this.started = true;
-            this.prevFrameTime = GameLoop.currentTime();
+            this.prevFrameTime = ApplicationLoop.currentTime();
 
             this.dispatchEvent(new CustomEvent('start', {
                 bubbles: false,
@@ -3539,8 +3641,119 @@
                 composed: true
             }));
         }
+
+        get onstart() { return this._onstart; }
+        set onstart(value)
+        {
+            if (this._onstart) this.removeEventListener('start', this._onstart);
+            this._onstart = value;
+            if (this._onstart) this.addEventListener('start', value);
+        }
+
+        get onstop() { return this._onstop; }
+        set onstop(value)
+        {
+            if (this._onstop) this.removeEventListener('stop', this._onstop);
+            this._onstop = value;
+            if (this._onstop) this.addEventListener('stop', value);
+        }
+
+        get onpreupdate() { return this._onpreupdate; }
+        set onpreupdate(value)
+        {
+            if (this._onpreupdate) this.removeEventListener('preupdate', this._onpreupdate);
+            this._onpreupdate = value;
+            if (this._onpreupdate) this.addEventListener('preupdate', value);
+        }
+
+        get onupdate() { return this._onupdate; }
+        set onupdate(value)
+        {
+            if (this._onupdate) this.removeEventListener('update', this._onupdate);
+            this._onupdate = value;
+            if (this._onupdate) this.addEventListener('update', value);
+        }
+
+        get onfixedupdate() { return this._onfixedupdate; }
+        set onfixedupdate(value)
+        {
+            if (this._onfixedupdate) this.removeEventListener('fixedupdate', this._onfixedupdate);
+            this._onfixedupdate = value;
+            if (this._onfixedupdate) this.addEventListener('fixedupdate', value);
+        }
+
+        get onpostupdate() { return this._onpostupdate; }
+        set onpostupdate(value)
+        {
+            if (this._onpostupdate) this.removeEventListener('postupdate', this._onpostupdate);
+            this._onpostupdate = value;
+            if (this._onpostupdate) this.addEventListener('postupdate', value);
+        }
+
+        get onpause() { return this._onpause; }
+        set onpause(value)
+        {
+            if (this._onpause) this.removeEventListener('pause', this._onpause);
+            this._onpause = value;
+            if (this._onpause) this.addEventListener('pause', value);
+        }
+
+        get onresume() { return this._onresume; }
+        set onresume(value)
+        {
+            if (this._onresume) this.removeEventListener('resume', this._onresume);
+            this._onresume = value;
+            if (this._onresume) this.addEventListener('resume', value);
+        }
     }
-    window.customElements.define('game-loop', GameLoop);
+    window.customElements.define('application-loop', ApplicationLoop);
+
+    function clampRange(value, min, max)
+    {
+        if (value < min) return min;
+        if (value > max) return max;
+        return value;
+    }
+
+    function withinRadius(fromX, fromY, toX, toY, radius)
+    {
+        const dx = fromX - toX;
+        const dy = fromY - toY;
+        return dx * dx + dy * dy <= radius * radius
+    }
+
+    function lerp(a, b, dt)
+    {
+        return a + (b - a) * dt;
+    }
+
+    function distance2(fromX, fromY, toX, toY)
+    {
+        let dx = toX - fromX;
+        let dy = toY - fromY;
+        return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    function direction2(fromX, fromY, toX, toY)
+    {
+        let dx = toX - fromX;
+        let dy = toY - fromY;
+        return Math.atan2(dy, dx);
+    }
+
+    function lookAt2(radians, target, dt)
+    {
+        let step = cycleRange(target - radians, -Math.PI, Math.PI);
+        return clampRange(radians + step, radians - dt, radians + dt);
+    }
+
+    function cycleRange(value, min, max)
+    {
+        let range = max - min;
+        let result = (value - min) % range;
+        if (result < 0) result += range;
+        return result + min;
+    }
 
     const CONTEXT = _default$1.createContext().disable();
     const POS_X = CONTEXT.registerRange('x', 'mouse[pos].x');
@@ -3643,27 +3856,26 @@
             || (Object.isExtensible(game) && game)
             || {};
         
-        let view = instance.view || View.createView();
+        let view = instance.view || new View();
         let viewport = instance.viewport || {
             x: 0, y: 0,
             get width() { return displayPort.getCanvas().clientWidth; },
             get height() { return displayPort.getCanvas().clientHeight; },
         };
 
-        let gameLoop = new GameLoop();
+        let applicationLoop = new ApplicationLoop();
 
         let gameInfo = {
             game,
             view,
             viewport,
             display: displayPort,
-            loop: gameLoop,
-            fixed: {
-                time: 0,
-                step: instance.fixedStep || 0.016667,
-            },
+            loop: applicationLoop,
             onframe: onFrame.bind(undefined, instance),
+            onpreupdate: onPreUpdate.bind(undefined, instance),
             onupdate: onUpdate.bind(undefined, instance),
+            onfixedupdate: onFixedUpdate.bind(undefined, instance),
+            onpostupdate: onPostUpdate.bind(undefined, instance),
             onfirstupdate: onFirstUpdate.bind(undefined, instance),
         };
         
@@ -3673,44 +3885,54 @@
             configurable: true,
         });
         
-        gameLoop.addEventListener('update', gameInfo.onfirstupdate, { once: true });
-        gameLoop.start();
+        applicationLoop.addEventListener('update', gameInfo.onfirstupdate, { once: true });
+        applicationLoop.start();
 
         return instance;
     }
 
     function onFirstUpdate(instance, e)
     {
-        let { display, loop, onupdate, onframe } = instance[GAME_INFO_PROPERTY];
-        console.log('FIRST');
+        let { game, display, loop, onpreupdate, onupdate, onpostupdate, onfixedupdate, onframe } = instance[GAME_INFO_PROPERTY];
+
         if (game.start) game.start.call(instance);
 
+        onpreupdate.call(instance,e);
         onupdate.call(instance, e);
+        onfixedupdate.call(instance, e);
+        onpostupdate.call(instance, e);
+
+        loop.addEventListener('preupdate', onpreupdate);
         loop.addEventListener('update', onupdate);
+        loop.addEventListener('fixedupdate', onfixedupdate);
+        loop.addEventListener('postupdate', onpostupdate);
         display.addEventListener('frame', onframe);
+    }
+
+    function onPreUpdate(instance, e)
+    {
+        let { game } = instance[GAME_INFO_PROPERTY];
+        let dt = e.detail.delta;
+        if (game.preupdate) game.preupdate.call(instance, dt);
     }
 
     function onUpdate(instance, e)
     {
-        let { game, fixed } = instance[GAME_INFO_PROPERTY];
+        let { game } = instance[GAME_INFO_PROPERTY];
         let dt = e.detail.delta;
-
-        if (game.preupdate) game.preupdate.call(instance, dt);
         if (game.update) game.update.call(instance, dt);
+    }
 
-        if (game.fixedupdate)
-        {
-            let timeStep = fixed.step;
-            let maxTime = timeStep * 250;
-            if (fixed.time > maxTime) fixed.time = maxTime;
-            else fixed.time += dt;
-            while (fixed.time >= timeStep)
-            {
-                fixed.time -= timeStep;
-                game.fixedupdate.call(instance);
-            }
-        }
+    function onFixedUpdate(instance, e)
+    {
+        let { game } = instance[GAME_INFO_PROPERTY];
+        if (game.fixedupdate) game.fixedupdate.call(instance);
+    }
 
+    function onPostUpdate(instance, e)
+    {
+        let { game } = instance[GAME_INFO_PROPERTY];
+        let dt = e.detail.delta;
         if (game.postupdate) game.postupdate.call(instance, dt);
     }
 
@@ -3749,19 +3971,22 @@
 
     async function stopGame(instance)
     {
-        let { game, onframe, onupdate, onfirstupdate } = instance[GAME_INFO_PROPERTY];
+        let { game, loop, display, onframe, onpreupdate, onupdate, onfixedupdate, onpostupdate, onfirstupdate } = instance[GAME_INFO_PROPERTY];
 
-        game.loop.removeEventListener('update', onfirstupdate);
-        game.loop.removeEventListener('update', onupdate);
-        game.display.removeEventListener('frame', onframe);
+        loop.removeEventListener('update', onfirstupdate);
+        loop.removeEventListener('preupdate', onpreupdate);
+        loop.removeEventListener('update', onupdate);
+        loop.removeEventListener('fixedupdate', onfixedupdate);
+        loop.removeEventListener('postupdate', onpostupdate);
+        display.removeEventListener('frame', onframe);
 
         return await new Promise(resolve => {
-            game.loop.addEventListener('stop', async () => {
+            loop.addEventListener('stop', async () => {
                 if (game.stop) game.stop();
                 if (game.unload) await game.unload(instance);
                 resolve(instance);
             }, { once: true });
-            game.loop.stop();
+            loop.stop();
         });
     }
 
@@ -4066,6 +4291,372 @@
         onPostUpdate(dt) {}
     }
 
+    /**
+     * A camera for a view. This serves as the in-world representation of the
+     * view. This is usually manipulated to move the world, zoom in, etc.
+     */
+    class AbstractCamera
+    {
+        /** @abstract */
+        getProjectionMatrix() { return [1, 0, 0, 1, 0, 0]; }
+        /** @abstract */
+        getViewMatrix() { return [1, 0, 0, 1, 0, 0]; }
+    }
+
+    class Transform2D
+    {
+        constructor(x = 0, y = 0)
+        {
+            this.matrix = [1, 0, 0, 1, x, y];
+        }
+
+        setMatrix(m11, m12, m21, m22, m31, m32)
+        {
+            this.matrix[0] = m11;
+            this.matrix[1] = m12;
+            this.matrix[2] = m21;
+            this.matrix[3] = m22;
+            this.matrix[4] = m31;
+            this.matrix[5] = m32;
+            return this;
+        }
+
+        setPosition(x, y)
+        {
+            this.matrix[4] = x;
+            this.matrix[5] = y;
+            return this;
+        }
+
+        setRotation(radians)
+        {
+            this.rotation = radians;
+            return this;
+        }
+
+        setScale(sx, sy = sx)
+        {
+            let rsin = Math.sin(this.rotation);
+            this.matrix[0] = sx;
+            this.matrix[1] = rsin * sy;
+            this.matrix[2] = -rsin * sx;
+            this.matrix[3] = sy;
+            return this;
+        }
+
+        // NOTE: This is for ease of access
+        get x() { return this.matrix[4]; }
+        set x(value) { this.matrix[4] = value; }
+        get y() { return this.matrix[5]; }
+        set y(value) { this.matrix[5] = value; }
+        get rotation() { return Math.atan2(-this.matrix[2], this.matrix[0]); }
+        set rotation(value)
+        {
+            let scaleX = this.scaleX;
+            let scaleY = this.scaleY;
+            // HACK: Rolling doesn't work...
+            value = Math.abs(value);
+            this.matrix[1] = Math.sin(value) * scaleY;
+            this.matrix[2] = -Math.sin(value) * scaleX;
+        }
+        get scaleX() { return this.matrix[0]; }
+        set scaleX(value)
+        {
+            let rotation = this.rotation;
+            this.matrix[0] = value;
+            this.matrix[2] = -Math.sin(rotation) * value;
+        }
+        get scaleY() { return this.matrix[3]; }
+        set scaleY(value)
+        {
+            let rotation = this.rotation;
+            this.matrix[1] = Math.sin(rotation) * value;
+            this.matrix[3] = value;
+        }
+
+        // NOTE: This supports 2D DOMMatrix manipulation (such as transform() or setTransform())
+        get a() { return this.matrix[0]; }
+        get b() { return this.matrix[1]; }
+        get c() { return this.matrix[2]; }
+        get d() { return this.matrix[3]; }
+        get e() { return this.matrix[4]; }
+        get f() { return this.matrix[5]; }
+
+        // NOTE: This supports array access (such as gl-matrix)
+        get 0() { return this.matrix[0]; }
+        set 0(value) { this.matrix[0] = value; }
+        get 1() { return this.matrix[1]; }
+        set 1(value) { this.matrix[1] = value; }
+        get 2() { return this.matrix[2]; }
+        set 2(value) { this.matrix[2] = value; }
+        get 3() { return this.matrix[3]; }
+        set 3(value) { this.matrix[3] = value; }
+        get 4() { return this.matrix[4]; }
+        set 4(value) { this.matrix[4] = value; }
+        get 5() { return this.matrix[5]; }
+        set 5(value) { this.matrix[5] = value; }
+        // NOTE: These should never change for 2D transformations
+        get 6() { return 0; }
+        get 7() { return 0; }
+        get 8() { return 1; }
+        get length() { return 9; }
+    }
+
+    class Camera2D extends AbstractCamera
+    {
+        static applyTransform(ctx, camera, viewOffsetX = 0, viewOffsetY = 0)
+        {
+            camera.setOffset(viewOffsetX, viewOffsetY);
+            ctx.setTransform(...camera.getProjectionMatrix());
+            ctx.transform(...camera.getViewMatrix());
+        }
+
+        static resetTransform(ctx)
+        {
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+        }
+        
+        static followTarget(camera, target, speed = 1)
+        {
+            if (target)
+            {
+                camera.transform.x = lerp(camera.transform.x, target.x, speed);
+                camera.transform.y = lerp(camera.transform.y, target.y, speed);
+            }
+        }
+
+        constructor(offsetX = 0, offsetY = 0, speed = 1)
+        {
+            super();
+            this.target = null;
+            this.speed = speed;
+            this.transform = new Transform2D();
+
+            this.offsetX = offsetX;
+            this.offsetY = offsetY;
+        }
+
+        setOffset(x, y)
+        {
+            this.offsetX = x;
+            this.offsetY = y;
+            return this;
+        }
+
+        /** @override */
+        getProjectionMatrix()
+        {
+            // NOTE: Scaling must be applied here, instead of the view
+            return [this.transform.matrix[0], 0, 0, this.transform.matrix[3],
+                this.offsetX, this.offsetY];
+        }
+
+        /** @override */
+        getViewMatrix()
+        {
+            let dst = [ ...this.transform.matrix ];
+            dst[0] = Math.cos(this.transform.rotation);
+            dst[3] = dst[0];
+            dst[4] = -dst[4];
+            dst[5] = -dst[5];
+            return dst;
+        }
+    }
+
+    const CELL_SIZE = 32;
+    const ORIGIN_POINT = new DOMPointReadOnly(0, 0, 0, 1);
+    const CELL_POINT = new DOMPointReadOnly(CELL_SIZE, CELL_SIZE, 0, 1);
+    const INV_NATURAL_LOG_2 = 1 / Math.log(2);
+
+    function drawWorldGrid(ctx, view, camera)
+    {
+        const viewMatrix = new DOMMatrixReadOnly(camera.getViewMatrix());
+        const projMatrix = new DOMMatrixReadOnly(camera.getProjectionMatrix());
+        const transformMatrix = projMatrix.multiply(viewMatrix);
+        const offsetPoint = transformMatrix.transformPoint(ORIGIN_POINT);
+        const cellPoint = transformMatrix.transformPoint(CELL_POINT);
+
+        const minCellWidth = cellPoint.x - offsetPoint.x;
+        const minCellHeight = cellPoint.y - offsetPoint.y;
+        const maxCellSize = Math.floor((Math.log(view.width) - Math.log(minCellWidth)) * INV_NATURAL_LOG_2);
+        
+        let cellWidth = Math.pow(2, maxCellSize) * minCellWidth;
+        let cellHeight = Math.pow(2, maxCellSize) * minCellHeight;
+        if (cellWidth === 0 || cellHeight === 0) return;
+        drawGrid(ctx, view, offsetPoint.x, offsetPoint.y, cellWidth, cellHeight, 1, false);
+        drawGrid(ctx, view, offsetPoint.x, offsetPoint.y, cellWidth / 2, cellHeight / 2, 3 / 4, false);
+        drawGrid(ctx, view, offsetPoint.x, offsetPoint.y, cellWidth / 4, cellHeight / 4, 2 / 4, false);
+        drawGrid(ctx, view, offsetPoint.x, offsetPoint.y, cellWidth / 8, cellHeight / 8, 1 / 4, false);
+    }
+
+    function drawWorldTransformGizmo(ctx, view, camera)
+    {
+        const viewMatrix = new DOMMatrixReadOnly(camera.getViewMatrix());
+        const worldPoint = viewMatrix.transformPoint(ORIGIN_POINT);
+        const fontSize = view.width / CELL_SIZE;
+        ctx.fillStyle = '#666666';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+        ctx.font = `${fontSize}px monospace`;
+        ctx.fillText(`(${-Math.floor(worldPoint.x)},${-Math.floor(worldPoint.y)})`, CELL_SIZE, CELL_SIZE);
+        drawTransformGizmo(ctx, CELL_SIZE / 4, CELL_SIZE / 4, CELL_SIZE, CELL_SIZE);
+    }
+
+    function drawGrid(ctx, view, offsetX, offsetY, cellWidth = 32, cellHeight = cellWidth, lineWidth = 1, showCoords = false)
+    {
+        ctx.beginPath();
+        for(let y = offsetY % cellHeight; y < view.height; y += cellHeight)
+        {
+            ctx.moveTo(0, y);
+            ctx.lineTo(view.width, y);
+        }
+        for(let x = offsetX % cellWidth; x < view.width; x += cellWidth)
+        {
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, view.height);
+        }
+        ctx.strokeStyle = '#333333';
+        ctx.lineWidth = lineWidth;
+        ctx.stroke();
+        ctx.lineWidth = 1;
+
+        if (showCoords)
+        {
+            const fontSize = Math.min(cellWidth / 4, 16);
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'top';
+            ctx.font = `bold ${fontSize}px monospace`;
+            ctx.fillStyle = '#333333';
+
+            for(let y = offsetY % cellHeight; y < view.height; y += cellHeight)
+            {
+                for(let x = offsetX % cellWidth; x < view.width; x += cellWidth)
+                {
+                    ctx.fillText(`(${Math.round((x - offsetX) / cellWidth)},${Math.round((y - offsetY) / cellHeight)})`, x + lineWidth * 2, y + lineWidth * 2);
+                }
+            }
+        }
+    }
+
+    function drawTransformGizmo(ctx, x, y, width, height = width)
+    {
+        const fontSize = width * 0.6;
+
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.font = `${fontSize}px monospace`;
+
+        ctx.translate(x, y);
+
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(width, 0);
+        ctx.strokeStyle = '#FF0000';
+        ctx.stroke();
+        ctx.fillStyle = '#FF0000';
+        ctx.fillText('x', width + fontSize, 0);
+
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(0, height);
+        ctx.strokeStyle = '#00FF00';
+        ctx.stroke();
+        ctx.fillStyle = '#00FF00';
+        ctx.fillText('y', 0, height + fontSize);
+
+        const zSize = fontSize / 4;
+        ctx.fillStyle = '#0000FF';
+        ctx.fillRect(-zSize / 2, -zSize / 2, zSize, zSize);
+        ctx.fillText('z', fontSize / 2, fontSize / 2);
+
+        ctx.translate(-x, -y);
+    }
+
+    var CameraHelper = /*#__PURE__*/Object.freeze({
+        __proto__: null,
+        drawWorldGrid: drawWorldGrid,
+        drawWorldTransformGizmo: drawWorldTransformGizmo,
+        drawGrid: drawGrid,
+        drawTransformGizmo: drawTransformGizmo
+    });
+
+    const CONTEXT$3 = _default$1.createContext().disable();
+    const UP$1 = CONTEXT$3.registerState('up', {
+        'key[ArrowUp].up': 0,
+        'key[ArrowUp].down': 1,
+        'key[w].up': 0,
+        'key[w].down': 1
+    });
+    const DOWN$1 = CONTEXT$3.registerState('down', {
+        'key[ArrowDown].up': 0,
+        'key[ArrowDown].down': 1,
+        'key[s].up': 0,
+        'key[s].down': 1
+    });
+    const LEFT$1 = CONTEXT$3.registerState('left', {
+        'key[ArrowLeft].up': 0,
+        'key[ArrowLeft].down': 1,
+        'key[a].up': 0,
+        'key[a].down': 1
+    });
+    const RIGHT$1 = CONTEXT$3.registerState('right', {
+        'key[ArrowRight].up': 0,
+        'key[ArrowRight].down': 1,
+        'key[d].up': 0,
+        'key[d].down': 1
+    });
+    const ZOOM_IN = CONTEXT$3.registerState('zoomin', {
+        'key[z].up': 0,
+        'key[z].down': 1
+    });
+    const ZOOM_OUT = CONTEXT$3.registerState('zoomout', {
+        'key[x].up': 0,
+        'key[x].down': 1
+    });
+    const ROLL_LEFT = CONTEXT$3.registerState('rollleft', {
+        'key[q].up': 0,
+        'key[q].down': 1
+    });
+    const ROLL_RIGHT = CONTEXT$3.registerState('rollright', {
+        'key[e].up': 0,
+        'key[e].down': 1
+    });
+
+    function doCameraMove(camera, moveSpeed = 6, zoomSpeed = 0.02, rotSpeed = 0.01)
+    {
+        const xControl = RIGHT$1.value - LEFT$1.value;
+        const yControl = DOWN$1.value - UP$1.value;
+        const zoomControl = ZOOM_OUT.value - ZOOM_IN.value; 
+        const rollControl = ROLL_RIGHT.value - ROLL_LEFT.value;
+
+        // let roll = rollControl * rotSpeed;
+        // camera.transform.rotation += roll;
+
+        let scale = (zoomControl * zoomSpeed) + 1;
+        let scaleX = camera.transform.scaleX * scale;
+        let scaleY = camera.transform.scaleY * scale;
+        camera.transform.setScale(scaleX, scaleY);
+
+        let moveX = (xControl * moveSpeed) / scaleX;
+        let moveY = (yControl * moveSpeed) / scaleY;
+        camera.transform.x += moveX;
+        camera.transform.y += moveY;
+    }
+
+    var Camera2DControls = /*#__PURE__*/Object.freeze({
+        __proto__: null,
+        CONTEXT: CONTEXT$3,
+        UP: UP$1,
+        DOWN: DOWN$1,
+        LEFT: LEFT$1,
+        RIGHT: RIGHT$1,
+        ZOOM_IN: ZOOM_IN,
+        ZOOM_OUT: ZOOM_OUT,
+        ROLL_LEFT: ROLL_LEFT,
+        ROLL_RIGHT: ROLL_RIGHT,
+        doCameraMove: doCameraMove
+    });
+
     class RandomGenerator
     {
         /** @abstract */
@@ -4128,58 +4719,16 @@
 
     const DEFAULT_RANDOM_INTERFACE = new DefaultRandomInterface();
 
-    function clampRange(value, min, max)
-    {
-        if (value < min) return min;
-        if (value > max) return max;
-        return value;
-    }
-
-    function withinRadius(fromX, fromY, toX, toY, radius)
-    {
-        const dx = fromX - toX;
-        const dy = fromY - toY;
-        return dx * dx + dy * dy <= radius * radius
-    }
-
-    function lerp(a, b, dt)
-    {
-        return a + (b - a) * dt;
-    }
-
-    function distance2(fromX, fromY, toX, toY)
-    {
-        let dx = toX - fromX;
-        let dy = toY - fromY;
-        return Math.sqrt(dx * dx + dy * dy);
-    }
-
-    function direction2(fromX, fromY, toX, toY)
-    {
-        let dx = toX - fromX;
-        let dy = toY - fromY;
-        return Math.atan2(dy, dx);
-    }
-
-    function lookAt2(radians, target, dt)
-    {
-        let step = cycleRange(target - radians, -Math.PI, Math.PI);
-        return clampRange(radians + step, radians - dt, radians + dt);
-    }
-
-    function cycleRange(value, min, max)
-    {
-        let range = max - min;
-        let result = (value - min) % range;
-        if (result < 0) result += range;
-        return result + min;
-    }
 
 
-
+    exports.AbstractCamera = AbstractCamera;
     exports.AbstractInputAdapter = AbstractInputAdapter;
     exports.ActionInputAdapter = ActionInputAdapter;
+    exports.ApplicationLoop = ApplicationLoop;
     exports.Audio = Audio;
+    exports.Camera2D = Camera2D;
+    exports.Camera2DControls = Camera2DControls;
+    exports.CameraHelper = CameraHelper;
     exports.Component = ComponentHelper;
     exports.ComponentBase = ComponentBase;
     exports.ComponentFactory = ComponentFactory;
@@ -4198,7 +4747,6 @@
     exports.Eventable = Eventable$1;
     exports.FineDiffStrategy = FineDiffStrategy;
     exports.Game = Game;
-    exports.GameLoop = GameLoop;
     exports.HotEntityModule = HotEntityModule;
     exports.HotEntityReplacement = HotEntityReplacement;
     exports.Input = _default$1;
@@ -4225,6 +4773,7 @@
     exports.SplashScene = SplashScene;
     exports.StateInputAdapter = StateInputAdapter;
     exports.TagComponent = TagComponent;
+    exports.Transform2D = Transform2D;
     exports.View = View;
     exports.clampRange = clampRange;
     exports.cycleRange = cycleRange;
