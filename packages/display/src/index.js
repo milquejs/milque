@@ -1,3 +1,5 @@
+// view
+export * from './View.js';
 // components
 export * from './DisplayPort.js';
 // defaults

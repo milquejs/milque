@@ -1,5 +1,5 @@
-import { AbstractCamera } from '../view/AbstractCamera.js';
 import { lerp } from '@milque/math';
+import { AbstractCamera } from './AbstractCamera.js';
 import { Transform2D } from './Transform2D.js';
 
 export class Camera2D extends AbstractCamera

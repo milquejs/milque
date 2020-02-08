@@ -1,146 +1,150 @@
-import { EntityManager } from '@milque/entity';
-import { Input } from '@milque/input';
-import { Display } from '@milque/display';
 import { GameLoop } from '@milque/game';
-import { SceneManager } from '../scene/index.js';
-import { View } from '../view/index.js';
-import { Utils } from '../utils/index.js';
+import { View, DisplayPort } from '@milque/display';
 
-var game;
+const GAME_INFO_PROPERTY = Symbol('gameInfo');
 
-export const DEFAULT_VIEW = View.createView();
-
-export function registerScene(name, scene)
+export async function startGame(game)
 {
-    if (!game) game = createGame(scene);
-    game.scenes.register(name, scene);
-}
+    if (!game) game = {};
 
-export function start(scene = undefined)
-{
-    if (!game) game = createGame(scene);
-    return game.start();
-}
+    let displayPort = document.querySelector('display-port');
+    if (!displayPort)
+    {
+        displayPort = new DisplayPort();
+        displayPort.toggleAttribute('full');
+        displayPort.toggleAttribute('debug');
+        document.body.appendChild(displayPort);
+    }
 
-export function nextScene(scene, transition = null, loadOpts = {})
-{
-    game.nextScene(scene, transition, loadOpts);
-}
-
-export function stop()
-{
-    game.stop();
-}
-
-export function getScene()
-{
-    return game.scenes.getCurrentScene();
-}
-
-export function createGame(scene)
-{
-    let result = {
-        loop: new GameLoop(),
-        scenes: new SceneManager(),
-        entities: new EntityManager(),
-        _renderTargets: new Map(),
-        addRenderTarget(view, renderer = null, viewPort = null, context = null, handle = view)
-        {
-            this._renderTargets.set(handle, { view, renderer, viewPort, context });
-            return this;
-        },
-        removeRenderTarget(handle)
-        {
-            this._renderTargets.delete(handle);
-            return this;
-        },
-        clearRenderTargets()
-        {
-            this._renderTargets.clear();
-            return this;
-        },
-        nextScene(scene, transition = null, loadOpts = {})
-        {
-            this.scenes.nextScene(scene, transition, loadOpts);
-        },
-        start()
-        {
-            this.loop.start();
-            return this;
-        },
-        stop()
-        {
-            this.loop.stop();
-            return this;
-        },
-        update(dt)
-        {
-            this.scenes.update(dt);
-
-            // Do render regardless of loading...
-            this.render();
-        },
-        render()
-        {
-            if (this._renderTargets.size <= 0)
-            {
-                let scene = this.scenes.getCurrentScene();
-                this._renderStep(DEFAULT_VIEW,
-                    scene ? scene.onRender : null,
-                    null,
-                    scene,
-                    true);
-            }
-            else
-            {
-                // TODO: In the future, renderer should be completely separate from the scene.
-                // Perhaps not even handled in Game.js ...
-                let scene = this.scenes.getCurrentScene();
-                let first = true;
-                for(let renderTarget of this._renderTargets.values())
-                {
-                    let view = renderTarget.view;
-                    let renderer = renderTarget.renderer
-                        || (scene ? scene.onRender : null);
-                    let viewPort = renderTarget.viewPort;
-                    let renderContext = renderTarget.context || scene;
-                    this._renderStep(view, renderer, viewPort, renderContext, first);
-                    first = false;
-                }
-            }
-        },
-        _renderStep(view, renderer = null, viewPort = null, renderContext = null, first = true)
-        {
-            // Reset any transformations...
-            view.context.setTransform(1, 0, 0, 1, 0, 0);
-
-            // TODO: Something more elegant please? I don't think we need the flag.
-            if (first)
-            {
-                Utils.clearScreen(view.context, view.width, view.height);
-            }
-            else
-            {
-                view.context.clearRect(0, 0, view.width, view.height);
-            }
-            
-            if (renderer) renderer.call(renderContext, view.context, view, this.scenes.getCurrentScene());
-
-            // NOTE: The renderer can define a custom viewport to draw to
-            if (viewPort)
-            {
-                View.drawBufferToCanvas(viewPort.getContext(), view.canvas, viewPort.getX(), viewPort.getY(), viewPort.getWidth(), viewPort.getHeight());
-            }
-            // TODO: Is there a way to get rid of this?
-            else if (Display.getDrawContext())
-            {
-                View.drawBufferToCanvas(Display.getDrawContext(), view.canvas);
-            }
-        }
+    let instance = (game.load && await game.load(game))
+        || (Object.isExtensible(game) && game)
+        || {};
+    
+    let view = instance.view || View.createView();
+    let viewport = instance.viewport || {
+        x: 0, y: 0,
+        get width() { return displayPort.getCanvas().clientWidth; },
+        get height() { return displayPort.getCanvas().clientHeight; },
     };
-    result.loop.on('update', result.update.bind(result));
-    result.scenes.on('preupdate', () => Input.poll());
-    result.scenes.setSharedContext(result);
-    result.scenes.nextScene(scene);
+
+    let gameLoop = new GameLoop();
+
+    let gameInfo = {
+        game,
+        view,
+        viewport,
+        display: displayPort,
+        loop: gameLoop,
+        fixed: {
+            time: 0,
+            step: instance.fixedStep || 0.016667,
+        },
+        onframe: onFrame.bind(undefined, instance),
+        onupdate: onUpdate.bind(undefined, instance),
+        onfirstupdate: onFirstUpdate.bind(undefined, instance),
+    };
+    
+    Object.defineProperty(instance, GAME_INFO_PROPERTY, {
+        value: gameInfo,
+        enumerable: false,
+        configurable: true,
+    });
+    
+    gameLoop.addEventListener('update', gameInfo.onfirstupdate, { once: true });
+    gameLoop.start();
+
+    return instance;
+}
+
+function onFirstUpdate(instance, e)
+{
+    let { display, loop, onupdate, onframe } = instance[GAME_INFO_PROPERTY];
+    console.log('FIRST');
+    if (game.start) game.start.call(instance);
+
+    onupdate.call(instance, e);
+    loop.addEventListener('update', onupdate);
+    display.addEventListener('frame', onframe);
+}
+
+function onUpdate(instance, e)
+{
+    let { game, fixed } = instance[GAME_INFO_PROPERTY];
+    let dt = e.detail.delta;
+
+    if (game.preupdate) game.preupdate.call(instance, dt);
+    if (game.update) game.update.call(instance, dt);
+
+    if (game.fixedupdate)
+    {
+        let timeStep = fixed.step;
+        let maxTime = timeStep * 250;
+        if (fixed.time > maxTime) fixed.time = maxTime;
+        else fixed.time += dt;
+        while (fixed.time >= timeStep)
+        {
+            fixed.time -= timeStep;
+            game.fixedupdate.call(instance);
+        }
+    }
+
+    if (game.postupdate) game.postupdate.call(instance, dt);
+}
+
+function onFrame(instance, e)
+{
+    let { game, display, view, viewport } = instance[GAME_INFO_PROPERTY];
+    let ctx = e.detail.context;
+
+    // Reset any transformations...
+    view.context.setTransform(1, 0, 0, 1, 0, 0);
+    view.context.clearRect(0, 0, view.width, view.height);
+
+    if (game.render) game.render.call(instance, view, instance);
+
+    display.clear('black');
+    view.drawBufferToCanvas(
+        ctx,
+        viewport.x,
+        viewport.y,
+        viewport.width,
+        viewport.height
+    );
+}
+
+export async function pauseGame(instance)
+{
+    let { loop } = instance[GAME_INFO_PROPERTY];
+    loop.pause();
+}
+
+export async function resumeGame(instance)
+{
+    let { loop } = instance[GAME_INFO_PROPERTY];
+    loop.resume();
+}
+
+export async function stopGame(instance)
+{
+    let { game, onframe, onupdate, onfirstupdate } = instance[GAME_INFO_PROPERTY];
+
+    game.loop.removeEventListener('update', onfirstupdate);
+    game.loop.removeEventListener('update', onupdate);
+    game.display.removeEventListener('frame', onframe);
+
+    return await new Promise(resolve => {
+        game.loop.addEventListener('stop', async () => {
+            if (game.stop) game.stop();
+            if (game.unload) await game.unload(instance);
+            resolve(instance);
+        }, { once: true });
+        game.loop.stop();
+    });
+}
+
+export async function nextGame(fromInstance, toGame)
+{
+    await stopGame(fromInstance);
+    let result = await startGame(toGame);
     return result;
 }

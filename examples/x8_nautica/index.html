@@ -10,9 +10,9 @@
         <display-port debug full></display-port>
         <view-port for="main" offsetX="0" offsetY="0" width="100" height="100"></view-port>
         <script type="module">
-            import * as Game from './Game.js';
+            import { Game } from './milque.js';
             import * as Nautica from './Nautica.js';
-            Game.startGame();
+            Game.startGame(Nautica);
         </script>
     </body>
 </html>
