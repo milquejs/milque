@@ -127,27 +127,6 @@
         createSound: createSound
     });
 
-    /**
-     * @module DisplayPort
-     * @version 1.4.0
-     * @description
-     * # Changelog
-     * ## 1.4.0
-     * - Added onframe and onresize attribute callbacks
-     * - Added "stretch" mode
-     * ## 1.3.0
-     * - Changed "topleft" to "noscale"
-     * - Changed default size to 640 x 480
-     * - Changed "center" and "fit" to fill container instead of viewport
-     * - Added "full" property to override and fill viewport
-     * ## 1.2.0
-     * - Moved default values to the top
-     * ## 1.1.0
-     * - Fixed scaling issues when dimensions do not match
-     * ## 1.0.0
-     * - Created DisplayPort
-     */
-
     const MODE_NOSCALE = 'noscale';
     const MODE_CENTER = 'center';
     const MODE_FIT = 'fit';
@@ -222,6 +201,27 @@
 </style>`;
 
     /**
+     * @version 1.5.0
+     * @description
+     * # Changelog
+     * ## 1.5.0
+     * - Added clear()
+     * - Added delta time for frame events
+     * ## 1.4.0
+     * - Added onframe and onresize attribute callbacks
+     * - Added "stretch" mode
+     * ## 1.3.0
+     * - Changed "topleft" to "noscale"
+     * - Changed default size to 640 x 480
+     * - Changed "center" and "fit" to fill container instead of viewport
+     * - Added "full" property to override and fill viewport
+     * ## 1.2.0
+     * - Moved default values to the top
+     * ## 1.1.0
+     * - Fixed scaling issues when dimensions do not match
+     * ## 1.0.0
+     * - Created DisplayPort
+     * 
      * @fires frame Every time a new frame is rendered.
      * @fires resize When the display is resized.
      */
@@ -395,6 +395,19 @@
         resume()
         {
             this._animationRequestHandle = requestAnimationFrame(this.update);
+        }
+
+        clear(fill = undefined)
+        {
+            if (fill)
+            {
+                this._canvasContext.fillStyle = 'black';
+                this._canvasContext.fillRect(0, 0, this._canvasElement.clientWidth, this._canvasElement.clientHeight);
+            }
+            else
+            {
+                this._canvasContext.clearRect(0, 0, this._canvasElement.clientWidth, this._canvasElement.clientHeight);
+            }
         }
 
         updateCanvasSize()
@@ -3381,13 +3394,13 @@
         {
             if (!this.started) return;
 
-            const dt = (now - this.prevFrameTime) * this.deltaTimeFactor;
+            const delta = (now - this.prevFrameTime) * this.deltaTimeFactor;
             this.prevFrameTime = now;
             
             if (this.paused) return;
 
             this.dispatchEvent(new CustomEvent('update', {
-                detail: { dt },
+                detail: { delta },
                 bubbles: false,
                 composed: true
             }));

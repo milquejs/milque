@@ -108,13 +108,13 @@
         {
             if (!this.started) return;
 
-            const dt = (now - this.prevFrameTime) * this.deltaTimeFactor;
+            const delta = (now - this.prevFrameTime) * this.deltaTimeFactor;
             this.prevFrameTime = now;
             
             if (this.paused) return;
 
             this.dispatchEvent(new CustomEvent('update', {
-                detail: { dt },
+                detail: { delta },
                 bubbles: false,
                 composed: true
             }));
