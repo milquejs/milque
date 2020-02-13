@@ -12,7 +12,17 @@
         <script type="module">
             import { Game } from './milque.js';
             import * as Nautica from './Nautica.js';
-            Game.startGame(Nautica);
+
+            let game = null;
+            window.addEventListener('load', () => {
+                Game.loadGame(Nautica).then(instance => {
+                    return Game.startGame(game = instance);
+                });
+            });
+            window.addEventListener('beforeunload', () => {
+                Game.stopGame(game);
+                Game.unloadGame(game);
+            });
         </script>
     </body>
 </html>

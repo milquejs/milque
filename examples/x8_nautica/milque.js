@@ -3833,38 +3833,38 @@ function drawText(ctx, text, x, y, radians = 0, fontSize = 16, color = 'white')
 
 const GAME_INFO_PROPERTY = Symbol('gameInfo');
 
-async function startGame(game)
+function getGameInfo(instance)
+{
+    return instance[GAME_INFO_PROPERTY];
+}
+
+async function begin(game)
+{
+    let instance = await loadGame(game);
+    return startGame(instance);
+}
+
+async function end(instance)
+{
+    stopGame(instance);
+    await unloadGame(instance);
+    return instance;
+}
+
+async function loadGame(game)
 {
     if (!game) game = {};
-
-    let displayPort = document.querySelector('display-port');
-    if (!displayPort)
-    {
-        displayPort = new DisplayPort();
-        displayPort.toggleAttribute('full');
-        displayPort.toggleAttribute('debug');
-        document.body.appendChild(displayPort);
-    }
 
     let instance = (game.load && await game.load(game))
         || (Object.isExtensible(game) && game)
         || {};
     
-    let view = instance.view || new View();
-    let viewport = instance.viewport || {
-        x: 0, y: 0,
-        get width() { return displayPort.getCanvas().clientWidth; },
-        get height() { return displayPort.getCanvas().clientHeight; },
-    };
-
-    let applicationLoop = new ApplicationLoop();
-
     let gameInfo = {
         game,
-        view,
-        viewport,
-        display: displayPort,
-        loop: applicationLoop,
+        view: null,
+        viewport: null,
+        display: null,
+        loop: null,
         onframe: onFrame.bind(undefined, instance),
         onpreupdate: onPreUpdate.bind(undefined, instance),
         onupdate: onUpdate.bind(undefined, instance),
@@ -3878,6 +3878,35 @@ async function startGame(game)
         enumerable: false,
         configurable: true,
     });
+    
+    return instance;
+}
+
+function startGame(instance)
+{
+    let displayPort = document.querySelector('display-port');
+    if (!displayPort)
+    {
+        displayPort = new DisplayPort();
+        displayPort.toggleAttribute('full');
+        displayPort.toggleAttribute('debug');
+        document.body.appendChild(displayPort);
+    }
+    
+    let view = instance.view || new View();
+    let viewport = instance.viewport || {
+        x: 0, y: 0,
+        get width() { return displayPort.getCanvas().clientWidth; },
+        get height() { return displayPort.getCanvas().clientHeight; },
+    };
+
+    let applicationLoop = new ApplicationLoop();
+
+    let gameInfo = instance[GAME_INFO_PROPERTY];
+    gameInfo.view = view;
+    gameInfo.viewport = viewport;
+    gameInfo.display = displayPort;
+    gameInfo.loop = applicationLoop;
     
     applicationLoop.addEventListener('update', gameInfo.onfirstupdate, { once: true });
     applicationLoop.start();
@@ -3963,7 +3992,7 @@ async function resumeGame(instance)
     loop.resume();
 }
 
-async function stopGame(instance)
+function stopGame(instance)
 {
     let { game, loop, display, onframe, onpreupdate, onupdate, onfixedupdate, onpostupdate, onfirstupdate } = instance[GAME_INFO_PROPERTY];
 
@@ -3974,29 +4003,36 @@ async function stopGame(instance)
     loop.removeEventListener('postupdate', onpostupdate);
     display.removeEventListener('frame', onframe);
 
-    return await new Promise(resolve => {
-        loop.addEventListener('stop', async () => {
-            if (game.stop) game.stop();
-            if (game.unload) await game.unload(instance);
-            resolve(instance);
-        }, { once: true });
-        loop.stop();
-    });
+    loop.stop();
+    if (game.stop) game.stop.call(instance);
+    return instance;
+}
+
+async function unloadGame(instance)
+{
+    let { game } = instance[GAME_INFO_PROPERTY];
+    if (game.unload) await game.unload(instance);
+    return instance;
 }
 
 async function nextGame(fromInstance, toGame)
 {
-    await stopGame(fromInstance);
-    let result = await startGame(toGame);
+    await end(fromInstance);
+    let result = await begin(toGame);
     return result;
 }
 
 var Game = /*#__PURE__*/Object.freeze({
     __proto__: null,
+    getGameInfo: getGameInfo,
+    begin: begin,
+    end: end,
+    loadGame: loadGame,
     startGame: startGame,
     pauseGame: pauseGame,
     resumeGame: resumeGame,
     stopGame: stopGame,
+    unloadGame: unloadGame,
     nextGame: nextGame
 });
 
