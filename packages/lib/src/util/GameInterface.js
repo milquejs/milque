@@ -8,20 +8,7 @@ export function getGameInfo(instance)
     return instance[GAME_INFO_PROPERTY];
 }
 
-export async function begin(game)
-{
-    let instance = await loadGame(game);
-    return startGame(instance);
-}
-
-export async function end(instance)
-{
-    stopGame(instance);
-    await unloadGame(instance);
-    return instance;
-}
-
-export async function loadGame(game)
+export async function load(game)
 {
     if (!game) game = {};
 
@@ -52,7 +39,7 @@ export async function loadGame(game)
     return instance;
 }
 
-export function startGame(instance)
+export function start(instance)
 {
     let displayPort = document.querySelector('display-port');
     if (!displayPort)
@@ -150,19 +137,19 @@ function onFrame(instance, e)
     );
 }
 
-export async function pauseGame(instance)
+export async function pause(instance)
 {
     let { loop } = instance[GAME_INFO_PROPERTY];
     loop.pause();
 }
 
-export async function resumeGame(instance)
+export async function resume(instance)
 {
     let { loop } = instance[GAME_INFO_PROPERTY];
     loop.resume();
 }
 
-export function stopGame(instance)
+export function stop(instance)
 {
     let { game, loop, display, onframe, onpreupdate, onupdate, onfixedupdate, onpostupdate, onfirstupdate } = instance[GAME_INFO_PROPERTY];
 
@@ -178,16 +165,9 @@ export function stopGame(instance)
     return instance;
 }
 
-export async function unloadGame(instance)
+export async function unload(instance)
 {
     let { game } = instance[GAME_INFO_PROPERTY];
     if (game.unload) await game.unload(instance);
     return instance;
-}
-
-export async function nextGame(fromInstance, toGame)
-{
-    await end(fromInstance);
-    let result = await begin(toGame);
-    return result;
 }

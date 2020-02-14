@@ -392,6 +392,207 @@ var EntitySpawner = /*#__PURE__*/Object.freeze({
     createSpawner: createSpawner
 });
 
+const GAME_INFO_PROPERTY$1 = Symbol('gameInfo');
+
+function getGameInfo$1(instance)
+{
+    return instance[GAME_INFO_PROPERTY$1];
+}
+
+async function load(game)
+{
+    if (!game) game = {};
+
+    let instance = (game.load && await game.load(game))
+        || (Object.isExtensible(game) && game)
+        || {};
+    
+    let gameInfo = {
+        game,
+        view: null,
+        viewport: null,
+        display: null,
+        loop: null,
+        onframe: onFrame$1.bind(undefined, instance),
+        onpreupdate: onPreUpdate$1.bind(undefined, instance),
+        onupdate: onUpdate$1.bind(undefined, instance),
+        onfixedupdate: onFixedUpdate$1.bind(undefined, instance),
+        onpostupdate: onPostUpdate$1.bind(undefined, instance),
+        onfirstupdate: onFirstUpdate$1.bind(undefined, instance),
+    };
+    
+    Object.defineProperty(instance, GAME_INFO_PROPERTY$1, {
+        value: gameInfo,
+        enumerable: false,
+        configurable: true,
+    });
+    
+    return instance;
+}
+
+function start(instance)
+{
+    let displayPort = document.querySelector('display-port');
+    if (!displayPort)
+    {
+        displayPort = new DisplayPort();
+        displayPort.toggleAttribute('full');
+        displayPort.toggleAttribute('debug');
+        document.body.appendChild(displayPort);
+    }
+    
+    let view = instance.view || new View();
+    let viewport = instance.viewport || {
+        x: 0, y: 0,
+        get width() { return displayPort.getCanvas().clientWidth; },
+        get height() { return displayPort.getCanvas().clientHeight; },
+    };
+
+    let applicationLoop = new ApplicationLoop();
+
+    let gameInfo = instance[GAME_INFO_PROPERTY$1];
+    gameInfo.view = view;
+    gameInfo.viewport = viewport;
+    gameInfo.display = displayPort;
+    gameInfo.loop = applicationLoop;
+    
+    applicationLoop.addEventListener('update', gameInfo.onfirstupdate, { once: true });
+    applicationLoop.start();
+
+    return instance;
+}
+
+function onFirstUpdate$1(instance, e)
+{
+    let { game, display, loop, onpreupdate, onupdate, onpostupdate, onfixedupdate, onframe } = instance[GAME_INFO_PROPERTY$1];
+
+    if (game.start) game.start.call(instance);
+
+    onpreupdate.call(instance,e);
+    onupdate.call(instance, e);
+    onfixedupdate.call(instance, e);
+    onpostupdate.call(instance, e);
+
+    loop.addEventListener('preupdate', onpreupdate);
+    loop.addEventListener('update', onupdate);
+    loop.addEventListener('fixedupdate', onfixedupdate);
+    loop.addEventListener('postupdate', onpostupdate);
+    display.addEventListener('frame', onframe);
+}
+
+function onPreUpdate$1(instance, e)
+{
+    let { game } = instance[GAME_INFO_PROPERTY$1];
+    let dt = e.detail.delta;
+    if (game.preupdate) game.preupdate.call(instance, dt);
+}
+
+function onUpdate$1(instance, e)
+{
+    let { game } = instance[GAME_INFO_PROPERTY$1];
+    let dt = e.detail.delta;
+    if (game.update) game.update.call(instance, dt);
+}
+
+function onFixedUpdate$1(instance, e)
+{
+    let { game } = instance[GAME_INFO_PROPERTY$1];
+    if (game.fixedupdate) game.fixedupdate.call(instance);
+}
+
+function onPostUpdate$1(instance, e)
+{
+    let { game } = instance[GAME_INFO_PROPERTY$1];
+    let dt = e.detail.delta;
+    if (game.postupdate) game.postupdate.call(instance, dt);
+}
+
+function onFrame$1(instance, e)
+{
+    let { game, display, view, viewport } = instance[GAME_INFO_PROPERTY$1];
+    let ctx = e.detail.context;
+
+    // Reset any transformations...
+    view.context.setTransform(1, 0, 0, 1, 0, 0);
+    view.context.clearRect(0, 0, view.width, view.height);
+
+    if (game.render) game.render.call(instance, view, instance);
+
+    display.clear('black');
+    view.drawBufferToCanvas(
+        ctx,
+        viewport.x,
+        viewport.y,
+        viewport.width,
+        viewport.height
+    );
+}
+
+async function pause(instance)
+{
+    let { loop } = instance[GAME_INFO_PROPERTY$1];
+    loop.pause();
+}
+
+async function resume(instance)
+{
+    let { loop } = instance[GAME_INFO_PROPERTY$1];
+    loop.resume();
+}
+
+function stop(instance)
+{
+    let { game, loop, display, onframe, onpreupdate, onupdate, onfixedupdate, onpostupdate, onfirstupdate } = instance[GAME_INFO_PROPERTY$1];
+
+    loop.removeEventListener('update', onfirstupdate);
+    loop.removeEventListener('preupdate', onpreupdate);
+    loop.removeEventListener('update', onupdate);
+    loop.removeEventListener('fixedupdate', onfixedupdate);
+    loop.removeEventListener('postupdate', onpostupdate);
+    display.removeEventListener('frame', onframe);
+
+    loop.stop();
+    if (game.stop) game.stop.call(instance);
+    return instance;
+}
+
+async function unload(instance)
+{
+    let { game } = instance[GAME_INFO_PROPERTY$1];
+    if (game.unload) await game.unload(instance);
+    return instance;
+}
+
+var GameInterface = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    getGameInfo: getGameInfo$1,
+    load: load,
+    start: start,
+    pause: pause,
+    resume: resume,
+    stop: stop,
+    unload: unload
+});
+
+async function startUp(game)
+{
+    let instance = await load(game);
+    return start(instance);
+}
+
+async function nextUp(instance, nextGame)
+{
+    await shutDown(instance);
+    return await startUp(nextGame);
+}
+
+async function shutDown(instance)
+{
+    stop(instance);
+    await unload(instance);
+    return instance;
+}
+
 const NO_TRANSITION = {};
 
 class SceneManager
@@ -942,4 +1143,4 @@ var Camera2DControls = /*#__PURE__*/Object.freeze({
     doCameraMove: doCameraMove
 });
 
-export { AbstractCamera, Camera2D, Camera2DControls, CameraHelper, EntitySpawner, Game, MouseControls, MoveControls, SceneBase, SceneManager, SplashScene, Transform2D };
+export { AbstractCamera, Camera2D, Camera2DControls, CameraHelper, EntitySpawner, GameInterface, MouseControls, MoveControls, SceneBase, SceneManager, SplashScene, Transform2D, nextUp, shutDown, startUp };

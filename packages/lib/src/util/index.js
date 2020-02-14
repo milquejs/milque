@@ -1,5 +1,7 @@
 import * as EntitySpawner from './EntitySpawner.js';
 export { EntitySpawner };
 
-import * as Game from './Game.js';
-export { Game };
+import * as GameInterface from './GameInterface.js';
+export { GameInterface };
+
+export * from './default.js';

@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Near Light</title>
+        <style>
+            html, body { margin: 0; }
+        </style>
+    </head>
+    <body>
+        <display-port full debug></display-port>
+        <script type="module">
+            import Milque from './milque.js';
+            import * as main from './main.js';
+            Milque.startUp(main);
+        </script>
+    </body>
+</html>
