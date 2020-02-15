@@ -55,8 +55,8 @@
         get MoveControls () { return MoveControls; },
         get SceneBase () { return SceneBase; },
         get SceneManager () { return SceneManager; },
-        get SplashScene () { return SplashScene; },
         get Transform2D () { return Transform2D; },
+        get Utils () { return utils; },
         get nextUp () { return nextUp; },
         get shutDown () { return shutDown; },
         get startUp () { return startUp; },
@@ -3827,85 +3827,6 @@
         RIGHT: RIGHT
     });
 
-    function drawText(ctx, text, x, y, radians = 0, fontSize = 16, color = 'white')
-    {
-        ctx.translate(x, y);
-        if (radians) ctx.rotate(radians);
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.font = `${fontSize}px sans-serif`;
-        ctx.fillStyle = color;
-        ctx.fillText(text, 0, 0);
-        if (radians) ctx.rotate(-radians);
-        ctx.translate(-x, -y);
-    }
-
-    const LOAD_TIME = 250;
-    const FADE_IN_TIME = LOAD_TIME * 0.3;
-    const FADE_OUT_TIME = LOAD_TIME * 0.9;
-
-    const CONTEXT$2 = _default$1.createContext().disable();
-    const ANY_KEY = CONTEXT$2.registerAction('continue', 'key.down', 'mouse.down');
-
-    class SplashScene
-    {
-        constructor(splashText, nextScene)
-        {
-            this.splashText = splashText;
-            this.nextScene = nextScene;
-        }
-
-        /** @override */
-        async load(game)
-        {
-            CONTEXT$2.enable();
-        }
-
-        /** @override */
-        async unload(game)
-        {
-            CONTEXT$2.disable();
-        }
-
-        /** @override */
-        onStart()
-        {
-            this.time = 0;
-        }
-        
-        /** @override */
-        onUpdate(dt)
-        {
-            this.time += dt;
-            // Skip loading...
-            if (ANY_KEY.value && this.time > FADE_IN_TIME && this.time < FADE_OUT_TIME)
-            {
-                this.time = FADE_OUT_TIME;
-            }
-            // Continue to next scene...
-            if (this.time > LOAD_TIME) undefined(this.nextScene);
-        }
-        
-        /** @override */
-        onRender(ctx, view, world)
-        {
-            let opacity = 0;
-            if (world.time < FADE_IN_TIME)
-            {
-                opacity = world.time / (FADE_IN_TIME);
-            }
-            else if (world.time > FADE_OUT_TIME)
-            {
-                opacity = (LOAD_TIME - world.time) / (LOAD_TIME - FADE_OUT_TIME);
-            }
-            else
-            {
-                opacity = 1;
-            }
-            drawText(ctx, this.splashText, view.width / 2, view.height / 2, 0, 16, `rgba(255, 255, 255, ${opacity})`);
-        }
-    }
-
     function createSpawner(entityFactory)
     {
         return {
@@ -3941,11 +3862,11 @@
         createSpawner: createSpawner
     });
 
-    const GAME_INFO_PROPERTY$1 = Symbol('gameInfo');
+    const GAME_INFO_PROPERTY = Symbol('gameInfo');
 
-    function getGameInfo$1(instance)
+    function getGameInfo(instance)
     {
-        return instance[GAME_INFO_PROPERTY$1];
+        return instance[GAME_INFO_PROPERTY];
     }
 
     async function load(game)
@@ -3962,15 +3883,15 @@
             viewport: null,
             display: null,
             loop: null,
-            onframe: onFrame$1.bind(undefined, instance),
-            onpreupdate: onPreUpdate$1.bind(undefined, instance),
-            onupdate: onUpdate$1.bind(undefined, instance),
-            onfixedupdate: onFixedUpdate$1.bind(undefined, instance),
-            onpostupdate: onPostUpdate$1.bind(undefined, instance),
-            onfirstupdate: onFirstUpdate$1.bind(undefined, instance),
+            onframe: onFrame.bind(undefined, instance),
+            onpreupdate: onPreUpdate.bind(undefined, instance),
+            onupdate: onUpdate.bind(undefined, instance),
+            onfixedupdate: onFixedUpdate.bind(undefined, instance),
+            onpostupdate: onPostUpdate.bind(undefined, instance),
+            onfirstupdate: onFirstUpdate.bind(undefined, instance),
         };
         
-        Object.defineProperty(instance, GAME_INFO_PROPERTY$1, {
+        Object.defineProperty(instance, GAME_INFO_PROPERTY, {
             value: gameInfo,
             enumerable: false,
             configurable: true,
@@ -3999,7 +3920,7 @@
 
         let applicationLoop = new ApplicationLoop();
 
-        let gameInfo = instance[GAME_INFO_PROPERTY$1];
+        let gameInfo = instance[GAME_INFO_PROPERTY];
         gameInfo.view = view;
         gameInfo.viewport = viewport;
         gameInfo.display = displayPort;
@@ -4011,9 +3932,9 @@
         return instance;
     }
 
-    function onFirstUpdate$1(instance, e)
+    function onFirstUpdate(instance, e)
     {
-        let { game, display, loop, onpreupdate, onupdate, onpostupdate, onfixedupdate, onframe } = instance[GAME_INFO_PROPERTY$1];
+        let { game, display, loop, onpreupdate, onupdate, onpostupdate, onfixedupdate, onframe } = instance[GAME_INFO_PROPERTY];
 
         if (game.start) game.start.call(instance);
 
@@ -4029,36 +3950,36 @@
         display.addEventListener('frame', onframe);
     }
 
-    function onPreUpdate$1(instance, e)
+    function onPreUpdate(instance, e)
     {
-        let { game } = instance[GAME_INFO_PROPERTY$1];
+        let { game } = instance[GAME_INFO_PROPERTY];
         let dt = e.detail.delta;
         if (game.preupdate) game.preupdate.call(instance, dt);
     }
 
-    function onUpdate$1(instance, e)
+    function onUpdate(instance, e)
     {
-        let { game } = instance[GAME_INFO_PROPERTY$1];
+        let { game } = instance[GAME_INFO_PROPERTY];
         let dt = e.detail.delta;
         if (game.update) game.update.call(instance, dt);
     }
 
-    function onFixedUpdate$1(instance, e)
+    function onFixedUpdate(instance, e)
     {
-        let { game } = instance[GAME_INFO_PROPERTY$1];
+        let { game } = instance[GAME_INFO_PROPERTY];
         if (game.fixedupdate) game.fixedupdate.call(instance);
     }
 
-    function onPostUpdate$1(instance, e)
+    function onPostUpdate(instance, e)
     {
-        let { game } = instance[GAME_INFO_PROPERTY$1];
+        let { game } = instance[GAME_INFO_PROPERTY];
         let dt = e.detail.delta;
         if (game.postupdate) game.postupdate.call(instance, dt);
     }
 
-    function onFrame$1(instance, e)
+    function onFrame(instance, e)
     {
-        let { game, display, view, viewport } = instance[GAME_INFO_PROPERTY$1];
+        let { game, display, view, viewport } = instance[GAME_INFO_PROPERTY];
         let ctx = e.detail.context;
 
         // Reset any transformations...
@@ -4079,19 +4000,19 @@
 
     async function pause(instance)
     {
-        let { loop } = instance[GAME_INFO_PROPERTY$1];
+        let { loop } = instance[GAME_INFO_PROPERTY];
         loop.pause();
     }
 
     async function resume(instance)
     {
-        let { loop } = instance[GAME_INFO_PROPERTY$1];
+        let { loop } = instance[GAME_INFO_PROPERTY];
         loop.resume();
     }
 
     function stop(instance)
     {
-        let { game, loop, display, onframe, onpreupdate, onupdate, onfixedupdate, onpostupdate, onfirstupdate } = instance[GAME_INFO_PROPERTY$1];
+        let { game, loop, display, onframe, onpreupdate, onupdate, onfixedupdate, onpostupdate, onfirstupdate } = instance[GAME_INFO_PROPERTY];
 
         loop.removeEventListener('update', onfirstupdate);
         loop.removeEventListener('preupdate', onpreupdate);
@@ -4107,14 +4028,14 @@
 
     async function unload(instance)
     {
-        let { game } = instance[GAME_INFO_PROPERTY$1];
+        let { game } = instance[GAME_INFO_PROPERTY];
         if (game.unload) await game.unload(instance);
         return instance;
     }
 
     var GameInterface = /*#__PURE__*/Object.freeze({
         __proto__: null,
-        getGameInfo: getGameInfo$1,
+        getGameInfo: getGameInfo,
         load: load,
         start: start,
         pause: pause,
@@ -4141,6 +4062,98 @@
         await unload(instance);
         return instance;
     }
+
+    function randomHexColor()
+    {
+        return '#' + Math.floor(Math.random() * 16777215).toString(16);
+    }
+
+    function loadImage(url)
+    {
+        let image = new Image();
+        image.src = url;
+        return image;
+    }
+
+    function clearScreen(ctx, width, height)
+    {
+        ctx.fillStyle = 'black';
+        ctx.fillRect(0, 0, width, height);
+    }
+
+    function drawText(ctx, text, x, y, radians = 0, fontSize = 16, color = 'white')
+    {
+        ctx.translate(x, y);
+        if (radians) ctx.rotate(radians);
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.font = `${fontSize}px sans-serif`;
+        ctx.fillStyle = color;
+        ctx.fillText(text, 0, 0);
+        if (radians) ctx.rotate(-radians);
+        ctx.translate(-x, -y);
+    }
+
+    function drawBox(ctx, x, y, radians = 0, w = 16, h = w, color = 'white', outline = false)
+    {
+        ctx.translate(x, y);
+        if (radians) ctx.rotate(radians);
+        if (!outline)
+        {
+            ctx.fillStyle = color;
+            ctx.fillRect(-w / 2, -h / 2, w, h);
+        }
+        else
+        {
+            ctx.strokeStyle = color;
+            ctx.strokeRect(-w / 2, -h / 2, w, h);
+        }
+        if (radians) ctx.rotate(-radians);
+        ctx.translate(-x, -y);
+    }
+
+    function intersectBox(a, b)
+    {
+        return (Math.abs(a.x - b.x) * 2 < (a.width + b.width)) &&
+            (Math.abs(a.y - b.y) * 2 < (a.height + b.height));
+    }
+
+    function applyMotion(entity, inverseFrictionX = 1, inverseFrictionY = inverseFrictionX)
+    {
+        if (inverseFrictionX !== 1)
+        {
+            entity.dx *= inverseFrictionX;
+        }
+        if (inverseFrictionY !== 1)
+        {
+            entity.dy *= inverseFrictionY;
+        }
+        
+        entity.x += entity.dx;
+        entity.y += entity.dy;
+    }
+
+    function drawCircle(ctx, x, y, radius = 16, color = 'white', outline = false)
+    {
+        ctx.fillStyle = color;
+        ctx.strokeStyle = color;
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, 2 * Math.PI);
+        if (outline) ctx.stroke();
+        else ctx.fill();
+    }
+
+    var utils = /*#__PURE__*/Object.freeze({
+        __proto__: null,
+        randomHexColor: randomHexColor,
+        loadImage: loadImage,
+        clearScreen: clearScreen,
+        drawText: drawText,
+        drawBox: drawBox,
+        intersectBox: intersectBox,
+        applyMotion: applyMotion,
+        drawCircle: drawCircle
+    });
 
     const NO_TRANSITION = {};
 
@@ -4615,44 +4628,44 @@
         drawTransformGizmo: drawTransformGizmo
     });
 
-    const CONTEXT$3 = _default$1.createContext().disable();
-    const UP$1 = CONTEXT$3.registerState('up', {
+    const CONTEXT$2 = _default$1.createContext().disable();
+    const UP$1 = CONTEXT$2.registerState('up', {
         'key[ArrowUp].up': 0,
         'key[ArrowUp].down': 1,
         'key[w].up': 0,
         'key[w].down': 1
     });
-    const DOWN$1 = CONTEXT$3.registerState('down', {
+    const DOWN$1 = CONTEXT$2.registerState('down', {
         'key[ArrowDown].up': 0,
         'key[ArrowDown].down': 1,
         'key[s].up': 0,
         'key[s].down': 1
     });
-    const LEFT$1 = CONTEXT$3.registerState('left', {
+    const LEFT$1 = CONTEXT$2.registerState('left', {
         'key[ArrowLeft].up': 0,
         'key[ArrowLeft].down': 1,
         'key[a].up': 0,
         'key[a].down': 1
     });
-    const RIGHT$1 = CONTEXT$3.registerState('right', {
+    const RIGHT$1 = CONTEXT$2.registerState('right', {
         'key[ArrowRight].up': 0,
         'key[ArrowRight].down': 1,
         'key[d].up': 0,
         'key[d].down': 1
     });
-    const ZOOM_IN = CONTEXT$3.registerState('zoomin', {
+    const ZOOM_IN = CONTEXT$2.registerState('zoomin', {
         'key[z].up': 0,
         'key[z].down': 1
     });
-    const ZOOM_OUT = CONTEXT$3.registerState('zoomout', {
+    const ZOOM_OUT = CONTEXT$2.registerState('zoomout', {
         'key[x].up': 0,
         'key[x].down': 1
     });
-    const ROLL_LEFT = CONTEXT$3.registerState('rollleft', {
+    const ROLL_LEFT = CONTEXT$2.registerState('rollleft', {
         'key[q].up': 0,
         'key[q].down': 1
     });
-    const ROLL_RIGHT = CONTEXT$3.registerState('rollright', {
+    const ROLL_RIGHT = CONTEXT$2.registerState('rollright', {
         'key[e].up': 0,
         'key[e].down': 1
     });
@@ -4680,7 +4693,7 @@
 
     var Camera2DControls = /*#__PURE__*/Object.freeze({
         __proto__: null,
-        CONTEXT: CONTEXT$3,
+        CONTEXT: CONTEXT$2,
         UP: UP$1,
         DOWN: DOWN$1,
         LEFT: LEFT$1,
@@ -4805,10 +4818,10 @@
     exports.SceneBase = SceneBase;
     exports.SceneManager = SceneManager;
     exports.SimpleRandomGenerator = SimpleRandomGenerator;
-    exports.SplashScene = SplashScene;
     exports.StateInputAdapter = StateInputAdapter;
     exports.TagComponent = TagComponent;
     exports.Transform2D = Transform2D;
+    exports.Utils = utils;
     exports.View = View;
     exports.clampRange = clampRange;
     exports.cycleRange = cycleRange;

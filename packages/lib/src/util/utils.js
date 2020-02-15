@@ -68,11 +68,6 @@ export function applyMotion(entity, inverseFrictionX = 1, inverseFrictionY = inv
     entity.y += entity.dy;
 }
 
-export function onDOMLoaded(listener)
-{
-    window.addEventListener('DOMContentLoaded', listener);
-}
-
 export function drawCircle(ctx, x, y, radius = 16, color = 'white', outline = false)
 {
     ctx.fillStyle = color;

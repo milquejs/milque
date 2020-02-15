@@ -73,18 +73,40 @@
         RIGHT: RIGHT
     });
 
-    function drawText(ctx, text, x, y, radians = 0, fontSize = 16, color = 'white')
+    function createSpawner(entityFactory)
     {
-        ctx.translate(x, y);
-        if (radians) ctx.rotate(radians);
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.font = `${fontSize}px sans-serif`;
-        ctx.fillStyle = color;
-        ctx.fillText(text, 0, 0);
-        if (radians) ctx.rotate(-radians);
-        ctx.translate(-x, -y);
+        return {
+            entities: new Set(),
+            factory: entityFactory,
+            create(...args)
+            {
+                return this.factory.apply(null, args);
+            },
+            destroy(entity)
+            {
+                this.entities.delete(entity);
+            },
+            spawn(...args)
+            {
+                let entity = this.create(...args);
+                this.entities.add(entity);
+                return entity;
+            },
+            clear()
+            {
+                this.entities.clear();
+            },
+            [Symbol.iterator]()
+            {
+                return this.entities.values();
+            }
+        };
     }
+
+    var EntitySpawner = /*#__PURE__*/Object.freeze({
+        __proto__: null,
+        createSpawner: createSpawner
+    });
 
     const GAME_INFO_PROPERTY = Symbol('gameInfo');
 
@@ -93,20 +115,7 @@
         return instance[GAME_INFO_PROPERTY];
     }
 
-    async function begin(game)
-    {
-        let instance = await loadGame(game);
-        return startGame(instance);
-    }
-
-    async function end(instance)
-    {
-        stopGame(instance);
-        await unloadGame(instance);
-        return instance;
-    }
-
-    async function loadGame(game)
+    async function load(game)
     {
         if (!game) game = {};
 
@@ -137,7 +146,7 @@
         return instance;
     }
 
-    function startGame(instance)
+    function start(instance)
     {
         let displayPort = document.querySelector('display-port');
         if (!displayPort)
@@ -235,19 +244,19 @@
         );
     }
 
-    async function pauseGame(instance)
+    async function pause(instance)
     {
         let { loop } = instance[GAME_INFO_PROPERTY];
         loop.pause();
     }
 
-    async function resumeGame(instance)
+    async function resume(instance)
     {
         let { loop } = instance[GAME_INFO_PROPERTY];
         loop.resume();
     }
 
-    function stopGame(instance)
+    function stop(instance)
     {
         let { game, loop, display, onframe, onpreupdate, onupdate, onfixedupdate, onpostupdate, onfirstupdate } = instance[GAME_INFO_PROPERTY];
 
@@ -263,309 +272,16 @@
         return instance;
     }
 
-    async function unloadGame(instance)
+    async function unload(instance)
     {
         let { game } = instance[GAME_INFO_PROPERTY];
         if (game.unload) await game.unload(instance);
         return instance;
     }
 
-    async function nextGame(fromInstance, toGame)
-    {
-        await end(fromInstance);
-        let result = await begin(toGame);
-        return result;
-    }
-
-    var Game = /*#__PURE__*/Object.freeze({
-        __proto__: null,
-        getGameInfo: getGameInfo,
-        begin: begin,
-        end: end,
-        loadGame: loadGame,
-        startGame: startGame,
-        pauseGame: pauseGame,
-        resumeGame: resumeGame,
-        stopGame: stopGame,
-        unloadGame: unloadGame,
-        nextGame: nextGame
-    });
-
-    const LOAD_TIME = 250;
-    const FADE_IN_TIME = LOAD_TIME * 0.3;
-    const FADE_OUT_TIME = LOAD_TIME * 0.9;
-
-    const CONTEXT$2 = input.Input.createContext().disable();
-    const ANY_KEY = CONTEXT$2.registerAction('continue', 'key.down', 'mouse.down');
-
-    class SplashScene
-    {
-        constructor(splashText, nextScene)
-        {
-            this.splashText = splashText;
-            this.nextScene = nextScene;
-        }
-
-        /** @override */
-        async load(game)
-        {
-            CONTEXT$2.enable();
-        }
-
-        /** @override */
-        async unload(game)
-        {
-            CONTEXT$2.disable();
-        }
-
-        /** @override */
-        onStart()
-        {
-            this.time = 0;
-        }
-        
-        /** @override */
-        onUpdate(dt)
-        {
-            this.time += dt;
-            // Skip loading...
-            if (ANY_KEY.value && this.time > FADE_IN_TIME && this.time < FADE_OUT_TIME)
-            {
-                this.time = FADE_OUT_TIME;
-            }
-            // Continue to next scene...
-            if (this.time > LOAD_TIME) undefined(this.nextScene);
-        }
-        
-        /** @override */
-        onRender(ctx, view, world)
-        {
-            let opacity = 0;
-            if (world.time < FADE_IN_TIME)
-            {
-                opacity = world.time / (FADE_IN_TIME);
-            }
-            else if (world.time > FADE_OUT_TIME)
-            {
-                opacity = (LOAD_TIME - world.time) / (LOAD_TIME - FADE_OUT_TIME);
-            }
-            else
-            {
-                opacity = 1;
-            }
-            drawText(ctx, this.splashText, view.width / 2, view.height / 2, 0, 16, `rgba(255, 255, 255, ${opacity})`);
-        }
-    }
-
-    function createSpawner(entityFactory)
-    {
-        return {
-            entities: new Set(),
-            factory: entityFactory,
-            create(...args)
-            {
-                return this.factory.apply(null, args);
-            },
-            destroy(entity)
-            {
-                this.entities.delete(entity);
-            },
-            spawn(...args)
-            {
-                let entity = this.create(...args);
-                this.entities.add(entity);
-                return entity;
-            },
-            clear()
-            {
-                this.entities.clear();
-            },
-            [Symbol.iterator]()
-            {
-                return this.entities.values();
-            }
-        };
-    }
-
-    var EntitySpawner = /*#__PURE__*/Object.freeze({
-        __proto__: null,
-        createSpawner: createSpawner
-    });
-
-    const GAME_INFO_PROPERTY$1 = Symbol('gameInfo');
-
-    function getGameInfo$1(instance)
-    {
-        return instance[GAME_INFO_PROPERTY$1];
-    }
-
-    async function load(game)
-    {
-        if (!game) game = {};
-
-        let instance = (game.load && await game.load(game))
-            || (Object.isExtensible(game) && game)
-            || {};
-        
-        let gameInfo = {
-            game,
-            view: null,
-            viewport: null,
-            display: null,
-            loop: null,
-            onframe: onFrame$1.bind(undefined, instance),
-            onpreupdate: onPreUpdate$1.bind(undefined, instance),
-            onupdate: onUpdate$1.bind(undefined, instance),
-            onfixedupdate: onFixedUpdate$1.bind(undefined, instance),
-            onpostupdate: onPostUpdate$1.bind(undefined, instance),
-            onfirstupdate: onFirstUpdate$1.bind(undefined, instance),
-        };
-        
-        Object.defineProperty(instance, GAME_INFO_PROPERTY$1, {
-            value: gameInfo,
-            enumerable: false,
-            configurable: true,
-        });
-        
-        return instance;
-    }
-
-    function start(instance)
-    {
-        let displayPort = document.querySelector('display-port');
-        if (!displayPort)
-        {
-            displayPort = new display.DisplayPort();
-            displayPort.toggleAttribute('full');
-            displayPort.toggleAttribute('debug');
-            document.body.appendChild(displayPort);
-        }
-        
-        let view = instance.view || new display.View();
-        let viewport = instance.viewport || {
-            x: 0, y: 0,
-            get width() { return displayPort.getCanvas().clientWidth; },
-            get height() { return displayPort.getCanvas().clientHeight; },
-        };
-
-        let applicationLoop = new game.ApplicationLoop();
-
-        let gameInfo = instance[GAME_INFO_PROPERTY$1];
-        gameInfo.view = view;
-        gameInfo.viewport = viewport;
-        gameInfo.display = displayPort;
-        gameInfo.loop = applicationLoop;
-        
-        applicationLoop.addEventListener('update', gameInfo.onfirstupdate, { once: true });
-        applicationLoop.start();
-
-        return instance;
-    }
-
-    function onFirstUpdate$1(instance, e)
-    {
-        let { game, display, loop, onpreupdate, onupdate, onpostupdate, onfixedupdate, onframe } = instance[GAME_INFO_PROPERTY$1];
-
-        if (game.start) game.start.call(instance);
-
-        onpreupdate.call(instance,e);
-        onupdate.call(instance, e);
-        onfixedupdate.call(instance, e);
-        onpostupdate.call(instance, e);
-
-        loop.addEventListener('preupdate', onpreupdate);
-        loop.addEventListener('update', onupdate);
-        loop.addEventListener('fixedupdate', onfixedupdate);
-        loop.addEventListener('postupdate', onpostupdate);
-        display.addEventListener('frame', onframe);
-    }
-
-    function onPreUpdate$1(instance, e)
-    {
-        let { game } = instance[GAME_INFO_PROPERTY$1];
-        let dt = e.detail.delta;
-        if (game.preupdate) game.preupdate.call(instance, dt);
-    }
-
-    function onUpdate$1(instance, e)
-    {
-        let { game } = instance[GAME_INFO_PROPERTY$1];
-        let dt = e.detail.delta;
-        if (game.update) game.update.call(instance, dt);
-    }
-
-    function onFixedUpdate$1(instance, e)
-    {
-        let { game } = instance[GAME_INFO_PROPERTY$1];
-        if (game.fixedupdate) game.fixedupdate.call(instance);
-    }
-
-    function onPostUpdate$1(instance, e)
-    {
-        let { game } = instance[GAME_INFO_PROPERTY$1];
-        let dt = e.detail.delta;
-        if (game.postupdate) game.postupdate.call(instance, dt);
-    }
-
-    function onFrame$1(instance, e)
-    {
-        let { game, display, view, viewport } = instance[GAME_INFO_PROPERTY$1];
-        let ctx = e.detail.context;
-
-        // Reset any transformations...
-        view.context.setTransform(1, 0, 0, 1, 0, 0);
-        view.context.clearRect(0, 0, view.width, view.height);
-
-        if (game.render) game.render.call(instance, view, instance);
-
-        display.clear('black');
-        view.drawBufferToCanvas(
-            ctx,
-            viewport.x,
-            viewport.y,
-            viewport.width,
-            viewport.height
-        );
-    }
-
-    async function pause(instance)
-    {
-        let { loop } = instance[GAME_INFO_PROPERTY$1];
-        loop.pause();
-    }
-
-    async function resume(instance)
-    {
-        let { loop } = instance[GAME_INFO_PROPERTY$1];
-        loop.resume();
-    }
-
-    function stop(instance)
-    {
-        let { game, loop, display, onframe, onpreupdate, onupdate, onfixedupdate, onpostupdate, onfirstupdate } = instance[GAME_INFO_PROPERTY$1];
-
-        loop.removeEventListener('update', onfirstupdate);
-        loop.removeEventListener('preupdate', onpreupdate);
-        loop.removeEventListener('update', onupdate);
-        loop.removeEventListener('fixedupdate', onfixedupdate);
-        loop.removeEventListener('postupdate', onpostupdate);
-        display.removeEventListener('frame', onframe);
-
-        loop.stop();
-        if (game.stop) game.stop.call(instance);
-        return instance;
-    }
-
-    async function unload(instance)
-    {
-        let { game } = instance[GAME_INFO_PROPERTY$1];
-        if (game.unload) await game.unload(instance);
-        return instance;
-    }
-
     var GameInterface = /*#__PURE__*/Object.freeze({
         __proto__: null,
-        getGameInfo: getGameInfo$1,
+        getGameInfo: getGameInfo,
         load: load,
         start: start,
         pause: pause,
@@ -592,6 +308,98 @@
         await unload(instance);
         return instance;
     }
+
+    function randomHexColor()
+    {
+        return '#' + Math.floor(Math.random() * 16777215).toString(16);
+    }
+
+    function loadImage(url)
+    {
+        let image = new Image();
+        image.src = url;
+        return image;
+    }
+
+    function clearScreen(ctx, width, height)
+    {
+        ctx.fillStyle = 'black';
+        ctx.fillRect(0, 0, width, height);
+    }
+
+    function drawText(ctx, text, x, y, radians = 0, fontSize = 16, color = 'white')
+    {
+        ctx.translate(x, y);
+        if (radians) ctx.rotate(radians);
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.font = `${fontSize}px sans-serif`;
+        ctx.fillStyle = color;
+        ctx.fillText(text, 0, 0);
+        if (radians) ctx.rotate(-radians);
+        ctx.translate(-x, -y);
+    }
+
+    function drawBox(ctx, x, y, radians = 0, w = 16, h = w, color = 'white', outline = false)
+    {
+        ctx.translate(x, y);
+        if (radians) ctx.rotate(radians);
+        if (!outline)
+        {
+            ctx.fillStyle = color;
+            ctx.fillRect(-w / 2, -h / 2, w, h);
+        }
+        else
+        {
+            ctx.strokeStyle = color;
+            ctx.strokeRect(-w / 2, -h / 2, w, h);
+        }
+        if (radians) ctx.rotate(-radians);
+        ctx.translate(-x, -y);
+    }
+
+    function intersectBox(a, b)
+    {
+        return (Math.abs(a.x - b.x) * 2 < (a.width + b.width)) &&
+            (Math.abs(a.y - b.y) * 2 < (a.height + b.height));
+    }
+
+    function applyMotion(entity, inverseFrictionX = 1, inverseFrictionY = inverseFrictionX)
+    {
+        if (inverseFrictionX !== 1)
+        {
+            entity.dx *= inverseFrictionX;
+        }
+        if (inverseFrictionY !== 1)
+        {
+            entity.dy *= inverseFrictionY;
+        }
+        
+        entity.x += entity.dx;
+        entity.y += entity.dy;
+    }
+
+    function drawCircle(ctx, x, y, radius = 16, color = 'white', outline = false)
+    {
+        ctx.fillStyle = color;
+        ctx.strokeStyle = color;
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, 2 * Math.PI);
+        if (outline) ctx.stroke();
+        else ctx.fill();
+    }
+
+    var utils = /*#__PURE__*/Object.freeze({
+        __proto__: null,
+        randomHexColor: randomHexColor,
+        loadImage: loadImage,
+        clearScreen: clearScreen,
+        drawText: drawText,
+        drawBox: drawBox,
+        intersectBox: intersectBox,
+        applyMotion: applyMotion,
+        drawCircle: drawCircle
+    });
 
     const NO_TRANSITION = {};
 
@@ -1066,44 +874,44 @@
         drawTransformGizmo: drawTransformGizmo
     });
 
-    const CONTEXT$3 = input.Input.createContext().disable();
-    const UP$1 = CONTEXT$3.registerState('up', {
+    const CONTEXT$2 = input.Input.createContext().disable();
+    const UP$1 = CONTEXT$2.registerState('up', {
         'key[ArrowUp].up': 0,
         'key[ArrowUp].down': 1,
         'key[w].up': 0,
         'key[w].down': 1
     });
-    const DOWN$1 = CONTEXT$3.registerState('down', {
+    const DOWN$1 = CONTEXT$2.registerState('down', {
         'key[ArrowDown].up': 0,
         'key[ArrowDown].down': 1,
         'key[s].up': 0,
         'key[s].down': 1
     });
-    const LEFT$1 = CONTEXT$3.registerState('left', {
+    const LEFT$1 = CONTEXT$2.registerState('left', {
         'key[ArrowLeft].up': 0,
         'key[ArrowLeft].down': 1,
         'key[a].up': 0,
         'key[a].down': 1
     });
-    const RIGHT$1 = CONTEXT$3.registerState('right', {
+    const RIGHT$1 = CONTEXT$2.registerState('right', {
         'key[ArrowRight].up': 0,
         'key[ArrowRight].down': 1,
         'key[d].up': 0,
         'key[d].down': 1
     });
-    const ZOOM_IN = CONTEXT$3.registerState('zoomin', {
+    const ZOOM_IN = CONTEXT$2.registerState('zoomin', {
         'key[z].up': 0,
         'key[z].down': 1
     });
-    const ZOOM_OUT = CONTEXT$3.registerState('zoomout', {
+    const ZOOM_OUT = CONTEXT$2.registerState('zoomout', {
         'key[x].up': 0,
         'key[x].down': 1
     });
-    const ROLL_LEFT = CONTEXT$3.registerState('rollleft', {
+    const ROLL_LEFT = CONTEXT$2.registerState('rollleft', {
         'key[q].up': 0,
         'key[q].down': 1
     });
-    const ROLL_RIGHT = CONTEXT$3.registerState('rollright', {
+    const ROLL_RIGHT = CONTEXT$2.registerState('rollright', {
         'key[e].up': 0,
         'key[e].down': 1
     });
@@ -1131,7 +939,7 @@
 
     var Camera2DControls = /*#__PURE__*/Object.freeze({
         __proto__: null,
-        CONTEXT: CONTEXT$3,
+        CONTEXT: CONTEXT$2,
         UP: UP$1,
         DOWN: DOWN$1,
         LEFT: LEFT$1,
@@ -1153,8 +961,8 @@
     exports.MoveControls = MoveControls;
     exports.SceneBase = SceneBase;
     exports.SceneManager = SceneManager;
-    exports.SplashScene = SplashScene;
     exports.Transform2D = Transform2D;
+    exports.Utils = utils;
     exports.nextUp = nextUp;
     exports.shutDown = shutDown;
     exports.startUp = startUp;
