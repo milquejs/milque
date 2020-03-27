@@ -3,9 +3,9 @@ export const MODE_CENTER = 'center';
 export const MODE_FIT = 'fit';
 export const MODE_STRETCH = 'stretch';
 
-const DEFAULT_MODE = MODE_NOSCALE;
-const DEFAULT_WIDTH = 300;
-const DEFAULT_HEIGHT = 150;
+const DEFAULT_MODE = MODE_CENTER;
+const DEFAULT_WIDTH = 640;
+const DEFAULT_HEIGHT = 480;
 
 const INNER_HTML = `
 <label class="hidden" id="title">display-port</label>
@@ -13,87 +13,82 @@ const INNER_HTML = `
 <label class="hidden" id="dimension">0x0</label>
 <canvas></canvas>`;
 const INNER_STYLE = `
-:host {
-    display: inline-block;
-    color: #555555;
-}
-div {
-    display: flex;
-    position: relative;
-    width: 100%;
-    height: 100%;
-}
-canvas {
-    background: #000000;
-    margin: auto;
-}
-label {
-    font-family: monospace;
-    color: currentColor;
-    position: absolute;
-}
-#title {
-    left: 0.5rem;
-    top: 0.5rem;
-}
-#fps {
-    right: 0.5rem;
-    top: 0.5rem;
-}
-#dimension {
-    left: 0.5rem;
-    bottom: 0.5rem;
-}
-.hidden {
-    display: none;
-}
-:host([debug]) div {
-    outline: 6px dashed rgba(0, 0, 0, 0.1);
-    outline-offset: -4px;
-    background-color: rgba(0, 0, 0, 0.1);
-}
-:host([mode="${MODE_NOSCALE}"]) canvas {
-    margin: 0;
-    top: 0;
-    left: 0;
-}
-:host([mode="${MODE_FIT}"]), :host([mode="${MODE_CENTER}"]), :host([mode="${MODE_STRETCH}"]) {
-    width: 100%;
-    height: 100%;
-}
-:host([full]) {
-    width: 100vw!important;
-    height: 100vh!important;
-}
-:host([disabled]) {
-    display: none;
-}`;
-
-const TEMPLATE_KEY = Symbol('template');
+<style>
+    :host {
+        display: inline-block;
+        color: #555555;
+    }
+    div {
+        display: flex;
+        position: relative;
+        width: 100%;
+        height: 100%;
+    }
+    canvas {
+        background: #000000;
+        margin: auto;
+    }
+    label {
+        font-family: monospace;
+        color: currentColor;
+        position: absolute;
+    }
+    #title {
+        left: 0.5rem;
+        top: 0.5rem;
+    }
+    #fps {
+        right: 0.5rem;
+        top: 0.5rem;
+    }
+    #dimension {
+        left: 0.5rem;
+        bottom: 0.5rem;
+    }
+    .hidden {
+        display: none;
+    }
+    :host([debug]) div {
+        outline: 8px dashed rgba(0, 0, 0, 0.4);
+        outline-offset: -4px;
+        background-color: rgba(0, 0, 0, 0.1);
+    }
+    :host([mode="${MODE_NOSCALE}"]) canvas {
+        margin: 0;
+        top: 0;
+        left: 0;
+    }
+    :host([mode="${MODE_FIT}"]), :host([mode="${MODE_CENTER}"]), :host([mode="${MODE_STRETCH}"]) {
+        width: 100%;
+        height: 100%;
+    }
+    :host([full]) {
+        width: 100vw!important;
+        height: 100vh!important;
+    }
+    :host([disabled]) {
+        display: none;
+    }
+</style>`;
 
 /**
- * @version 1.2.0
+ * @version 1.5.0
  * @description
  * # Changelog
- * ## 1.2.1
- * - Added 'contexttype' for getContext()
- * ## 1.2.0
- * - Moved template creation to static time
- * - Removed default export
- * ## 1.1.2
+ * ## 1.5.0
  * - Added clear()
  * - Added delta time for frame events
- * ## 1.1.1
+ * ## 1.4.0
  * - Added onframe and onresize attribute callbacks
  * - Added "stretch" mode
- * ## 1.1.0
+ * ## 1.3.0
  * - Changed "topleft" to "noscale"
  * - Changed default size to 640 x 480
  * - Changed "center" and "fit" to fill container instead of viewport
  * - Added "full" property to override and fill viewport
- * ## 1.0.2
+ * ## 1.2.0
  * - Moved default values to the top
- * ## 1.0.1
+ * ## 1.1.0
  * - Fixed scaling issues when dimensions do not match
  * ## 1.0.0
  * - Created DisplayPort
@@ -103,14 +98,6 @@ const TEMPLATE_KEY = Symbol('template');
  */
 export class DisplayPort extends HTMLElement
 {
-    static get [TEMPLATE_KEY]()
-    {
-        let template = document.createElement('template');
-        template.innerHTML = `<div>${INNER_HTML}<style>${INNER_STYLE}</style></div>`;
-        Object.defineProperty(this, TEMPLATE_KEY, { value: template });
-        return template;
-    }
-
     /** @override */
     static get observedAttributes()
     {
@@ -118,7 +105,6 @@ export class DisplayPort extends HTMLElement
             'width',
             'height',
             'disabled',
-            'contexttype',
             // Event handlers...
             'onframe',
             /*
@@ -138,10 +124,11 @@ export class DisplayPort extends HTMLElement
         super();
 
         this.attachShadow({ mode: 'open' });
-        this.shadowRoot.appendChild(this.constructor[TEMPLATE_KEY].content.cloneNode(true));
+        this.shadowRoot.innerHTML = `<div>${INNER_STYLE}${INNER_HTML}</div>`;
 
         this._canvasElement = this.shadowRoot.querySelector('canvas');
-        this._canvasContext = null;
+        this._canvasContext = this._canvasElement.getContext('2d');
+        this._canvasContext.imageSmoothingEnabled = false;
 
         this._titleElement = this.shadowRoot.querySelector('#title');
         this._fpsElement = this.shadowRoot.querySelector('#fps');
@@ -166,7 +153,6 @@ export class DisplayPort extends HTMLElement
     connectedCallback()
     {
         if (!this.hasAttribute('mode')) this.mode = DEFAULT_MODE;
-        if (!this.hasAttribute('contexttype')) this.contexttype = '2d';
 
         this.updateCanvasSize();
         this.resume();
@@ -188,10 +174,6 @@ export class DisplayPort extends HTMLElement
                 break;
             case 'height':
                 this._height = value;
-                break;
-            case 'contexttype':
-                this._canvasContext = this._canvasElement.getContext(value);
-                this._canvasContext.imageSmoothingEnabled = false;
                 break;
             case 'disabled':
                 if (value)
@@ -380,9 +362,6 @@ export class DisplayPort extends HTMLElement
     get mode() { return this.getAttribute('mode'); }
     set mode(value) { this.setAttribute('mode', value); }
 
-    get contexttype() { return this.getAttribute('contexttype'); }
-    set contexttype(value) { this.setAttribute('contexttype', value ); }
-
     get disabled() { return this.hasAttribute('disabled'); }
     set disabled(value) { if (value) this.setAttribute('disabled', ''); else this.removeAttribute('disabled'); }
 
@@ -391,3 +370,4 @@ export class DisplayPort extends HTMLElement
     set debug(value) { if (value) this.setAttribute('debug', ''); else this.removeAttribute('debug'); }
 }
 window.customElements.define('display-port', DisplayPort);
+export default DisplayPort;

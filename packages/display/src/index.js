@@ -1,7 +1,2 @@
-// view
-export * from './View.js';
-// components
-export * from './DisplayPort.js';
-// defaults
-import * as Display from './default.js';
-export { Display };
+export { View } from './View.js';
+export { DisplayPort } from './DisplayPort.js';
