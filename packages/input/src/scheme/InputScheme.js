@@ -1,25 +1,13 @@
 export class InputScheme
 {
-    constructor()
+    constructor(inputMapping)
     {
-        this._mapping = new Map();
+        this._mapping = inputMapping;
     }
 
-    add(inputName, scheme)
+    changeInput(inputName, adapter)
     {
-        this._mapping.set(inputName, scheme);
-        return this;
-    }
-
-    remove(inputName)
-    {
-        this._mapping.delete(inputName, scheme);
-        return this;
-    }
-
-    update(inputName, scheme)
-    {
-        this._mapping.set(inputName, scheme);
+        this._mapping.set(inputName, adapter);
         return this;
     }
 }
