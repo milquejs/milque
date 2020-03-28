@@ -1,22 +1,20 @@
 {
   "name": "@milque/display",
   "version": "0.1.0",
-  "description": "The display package for Milque",
-  "module": "dist/esm/display.js",
-  "browser": "dist/display.js",
-  "scripts": {
-    "build": "rollup --config",
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
+  "description": "The display module for Milque",
+  "module": "dist/esm/index.js",
+  "browser": "dist/index.js",
+  "author": "Andrew Kuo",
+  "license": "MIT",
   "keywords": [
     "milque",
     "display"
   ],
-  "author": "andykuo1",
-  "license": "MIT",
-  "devDependencies": {
-    "rollup": "^1.30.1",
-    "rollup-plugin-terser": "^5.2.0"
+  "scripts": {
+    "build": "rollup --config"
   },
-  "dependencies": {}
+  "dependencies": {},
+  "devDependencies": {
+    "rollup": "^2.1.0"
+  }
 }
