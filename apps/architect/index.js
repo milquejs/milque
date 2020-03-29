@@ -1,94 +1,118 @@
-import { Loop } from './Loop.js';
 import { Keyboard } from '../../packages/input/src/index.js';
-import { GameObject } from './GameObject.js';
+
+import { Loop } from './Loop.js';
+import { StartRoom } from './content/StartRoom.js';
 
 const display = document.querySelector('display-port');
 const canvas = display.getCanvas();
 const ctx = display.getContext();
 const loop = new Loop()
+    .on('early', earlyUpdate)
     .on('fixed', fixedUpdate)
     .on('step', update)
-    .on('early', render);
+    .on('late', lateUpdate);
 const keyboard = new Keyboard().setEventTarget(document);
-const inputState = {
-    value: {},
-    event: {},
-};
-const inputMap = {
-    'left.1': 'keyboard[a].down',
-    'left.0': 'keyboard[a].up',
-    'up': 'keyboard[w].down',
-    'down': 'keyboard[s].down',
-    'right': 'keyboard[d].down',
-};
+
 let worldState = {
-    objects: [],
+    loop,
+    currentRoom: null,
+    nextRoom: new StartRoom(),
     inputState: {
-        value: {},
-        next: {},
+        left: 0,
+        right: 0,
+        up: 0,
+        down: 0,
     }
 };
+
 keyboard.addEventHandler((source, code, event, value) => {
-    worldState.inputState.next[source + '[' + code + '].' + event] = value;
+    let inputState = worldState.inputState;
+    switch(code)
+    {
+        case 'w':
+            if (event === 'down') inputState.up = 1;
+            else if (event === 'up') inputState.up = 0;
+            break;
+        case 's':
+            if (event === 'down') inputState.down = 1;
+            else if (event === 'up') inputState.down = 0;
+            break;
+        case 'a':
+            if (event === 'down') inputState.left = 1;
+            else if (event === 'up') inputState.left = 0;
+            break;
+        case 'd':
+            if (event === 'down') inputState.right = 1;
+            else if (event === 'up') inputState.right = 0;
+            break;
+    }
 });
 
-class Player extends GameObject
-{
-    onUpdate(world, dt)
-    {
-        if (world.inputState.value[inputMap.left])
-        {
-            this.moveLeft = true;
-        }
-        if (world.inputState.value[inputMap.right])
-        {
-            this.x += 1;
-        }
-
-        if (this.moveLeft)
-        {
-            this.x -= 1;
-        }
-    }
-
-    onDraw(world, ctx)
-    {
-        ctx.fillStyle = 'white';
-        ctx.fillRect(this.x, this.y, 16, 16);
-    }
-}
+main();
 
 function main()
 {
-    worldState.objects.push(new Player());
     loop.start();
+}
+
+function earlyUpdate()
+{
+    if (worldState.nextRoom)
+    {
+        let nextRoom = worldState.nextRoom;
+        worldState.nextRoom = null;
+
+        if (worldState.currentRoom)
+        {
+            worldState.currentRoom.onDestroy(worldState);
+            worldState.currentRoom = null;
+        }
+
+        nextRoom.onCreate(worldState);
+        worldState.currentRoom = nextRoom;
+    }
+
+    if (worldState.currentRoom)
+    {
+        for(let instance of worldState.currentRoom.getInstances())
+        {
+            instance.onEarlyUpdate(worldState);
+        }
+    }
 }
 
 function update(dt)
 {
-    poll(worldState.inputState);
-
-    for(let object of worldState.objects)
+    if (worldState.currentRoom)
     {
-        object.onUpdate(worldState, dt);
+        for(let instance of worldState.currentRoom.getInstances())
+        {
+            instance.onUpdate(worldState, dt);
+        }
     }
 }
 
 function fixedUpdate()
 {
-    for(let object of worldState.objects)
+    if (worldState.currentRoom)
     {
-        object.onFixedUpdate(worldState, ctx);
+        for(let instance of worldState.currentRoom.getInstances())
+        {
+            instance.onFixedUpdate(worldState);
+        }
     }
 }
 
-function poll(inputState)
+function lateUpdate()
 {
-    let { value, next } = inputState;
-    for(let key of Object.keys(next))
+    render();
+
+    if (worldState.currentRoom)
     {
-        value[key] = next[key];
-        next[key] = false;
+        for(let instance of worldState.currentRoom.getInstances())
+        {
+            instance.onLateUpdate(worldState);
+        }
     }
 }
 
@@ -97,12 +121,27 @@ function render()
     ctx.fillStyle = 'black';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    for(let object of worldState.objects)
+    if (worldState.currentRoom)
     {
         ctx.save();
-        object.onDraw(worldState, ctx);
+        for(let instance of worldState.currentRoom.getInstances())
+        {
+            instance.onPreDraw(worldState, ctx);
+        }
+        ctx.restore();
+
+        ctx.save();
+        for(let instance of worldState.currentRoom.getInstances())
+        {
+            instance.onDraw(worldState, ctx);
+        }
+        ctx.restore();
+
+        ctx.save();
+        for(let instance of worldState.currentRoom.getInstances())
+        {
+            instance.onPostDraw(worldState, ctx);
+        }
         ctx.restore();
     }
 }
-
-main();

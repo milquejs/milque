@@ -91,7 +91,8 @@ device and all developer input names and their associated adapters.
 
 `InputContext` is simply a way to group `InputAdapters` such that you can control the
 order of input consumption by some state. Otherwise, you would have to manually edit
-every input adapters' call priority.
+every input adapters' call priority. The context should also be independent of
+program call order.
 
 `InputDispatcher` is that thing to connect everything. In order to actually find
 the appropriate `InputAdapter` to handle it, it would need go through every
