@@ -16,6 +16,12 @@ export class GameObject
     onLateUpdate(world) {}
 
     onPreDraw(world, ctx) {}
-    onDraw(world, ctx) {}
+    onDraw(world, ctx)
+    {
+        ctx.translate(this.x, this.y);
+        if (this.sprite) this.sprite.draw(ctx);
+        if (this.mask) this.mask.draw(ctx);
+        ctx.translate(-this.x, -this.y);
+    }
     onPostDraw(world, ctx) {}
 }
