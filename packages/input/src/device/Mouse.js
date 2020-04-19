@@ -67,7 +67,7 @@ export class Mouse extends InputDevice
     /** @private */
     onMouseMove(e)
     {
-        const eventTarget = this._eventTarget;
+        const eventTarget = this.getEventTarget();
         const clientWidth = eventTarget.clientWidth;
         const clientHeight = eventTarget.clientHeight;
         

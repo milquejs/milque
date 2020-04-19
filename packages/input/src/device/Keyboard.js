@@ -46,7 +46,6 @@ export class Keyboard extends InputDevice
 
         if (result)
         {
-            console.log('NONE');
             e.preventDefault();
             e.stopPropagation();
         }

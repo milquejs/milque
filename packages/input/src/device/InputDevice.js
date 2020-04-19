@@ -54,12 +54,12 @@ export class InputDevice
 
     clearEventHandlers() { this._eventHandlers.length = 0; }
 
-    handleEvent(code, event, value = true)
+    handleEvent(key, event, value = true)
     {
         let result = false;
         for(let eventHandler of this._eventHandlers)
         {
-            result = eventHandler.call(undefined, this.name, code, event, value);
+            result = eventHandler.call(undefined, this.name, key, event, value);
             if (result) break;
         }
         return Boolean(result);
