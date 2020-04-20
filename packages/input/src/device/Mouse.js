@@ -2,85 +2,122 @@ import { InputDevice } from './InputDevice.js';
 
 export class Mouse extends InputDevice
 {
-    constructor()
+    constructor(eventTarget)
     {
         super();
-
+        
         this.onMouseDown = this.onMouseDown.bind(this);
         this.onMouseUp = this.onMouseUp.bind(this);
         this.onMouseMove = this.onMouseMove.bind(this);
         this.onContextMenu = this.onContextMenu.bind(this);
+
+        this.name = 'mouse';
+        this.eventTarget = null;
+        this.setEventTarget(eventTarget);
     }
 
-    /**
-     * @protected
-     * @override
-     */
-    attachEventTarget(eventTarget)
+    setEventTarget(element)
     {
-        eventTarget.addEventListener('mousedown', this.onMouseDown);
-        eventTarget.addEventListener('mouseup', this.onMouseUp);
-        eventTarget.addEventListener('contextmenu', this.onContextMenu);
-        document.addEventListener('mousemove', this.onMouseMove);
+        if (this.eventTarget) this.destroy();
+
+        if (!element) return;
+        element.addEventListener('mousedown', this.onMouseDown);
+        element.addEventListener('mouseup', this.onMouseUp);
+        element.addEventListener('mousemove', this.onMouseMove);
+        element.addEventListener('contextmenu', this.onContextMenu);
+        this.eventTarget = element;
     }
 
-    /**
-     * @protected
-     * @override
-     */
-    detachEventTarget(eventTarget)
+    destroy()
     {
-        eventTarget.removeEventListener('mousedown', this.onMouseDown);
-        eventTarget.removeEventListener('mouseup', this.onMouseUp);
-        eventTarget.removeEventListener('contextmenu', this.onContextMenu);
-        document.removeEventListener('mousemove', this.onMouseMove);
+        let element = this.eventTarget;
+        this.eventTarget = null;
+
+        if (!element) return;
+        element.removeEventListener('mousedown', this.onMouseDown);
+        element.removeEventListener('mouseup', this.onMouseUp);
+        element.removeEventListener('mousemove', this.onMouseMove);
+        element.removeEventListener('contextmenu', this.onContextMenu);
     }
-    
-    /** @private */
+
     onMouseDown(e)
     {
-        let result;
-
-        result = this.handleEvent(e.button, 'down', true);
-
-        if (result)
+        if ('key' in this.listeners)
         {
-            e.preventDefault();
-            e.stopPropagation();
+            // Ignore repeat events.
+            if (e.repeat) return;
+            
+            let result = this.dispatchEvent({
+                type: 'key',
+                target: this.eventTarget,
+                device: this.name,
+                key: e.button,
+                event: 'down',
+                value: 1,
+            });
+
+            if (!result)
+            {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            }
         }
     }
 
-    /** @private */
     onMouseUp(e)
     {
-        let result;
-
-        result = this.handleEvent(e.button, 'up', true);
-
-        if (result)
+        if ('key' in this.listeners)
         {
-            e.preventDefault();
-            e.stopPropagation();
+            let result = this.dispatchEvent({
+                type: 'key',
+                target: this.eventTarget,
+                device: this.name,
+                key: e.button,
+                event: 'up',
+                value: 1,
+            });
+
+            if (!result)
+            {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            }
         }
     }
 
-    /** @private */
     onMouseMove(e)
     {
-        const eventTarget = this.getEventTarget();
-        const clientWidth = eventTarget.clientWidth;
-        const clientHeight = eventTarget.clientHeight;
-        
-        this.handleEvent('pos', 'x', (e.pageX - eventTarget.offsetLeft) / clientWidth);
-        this.handleEvent('pos', 'y', (e.pageY - eventTarget.offsetTop) / clientHeight);
-        this.handleEvent('pos', 'dx', e.movementX / clientWidth);
-        this.handleEvent('pos', 'dy', e.movementY / clientHeight);
+        if ('pos' in this.listeners)
+        {
+            let element = this.eventTarget;
+            let { clientWidth, clientHeight } = element;
+
+            let dx = e.movementX / clientWidth;
+            let dy = e.movementY / clientHeight;
+            let x = (e.pageX - element.offsetLeft) / clientWidth;
+            let y = (e.pageY - element.offsetTop) / clientHeight;
+
+            let result = this.dispatchEvent({
+                type: 'pos',
+                target: this.eventTarget,
+                device: this.name,
+                key: 'pos',
+                x, y, dx, dy,
+            });
+
+            if (!result)
+            {
+                throw new Error('Return value must be undefined. Mouse position and movement events cannot be consumed.');
+            }
+        }
     }
 
-    /** @private */
     onContextMenu(e)
     {
         e.preventDefault();
         e.stopPropagation();
+        return false;
     }
 }

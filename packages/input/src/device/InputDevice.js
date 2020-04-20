@@ -1,67 +1,48 @@
-export class InputDevice
+export class InputDevice extends EventTarget
 {
-    constructor(name = undefined)
+    constructor()
     {
-        this.name = name || this.constructor.name.toLowerCase();
-        
-        this._eventTarget = null;
-        this._eventHandlers = [];
+        super();
+        this.listeners = {};
     }
 
-    setEventTarget(eventTarget)
+    /** @override */
+    addEventListener(type, listener)
     {
-        if (this._eventTarget)
-        {
-            this.detachEventTarget(this._eventTarget);
-            this._eventTarget = null;
-        }
-
-        if (eventTarget)
-        {
-            this.attachEventTarget(eventTarget);
-            this._eventTarget = eventTarget;
-        }
-
-        return this;
+        // NOTE: As defined by the web standard.
+        let listeners = type in this.listeners
+            ? this.listeners[type]
+            : this.listeners[type] = new Set();
+        listeners.add(listener);
     }
 
-    getEventTarget() { return this._eventTarget; }
-
-    /**
-     * @protected
-     * @abstract
-     */
-    attachEventTarget(eventTarget) {}
-
-    /**
-     * @protected
-     * @abstract
-     */
-    detachEventTarget(eventTarget) {}
-    
-    addEventHandler(eventHandler) { this._eventHandlers.push(eventHandler); }
-    
-    removeEventHandler(eventHandler)
+    /** @override */
+    removeEventListener(type, listener)
     {
-        let index = this._eventHandlers.indexOf(eventHandler);
-        if (index >= 0)
+        // NOTE: As defined by the web standard.
+        if (type in this.listeners)
         {
-            this._eventHandlers.splice(index, 1);
+            listeners[type].delete(listener);
         }
     }
 
-    getEventHandlers() { return this._eventHandlers; }
-
-    clearEventHandlers() { this._eventHandlers.length = 0; }
-
-    handleEvent(key, event, value = true)
+    /** @override */
+    dispatchEvent(event)
     {
-        let result = false;
-        for(let eventHandler of this._eventHandlers)
+        // HACK: Although not standard, this is a simpler interface.
+        // Anything other than undefined returned is treated as a
+        // preventDefault() call.
+        if (event.type in this.listeners)
         {
-            result = eventHandler.call(undefined, this.name, key, event, value);
-            if (result) break;
+            let listeners = this.listeners[event.type];
+            let defaultPrevented = false;
+            for(let listener of listeners)
+            {
+                let result = listener.call(undefined, event);
+                if (typeof result !== 'undefined') defaultPrevented = true;
+            }
+            return !defaultPrevented;
         }
-        return Boolean(result);
+        return true;
     }
 }

@@ -106,7 +106,7 @@ export class DisplayPort extends HTMLElement
     static get [TEMPLATE_KEY]()
     {
         let template = document.createElement('template');
-        template.innerHTML = `<div>${INNER_HTML}<style>${INNER_STYLE}</style></div>`;
+        template.innerHTML = `<div class="container">${INNER_HTML}<style>${INNER_STYLE}</style></div>`;
         Object.defineProperty(this, TEMPLATE_KEY, { value: template });
         return template;
     }
@@ -167,6 +167,9 @@ export class DisplayPort extends HTMLElement
     {
         if (!this.hasAttribute('mode')) this.mode = DEFAULT_MODE;
         if (!this.hasAttribute('contexttype')) this.contexttype = '2d';
+        
+        // Allows this element to be focusable
+        if (!this.hasAttribute('tabindex')) this.setAttribute('tabindex', 0);
 
         this.updateCanvasSize();
         this.resume();

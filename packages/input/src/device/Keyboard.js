@@ -2,66 +2,82 @@ import { InputDevice } from './InputDevice.js';
 
 export class Keyboard extends InputDevice
 {
-    constructor()
+    constructor(eventTarget)
     {
         super();
-
+        
         this.onKeyDown = this.onKeyDown.bind(this);
         this.onKeyUp = this.onKeyUp.bind(this);
+
+        this.name = 'keyboard';
+        this.eventTarget = null;
+        this.setEventTarget(eventTarget);
     }
 
-    /**
-     * @protected
-     * @override
-     */
-    attachEventTarget(eventTarget)
+    setEventTarget(element)
     {
-        eventTarget.addEventListener('keydown', this.onKeyDown);
-        eventTarget.addEventListener('keyup', this.onKeyUp);
+        if (this.eventTarget) this.destroy();
+
+        if (!element) return;
+        element.addEventListener('keydown', this.onKeyDown);
+        element.addEventListener('keyup', this.onKeyUp);
+        this.eventTarget = element;
     }
 
-    /**
-     * @protected
-     * @override
-     */
-    detachEventTarget(eventTarget)
+    destroy()
     {
-        eventTarget.removeEventListener('keydown', this.onKeyDown);
-        eventTarget.removeEventListener('keyup', this.onKeyUp);
+        let el = this.eventTarget;
+        this.eventTarget = null;
+
+        if (!el) return;
+        el.removeEventListener('keydown', this.onKeyDown);
+        el.removeEventListener('keyup', this.onKeyUp);
     }
 
-    /** @private */
     onKeyDown(e)
     {
-        let result;
+        if ('key' in this.listeners)
+        {
+            // Ignore repeat events.
+            if (e.repeat) return;
+            
+            let result = this.dispatchEvent({
+                type: 'key',
+                target: this.eventTarget,
+                device: this.name,
+                key: e.key,
+                event: 'down',
+                value: 1,
+            });
 
-        if (e.repeat)
-        {
-            result = this.handleEvent(e.key, 'repeat', true);
-        }
-        else
-        {
-            result = this.handleEvent(e.key, 'down', true);
-        }
-
-        if (result)
-        {
-            e.preventDefault();
-            e.stopPropagation();
+            if (!result)
+            {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            }
         }
     }
 
-    /** @private */
     onKeyUp(e)
     {
-        let result;
-
-        result = this.handleEvent(e.key, 'up', true);
-        
-        if (result)
+        if ('key' in this.listeners)
         {
-            e.preventDefault();
-            e.stopPropagation();
+            let result = this.dispatchEvent({
+                type: 'key',
+                target: this.eventTarget,
+                device: this.name,
+                key: e.key,
+                event: 'up',
+                value: 1,
+            });
+
+            if (!result)
+            {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            }
         }
     }
 }
