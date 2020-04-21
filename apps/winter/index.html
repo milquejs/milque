@@ -12,6 +12,7 @@
 
         <script type="module">
             import { KeyMapBuilder, createKeyState, createDeviceMap } from './InputHelper.js';
+            import * as Intersection from './IntersectionHelper.js';
 
             window.addEventListener('DOMContentLoaded', () => {
                 const display = document.querySelector('display-port');
@@ -66,6 +67,10 @@
 
                     if (world.poll) world.poll();
                     if (world.update) world.update(dt);
+
+                    // Move to first quadrant.
+                    ctx.setTransform(1, 0, 0, -1, 0, 0);
+                    ctx.translate(0, -ctx.canvas.clientHeight);
                     if (world.render) world.render(ctx);
                 });
 
@@ -78,25 +83,59 @@
                     ];
                 }
 
+                function Platform()
+                {
+                    return {
+                        type: 'platform',
+                        x: 0,
+                        y: 0,
+                        width: 64,
+                        height: 4,
+                        render(ctx)
+                        {
+
+                        }
+                    }
+                }
+
                 function Player()
                 {
                     return {
                         x: 0,
                         y: 0,
+                        dx: 0,
+                        dy: 0,
+                        jumping: false,
                         update(dt)
                         {
-                            if (playerControls.down) {
-                                this.y += 1;
+                            const moveSpeed = 0.3;
+                            const moveFriction = 1 - 0.1;
+                            const jumpSpeed = 8;
+                            const jumpMoveFriction = 1 - 0.08;
+                            const gravitySpeed = 0.5;
+
+                            const onGround = this.y <= 0;
+
+                            if (!onGround) {
+                                this.dy -= gravitySpeed;
+                            } else if (playerControls.up) {
+                                this.dy += jumpSpeed;
+                            } else {
+                                this.dy = 0;
+                                this.y = 0;
                             }
-                            if (playerControls.up) {
-                                this.y -= 1;
-                            }
+
                             if (playerControls.left) {
-                                this.x -= 1;
+                                this.dx -= moveSpeed;
                             }
                             if (playerControls.right) {
-                                this.x += 1;
+                                this.dx += moveSpeed;
                             }
+                            
+                            this.dx *= onGround ? moveFriction : jumpMoveFriction;
+
+                            this.x += this.dx;
+                            this.y += this.dy;
                         },
                         render(ctx)
                         {
