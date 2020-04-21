@@ -10,97 +10,23 @@
     <body>
         <display-port contexttype="2d"></display-port>
 
-        <input-port device="keyboard mouse gamepad touch"></input-port>
-        <keyboard-port>
-            <key-mapping name="down" key="ArrowUp" meta="Control" alt="w" alt-meta="Control"></key-mapping>
-        </keyboard-port>
-        <mouse-port>
-            <key-mapping name="lookLeft" key="dx+" meta="Control" alt="w" alt-meta="Control"></key-mapping>
-        </mouse-port>
-        <gamepad-port max=16></gamepad-port>
-
-        <table>
-            <caption>Key Mapping</caption>
-            <thead>
-                <tr>
-                    <th>Action</th>
-                    <th>Main</th>
-                    <th>Alt</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <th>Move Forward</th>
-                    <td>keyboard_ArrowDown</td>
-                    <td>---</td>
-                </tr>
-            </tbody>
-        </table>
-
-<!--
-What Do I Want From Input?
-- Key Mapping => Map each action to a key (or key combo)
-- Convert all input into numbers, single level access object
-- Have a list of contexts, which handle events in order.
-
-InputContextGroup
-- InputContext (disabled)
-    - InputMapping
-- InputContext
-- InputContext (disabled)
-
-- InputState (the object with single level access to all inputs of a context)
--->
-
         <script type="module">
-            import { Keyboard, Mouse } from '../../packages/input/src/index.js';
-            import { KeyState } from './KeyState.js';
+            import { KeyMapBuilder, createKeyState, createDeviceMap } from './InputHelper.js';
 
             window.addEventListener('DOMContentLoaded', () => {
-                const world = {};
-                
-                // This is what the dev sees and can read from.
-                const inputMap = {
-                    down: { adapter: 'state', keys: [ 'down' ] },
-                    mousex: { adapter: 'range', keys: [ 'lookDown', 'lookUp' ]},
-                    mousey: { adapter: 'range', keys: [ 'lookY' ]},
-                };
-                // This is what the user sees and can edit.
-                const keyMap = {
-                    up: { device: 'keyboard', key: 'ArrowUp' },
-                    down: { device: 'keyboard', key: 'ArrowDown' },
-                    left: { device: 'keyboard', key: 'ArrowLeft' },
-                    right: { device: 'keyboard', key: 'ArrowRight' },
-                };
-
                 const display = document.querySelector('display-port');
-                const deviceMap = {
-                    keyboard: new Keyboard(display),
-                    mouse: new Mouse(display),
-                };
-                // Every input context should have an input map and a key state.
-                // - the key state should not register itself to devices, top-level should handle it.
-                // The input map will generate an adapterMap and a keyMap.
-                const keyState = new KeyState(keyMap);
-                if ('keyboard' in deviceMap)
-                {
-                    deviceMap.keyboard.addEventListener('key', ({ device, key, event, value }) => keyState.updateKey(device, key, event, value));
-                }
-                if ('mouse' in deviceMap)
-                {
-                    deviceMap.mouse.addEventListener('key', ({ device, key, event, value }) => keyState.updateKey(device, key, event, value));
-                    deviceMap.mouse.addEventListener('pos', ({ device, key, x, y, dx, dy }) => keyState.updatePos(device, key, x, y, dx, dy));
-                }
-                display.addEventListener('frame', e => {
-                    const ctx = e.detail.context;
-                    const dt = e.detail.delta;
+                
+                // This is what the user sees and can edit.
+                const keyMap = KeyMapBuilder()
+                    .set('up', 'ArrowUp')
+                    .set('down', 'ArrowDown')
+                    .set('left', 'ArrowLeft')
+                    .set('right', 'ArrowRight')
+                    .build();
+                const deviceMap = createDeviceMap(display);
+                const keyState = createKeyState(deviceMap, keyMap);
 
-                    keyState.poll();
-                    if (world.update) world.update(dt);
-                    if (world.render) world.render(ctx);
-                });
-
-                //input.getContextualInputState('playerControls');
+                // input.getContextualInputState('playerControls');
                 // Easy to access, fast, and serializable
                 const playerControls = {
                     get down() { return keyState.state.down.value; },
@@ -109,6 +35,40 @@ InputContextGroup
                     get right() { return keyState.state.right.value; },
                 };
 
+                const world = {
+                    entities: [],
+                    update(dt)
+                    {
+                        for(let entity of this.entities)
+                        {
+                            entity.update(dt);
+                        }
+                    },
+                    render(ctx)
+                    {
+                        ctx.fillStyle = 'black';
+                        ctx.fillRect(0, 0, ctx.canvas.clientWidth, ctx.canvas.clientHeight);
+
+                        for(let entity of this.entities)
+                        {
+                            entity.render(ctx);
+                        }
+                    },
+                    poll()
+                    {
+                        keyState.poll();
+                    }
+                };
+
+                display.addEventListener('frame', e => {
+                    const ctx = e.detail.context;
+                    const dt = e.detail.delta;
+
+                    if (world.poll) world.poll();
+                    if (world.update) world.update(dt);
+                    if (world.render) world.render(ctx);
+                });
+
                 main();
 
                 function main()
@@ -116,18 +76,6 @@ InputContextGroup
                     world.entities = [
                         Player()
                     ];
-                    world.update = dt => {
-                        for(let entity of world.entities)
-                        {
-                            entity.update(dt);
-                        }
-                    };
-                    world.render = ctx => {
-                        for(let entity of world.entities)
-                        {
-                            entity.render(ctx);
-                        }
-                    };
                 }
 
                 function Player()
