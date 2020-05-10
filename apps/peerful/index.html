@@ -23,65 +23,87 @@
 <body>
     <peer-handshake></peer-handshake>
     <button onclick="document.querySelector('peer-handshake').open = true">Open</button>
-    <output id="output"></output>
-    <p>
-        <input id="message" type="text">
-        <button id="send" disabled>Send</button>
-    </p>
+    <section id="players">
+    </section>
+    <template id="player">
+        <fieldset>
+            <legend>Player</legend>
+            <p style="border: 1px solid gray">
+                <output></output>
+            </p>
+            <p style="display: flex;">
+                <input type="text" style="flex: 1;">
+                <button>Send</button>
+            </p>
+        </fieldset>
+    </template>
     <script type="module">
-        window.addEventListener('DOMContentLoaded', () => {
-            const peerHandshake = document.querySelector('peer-handshake');
-            const sendButton = document.querySelector('#send');
-            const messageInput = document.querySelector('#message');
-            const outputList = document.querySelector('#output');
+        import { uuid } from '../../packages/util/src/uuidv4.js';
 
-            sendButton.addEventListener('click', onSendButton);
+        let players = [];
 
-            let ctx = {
-                channel: null,
-                connection: null,
-                close()
+        function createPlayer(handshake)
+        {
+            const playerContainer = document.querySelector('#players');
+            const playerTemplate = document.querySelector('#player');
+
+            let player = playerTemplate.content.cloneNode(true);
+            const title = player.querySelector('legend');
+            const output = player.querySelector('output');
+            const input = player.querySelector('input');
+            const send = player.querySelector('button');
+
+            player.playerId = null;
+            player.connection = handshake.connection;
+            player.channels = handshake.channels;
+            player.onOpen = () => {
+                if (!handshake.remote)
                 {
-                    this.connection.close();
-                    this.channel.close();
+                    let playerId = uuid();
+                    player.playerId = playerId;
+                    title.textContent = playerId;
+                    player.channels.reliable.send('pid:' + playerId);
                 }
             };
+            player.onClose = () => {
+                console.log('Closed.');
+            };
+            player.onSend = () => {
+                player.channels.data.send('msg:' + input.value);
+                input.value = '';
+            };
+            player.onReceive = e => {
+                let type = e.data.substring(0, 3);
+                let data = e.data.substring(4);
+                switch(type)
+                {
+                    case 'msg':
+                        output.value = data;
+                        break;
+                    case 'pid':
+                        player.playerId = data;
+                        title.textContent = data;
+                        break;
+                    default:
+                        console.log(type, '=>', data);
+                }
+            };
+            send.addEventListener('click', player.onSend);
+            player.channels.data.addEventListener('message', player.onReceive);
+            player.channels.reliable.addEventListener('open', player.onOpen);
+            player.channels.reliable.addEventListener('close', player.onClose);
+            player.channels.reliable.addEventListener('message', player.onReceive);
+            playerContainer.appendChild(player);
+            players.push(player);
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const peerHandshake = document.querySelector('peer-handshake');
+            
             peerHandshake.addEventListener('complete', e => {
                 let handshake = e.detail.handshake;
-                handshake.channel.addEventListener('open', onReceiveChannelOpen);
-                handshake.channel.addEventListener('close', onReceiveChannelClose);
-                handshake.channel.addEventListener('message', onReceiveMessage);
-                ctx.channel = handshake.channel;
-                ctx.connection = handshake.connection;
+                createPlayer(handshake);
             });
-
-            function onSendButton()
-            {
-                console.log('Sending message...');
-                let message = messageInput.value;
-                ctx.channel.send(message);
-
-                messageInput.value = '';
-                messageInput.focus();
-            }
-
-            function onReceiveMessage(e)
-            {
-                console.log('Receiving message...');
-                outputList.textContent = e.data;
-            }
-
-            function onReceiveChannelOpen(e)
-            {
-                console.log('Received opened.', e);
-                sendButton.disabled = false;
-            }
-
-            function onReceiveChannelClose(e)
-            {
-                console.log('Received closed.', e);
-                sendButton.disabled = true;
-            }
         });
     </script>
 </body>

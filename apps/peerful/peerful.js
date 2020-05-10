@@ -15,7 +15,7 @@ const RELIABLE_CHANNEL_OPTIONS = {
     ordered: false,
 };
 
-export async function offerHandshake(peerConnectionConfig = PEER_CONNECTION_CONFIG, channelOptions = [ UNRELIABLE_CHANNEL_OPTIONS ])
+export async function offerHandshake(peerConnectionConfig = PEER_CONNECTION_CONFIG, channelOptions = [ UNRELIABLE_CHANNEL_OPTIONS, RELIABLE_CHANNEL_OPTIONS ])
 {
     return new Promise((resolve, reject) => {
         let connection = new RTCPeerConnection(peerConnectionConfig);
@@ -39,6 +39,7 @@ export async function offerHandshake(peerConnectionConfig = PEER_CONNECTION_CONF
             if (!candidate)
             {
                 let handshake = {
+                    remote: false,
                     connection,
                     channels,
                     offer: connection.localDescription,
@@ -71,12 +72,18 @@ export async function offerHandshake(peerConnectionConfig = PEER_CONNECTION_CONF
     });
 }
 
-export async function answerHandshake(remoteOfferData, peerConnectionConfig = PEER_CONNECTION_CONFIG)
+export async function answerHandshake(remoteOfferData, peerConnectionConfig = PEER_CONNECTION_CONFIG, channelOptions = [ UNRELIABLE_CHANNEL_OPTIONS, RELIABLE_CHANNEL_OPTIONS ])
 {
     if (!remoteOfferData) throw new Error('Missing remote offer key.');
 
     return new Promise((resolve, reject) => {
         let connection = new RTCPeerConnection(peerConnectionConfig);
+        let channels = {};
+        for(let channelOption of channelOptions)
+        {
+            let channelLabel = channelOption.label || ('data' + channels.length);
+            channels[channelLabel] = null;
+        }
 
         /*
         connection.addEventListener('signalingstatechange', e => console.log('Signaling state changed:', e));
@@ -90,8 +97,9 @@ export async function answerHandshake(remoteOfferData, peerConnectionConfig = PE
             if (!candidate)
             {
                 let handshake = {
+                    remote: true,
                     connection,
-                    channels: {},
+                    channels,
                     answer: connection.localDescription,
                     async get()
                     {
@@ -100,7 +108,16 @@ export async function answerHandshake(remoteOfferData, peerConnectionConfig = PE
                             this.connection.addEventListener('datachannel', e => {
                                 let channel = e.channel;
                                 this.channels[channel.label] = channel;
-                                resolve(this);
+                                let ready = true;
+                                for(let channelLabel of Object.keys(this.channels))
+                                {
+                                    if (!this.channels[channelLabel])
+                                    {
+                                        ready = false;
+                                        break;
+                                    }
+                                }
+                                if (ready) resolve(this);
                             });
                         });
                     },

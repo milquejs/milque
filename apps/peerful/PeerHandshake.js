@@ -1,15 +1,5 @@
 import * as peerful from './peerful.js';
 
-const PEER_CONNECTION_CONFIG = {
-    iceServers: [
-        { url: 'stun:stun.l.google.com:19302' },
-    ],
-};
-const DATA_CHANNEL_OPTIONS = {
-    ordered: false,
-    maxRetransmits: 0,
-};
-
 export class PeerHandshake extends HTMLElement
 {
     static get template()
@@ -177,7 +167,7 @@ export class PeerHandshake extends HTMLElement
         this._host.disabled = true;
 
         // Start trying to host.
-        peerful.offerHandshake(PEER_CONNECTION_CONFIG, DATA_CHANNEL_OPTIONS)
+        peerful.offerHandshake()
             .then(handshake => {
                 this.handshake = handshake;
 
@@ -228,7 +218,7 @@ export class PeerHandshake extends HTMLElement
         this._join.disabled = true;
 
         // Start trying to join the offer code.
-        peerful.answerHandshake(offerData, PEER_CONNECTION_CONFIG)
+        peerful.answerHandshake(offerData)
             .then(handshake => {
                 this.handshake = handshake;
 
