@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>tactics</title>
+
+    <style>
+        html, body {
+            margin: 0;
+        }
+
+        body {
+            background-color: #111111;
+            overflow: hidden;
+        }
+    </style>
+    <script>
+    </script>
+
+    <script type="module" src="../../packages/display/src/index.js"></script>
+</head>
+<body>
+    <display-port mode="fit" contenttype="2d" debug full></display-port>
+
+    <script type="module">
+        import { Mouse } from '../../packages/input/src/index.js';
+        import * as Camera from './Camera.js';
+
+        window.addEventListener('DOMContentLoaded', main);
+
+        function lerp(a, b, dt)
+        {
+            return (b - a) * dt + a;
+        }
+
+        function createCamera()
+        {
+            return {
+                viewMatrix: [1, 0, 0, 1, 0, 0],
+                projectionMatrix: [1, 0, 0, 1, 0, 0],
+                lookAt(x, y, z, dt = 1)
+                {
+                    this.viewMatrix[4] = x;
+                    this.viewMatrix[5] = y;
+                    return this;
+                }
+            };
+        }
+
+        function createTileMap(width, height = width, depth = 1)
+        {
+            let tileData = new Array(width * height * depth);
+            tileData.fill(0);
+
+            for(let i = 0; i < tileData.length; ++i)
+            {
+                tileData[i] = Math.floor(Math.random() * 2);
+            }
+
+            return {
+                width,
+                height,
+                depth,
+                tileData,
+            };
+        }
+
+        function main()
+        {
+            const display = document.querySelector('display-port');
+            const ctx = display.getContext();
+
+            let camera = createCamera();
+            let tileMap = createTileMap(16, 16, 1);
+            let mouse = new Mouse(display.canvas);
+
+            let world = {
+                position: [0, 0],
+            };
+            
+            display.addEventListener('frame', e => {
+                ctx.fillStyle = 'black';
+                ctx.fillRect(0, 0, display.canvas.clientWidth, display.canvas.clientHeight);
+                
+                mouse.poll();
+
+                let width = display.canvas.clientWidth;
+                let height = display.canvas.clientHeight;
+
+                Camera.drawWorldGrid(ctx, width, height, camera.viewMatrix, camera.projectionMatrix);
+
+                ctx.save();
+                {
+                    ctx.setTransform(new DOMMatrix(camera.viewMatrix));
+                    drawTileMap(ctx, tileMap);
+                }
+                ctx.restore();
+
+                Camera.drawWorldTransformGizmo(ctx, width, height, camera.viewMatrix, camera.projectionMatrix);
+
+                if (mouse.left.state) {
+                    ctx.fillStyle = 'white';
+                    ctx.fillRect(mouse.x * width - 32, mouse.y * height - 32, 64, 64);
+                    camera.lookAt(mouse.x * width, mouse.y * height, 0, 1);
+                }
+            });
+        }
+
+        function drawTileMap(ctx, tileMap, offsetX = 0, offsetY = 0, tileWidth = 16, tileHeight = tileWidth)
+        {
+            let i = 0;
+            for(let y = 0; y < tileHeight; ++y)
+            {
+                for(let x = 0; x < tileWidth; ++x)
+                {
+                    if (tileMap.tileData[i])
+                    {
+                        ctx.fillStyle = 'saddlebrown';
+                        ctx.fillRect(offsetX + x * tileWidth, offsetY + y * tileHeight, tileWidth, tileHeight);
+                    }
+                    ++i;
+                }
+            }
+        }
+    </script>
+</body>
+
+</html>
