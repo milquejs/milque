@@ -1,172 +1,151 @@
-import * as Eventable from './Eventable.js';
+const PEER_CONNECTION_CONFIG = {
+    iceServers: [
+        { url: 'stun:stun.l.google.com:19302' },
+    ],
+};
+const UNRELIABLE_CHANNEL_OPTIONS = {
+    ordered: false,
+    maxRetransmits: 0,
+};
+const RELIABLE_CHANNEL_OPTIONS = {
+    ordered: false,
+};
 
-export function createConnectionAsOffer(peerConnectionConfig, dataChannelOptions)
+export async function offerHandshake(peerConnectionConfig = PEER_CONNECTION_CONFIG, dataChannelOptions = UNRELIABLE_CHANNEL_OPTIONS)
 {
-    let result = {
-        localKey: null,
-        remoteKey: null,
-        connection: null,
-        channel: null,
-        close()
-        {
-            this.connection.close();
-            this.channel.close();
-
-            this.localKey = null;
-            this.remoteKey = null;
-        }
-    };
-
-    /**
-     * Has events:
-     * - open: when the channel is opened for communication.
-     * - close: when the channel is closed for communication.
-     * - data: when the channel receives data.
-     * - error: when an error occurs in the connection or the channel.
-     * - offer: when the offer is ready to be sent.
-     */
-    Eventable.assign(result, result);
-
-    let connection = new RTCPeerConnection(peerConnectionConfig);
-
-    let channel = connection.createDataChannel('data', dataChannelOptions);
-    channel.addEventListener('open', e => result.emit('open', e));
-    channel.addEventListener('close', e => result.emit('close', e));
-    channel.addEventListener('message', e => result.emit('data', e));
-    channel.addEventListener('error', e => result.emit('error', e));
-
-    /*
-    connection.addEventListener('signalingstatechange', e => console.log('Signaling state changed:', e));
-    connection.addEventListener('iceconnectionstatechange', e => console.log('ICE connection state changed:', e));
-    connection.addEventListener('icegatheringstatechange', e => console.log('ICE gathering state changed:', e));
-    */
+    return new Promise((resolve, reject) => {
+        let connection = new RTCPeerConnection(peerConnectionConfig);
+        let channel = connection.createDataChannel('data', dataChannelOptions);
     
-    connection.addEventListener('icecandidateerror', e => result.emit('error', e));
-    connection.addEventListener('icecandidate', e => {
-        let { candidate } = e;
-        if (!candidate)
-        {
-            let offer = connection.localDescription;
-            result.localKey = offer;
-            result.emit('offer', offer);
-            // Now simply wait for the remote answer key...
-        }
+        /*
+        connection.addEventListener('signalingstatechange', e => console.log('Signaling state changed:', e));
+        connection.addEventListener('iceconnectionstatechange', e => console.log('ICE connection state changed:', e));
+        connection.addEventListener('icegatheringstatechange', e => console.log('ICE gathering state changed:', e));
+        */
+
+        // Resolve it when we are ready.
+        connection.addEventListener('icecandidate', e => {
+            let { candidate } = e;
+            if (!candidate)
+            {
+                let handshake = {
+                    connection,
+                    channel,
+                    offer: connection.localDescription,
+                    _resolve: null,
+                    async get()
+                    {
+                        return new Promise(resolve => {
+                            // Finish resolving it when we are ready.
+                            this._resolve = resolve;
+                        });
+                    },
+                    cancel()
+                    {
+                        this.connection.close();
+                        this.channel.close();
+                    }
+                };
+                resolve(handshake);
+            }
+        });
+    
+        // Start it.
+        connection.createOffer()
+            .then(offerDescription => connection.setLocalDescription(offerDescription))
+            .catch(reject);
     });
-
-    connection.createOffer()
-        .then(offerDescription => connection.setLocalDescription(offerDescription))
-        .catch(e => result.emit('error', e));
-
-    result.connection = connection;
-    result.channel = channel;
-    return result;
 }
 
-export function createConnectionAsAnswer(remoteOfferData, peerConnectionConfig)
+export async function answerHandshake(remoteOfferData, peerConnectionConfig = PEER_CONNECTION_CONFIG)
 {
     if (!remoteOfferData) throw new Error('Missing remote offer key.');
 
-    let result = {
-        localKey: null,
-        remoteKey: remoteOfferData,
-        connection: null,
-        channel: null,
-        close()
-        {
-            this.connection.close();
-            this.channel.close();
+    return new Promise((resolve, reject) => {
+        let connection = new RTCPeerConnection(peerConnectionConfig);
 
-            this.localKey = null;
-            this.remoteKey = null;
-        }
-    };
+        /*
+        connection.addEventListener('signalingstatechange', e => console.log('Signaling state changed:', e));
+        connection.addEventListener('iceconnectionstatechange', e => console.log('ICE connection state changed:', e));
+        connection.addEventListener('icegatheringstatechange', e => console.log('ICE gathering state changed:', e));
+        */
+        
+        // Prepare to resolve it when we are ready.
+        connection.addEventListener('icecandidate', e => {
+            let { candidate } = e;
+            if (!candidate)
+            {
+                let handshake = {
+                    connection,
+                    channel: null,
+                    answer: connection.localDescription,
+                    async get()
+                    {
+                        return new Promise(resolve => {
+                            // Finish resolving it when we are ready.
+                            this.connection.addEventListener('datachannel', e => {
+                                this.channel = e.channel;
+                                resolve(this);
+                            });
+                        });
+                    },
+                    cancel()
+                    {
+                        this.connection.close();
+                        if (this.channel) this.channel.close();
+                    }
+                };
+                resolve(handshake);
+            }
+        });
     
-    /**
-     * Has events:
-     * - open: when the channel is opened for communication.
-     * - close: when the channel is closed for communication.
-     * - data: when the channel receives data.
-     * - error: when an error occurs in the connection or the channel.
-     * - answer: when the answer is ready to be returned.
-     */
-    Eventable.assign(result, result);
-
-    let connection = new RTCPeerConnection(peerConnectionConfig);
-
-    /*
-    connection.addEventListener('signalingstatechange', e => console.log('Signaling state changed:', e));
-    connection.addEventListener('iceconnectionstatechange', e => console.log('ICE connection state changed:', e));
-    connection.addEventListener('icegatheringstatechange', e => console.log('ICE gathering state changed:', e));
-    */
-    
-    connection.addEventListener('icecandidateerror', e => result.emit('error', e));
-    connection.addEventListener('icecandidate', e => {
-        let { candidate } = e;
-        if (!candidate)
-        {
-            let answer = connection.localDescription;
-            result.localKey = answer;
-            result.emit('answer', answer);
-            // Now simply wait to be connected...
-        }
+        // Start it.
+        let remoteOffer = new RTCSessionDescription(remoteOfferData);
+        connection.setRemoteDescription(remoteOffer)
+            .then(() => connection.createAnswer())
+            .then(localAnswer => connection.setLocalDescription(localAnswer))
+            .catch(reject);
     });
-
-    let remoteOffer = new RTCSessionDescription(remoteOfferData);
-
-    connection.addEventListener('datachannel', e => {
-        let { channel } = e;
-        channel.addEventListener('open', e => result.emit('open', e));
-        channel.addEventListener('close', e => result.emit('close', e));
-        channel.addEventListener('message', e => result.emit('data', e));
-        channel.addEventListener('error', e => result.emit('error', e));
-        result.channel = channel;
-    });
-
-    connection.setRemoteDescription(remoteOffer)
-        .then(() => connection.createAnswer())
-        .then(localAnswer => connection.setLocalDescription(localAnswer));
-    
-    result.connection = connection;
-    result.channel = null;
-    return result;
 }
 
-export function establishConnection(host, remoteAnswerData)
+export async function acceptHandshake(remoteAnswerData, handshake)
 {
     let remoteAnswer = new RTCSessionDescription(remoteAnswerData);
-    host.connection.setRemoteDescription(remoteAnswer);
+    await handshake.connection.setRemoteDescription(remoteAnswer);
+    handshake._resolve(handshake);
+    return handshake;
 }
 
-export function encodeOfferKey(offerDescription)
+export function encodeOfferCode(offerDescription)
 {
     let { type, sdp } = offerDescription;
     if (type !== 'offer') throw new Error(`Invalid offer description type '${type}', expected 'offer'.`);
-    let result = compressKey(sdp);
+    let result = compressCode(sdp);
     return 'off:' + result;
 }
 
-export function decodeOfferKey(offerData)
+export function decodeOfferCode(offerData)
 {
     if (!offerData.startsWith('off:')) throw new Error('Not a valid offer key - missing valid prefix.');
-    let result = decompressKey(offerData.substring('off:'.length));
+    let result = decompressCode(offerData.substring('off:'.length));
     return {
         type: 'offer',
         sdp: result,
     };
 }
 
-export function encodeAnswerKey(answerDescription)
+export function encodeAnswerCode(answerDescription)
 {
     let { type, sdp } = answerDescription;
     if (type !== 'answer') throw new Error(`Invalid answer description type '${type}', expected 'answer'.`);
-    let result = compressKey(sdp);
+    let result = compressCode(sdp);
     return 'ans:' + result;
 }
 
-export function decodeAnswerKey(answerData)
+export function decodeAnswerCode(answerData)
 {
     if (!answerData.startsWith('ans:')) throw new Error('Not a valid answer key - missing valid prefix.');
-    let result = decompressKey(answerData.substring('ans:'.length));
+    let result = decompressCode(answerData.substring('ans:'.length));
     return {
         type: 'answer',
         sdp: result,
@@ -209,7 +188,7 @@ const COMPRESSION_TO_KEY_MAP = new Map();
     }
 }
 
-export function compressKey(key)
+function compressCode(key)
 {
     let result = JSON.stringify(key);
     result = result.substring(1, result.length - 1);
@@ -220,7 +199,7 @@ export function compressKey(key)
     return result;
 }
 
-export function decompressKey(key)
+function decompressCode(key)
 {
     let result = key;
     for(let keyPattern of COMPRESSION_TO_KEY_MAP.keys())
