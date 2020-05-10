@@ -3,172 +3,276 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Local PeerMem</title>
+    <title>PeerMem - Attempt 1</title>
 
     <style>
         html, body {
             margin: 0;
         }
+        *:disabled {
+            opacity: 0.3;
+        }
     </style>
 </head>
 <body>
-    <output id="output">
-        Nothing interesting yet...
-    </output>
-    <input id="message" type="text">
-    <button id="send" disabled>Send</button>
+    <header>
+        <p>Host must share the key first. Then the Client can connect and share their key.</p>
+    </header>
+    <output id="output"></output>
+    <p>
+        <input id="message" type="text">
+        <button id="send" disabled>Send</button>
+    </p>
     <hr>
-    <button id="connect">Connect</button>
-    <button id="disconnect" disabled>Disconnected</button>
-    
+    <p>
+        <button id="host">Host</button>
+        <button id="join">Join</button>
+    </p>
+    <p>
+        <label>My Host Key:</label>
+        <output id="hostKey"></output>
+        <button onclick="navigator.clipboard.writeText(document.querySelector('#hostKey').value).then(() => window.alert('Successfully copied to clipboard.'))">
+            Copy
+        </button>
+    </p>
+    <p>
+        <label>My Client Key:</label>
+        <output id="clientKey"></output>
+        <button onclick="navigator.clipboard.writeText(document.querySelector('#clientKey').value).then(() => window.alert('Successfully copied to clipboard.'))">
+            Copy
+        </button>
+    </p>
+    <p>
+        <label>Their Key:</label>
+        <input type="text" id="remoteKey">
+        <button onclick="navigator.clipboard.readText().then(text => document.querySelector('#remoteKey').value = text)">
+            Paste
+        </button>
+    </p>
+    <p>
+        <button id="connect" disabled>Connect</button>
+        <button id="disconnect" disabled>Disconnect</button>
+    </p>
+
     <script>
         window.addEventListener('DOMContentLoaded', () => {
+
+            let hostButton = document.querySelector('#host');
+            let joinButton = document.querySelector('#join');
             let connectButton = document.querySelector('#connect');
             let disconnectButton = document.querySelector('#disconnect');
-            let sendButton = document.querySelector('#send');
-            let messageInput = document.querySelector('#message');
+            
+            let hostKey = document.querySelector('#hostKey');
+            let clientKey = document.querySelector('#clientKey');
+            let remoteKey = document.querySelector('#remoteKey');
+
             let outputList = document.querySelector('#output');
+            let messageInput = document.querySelector('#message');
+            let sendButton = document.querySelector('#send');
 
-            let localConnection;
-            let remoteConnection;
+            let ctx = {
+                peerConnectionOptions: {
+                    iceServers: [
+                        { url: 'stun:stun.l.google.com:19302' },
+                    ],
+                },
+                dataChannelOptions: {
+                    ordered: false,
+                    maxFile: 0,
+                },
+                isHost: false,
+                peerConnection: null,
+                remoteConnection: null,
+                sendChannel: null,
+                sendChannel: null,
+            };
 
-            let sendChannel;
-            let receiveChannel;
-
+            hostButton.addEventListener('click', onHostButton);
+            joinButton.addEventListener('click', onJoinButton);
             connectButton.addEventListener('click', onConnectButton);
             disconnectButton.addEventListener('click', onDisconnectButton);
             sendButton.addEventListener('click', onSendButton);
 
+            hostButton.disabled = false;
+            joinButton.disabled = false;
+
+            function onHostButton()
+            {
+                hostButton.disabled = true;
+                joinButton.disabled = true;
+                connectButton.disabled = false;
+
+                // I am the host.
+                console.log('Hosting...');
+                let config = ctx.peerConnectionOptions;
+                let connection = new RTCPeerConnection(config);
+
+                let channel = connection.createDataChannel('sendChannel', ctx.dataChannelOptions);
+                channel.onopen = onSendChannelOpen;
+                channel.onclose = onReceiveChannelClose;
+                channel.onmessage = onReceiveMessage;
+
+                connection.onsignalingstatechange = e => console.log('Signaling state changed:', e);
+                connection.oniceconnectionstatechange = e => console.log('ICE connection state changed:', e);
+                connection.onicegatheringstatechange = e => console.log('ICE gathering state changed:', e);
+
+                connection.onicecandidate = e => {
+                    let { candidate } = e;
+                    if (!candidate)
+                    {
+                        console.log('Outputting host key...');
+                        hostKey.value = encodeHostKey(connection.localDescription);
+                        // Now simply wait for the remote key...
+                    }
+                };
+
+                connection.createOffer().then(offerDescription => {
+                    connection.setLocalDescription(offerDescription);
+                });
+
+                ctx.peerConnection = connection;
+                ctx.sendChannel = channel;
+                ctx.isHost = true;
+            }
+
+            function onJoinButton()
+            {
+                hostButton.disabled = true;
+                joinButton.disabled = true;
+                connectButton.disabled = false;
+
+                // I am the client.
+                console.log('Joining...');
+                let config = ctx.peerConnnectionOptions;
+                let connection = new RTCPeerConnection(config);
+
+                connection.onsignalingstatechange = e => console.log('Signaling state changed:', e);
+                connection.oniceconnectionstatechange = e => console.log('ICE connection state changed:', e);
+                connection.onicegatheringstatechange = e => console.log('ICE gathering state changed:', e);
+
+                connection.onicecandidate = e => {
+                    let { candidate } = e;
+                    if (!candidate)
+                    {
+                        console.log('Outputting client key...');
+                        clientKey.value = encodeClientKey(connection.localDescription);
+                        // Now simply wait for the remote key...
+                    }
+                };
+                
+                ctx.peerConnection = connection;
+                ctx.isHost = false;
+            }
+
             function onConnectButton()
             {
                 connectButton.disabled = true;
-                connect()
-                    .then(() => {
-                        disconnectButton.disabled = false;
-                        sendButton.disabled = false;
-                    })
-                    .catch(() => {
-                        connectButton.disabled = false;
+                disconnectButton.disabled = false;
 
-                        console.error(e);
-                    });
+                // I have the other's key.
+                if (ctx.isHost)
+                {
+                    let answer = new RTCSessionDescription(decodeClientKey(remoteKey.value));
+                    ctx.peerConnection.setRemoteDescription(answer);
+                }
+                else
+                {
+                    let offer = new RTCSessionDescription(decodeHostKey(remoteKey.value));
+                    ctx.peerConnection.ondatachannel = e => {
+                        let { channel } = e;
+                        channel.onopen = onReceiveChannelOpen;
+                        channel.onclose = onReceiveChannelClose;
+                        channel.onmessage = onReceiveMessage;
+                        ctx.sendChannel = channel;
+                    };
+
+                    ctx.peerConnection.setRemoteDescription(offer)
+                        .then(() => ctx.peerConnection.createAnswer())
+                        .then(answer => ctx.peerConnection.setLocalDescription(answer));
+                }
             }
 
             function onDisconnectButton()
             {
-                disconnectButton.disabled = true;
-                disconnect()
-                    .then(() => {
-                        connectButton.disabled = false;
-                        sendButton.disabled = true;
-                    })
-                    .catch(e => {
-                        disconnectButton.disabled = false;
+                // I want to leave.
+                if (ctx.isHost)
+                {
+                    ctx.sendChannel.close();
+                }
+                else
+                {
+                    ctx.sendChannel.close();
+                }
 
-                        console.error(e);
-                    });
+                ctx.peerConnection.close();
             }
 
             function onSendButton()
             {
+                console.log('Sending message...');
                 let message = messageInput.value;
-                sendChannel.send(message);
+                ctx.sendChannel.send(message);
 
                 messageInput.value = '';
                 messageInput.focus();
             }
 
-            function onSendChannelOpen()
+            function onSendChannelOpen(e)
             {
+                console.log('Send opened.', e);
                 sendButton.disabled = false;
-                disconnectButton.disabled = false;
-                connectButton.disabled = true;
             }
 
-            function onSendChannelClose()
+            function onSendChannelClose(e)
             {
+                console.log('Send closed.', e);
                 sendButton.disabled = true;
-                disconnectButton.disabled = true;
-                connectButton.disabled = false;
             }
 
             function onReceiveMessage(e)
             {
+                console.log('Receiving message...');
                 outputList.textContent = e.data;
-                console.log('Received', e);
             }
 
             function onReceiveChannelOpen(e)
             {
-                console.log('Opened', e);
+                console.log('Received opened.', e);
+                sendButton.disabled = false;
             }
 
             function onReceiveChannelClose(e)
             {
-                console.log('Closed', e);
-            }
-
-            async function connect()
-            {
-                // Create the local connection.
-                localConnection = new RTCPeerConnection();
-
-                sendChannel = localConnection.createDataChannel('sendChannel');
-                sendChannel.onopen = onSendChannelOpen;
-                sendChannel.onclose = onSendChannelClose;
-
-                // Create the remote connection.
-                remoteConnection = new RTCPeerConnection();
-                remoteConnection.ondatachannel = e => {
-                    let remoteDataChannel = e.channel;
-                    remoteDataChannel.onmessage = onReceiveMessage;
-                    remoteDataChannel.onopen = onReceiveChannelOpen;
-                    remoteDataChannel.onclose = onReceiveChannelClose;
-                };
-
-                // Setup ICE candidates.
-                localConnection.onicecandidate = e => {
-                    let candidate = e.candidate;
-                    if (candidate)
-                    {
-                        remoteConnection.addIceCandidate(candidate)
-                            .catch(e => console.error('addIceCandidate failed!', e));
-                    }
-                };
-                remoteConnection.onicecandidate = e => {
-                    let candidate = e.candidate;
-                    if (candidate)
-                    {
-                        localConnection.addIceCandidate(candidate)
-                            .catch(e => console.error('addIceCandidate failed!', e));
-                    }
-                };
-
-                // Create offer to connect.
-                try
-                {
-                    const offer = await localConnection.createOffer();
-                    await localConnection.setLocalDescription(offer);
-                    await remoteConnection.setRemoteDescription(localConnection.localDescription);
-                    const answer = await remoteConnection.createAnswer();
-                    await remoteConnection.setLocalDescription(answer);
-                    await localConnection.setRemoteDescription(remoteConnection.localDescription);
-                }
-                catch(e)
-                {
-                    throw e;
-                }
-            }
-
-            async function disconnect()
-            {
-                sendChannel.close();
-                receiveChannel.close();
-
-                localConnection.close();
-                remoteConnection.close();
+                console.log('Received closed.', e);
+                sendButton.disabled = true;
             }
         });
+
+        function encodeClientKey(object)
+        {
+            return 'client:' + window.btoa(JSON.stringify(object));
+        }
+
+        function decodeClientKey(data)
+        {
+            if (!data.startsWith('client:')) throw new Error('Not a valid client key.');
+            let string = window.atob(data.substring('client:'.length));
+            let object = JSON.parse(string);
+            return object;
+        }
+
+        function encodeHostKey(object)
+        {
+            return 'host:' + window.btoa(JSON.stringify(object));
+        }
+
+        function decodeHostKey(data)
+        {
+            if (!data.startsWith('host:')) throw new Error('Not a valid host key.');
+            let string = window.atob(data.substring('host:'.length));
+            let object = JSON.parse(string);
+            return object;
+        }
     </script>
 </body>
 
