@@ -91,8 +91,8 @@ export function intersectPoint(out, a, x, y)
 
 export function intersectSegment(out, a, x, y, dx, dy, px = 0, py = 0)
 {
-    let scaleX = 1.0 / delta.x;
-    let scaleY = 1.0 / delta.y;
+    let scaleX = 1.0 / dx;
+    let scaleY = 1.0 / dy;
     let signX = Math.sign(scaleX);
     let signY = Math.sign(scaleY);
     let nearTimeX = (a.x - signX * (a.rx + px) - x) * scaleX;
@@ -183,16 +183,15 @@ export function sweepInto(out, a, staticColliders, dx, dy)
     out.x = a.x + dx;
     out.y = a.y + dy;
 
-    let nearest = out;
     for(let i = 0, l = staticColliders.length; i < l; ++i)
     {
-        let current = sweepAABB(tmp, a, staticColliders[i], dx, dy);
-        if (current.time < nearest.time)
+        let result = sweepAABB(tmp, staticColliders[i], a, dx, dy);
+        if (result.time < out.time)
         {
-            nearest.time = current.time;
-            nearest.x = current.x;
-            nearest.y = current.y;
-            nearest.hit = current.hit;
+            out.time = result.time;
+            out.x = result.x;
+            out.y = result.y;
+            out.hit = result.hit;
         }
     }
     return out;

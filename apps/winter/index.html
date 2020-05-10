@@ -72,40 +72,95 @@
                     ctx.setTransform(1, 0, 0, -1, 0, 0);
                     ctx.translate(0, -ctx.canvas.clientHeight);
                     if (world.render) world.render(ctx);
+
+                    if (world.physics)
+                    {
+                        world.physics.update(dt);
+                        world.physics.draw(ctx);
+                    }
                 });
 
                 main();
 
                 function main()
                 {
+                    let player = Player();
                     world.entities = [
-                        Player()
+                        player
                     ];
-                }
 
-                function Platform()
-                {
-                    return {
-                        type: 'platform',
-                        x: 0,
-                        y: 0,
-                        width: 64,
-                        height: 4,
-                        render(ctx)
+                    world.physics = {
+                        dynamicColliders: [
+                            player.aabb,
+                        ],
+                        staticColliders: [
+                            Intersection.createAABB(100, 0, 50, 16),
+                            Intersection.createAABB(0, display.height / 2, 10, display.height),
+                            Intersection.createAABB(display.width, display.height / 2, 10, display.height),
+                            Intersection.createAABB(display.width / 2, 0, display.width, 10),
+                            Intersection.createAABB(display.width / 2, display.height, display.width, 10),
+                        ],
+                        update(dt)
                         {
-
+                            let obj = {};
+                            for(let dynamicCollider of this.dynamicColliders)
+                            {
+                                // Remove collision buffer
+                                let sweep = Intersection.sweepInto(
+                                    obj,
+                                    dynamicCollider,
+                                    this.staticColliders,
+                                    dynamicCollider.dx || 0,
+                                    dynamicCollider.dy || 0);
+                                if (sweep.hit)
+                                {
+                                    let { dx, dy, nx, ny } = sweep.hit;
+                                    dynamicCollider.hit = true;
+                                    dynamicCollider.normalX = nx;
+                                    dynamicCollider.normalY = ny;
+                                }
+                                else
+                                {
+                                    dynamicCollider.hit = false;
+                                    dynamicCollider.normalX = 0;
+                                    dynamicCollider.normalY = 0;
+                                }
+                                dynamicCollider.update(sweep.x + dynamicCollider.normalX, sweep.y + dynamicCollider.normalY);
+                            }
+                        },
+                        draw(ctx)
+                        {
+                            ctx.strokeStyle = 'lime';
+                            for(let dynamicCollider of this.dynamicColliders)
+                            {
+                                ctx.strokeRect(dynamicCollider.x - dynamicCollider.rx, dynamicCollider.y - dynamicCollider.ry, dynamicCollider.rx * 2, dynamicCollider.ry * 2);
+                            }
+                            ctx.strokeStyle = 'green';
+                            for(let staticCollider of this.staticColliders)
+                            {
+                                ctx.strokeRect(staticCollider.x - staticCollider.rx, staticCollider.y - staticCollider.ry, staticCollider.rx * 2, staticCollider.ry * 2);
+                            }
                         }
-                    }
+                    };
                 }
 
                 function Player()
                 {
-                    return {
-                        x: 0,
-                        y: 0,
+                    let player = {
+                        x: 100,
+                        y: 100,
                         dx: 0,
                         dy: 0,
                         jumping: false,
+                        aabb: {
+                            x: 0, y: 0,
+                            rx: 8, ry: 8,
+                            dx: 0, dy: 0,
+                            hit: false,
+                            normalX: 0,
+                            normalY: 0,
+                            update(x, y) { player.x = x; player.y = y; }
+                        },
                         update(dt)
                         {
                             const moveSpeed = 0.3;
@@ -114,7 +169,7 @@
                             const jumpMoveFriction = 1 - 0.08;
                             const gravitySpeed = 0.5;
 
-                            const onGround = this.y <= 0;
+                            const onGround = this.y <= 0 || this.aabb.hit && this.aabb.normalY > 0;
 
                             if (!onGround) {
                                 this.dy -= gravitySpeed;
@@ -122,7 +177,6 @@
                                 this.dy += jumpSpeed;
                             } else {
                                 this.dy = 0;
-                                this.y = 0;
                             }
 
                             if (playerControls.left) {
@@ -134,15 +188,33 @@
                             
                             this.dx *= onGround ? moveFriction : jumpMoveFriction;
 
-                            this.x += this.dx;
-                            this.y += this.dy;
+                            if (this.aabb.hit) {
+                                if (this.aabb.normalX && Math.sign(-this.dx) === Math.sign(this.aabb.normalX))
+                                {
+                                    this.dx = 0;
+                                }
+                                if (this.aabb.normalY && Math.sign(-this.dy) === Math.sign(this.aabb.normalY))
+                                {
+                                    this.dy = 0;
+                                }
+                            }
+
+                            // Never fall off
+                            if (this.y <= 0) this.y = 0;
+
+                            // update aabb
+                            this.aabb.x = this.x;
+                            this.aabb.y = this.y;
+                            this.aabb.dx = this.dx;
+                            this.aabb.dy = this.dy;
                         },
                         render(ctx)
                         {
                             ctx.fillStyle = 'white';
-                            ctx.fillRect(this.x, this.y, 16, 16);
+                            ctx.fillRect(this.x - 8, this.y - 8, 16, 16);
                         }
                     };
+                    return player;
                 }
             });
         </script>

@@ -8,10 +8,12 @@ const DEFAULT_WIDTH = 300;
 const DEFAULT_HEIGHT = 150;
 
 const INNER_HTML = `
-<label class="hidden" id="title">display-port</label>
-<label class="hidden" id="fps">00</label>
-<label class="hidden" id="dimension">0x0</label>
-<canvas></canvas>`;
+<div>
+    <label class="hidden" id="title">display-port</label>
+    <label class="hidden" id="fps">00</label>
+    <label class="hidden" id="dimension">0x0</label>
+    <canvas></canvas>
+</div>`;
 const INNER_STYLE = `
 :host {
     display: inline-block;
@@ -70,6 +72,7 @@ label {
 }`;
 
 const TEMPLATE_KEY = Symbol('template');
+const STYLE_KEY = Symbol('style');
 
 /**
  * @version 1.2.0
@@ -106,9 +109,17 @@ export class DisplayPort extends HTMLElement
     static get [TEMPLATE_KEY]()
     {
         let template = document.createElement('template');
-        template.innerHTML = `<div class="container">${INNER_HTML}<style>${INNER_STYLE}</style></div>`;
+        template.innerHTML = INNER_HTML;
         Object.defineProperty(this, TEMPLATE_KEY, { value: template });
         return template;
+    }
+
+    static get [STYLE_KEY]()
+    {
+        let style = document.createElement('style');
+        style.innerHTML = INNER_STYLE;
+        Object.defineProperty(this, STYLE_KEY, { value: style });
+        return style;
     }
 
     /** @override */
@@ -139,6 +150,7 @@ export class DisplayPort extends HTMLElement
 
         this.attachShadow({ mode: 'open' });
         this.shadowRoot.appendChild(this.constructor[TEMPLATE_KEY].content.cloneNode(true));
+        this.shadowRoot.appendChild(this.constructor[STYLE_KEY].cloneNode(true));
 
         this._canvasElement = this.shadowRoot.querySelector('canvas');
         this._canvasContext = null;
@@ -161,6 +173,8 @@ export class DisplayPort extends HTMLElement
 
         this.update = this.update.bind(this);
     }
+
+    get canvas() { return this._canvasElement; }
     
     /** @override */
     connectedCallback()
@@ -352,7 +366,9 @@ export class DisplayPort extends HTMLElement
         }
     }
 
+    /** @deprecated */
     getCanvas() { return this._canvasElement; }
+    /** @deprecated */
     getContext() { return this._canvasContext; }
 
     /*
