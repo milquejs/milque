@@ -34,6 +34,9 @@ export class PeerHandshake extends HTMLElement
                     <input type="text" placeholder="Answer Code" id="handshakeAnswerInput">
                     <button id="handshakeAnswerPaste">Paste</button>
                 </p>
+                <p>
+                    <button id="handshakeSelf" class="fullWidth">Answer Self</button>
+                </p>
             </div>
             <button id="handshakeStart" class="fullWidth" disabled>Start Session</button>
             <button id="handshakeCancel" class="fullWidth">Cancel</button>
@@ -100,6 +103,7 @@ export class PeerHandshake extends HTMLElement
         this._host = this.shadowRoot.querySelector('#handshakeHost');
         this._join = this.shadowRoot.querySelector('#handshakeJoin');
         this._start = this.shadowRoot.querySelector('#handshakeStart');
+        this._hostSelf = this.shadowRoot.querySelector('#handshakeSelf');
 
         this._back = this.shadowRoot.querySelector('#handshakeBack');
         this._cancel = this.shadowRoot.querySelector('#handshakeCancel');
@@ -107,6 +111,7 @@ export class PeerHandshake extends HTMLElement
         this.onHost = this.onHost.bind(this);
         this.onJoin = this.onJoin.bind(this);
         this.onStart = this.onStart.bind(this);
+        this.onHostSelf = this.onHostSelf.bind(this);
 
         this.onOfferInputChange = this.onOfferInputChange.bind(this);
         this.onAnswerInputChange = this.onAnswerInputChange.bind(this);
@@ -122,6 +127,7 @@ export class PeerHandshake extends HTMLElement
         this.onerror = null;
 
         this.handshake = null;
+        this._selfHandshake = null;
     }
 
     /** @override */
@@ -130,6 +136,7 @@ export class PeerHandshake extends HTMLElement
         this._host.addEventListener('click', this.onHost);
         this._join.addEventListener('click', this.onJoin);
         this._start.addEventListener('click', this.onStart);
+        this._hostSelf.addEventListener('click', this.onHostSelf);
 
         this._joinOfferInput.addEventListener('input', this.onOfferInputChange);
         this._hostAnswerInput.addEventListener('input', this.onAnswerInputChange);
@@ -181,6 +188,7 @@ export class PeerHandshake extends HTMLElement
                 this._responseAnswerRoot.classList.toggle('hidden', false);
                 this._hostAnswerInput.value = '';
                 this._start.disabled = true;
+                this._hostSelf.disabled = false;
 
                 // Auto-resolve when connected...
                 handshake.get().then(() => {
@@ -285,6 +293,44 @@ export class PeerHandshake extends HTMLElement
 
                 // Restart.
                 this._start.disabled = false;
+            });
+    }
+
+    onHostSelf(e)
+    {
+        let offerCode = this._responseInput.value;
+        if (!offerCode) return;
+        let offerData = peerful.decodeOfferCode(offerCode);
+
+        // Start trying to join the offer code.
+        peerful.answerHandshake(offerData)
+            .then(handshake => {
+                this._selfHandshake = handshake;
+
+                let answerData = handshake.answer;
+                let answerCode = peerful.encodeAnswerCode(answerData);
+                this._hostAnswerInput.value = answerCode;
+
+                this._start.disabled = false;
+                this._hostSelf.disabled = true;
+
+                // Auto-resolve when connected...
+                handshake.get().then(() => {
+                    this.dispatchEvent(new CustomEvent('complete', {composed: true, bubbles: false, detail: { handshake }}));
+                    this.open = false;
+                });
+            })
+            .catch(e => {
+                console.error(e);
+                window.alert(JSON.stringify(e));
+
+                this._selfHandshake.cancel();
+
+                // Restart.
+                this._joinOfferInput.value = '';
+                this._joinOfferPaste.disabled = false;
+                this._joinOfferInput.disabled = false;
+                this._join.disabled = false;
             });
     }
 
