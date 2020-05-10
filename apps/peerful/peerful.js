@@ -1,21 +1,31 @@
+import { uuid } from '../../packages/util/src/uuidv4.js';
+
 const PEER_CONNECTION_CONFIG = {
     iceServers: [
         { url: 'stun:stun.l.google.com:19302' },
     ],
 };
 const UNRELIABLE_CHANNEL_OPTIONS = {
+    label: 'data',
     ordered: false,
     maxRetransmits: 0,
 };
 const RELIABLE_CHANNEL_OPTIONS = {
+    label: 'reliable',
     ordered: false,
 };
 
-export async function offerHandshake(peerConnectionConfig = PEER_CONNECTION_CONFIG, dataChannelOptions = UNRELIABLE_CHANNEL_OPTIONS)
+export async function offerHandshake(peerConnectionConfig = PEER_CONNECTION_CONFIG, channelOptions = [ UNRELIABLE_CHANNEL_OPTIONS ])
 {
     return new Promise((resolve, reject) => {
         let connection = new RTCPeerConnection(peerConnectionConfig);
-        let channel = connection.createDataChannel('data', dataChannelOptions);
+        let channels = {};
+        for(let channelOption of channelOptions)
+        {
+            let channelLabel = channelOption.label || ('data' + channels.length);
+            let channel = connection.createDataChannel(channelLabel, channelOption);
+            channels[channelLabel] = channel;
+        }
     
         /*
         connection.addEventListener('signalingstatechange', e => console.log('Signaling state changed:', e));
@@ -30,7 +40,7 @@ export async function offerHandshake(peerConnectionConfig = PEER_CONNECTION_CONF
             {
                 let handshake = {
                     connection,
-                    channel,
+                    channels,
                     offer: connection.localDescription,
                     _resolve: null,
                     async get()
@@ -43,7 +53,11 @@ export async function offerHandshake(peerConnectionConfig = PEER_CONNECTION_CONF
                     cancel()
                     {
                         this.connection.close();
-                        this.channel.close();
+                        for(let channelLabel of Object.keys(this.channels))
+                        {
+                            this.channels[channelLabel].close();
+                            delete this.channels[channelLabel];
+                        }
                     }
                 };
                 resolve(handshake);
@@ -77,14 +91,15 @@ export async function answerHandshake(remoteOfferData, peerConnectionConfig = PE
             {
                 let handshake = {
                     connection,
-                    channel: null,
+                    channels: {},
                     answer: connection.localDescription,
                     async get()
                     {
                         return new Promise(resolve => {
                             // Finish resolving it when we are ready.
                             this.connection.addEventListener('datachannel', e => {
-                                this.channel = e.channel;
+                                let channel = e.channel;
+                                this.channels[channel.label] = channel;
                                 resolve(this);
                             });
                         });
@@ -92,7 +107,11 @@ export async function answerHandshake(remoteOfferData, peerConnectionConfig = PE
                     cancel()
                     {
                         this.connection.close();
-                        if (this.channel) this.channel.close();
+                        for(let channelLabel of Object.keys(this.channels))
+                        {
+                            this.channels[channelLabel].close();
+                            delete this.channels[channelLabel];
+                        }
                     }
                 };
                 resolve(handshake);
