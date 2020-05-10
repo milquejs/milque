@@ -20,49 +20,72 @@ export async function offerHandshake(peerConnectionConfig = PEER_CONNECTION_CONF
     return new Promise((resolve, reject) => {
         let connection = new RTCPeerConnection(peerConnectionConfig);
         let channels = {};
+        let channelCount = channelOptions.length;
         for(let channelOption of channelOptions)
         {
-            let channelLabel = channelOption.label || ('data' + channels.length);
+            let channelLabel = channelOption.label || ('data' + Object.keys(channels).length);
             let channel = connection.createDataChannel(channelLabel, channelOption);
             channels[channelLabel] = channel;
         }
     
-        /*
-        connection.addEventListener('signalingstatechange', e => console.log('Signaling state changed:', e));
-        connection.addEventListener('iceconnectionstatechange', e => console.log('ICE connection state changed:', e));
-        connection.addEventListener('icegatheringstatechange', e => console.log('ICE gathering state changed:', e));
-        */
+        let status = {
+            iceConnection: null,
+            iceGathering: null,
+            iceCandidate: false,
+            channels: Object.keys(channels).length,
+            expectedChannels: channelCount,
+            get ready()
+            {
+                return this.iceCandidate
+                    && this.channels >= this.expectedChannels
+                    && this.iceConnection === 'connected'
+                    && this.iceGathering === 'complete';
+            }
+        };
+
+        let handshake = {
+            remote: false,
+            status,
+            connection,
+            channels,
+            offer: null,
+            _resolve: null,
+            async get()
+            {
+                return new Promise(resolve => {
+                    // Finish resolving it when we are ready.
+                    this._resolve = resolve;
+                });
+            },
+            cancel()
+            {
+                this.connection.close();
+                for(let channelLabel of Object.keys(this.channels))
+                {
+                    this.channels[channelLabel].close();
+                    delete this.channels[channelLabel];
+                }
+            }
+        };
 
         // Resolve it when we are ready.
+        connection.addEventListener('icegatheringstatechange', e => {
+            status.iceGathering = e.target.iceGatheringState;
+            console.log('gathering...', status);
+        });
         connection.addEventListener('icecandidate', e => {
             let { candidate } = e;
             if (!candidate)
             {
-                let handshake = {
-                    remote: false,
-                    connection,
-                    channels,
-                    offer: connection.localDescription,
-                    _resolve: null,
-                    async get()
-                    {
-                        return new Promise(resolve => {
-                            // Finish resolving it when we are ready.
-                            this._resolve = resolve;
-                        });
-                    },
-                    cancel()
-                    {
-                        this.connection.close();
-                        for(let channelLabel of Object.keys(this.channels))
-                        {
-                            this.channels[channelLabel].close();
-                            delete this.channels[channelLabel];
-                        }
-                    }
-                };
+                console.log('candidate...', status);
+                handshake.offer = connection.localDescription;
+                status.iceCandidate = true;
                 resolve(handshake);
             }
+        });
+        connection.addEventListener('iceconnectionstatechange', e => {
+            status.iceConnection = e.target.iceConnectionState;
+            console.log('connecting...', status);
         });
     
         // Start it.
@@ -79,59 +102,84 @@ export async function answerHandshake(remoteOfferData, peerConnectionConfig = PE
     return new Promise((resolve, reject) => {
         let connection = new RTCPeerConnection(peerConnectionConfig);
         let channels = {};
+        let channelCount = channelOptions.length;
         for(let channelOption of channelOptions)
         {
-            let channelLabel = channelOption.label || ('data' + channels.length);
+            let channelLabel = channelOption.label || ('data' + Object.keys(channels).length);
             channels[channelLabel] = null;
         }
 
-        /*
-        connection.addEventListener('signalingstatechange', e => console.log('Signaling state changed:', e));
-        connection.addEventListener('iceconnectionstatechange', e => console.log('ICE connection state changed:', e));
-        connection.addEventListener('icegatheringstatechange', e => console.log('ICE gathering state changed:', e));
-        */
+        let status = {
+            iceConnection: null,
+            iceGathering: null,
+            iceCandidate: false,
+            channels: 0,
+            expectedChannels: channelCount,
+            get ready()
+            {
+                return this.iceCandidate
+                    && this.channels >= this.expectedChannels
+                    && this.iceConnection === 'connected'
+                    && this.iceGathering === 'complete';
+            }
+        };
         
+        let handshake = {
+            remote: true,
+            status,
+            connection,
+            channels,
+            answer: null,
+            _resolve: null,
+            async get()
+            {
+                return new Promise(resolve => {
+                    // Finish resolving it when we are ready.
+                    this._resolve = resolve;
+                });
+            },
+            cancel()
+            {
+                this.connection.close();
+                for(let channelLabel of Object.keys(this.channels))
+                {
+                    this.channels[channelLabel].close();
+                    delete this.channels[channelLabel];
+                }
+            }
+        };
+
         // Prepare to resolve it when we are ready.
+        connection.addEventListener('icegatheringstatechange', e => {
+            status.iceGathering = e.target.iceGatheringState;
+            console.log('gathering...', status);
+        });
         connection.addEventListener('icecandidate', e => {
             let { candidate } = e;
             if (!candidate)
             {
-                let handshake = {
-                    remote: true,
-                    connection,
-                    channels,
-                    answer: connection.localDescription,
-                    async get()
-                    {
-                        return new Promise(resolve => {
-                            // Finish resolving it when we are ready.
-                            this.connection.addEventListener('datachannel', e => {
-                                let channel = e.channel;
-                                this.channels[channel.label] = channel;
-                                let ready = true;
-                                for(let channelLabel of Object.keys(this.channels))
-                                {
-                                    if (!this.channels[channelLabel])
-                                    {
-                                        ready = false;
-                                        break;
-                                    }
-                                }
-                                if (ready) resolve(this);
-                            });
-                        });
-                    },
-                    cancel()
-                    {
-                        this.connection.close();
-                        for(let channelLabel of Object.keys(this.channels))
-                        {
-                            this.channels[channelLabel].close();
-                            delete this.channels[channelLabel];
-                        }
-                    }
-                };
+                console.log('candidate...', status);
+                handshake.answer = connection.localDescription;
+                status.iceCandidate = true;
                 resolve(handshake);
+            }
+        });
+        connection.addEventListener('iceconnectionstatechange', e => {
+            status.iceConnection = e.target.iceConnectionState;
+            console.log('connecting...', status);
+        });
+        connection.addEventListener('datachannel', e => {
+            let channel = e.channel;
+            let channelLabel = channel.label;
+            if (!(channelLabel in handshake.channels)) throw new Error(`Found no options for channel label '${channelLabel}'.`);
+            if (handshake.channels[channelLabel]) throw new Error(`Received duplicate data channel of the same label '${channelLabel}'.`);
+
+            handshake.channels[channelLabel] = channel;
+            ++status.channels;
+
+            if (status.channels >= status.expectedChannels)
+            {
+                handshake._resolve(handshake);
             }
         });
     

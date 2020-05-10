@@ -12,9 +12,17 @@
         *:disabled {
             opacity: 0.3;
         }
-        dialog {
-            background-color: white;
-            color: black;
+        output {
+            flex: 1;
+            display: inline-block;
+            overflow-y: auto;
+            max-height: 64px;
+        }
+        output > p {
+            margin: 0.2rem 0.5rem;
+        }
+        .rightSide {
+            text-align: right;
         }
     </style>
 
@@ -27,14 +35,15 @@
     </section>
     <template id="player">
         <fieldset>
-            <legend>Player</legend>
-            <p style="border: 1px solid gray">
+            <legend contenteditable>Player</legend>
+            <button id="disconnect">Disconnect</button>
+            <p style="display: flex; border: 1px solid gray">
                 <canvas width="64" height="64"></canvas>
                 <output></output>
             </p>
             <p style="display: flex;">
-                <input type="text" style="flex: 1;">
-                <button>Send</button>
+                <input type="text" style="flex: 1;" maxlength="200">
+                <button id="send">Send</button>
             </p>
         </fieldset>
     </template>
@@ -49,31 +58,94 @@
             const playerTemplate = document.querySelector('#player');
 
             let player = playerTemplate.content.cloneNode(true);
+            const container = player.querySelector('fieldset');
             const title = player.querySelector('legend');
             const output = player.querySelector('output');
             const input = player.querySelector('input');
-            const send = player.querySelector('button');
+            const send = player.querySelector('#send');
+            const disconnect = player.querySelector('#disconnect');
             const canvas = player.querySelector('canvas');
             const context = canvas.getContext('2d');
 
+            player.animationHandle = null;
             player.playerId = null;
             player.connection = handshake.connection;
             player.channels = handshake.channels;
-            player.onOpen = function() {
-                if (!handshake.remote)
+            player.close = function() {
+                this.channels.reliable.removeEventListener('open', this.onOpen);
+                this.channels.reliable.removeEventListener('close', this.onClose);
+
+                this.connection.close();
+                for(let channelLabel of Object.keys(this.channels))
                 {
-                    let playerId = uuid();
-                    this.playerId = playerId;
-                    title.textContent = playerId;
-                    this.channels.reliable.send('pid:' + playerId);
+                    this.channels[channelLabel].close();
+                }
+
+                this.channels.data.removeEventListener('message', this.onReceive);
+                this.channels.reliable.removeEventListener('message', this.onReceive);
+
+                disconnect.removeEventListener('click', this.onDisconnect);
+                send.removeEventListener('click', this.onSend);
+                document.removeEventListener('mousemove', this.onMouseMove);
+
+                playerContainer.removeChild(container);
+            };
+            player.onOpen = function(e) {
+                if (handshake.remote)
+                {
+                    this.channels.reliable.send('qid:');
+                }
+                else
+                {
+                    title.removeAttribute('contenteditable');
+                }
+
+                this.channels.data.addEventListener('message', player.onReceive);
+                this.channels.reliable.addEventListener('message', player.onReceive);
+
+                disconnect.addEventListener('click', this.onDisconnect);
+                send.addEventListener('click', this.onSend);
+                input.addEventListener('keydown', this.onSendKeyDown);
+                title.addEventListener('blur', this.onNameChange);
+                title.addEventListener('keydown', this.onNameKeyDown);
+                this.onAnimationFrame(performance.now());
+
+                document.addEventListener('mousemove', this.onMouseMove);
+            }.bind(player);
+            player.onClose = function(e) {
+                console.log('Closed by network.');
+                this.close();
+            }.bind(player);
+            player.onDisconnect = function(e) {
+                console.log('Closed by user.');
+                this.close();
+            }.bind(player);
+            player.onNameChange = function(e) {
+                console.log(e.target.textContent);
+                this.channels.data.send('nid:' + e.target.textContent);
+            }.bind(player);
+            player.onNameKeyDown = function(e) {
+                if (e.key === 'Enter')
+                {
+                    e.target.blur();
                 }
             }.bind(player);
-            player.onClose = function() {
-                console.log('Closed.');
-            }.bind(player);
-            player.onSend = function() {
-                this.channels.data.send('msg:' + input.value);
+            player.onSend = function(e) {
+                let data = input.value;
+                this.channels.reliable.send('msg:' + data);
                 input.value = '';
+                
+                let messageContainer = document.createElement('p');
+                messageContainer.textContent = data;
+                messageContainer.classList.add('rightSide');
+                output.appendChild(messageContainer);
+                output.scrollTop = output.scrollHeight;
+            }.bind(player);
+            player.onSendKeyDown = function(e) {
+                if (e.key === 'Enter')
+                {
+                    send.click();
+                }
             }.bind(player);
             player.onReceive = function(e) {
                 let type = e.data.substring(0, 3);
@@ -81,10 +153,25 @@
                 switch(type)
                 {
                     case 'msg':
-                        output.value = data;
+                        let messageContainer = document.createElement('p');
+                        messageContainer.textContent = data;
+                        output.appendChild(messageContainer);
+                        output.scrollTop = output.scrollHeight;
                         break;
                     case 'pid':
+                        // Remote Only
                         this.playerId = data;
+                        title.textContent = data;
+                        break;
+                    case 'qid':
+                        // NotRemote Only
+                        let playerId = uuid();
+                        this.playerId = playerId;
+                        title.textContent = playerId;
+                        this.channels.reliable.send('pid:' + playerId);
+                        break;
+                    case 'nid':
+                        // NotRemote Only
                         title.textContent = data;
                         break;
                     case 'pos':
@@ -97,7 +184,7 @@
                 }
             }.bind(player);
             player.onAnimationFrame = function(now) {
-                requestAnimationFrame(this.onAnimationFrame);
+                this.animationHandle = requestAnimationFrame(this.onAnimationFrame);
 
                 let ctx = context;
                 ctx.fillStyle = 'black';
@@ -110,21 +197,16 @@
                 ctx.fillRect(x, y, 4, 4);
 
             }.bind(player);
-            player.channels.data.addEventListener('message', player.onReceive);
-            player.channels.reliable.addEventListener('open', player.onOpen);
-            player.channels.reliable.addEventListener('close', player.onClose);
-            player.channels.reliable.addEventListener('message', player.onReceive);
-
-            send.addEventListener('click', player.onSend);
-            player.onAnimationFrame(performance.now());
-
-            document.addEventListener('mousemove', e => {
+            player.onMouseMove = function (e) {
                 const { clientX, clientY } = e;
 
                 let x = clientX / window.innerWidth;
                 let y = clientY / window.innerHeight;
-                player.channels.data.send('pos:' + x + ',' + y);
-            });
+                this.channels.data.send('pos:' + x + ',' + y);
+            }.bind(player);
+
+            player.channels.reliable.addEventListener('open', player.onOpen);
+            player.channels.reliable.addEventListener('close', player.onClose);
 
             playerContainer.appendChild(player);
             players.push(player);
