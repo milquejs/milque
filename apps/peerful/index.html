@@ -29,6 +29,7 @@
         <fieldset>
             <legend>Player</legend>
             <p style="border: 1px solid gray">
+                <canvas width="64" height="64"></canvas>
                 <output></output>
             </p>
             <p style="display: flex;">
@@ -52,27 +53,29 @@
             const output = player.querySelector('output');
             const input = player.querySelector('input');
             const send = player.querySelector('button');
+            const canvas = player.querySelector('canvas');
+            const context = canvas.getContext('2d');
 
             player.playerId = null;
             player.connection = handshake.connection;
             player.channels = handshake.channels;
-            player.onOpen = () => {
+            player.onOpen = function() {
                 if (!handshake.remote)
                 {
                     let playerId = uuid();
-                    player.playerId = playerId;
+                    this.playerId = playerId;
                     title.textContent = playerId;
-                    player.channels.reliable.send('pid:' + playerId);
+                    this.channels.reliable.send('pid:' + playerId);
                 }
-            };
-            player.onClose = () => {
+            }.bind(player);
+            player.onClose = function() {
                 console.log('Closed.');
-            };
-            player.onSend = () => {
-                player.channels.data.send('msg:' + input.value);
+            }.bind(player);
+            player.onSend = function() {
+                this.channels.data.send('msg:' + input.value);
                 input.value = '';
-            };
-            player.onReceive = e => {
+            }.bind(player);
+            player.onReceive = function(e) {
                 let type = e.data.substring(0, 3);
                 let data = e.data.substring(4);
                 switch(type)
@@ -81,18 +84,48 @@
                         output.value = data;
                         break;
                     case 'pid':
-                        player.playerId = data;
+                        this.playerId = data;
                         title.textContent = data;
+                        break;
+                    case 'pos':
+                        let i = data.indexOf(',');
+                        this.x = Number.parseFloat(data.substring(0, i));
+                        this.y = Number.parseFloat(data.substring(i + 1));
                         break;
                     default:
                         console.log(type, '=>', data);
                 }
-            };
-            send.addEventListener('click', player.onSend);
+            }.bind(player);
+            player.onAnimationFrame = function(now) {
+                requestAnimationFrame(this.onAnimationFrame);
+
+                let ctx = context;
+                ctx.fillStyle = 'black';
+                ctx.fillRect(0, 0, ctx.canvas.clientWidth, ctx.canvas.clientHeight);
+
+                let x = ctx.canvas.clientWidth * this.x;
+                let y = ctx.canvas.clientHeight * this.y;
+
+                ctx.fillStyle = 'white';
+                ctx.fillRect(x, y, 4, 4);
+
+            }.bind(player);
             player.channels.data.addEventListener('message', player.onReceive);
             player.channels.reliable.addEventListener('open', player.onOpen);
             player.channels.reliable.addEventListener('close', player.onClose);
             player.channels.reliable.addEventListener('message', player.onReceive);
+
+            send.addEventListener('click', player.onSend);
+            player.onAnimationFrame(performance.now());
+
+            document.addEventListener('mousemove', e => {
+                const { clientX, clientY } = e;
+
+                let x = clientX / window.innerWidth;
+                let y = clientY / window.innerHeight;
+                player.channels.data.send('pos:' + x + ',' + y);
+            });
+
             playerContainer.appendChild(player);
             players.push(player);
         }
