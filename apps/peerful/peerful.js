@@ -1,5 +1,3 @@
-import { uuid } from '../../packages/util/src/uuidv4.js';
-
 const PEER_CONNECTION_CONFIG = {
     iceServers: [
         { url: 'stun:stun.l.google.com:19302' },

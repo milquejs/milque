@@ -36,10 +36,15 @@
     <template id="player">
         <fieldset>
             <legend contenteditable>Player</legend>
+            <p>
+                <label id="status"></label>
+                <span>...</span>
+            </p>
             <button id="disconnect">Disconnect</button>
             <p style="display: flex; border: 1px solid gray">
                 <canvas width="64" height="64"></canvas>
-                <output></output>
+                <output>
+                </output>
             </p>
             <p style="display: flex;">
                 <input type="text" style="flex: 1;" maxlength="200">
@@ -60,6 +65,7 @@
             let player = playerTemplate.content.cloneNode(true);
             const container = player.querySelector('fieldset');
             const title = player.querySelector('legend');
+            const status = player.querySelector('#status');
             const output = player.querySelector('output');
             const input = player.querySelector('input');
             const send = player.querySelector('#send');
@@ -86,6 +92,9 @@
 
                 disconnect.removeEventListener('click', this.onDisconnect);
                 send.removeEventListener('click', this.onSend);
+                input.removeEventListener('keydown', this.onSendKeyDown);
+                title.removeEventListener('blur', this.onNameChange);
+                title.removeEventListener('keydown', this.onNameKeyDown);
                 document.removeEventListener('mousemove', this.onMouseMove);
 
                 playerContainer.removeChild(container);
@@ -100,17 +109,18 @@
                     title.removeAttribute('contenteditable');
                 }
 
-                this.channels.data.addEventListener('message', player.onReceive);
-                this.channels.reliable.addEventListener('message', player.onReceive);
+                this.channels.data.addEventListener('message', this.onReceive);
+                this.channels.reliable.addEventListener('message', this.onReceive);
 
                 disconnect.addEventListener('click', this.onDisconnect);
                 send.addEventListener('click', this.onSend);
                 input.addEventListener('keydown', this.onSendKeyDown);
+                input.addEventListener('input', this.onSendChange);
                 title.addEventListener('blur', this.onNameChange);
                 title.addEventListener('keydown', this.onNameKeyDown);
-                this.onAnimationFrame(performance.now());
-
                 document.addEventListener('mousemove', this.onMouseMove);
+                
+                this.onAnimationFrame(performance.now());
             }.bind(player);
             player.onClose = function(e) {
                 console.log('Closed by network.');
@@ -121,7 +131,6 @@
                 this.close();
             }.bind(player);
             player.onNameChange = function(e) {
-                console.log(e.target.textContent);
                 this.channels.data.send('nid:' + e.target.textContent);
             }.bind(player);
             player.onNameKeyDown = function(e) {
@@ -141,6 +150,10 @@
                 output.appendChild(messageContainer);
                 output.scrollTop = output.scrollHeight;
             }.bind(player);
+            player.onSendChange = function(e) {
+                if (e.target.value.length)
+                this.channels.data.send('atm:');
+            }.bind(player);
             player.onSendKeyDown = function(e) {
                 if (e.key === 'Enter')
                 {
@@ -152,11 +165,32 @@
                 let data = e.data.substring(4);
                 switch(type)
                 {
+                    case 'atm':
+                        if (status.timeoutHandle)
+                        {
+                            clearTimeout(status.timeoutHandle);
+                            status.timeoutHandle = null;
+                        }
+                        status.textContent = 'Typing';
+                        status.timeoutHandle = setTimeout(() => {
+                            status.textContent = 'Waiting';
+                            status.timeoutHandle = null;
+                        }, 1500);
+                        break;
                     case 'msg':
                         let messageContainer = document.createElement('p');
                         messageContainer.textContent = data;
                         output.appendChild(messageContainer);
                         output.scrollTop = output.scrollHeight;
+
+                        // Stop the typing status.
+                        if (status.timeoutHandle)
+                        {
+                            clearTimeout(status.timeoutHandle);
+                            status.timeoutHandle = null;
+                        }
+                        // ...even if waiting...
+                        status.textContent = '';
                         break;
                     case 'pid':
                         // Remote Only
