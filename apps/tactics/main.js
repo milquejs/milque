@@ -2,6 +2,9 @@ import { Mouse } from '../../packages/input/src/index.js';
 import * as Camera from './Camera.js';
 import * as Sprite from './Sprite.js';
 import * as Loader from './Loader.js';
+import { Mask } from './Mask.js';
+import { GameObjectManager } from './GameObject.js';
+import * as TileMap from './TileMap.js';
 
 window.addEventListener('DOMContentLoaded', () => load().then(main));
 
@@ -24,13 +27,27 @@ function main()
     const ctx = display.getContext();
 
     let camera = createCamera();
-    let tileMap = createTileMap(16, 16, 1);
     let mouse = new Mouse(display.canvas);
 
     let world = {
         position: [0, 0],
+        gameObjects: new GameObjectManager(),
         sprite: assets.sprites.necromancer_idle_anim,
+        mask: new Mask(16, 16),
     };
+
+    let tileMap;
+    if (localStorage.getItem('tilemap'))
+    {
+        let tileMapData = JSON.parse(localStorage.getItem('tilemap'));
+        tileMap = TileMap.loadTileMap(tileMapData);
+    }
+    else
+    {
+        tileMap = TileMap.createTileMap(16, 16, 1);
+        let data = TileMap.saveTileMap(tileMap);
+        localStorage.setItem('tilemap', JSON.stringify(data));
+    }
     
     display.addEventListener('frame', e => {
         let dt = e.detail.delta / 60;
@@ -45,25 +62,37 @@ function main()
         let width = display.canvas.clientWidth;
         let height = display.canvas.clientHeight;
 
+        const viewMatrix = camera.viewMatrix;
+        const projectionMatrix = camera.projectionMatrix;
+
         Camera.drawWorldGrid(ctx, width, height, camera.viewMatrix, camera.projectionMatrix);
 
         ctx.save();
         {
             ctx.setTransform(new DOMMatrix(camera.viewMatrix));
             drawTileMap(ctx, tileMap);
+
+            let x = 54;
+            let y = 54;
+            drawSprite(ctx, world.sprite, x, y, 16, 16);
+            drawMask(ctx, world.mask, x, y);
         }
         ctx.restore();
 
-        drawSprite(ctx, world.sprite, 54, 54, 100, 100);
-
         Camera.drawWorldTransformGizmo(ctx, width, height, camera.viewMatrix, camera.projectionMatrix);
 
+        ctx.fillStyle = 'white';
+        ctx.fillRect(mouse.x * width - 32, mouse.y * height - 32, 64, 64);
         if (mouse.left.state) {
-            ctx.fillStyle = 'white';
-            ctx.fillRect(mouse.x * width - 32, mouse.y * height - 32, 64, 64);
             camera.lookAt(mouse.x * width, mouse.y * height, 0, 1);
         }
     });
+}
+
+function drawMask(ctx, mask, offsetX = 0, offsetY = 0)
+{
+    ctx.strokeStyle = 'lime';
+    ctx.strokeRect(mask.offset.x + offsetX, mask.offset.y + offsetY, mask.width, mask.height);
 }
 
 function drawSprite(ctx, sprite, offsetX = 0, offsetY = 0, width = undefined, height = undefined)
@@ -110,23 +139,5 @@ function createCamera()
             this.viewMatrix[5] = y;
             return this;
         }
-    };
-}
-
-function createTileMap(width, height = width, depth = 1)
-{
-    let tileData = new Array(width * height * depth);
-    tileData.fill(0);
-
-    for(let i = 0; i < tileData.length; ++i)
-    {
-        tileData[i] = Math.floor(Math.random() * 2);
-    }
-
-    return {
-        width,
-        height,
-        depth,
-        tileData,
     };
 }

@@ -16,6 +16,8 @@ export function getAssetLoader(assetType)
     {
         case 'image': return loadImage;
         case 'text': return loadText;
+        case 'json': return loadJSON;
+        case 'bytes': return loadBytes;
     }
 }
 
@@ -37,4 +39,18 @@ export async function loadText(filepath, opts = {})
 {
     let result = await fetch(filepath);
     return result.text();
+}
+
+export async function loadBytes(filepath, opts = {})
+{
+    let result = await fetch(filepath);
+    let buffer = await result.arrayBuffer();
+    return buffer;
+}
+
+export async function loadJSON(filepath, opts = {})
+{
+    let result = await fetch(filepath);
+    let json = await result.json();
+    return json;
 }
