@@ -1,4 +1,4 @@
-import { Keyboard, Mouse } from '../../packages/input/src/index.js';
+import { addKeyboardEventListener, addMouseEventListener } from '../../packages/input/src/index.js';
 import { KeyState } from './KeyState.js';
 
 export function KeyMapBuilder()
@@ -17,28 +17,17 @@ export function KeyMapBuilder()
     }
 }
 
-export function createKeyState(deviceMap, keyMap)
+export function createKeyState(targetElement, keyMap)
 {
     // Every input context should have an input map and a key state.
     // - the key state should not register itself to devices, top-level should handle it.
     // The input map will generate an adapterMap and a keyMap.
     const keyState = new KeyState(keyMap);
-    if ('keyboard' in deviceMap)
-    {
-        deviceMap.keyboard.addEventListener('key', ({ device, key, event, value }) => keyState.updateKey(device, key, event, value));
-    }
-    if ('mouse' in deviceMap)
-    {
-        deviceMap.mouse.addEventListener('key', ({ device, key, event, value }) => keyState.updateKey(device, key, event, value));
-        deviceMap.mouse.addEventListener('pos', ({ device, key, x, y, dx, dy }) => keyState.updatePos(device, key, x, y, dx, dy));
-    }
+    addKeyboardEventListener(targetElement, ({ device, key, event, value }) =>
+        keyState.updateKey(device, key, event, value));
+    addMouseEventListener(targetElement, ({ device, key, event, value, x, y, dx, dy }) =>
+        key === 'pos'
+            ? keyState.updatePos(device, key, event, x, y, dx, dy)
+            : keyState.updateKey(device, key, event, value));
     return keyState;
-}
-
-export function createDeviceMap(element)
-{
-    return {
-        keyboard: new Keyboard(element),
-        mouse: new Mouse(element),
-    };
 }

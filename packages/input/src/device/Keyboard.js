@@ -78,8 +78,8 @@ export function addKeyboardEventListener(elementTarget, keyboardEventHandler)
         ctx = keyboardEventHandler[KEYBOARD_CONTEXT_KEY];
     }
 
-    elementTarget.addEventListener('keyup', ctx.down);
-    elementTarget.addEventListener('keydown', ctx.up);
+    elementTarget.addEventListener('keyup', ctx.up);
+    elementTarget.addEventListener('keydown', ctx.down);
 
     return elementTarget;
 }
@@ -90,8 +90,8 @@ export function removeKeyboardEventListener(elementTarget, keyboardEventHandler)
     {
         let ctx = keyboardEventHandler[KEYBOARD_CONTEXT_KEY];
     
-        elementTarget.removeEventListener('keyup', ctx.down);
-        elementTarget.removeEventListener('keydown', ctx.up);
+        elementTarget.removeEventListener('keyup', ctx.up);
+        elementTarget.removeEventListener('keydown', ctx.down);
     }
 
     return elementTarget;

@@ -11,7 +11,7 @@
         <display-port contexttype="2d"></display-port>
 
         <script type="module">
-            import { KeyMapBuilder, createKeyState, createDeviceMap } from './InputHelper.js';
+            import { KeyMapBuilder, createKeyState } from './InputHelper.js';
             import * as Intersection from './IntersectionHelper.js';
 
             window.addEventListener('DOMContentLoaded', () => {
@@ -24,8 +24,7 @@
                     .set('left', 'ArrowLeft')
                     .set('right', 'ArrowRight')
                     .build();
-                const deviceMap = createDeviceMap(display);
-                const keyState = createKeyState(deviceMap, keyMap);
+                const keyState = createKeyState(display, keyMap);
 
                 // input.getContextualInputState('playerControls');
                 // Easy to access, fast, and serializable

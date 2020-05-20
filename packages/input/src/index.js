@@ -1,3 +1,2 @@
-export { Keyboard } from './device/Keyboard.js';
-export { Mouse } from './device/Mouse.js';
-export { InputDevice } from './device/InputDevice.js';
+export { Keyboard, addKeyboardEventListener, removeKeyboardEventListener } from './device/Keyboard.js';
+export { Mouse, addMouseEventListener, removeMouseEventListener } from './device/Mouse.js';
