@@ -1,5 +1,7 @@
 // SOURCE: https://noonat.github.io/intersect/#aabb-vs-aabb
 
+export const EPSILON = 1e-8;
+
 export function clamp(value, min, max)
 {
     return Math.min(Math.max(value, min), max);
@@ -91,18 +93,27 @@ export function intersectPoint(out, a, x, y)
 
 export function intersectSegment(out, a, x, y, dx, dy, px = 0, py = 0)
 {
-    let scaleX = 1.0 / dx;
-    let scaleY = 1.0 / dy;
+    if (dx === 0 && dy === 0)
+    {
+        return intersectPoint(out, a, x, y);
+    }
+    
+    let arx = a.rx;
+    let ary = a.ry;
+    let subpx = px ? px - EPSILON : 0;
+    let subpy = py ? py - EPSILON : 0;
+    let scaleX = 1.0 / (dx || Number.EPSILON);
+    let scaleY = 1.0 / (dy || Number.EPSILON);
     let signX = Math.sign(scaleX);
     let signY = Math.sign(scaleY);
-    let nearTimeX = (a.x - signX * (a.rx + px) - x) * scaleX;
-    let nearTimeY = (a.y - signY * (a.ry + py) - y) * scaleY;
-    let farTimeX = (a.x + signX * (a.rx + px) - x) * scaleX;
-    let farTimeY = (a.y + signY * (a.ry + py) - y) * scaleY;
+    let nearTimeX = (a.x - signX * (arx + subpx) - x) * scaleX;
+    let nearTimeY = (a.y - signY * (ary + subpy) - y) * scaleY;
+    let farTimeX = (a.x + signX * (arx + subpx) - x) * scaleX;
+    let farTimeY = (a.y + signY * (ary + subpy) - y) * scaleY;
     if (nearTimeX > farTimeY || nearTimeY > farTimeX) return null;
 
-    let nearTime = nearTimeX > nearTimeY ? nearTimeX : nearTimeY;
-    let farTime = farTimeX < farTimeY ? farTimeX : farTimeY;
+    let nearTime = Math.max(nearTimeX, nearTimeY);
+    let farTime = Math.min(farTimeX, farTimeY);
     if (nearTime >= 1 || farTime <= 0) return null;
 
     let time = clamp(nearTime, 0, 1);
@@ -137,8 +148,19 @@ export function intersectSegment(out, a, x, y, dx, dy, px = 0, py = 0)
 
 export function sweepAABB(out, a, b, dx, dy)
 {
-    let hit = intersectSegment({}, a, b.x, b.y, dx, dy, b.rx, b.ry);
+    if (dx === 0 && dy === 0)
+    {
+        let hit = intersectAABB({}, a, b);
+        if (hit) hit.time = 0;
 
+        out.x = a.x;
+        out.y = a.y;
+        out.time = hit ? 0 : 1;
+        out.hit = hit;
+        return out;
+    }
+
+    let hit = intersectSegment({}, a, b.x, b.y, dx, dy, b.rx, b.ry);
     if (hit)
     {
         let time = clamp(hit.time - Number.EPSILON, 0, 1);

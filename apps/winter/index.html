@@ -6,6 +6,8 @@
         <title>Winter</title>
 
         <script type="module" src="../../packages/display/src/index.js"></script>
+
+        <script type="module" src="./IntersectionTest.js"></script>
     </head>
     <body>
         <display-port contexttype="2d"></display-port>
@@ -74,7 +76,7 @@
 
                     if (world.physics)
                     {
-                        world.physics.update(dt);
+                        // world.physics.update(dt);
                         world.physics.draw(ctx);
                     }
                 });
