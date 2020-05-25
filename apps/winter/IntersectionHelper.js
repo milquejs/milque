@@ -163,7 +163,7 @@ export function sweepAABB(out, a, b, dx, dy)
     let hit = intersectSegment({}, a, b.x, b.y, dx, dy, b.rx, b.ry);
     if (hit)
     {
-        let time = clamp(hit.time - Number.EPSILON, 0, 1);
+        let time = clamp(hit.time - EPSILON, 0, 1);
         let length = Math.sqrt(dx * dx + dy * dy);
 
         let normaldx;

@@ -61,6 +61,44 @@ function testContactIntersect()
     assertEqualsWithError(sweep3.hit.y, 10, Intersection.EPSILON);
 }
 
+function testIntersectionSimulation()
+{
+    let ground = createRect(0, 10, 10, 11);
+    let box = createRect(4, 0, 5, 1);
+
+    let gravity = 0.1;
+    let dx = 0;
+    let dy = 0;
+    for(let i = 0; i < 1000; ++i)
+    {
+        // Apply gravity
+        dy += gravity;
+
+        let sweep = Intersection.sweepInto({}, box, [ ground ], dx, dy);
+        box.x = sweep.x;
+        box.y = sweep.y;
+
+        // Stop. It's on the ground.
+        if (sweep.hit)
+        {
+            dy = 0;
+        }
+        else
+        {
+            assertEqualsWithError(box.x, 4.5, Intersection.EPSILON);
+        }
+    }
+
+    // On ground.
+    assertEqualsWithError(box.x, 4.5, Intersection.EPSILON);
+    assertEqualsWithError(box.y, 9.5, Intersection.EPSILON);
+
+    // Try moving along.
+    let sweep = Intersection.sweepInto({}, box, [ ground ], 1, 0);
+    assertNull(sweep.hit);
+
+}
+
 function testNotIntersect()
 {
     let ground = createRect(0, 0, 10, 10);
@@ -147,6 +185,8 @@ function main()
     testContactIntersect();
     testNotIntersect();
     testDeltaIntersect();
+
+    testIntersectionSimulation();
     
     console.log('Success!');
 }

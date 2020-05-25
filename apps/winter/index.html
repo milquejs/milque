@@ -74,11 +74,8 @@
                     ctx.translate(0, -ctx.canvas.clientHeight);
                     if (world.render) world.render(ctx);
 
-                    if (world.physics)
-                    {
-                        // world.physics.update(dt);
-                        world.physics.draw(ctx);
-                    }
+                    world.physics.update(dt);
+                    world.physics.draw(ctx);
                 });
 
                 main();
@@ -92,7 +89,10 @@
 
                     world.physics = {
                         dynamicColliders: [
-                            player.aabb,
+                            player.masks.aabb,
+                        ],
+                        maskColliders: [
+                            player.masks.ground,
                         ],
                         staticColliders: [
                             Intersection.createAABB(100, 0, 50, 16),
@@ -106,27 +106,36 @@
                             let obj = {};
                             for(let dynamicCollider of this.dynamicColliders)
                             {
-                                // Remove collision buffer
                                 let sweep = Intersection.sweepInto(
                                     obj,
                                     dynamicCollider,
                                     this.staticColliders,
                                     dynamicCollider.dx || 0,
                                     dynamicCollider.dy || 0);
-                                if (sweep.hit)
+
+                                dynamicCollider.hit = sweep.hit;
+                                dynamicCollider.x = sweep.x;
+                                dynamicCollider.y = sweep.y;
+                            }
+
+                            for(let maskCollider of this.maskColliders)
+                            {
+                                let obj = {};
+                                let hit = null;
+                                switch(maskCollider.type)
                                 {
-                                    let { dx, dy, nx, ny } = sweep.hit;
-                                    dynamicCollider.hit = true;
-                                    dynamicCollider.normalX = nx;
-                                    dynamicCollider.normalY = ny;
+                                    case 'point':
+                                        for(let staticCollider of this.staticColliders)
+                                        {
+                                            if (Intersection.intersectPoint(obj, staticCollider, maskCollider.x, maskCollider.y))
+                                            {
+                                                hit = obj;
+                                                break;
+                                            }
+                                        }
+                                        break;
                                 }
-                                else
-                                {
-                                    dynamicCollider.hit = false;
-                                    dynamicCollider.normalX = 0;
-                                    dynamicCollider.normalY = 0;
-                                }
-                                dynamicCollider.update(sweep.x + dynamicCollider.normalX, sweep.y + dynamicCollider.normalY);
+                                maskCollider.hit = hit;
                             }
                         },
                         draw(ctx)
@@ -153,14 +162,25 @@
                         dx: 0,
                         dy: 0,
                         jumping: false,
-                        aabb: {
-                            x: 0, y: 0,
-                            rx: 8, ry: 8,
-                            dx: 0, dy: 0,
-                            hit: false,
-                            normalX: 0,
-                            normalY: 0,
-                            update(x, y) { player.x = x; player.y = y; }
+                        masks: {
+                            aabb: {
+                                get x() { return player.x; },
+                                get y() { return player.y; },
+                                set x(x) { player.x = x; },
+                                set y(y) { player.y = y; },
+                                rx: 8,
+                                ry: 8,
+
+                                get dx() { return player.dx; },
+                                get dy() { return player.dy; },
+                                hit: null,
+                            },
+                            ground: {
+                                type: 'point',
+                                get x() { return player.masks.aabb.x; },
+                                get y() { return player.masks.aabb.y + player.masks.aabb.ry + Intersection.EPSILON; },
+                                hit: null,
+                            },
                         },
                         update(dt)
                         {
@@ -170,15 +190,16 @@
                             const jumpMoveFriction = 1 - 0.08;
                             const gravitySpeed = 0.5;
 
-                            const onGround = this.y <= 0 || this.aabb.hit && this.aabb.normalY > 0;
+                            const hit = this.masks.aabb.hit;
+                            const hitGround = this.masks.ground.hit;
 
-                            if (!onGround) {
+                            if (!hitGround) {
                                 this.dy -= gravitySpeed;
-                            } else if (playerControls.up) {
-                                this.dy += jumpSpeed;
                             } else {
-                                this.dy = 0;
+                                console.log(this.dy);
                             }
+
+                            const onGround = this.y <= 0 || hitGround;
 
                             if (playerControls.left) {
                                 this.dx -= moveSpeed;
@@ -186,28 +207,14 @@
                             if (playerControls.right) {
                                 this.dx += moveSpeed;
                             }
-                            
-                            this.dx *= onGround ? moveFriction : jumpMoveFriction;
-
-                            if (this.aabb.hit) {
-                                if (this.aabb.normalX && Math.sign(-this.dx) === Math.sign(this.aabb.normalX))
-                                {
-                                    this.dx = 0;
-                                }
-                                if (this.aabb.normalY && Math.sign(-this.dy) === Math.sign(this.aabb.normalY))
-                                {
-                                    this.dy = 0;
-                                }
+                            if (playerControls.up) {
+                                this.dy += jumpSpeed;
                             }
+                            
+                            this.dx *= hitGround ? moveFriction : jumpMoveFriction;
 
                             // Never fall off
                             if (this.y <= 0) this.y = 0;
-
-                            // update aabb
-                            this.aabb.x = this.x;
-                            this.aabb.y = this.y;
-                            this.aabb.dx = this.dx;
-                            this.aabb.dy = this.dy;
                         },
                         render(ctx)
                         {
