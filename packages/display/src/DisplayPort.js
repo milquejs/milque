@@ -358,7 +358,7 @@ export class DisplayPort extends HTMLElement
         canvasWidth = Math.floor(canvasWidth);
         canvasHeight = Math.floor(canvasHeight);
 
-        if (canvas.width !== canvasWidth || canvas.height !== canvasHeight)
+        if (canvas.clientWidth !== canvasWidth || canvas.clientHeight !== canvasHeight)
         {
             canvas.width = this._width;
             canvas.height = this._height;
