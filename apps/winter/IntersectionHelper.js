@@ -7,13 +7,19 @@ export function clamp(value, min, max)
     return Math.min(Math.max(value, min), max);
 }
 
-export function createAABB(x, y, width, height)
+export function createAABB(x, y, rx, ry)
 {
     return {
         x, y,
-        rx: width / 2,
-        ry: height / 2,
+        rx, ry,
     };
+}
+
+export function createRect(left, top, right, bottom)
+{
+    let rx = Math.abs(right - left) / 2;
+    let ry = Math.abs(bottom - top) / 2;
+    return createAABB(Math.min(left, right) + rx, Math.min(top, bottom) + ry, rx, ry);
 }
 
 export function testAABB(a, b)
@@ -102,8 +108,8 @@ export function intersectSegment(out, a, x, y, dx, dy, px = 0, py = 0)
     let ary = a.ry;
     let subpx = px ? px - EPSILON : 0;
     let subpy = py ? py - EPSILON : 0;
-    let scaleX = 1.0 / (dx || Number.EPSILON);
-    let scaleY = 1.0 / (dy || Number.EPSILON);
+    let scaleX = 1.0 / (dx || EPSILON);
+    let scaleY = 1.0 / (dy || EPSILON);
     let signX = Math.sign(scaleX);
     let signY = Math.sign(scaleY);
     let nearTimeX = (a.x - signX * (arx + subpx) - x) * scaleX;

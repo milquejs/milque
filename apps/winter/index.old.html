@@ -48,8 +48,8 @@ InputContextGroup
 
             const display = document.querySelector('display-port');
             display.addEventListener('frame', e => {
-                const ctx = e.detail.context;
-                const dt = e.detail.delta;
+                const ctx = e.detail.canvasContext;
+                const dt = e.detail.deltaTime;
 
                 if (world.update) world.update(dt);
                 if (world.render) world.render(ctx);

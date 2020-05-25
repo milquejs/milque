@@ -1,32 +1,24 @@
 import * as Intersection from './IntersectionHelper.js';
-
-function createRect(left, top, right, bottom)
-{
-    let width = right - left;
-    let height = bottom - top;
-    let halfWidth = width / 2;
-    let halfHeight = height / 2;
-    return Intersection.createAABB(left + halfWidth, top + halfHeight, width, height);
-}
+import { assertEquals, assertEqualsWithError, assertNotNull, assertNull, assertTrue } from './Test.js';
 
 function testSegment()
 {
-    let box = createRect(0, 0, 10, 10);
-    assertNull(Intersection.intersectSegment({}, box, 0, -1, 1, 0, 1, 1));
-    assertNull(Intersection.intersectSegment({}, box, 0, -100, 1, 0, 100, 100));
+    let box = Intersection.createRect(0, 0, 10, 10);
+    assertNull(Intersection.intersectSegment({}, box, 0, 10, 10, 0, 0, 0));
+    assertNull(Intersection.intersectSegment({}, box, 0, 100 + 10, 10, 0, 100, 100));
     assertNotNull(Intersection.intersectSegment({}, box, 0, 0, 1, 0, 0, 0));
 }
 
 function testContactSegment()
 {
-    let ground = Intersection.createAABB(5, 10.5, 5, 0.5);
+    let ground = Intersection.createAABB(5, 10.5, 10, 1);
     assertNull(Intersection.intersectSegment({}, ground, 5, 10, 1, 0, 5, 0));
 }
 
 function testInsideIntersect()
 {
-    let container = createRect(0, 0, 10, 10);
-    let inside = createRect(4, 4, 5, 5);
+    let container = Intersection.createRect(0, 0, 10, 10);
+    let inside = Intersection.createRect(4, 4, 5, 5);
 
     let result = Intersection.testAABB(container, inside);
     assertTrue(result);
@@ -34,8 +26,8 @@ function testInsideIntersect()
 
 function testContactIntersect()
 {
-    let ground = createRect(0, 10, 10, 11);
-    let top = createRect(0, 9, 10, 10);
+    let ground = Intersection.createRect(0, 10, 10, 11);
+    let top = Intersection.createRect(0, 9, 10, 10);
 
     assertTrue(Intersection.testAABB(top, ground));
 
@@ -63,8 +55,8 @@ function testContactIntersect()
 
 function testIntersectionSimulation()
 {
-    let ground = createRect(0, 10, 10, 11);
-    let box = createRect(4, 0, 5, 1);
+    let ground = Intersection.createRect(0, 10, 10, 11);
+    let box = Intersection.createRect(4, 0, 5, 1);
 
     let gravity = 0.1;
     let dx = 0;
@@ -101,8 +93,8 @@ function testIntersectionSimulation()
 
 function testNotIntersect()
 {
-    let ground = createRect(0, 0, 10, 10);
-    let right = createRect(11, 0, 21, 10);
+    let ground = Intersection.createRect(0, 0, 10, 10);
+    let right = Intersection.createRect(11, 0, 21, 10);
 
     let result = Intersection.testAABB(ground, right);
     assertTrue(!result);
@@ -110,8 +102,8 @@ function testNotIntersect()
 
 function testDeltaIntersect()
 {
-    let ground = createRect(0, 0, 10, 5);
-    let bottom = createRect(0, 3, 10, 5);
+    let ground = Intersection.createRect(0, 0, 10, 5);
+    let bottom = Intersection.createRect(0, 3, 10, 5);
 
     assertTrue(Intersection.testAABB(bottom, ground));
 
@@ -134,61 +126,28 @@ function testDeltaIntersect()
     assertEquals(sweep.hit.y, 3);
 }
 
-function assertNotNull(a)
-{
-    if (!a)
-    {
-        throw new Error(`Assertion failed - expected not null but was '${a}'.`);
-    }
-}
-
-function assertNull(a)
-{
-    if (a != null)
-    {
-        throw new Error(`Assertion failed - expected null but was '${a}'.`);
-    }
-}
-
-function assertEquals(a, b)
-{
-    if (a != b)
-    {
-        throw new Error(`Assertion failed - expected '${b}' but was '${a}'.`);
-    }
-}
-
-function assertEqualsWithError(a, b, error = Number.EPSILON)
-{
-    if (a < b - error || a > b + error)
-    {
-        throw new Error(`Assertion failed - expected '${b}' +/- ${error} but was '${a}'.`);
-    }
-}
-
-function assertTrue(result)
-{
-    if (!result)
-    {
-        throw new Error(`Assertion failed - expected true but was '${result}'.`);
-    }
-}
-
 function main()
 {
     console.log('Begin intersection tests...');
 
-    testSegment();
-    testContactSegment();
-
-    testInsideIntersect();
-    testContactIntersect();
-    testNotIntersect();
-    testDeltaIntersect();
-
-    testIntersectionSimulation();
+    try
+    {
+        testSegment();
+        testContactSegment();
     
-    console.log('Success!');
+        testInsideIntersect();
+        testContactIntersect();
+        testNotIntersect();
+        testDeltaIntersect();
+    
+        testIntersectionSimulation();
+
+        console.log('Success!');
+    }
+    catch(e)
+    {
+        console.error('Failed!\n\n', e);
+    }
 }
 
 main();

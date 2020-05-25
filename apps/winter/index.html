@@ -5,12 +5,18 @@
 
         <title>Winter</title>
 
+        <style>
+            html, body {
+                margin: 0;
+            }
+        </style>
+
         <script type="module" src="../../packages/display/src/index.js"></script>
 
-        <script type="module" src="./IntersectionTest.js"></script>
+        <script type="module" src="./IntersectionTests.js"></script>
     </head>
     <body>
-        <display-port contexttype="2d"></display-port>
+        <display-port mode="fit" contexttype="2d" full debug></display-port>
 
         <script type="module">
             import { KeyMapBuilder, createKeyState } from './InputHelper.js';
@@ -48,9 +54,6 @@
                     },
                     render(ctx)
                     {
-                        ctx.fillStyle = 'black';
-                        ctx.fillRect(0, 0, ctx.canvas.clientWidth, ctx.canvas.clientHeight);
-
                         for(let entity of this.entities)
                         {
                             entity.render(ctx);
@@ -63,15 +66,20 @@
                 };
 
                 display.addEventListener('frame', e => {
-                    const ctx = e.detail.context;
-                    const dt = e.detail.delta;
+                    const ctx = e.detail.canvasContext;
+                    const dt = e.detail.deltaTime;
 
                     if (world.poll) world.poll();
                     if (world.update) world.update(dt);
 
                     // Move to first quadrant.
                     ctx.setTransform(1, 0, 0, -1, 0, 0);
-                    ctx.translate(0, -ctx.canvas.clientHeight);
+                    ctx.translate(0, -display.height);
+
+                    // Paint it black.
+                    ctx.fillStyle = 'black';
+                    ctx.fillRect(0, 0, display.width, display.height);
+
                     if (world.render) world.render(ctx);
 
                     world.physics.update(dt);
@@ -95,11 +103,11 @@
                             player.masks.ground,
                         ],
                         staticColliders: [
-                            Intersection.createAABB(100, 0, 50, 16),
-                            Intersection.createAABB(0, display.height / 2, 10, display.height),
-                            Intersection.createAABB(display.width, display.height / 2, 10, display.height),
-                            Intersection.createAABB(display.width / 2, 0, display.width, 10),
-                            Intersection.createAABB(display.width / 2, display.height, display.width, 10),
+                            Intersection.createRect(50, 0, 150, 16),
+                            Intersection.createRect(0, 0, 10, display.height),
+                            Intersection.createRect(0, 0, display.width, 10),
+                            Intersection.createRect(display.width - 10, 0, display.width, display.height),
+                            Intersection.createRect(0, display.height - 10, display.width, display.height),
                         ],
                         update(dt)
                         {
@@ -134,6 +142,17 @@
                                             }
                                         }
                                         break;
+                                    case 'segment':
+                                        for(let staticCollider of this.staticColliders)
+                                        {
+                                            if (Intersection.intersectSegment(obj, staticCollider, maskCollider.x, maskCollider.y, maskCollider.dx, maskCollider.dy))
+                                            {
+                                                hit = obj;
+                                                break;
+                                            }
+                                        }
+                                        break;
+
                                 }
                                 maskCollider.hit = hit;
                             }
@@ -144,6 +163,22 @@
                             for(let dynamicCollider of this.dynamicColliders)
                             {
                                 ctx.strokeRect(dynamicCollider.x - dynamicCollider.rx, dynamicCollider.y - dynamicCollider.ry, dynamicCollider.rx * 2, dynamicCollider.ry * 2);
+                            }
+                            ctx.strokeStyle = 'blue';
+                            for(let maskCollider of this.maskColliders)
+                            {
+                                switch(maskCollider.type)
+                                {
+                                    case 'point':
+                                        ctx.strokeRect(maskCollider.x - 1, maskCollider.y - 1, 2, 2);
+                                        break;
+                                    case 'segment':
+                                        ctx.beginPath();
+                                        ctx.moveTo(maskCollider.x, maskCollider.y);
+                                        ctx.lineTo(maskCollider.x + maskCollider.dx, maskCollider.y + maskCollider.dy);
+                                        ctx.stroke();
+                                        break;
+                                }
                             }
                             ctx.strokeStyle = 'green';
                             for(let staticCollider of this.staticColliders)
@@ -176,9 +211,11 @@
                                 hit: null,
                             },
                             ground: {
-                                type: 'point',
-                                get x() { return player.masks.aabb.x; },
-                                get y() { return player.masks.aabb.y + player.masks.aabb.ry + Intersection.EPSILON; },
+                                type: 'segment',
+                                get x() { return player.masks.aabb.x - player.masks.aabb.rx + 0.1; },
+                                get y() { return player.masks.aabb.y - player.masks.aabb.ry - 0.1; },
+                                get dx() { return player.masks.aabb.rx * 2 - 0.2; },
+                                get dy() { return 0; },
                                 hit: null,
                             },
                         },
@@ -195,8 +232,8 @@
 
                             if (!hitGround) {
                                 this.dy -= gravitySpeed;
-                            } else {
-                                console.log(this.dy);
+                            } else if (playerControls.up) {
+                                this.dy += jumpSpeed;
                             }
 
                             const onGround = this.y <= 0 || hitGround;
@@ -206,9 +243,6 @@
                             }
                             if (playerControls.right) {
                                 this.dx += moveSpeed;
-                            }
-                            if (playerControls.up) {
-                                this.dy += jumpSpeed;
                             }
                             
                             this.dx *= hitGround ? moveFriction : jumpMoveFriction;

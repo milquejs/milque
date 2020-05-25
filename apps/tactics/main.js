@@ -50,7 +50,7 @@ function main()
     }
     
     display.addEventListener('frame', e => {
-        let dt = e.detail.delta / 60;
+        let dt = e.detail.deltaTime / 60;
 
         ctx.imageSmoothingEnabled = false;
         ctx.fillStyle = 'black';
