@@ -28,6 +28,7 @@ div {
 canvas {
     background: #000000;
     margin: auto;
+    image-rendering: pixelated;
 }
 label {
     font-family: monospace;
@@ -284,9 +285,9 @@ export class DisplayPort extends HTMLElement
         this.dispatchEvent(new CustomEvent('frame', {
             detail: {
                 now,
-                prev: this._prevAnimationFrameTime,
-                delta,
-                context: this._canvasContext
+                prevTime: this._prevAnimationFrameTime,
+                deltaTime: delta,
+                canvasContext: this._canvasContext
             },
             bubbles: false,
             composed: true
@@ -359,8 +360,8 @@ export class DisplayPort extends HTMLElement
 
         if (canvas.width !== canvasWidth || canvas.height !== canvasHeight)
         {
-            canvas.width = canvasWidth;
-            canvas.height = canvasHeight;
+            canvas.width = this._width;
+            canvas.height = this._height;
             canvas.style = `width: ${canvasWidth}px; height: ${canvasHeight}px`;
             this.dispatchEvent(new CustomEvent('resize', { detail: { width: canvasWidth, height: canvasHeight }, bubbles: false, composed: true }));
         }
