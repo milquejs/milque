@@ -166,17 +166,17 @@ function sweepIntoAABB(out, a, b, dx, dy)
 {
     if (Math.abs(dx) < EPSILON && Math.abs(dy) < EPSILON)
     {
-        let hit = intersectAABB({}, a, b);
+        let hit = intersectAABB({}, b, a);
         if (hit) hit.time = 0;
 
-        out.x = b.x;
-        out.y = b.y;
+        out.x = a.x;
+        out.y = a.y;
         out.time = hit ? 0 : 1;
         out.hit = hit;
         return out;
     }
 
-    let hit = intersectSweepAABB({}, a, b, dx, dy);
+    let hit = intersectSweepAABB({}, b, a, dx, dy);
     if (hit)
     {
         let time = clamp(hit.time, 0, 1);
@@ -194,19 +194,19 @@ function sweepIntoAABB(out, a, b, dx, dy)
             normaldx = 0;
             normaldy = 0;
         }
-        hit.x = clamp(hit.x + normaldx * b.rx, a.x - a.rx, a.x + a.rx);
-        hit.y = clamp(hit.y + normaldy * b.ry, a.y - a.ry, a.y + a.ry);
+        hit.x = clamp(hit.x + normaldx * a.rx, b.x - b.rx, b.x + b.rx);
+        hit.y = clamp(hit.y + normaldy * a.ry, b.y - b.ry, b.y + b.ry);
 
         out.time = time;
-        out.x = b.x + dx * time;
-        out.y = b.y + dy * time;
+        out.x = a.x + dx * time;
+        out.y = a.y + dy * time;
         out.hit = hit;
     }
     else
     {
         out.time = 1;
-        out.x = b.x + dx;
-        out.y = b.y + dy;
+        out.x = a.x + dx;
+        out.y = a.y + dy;
         out.hit = hit;
     }
 
@@ -224,7 +224,7 @@ export function sweepInto(out, a, staticColliders, dx, dy)
 
     for(let i = 0, l = staticColliders.length; i < l; ++i)
     {
-        let result = sweepIntoAABB(tmp, staticColliders[i], a, dx, dy);
+        let result = sweepIntoAABB(tmp, a, staticColliders[i], dx, dy);
         if (result.time <= out.time)
         {
             out.time = result.time;
