@@ -24,7 +24,6 @@ async function load()
 function main()
 {
     const display = document.querySelector('display-port');
-    const ctx = display.getContext();
 
     let camera = createCamera();
     let mouse = new Mouse(display.canvas);
@@ -51,16 +50,17 @@ function main()
     
     display.addEventListener('frame', e => {
         let dt = e.detail.deltaTime / 60;
+        let ctx = e.detail.canvasContext;
 
         ctx.imageSmoothingEnabled = false;
         ctx.fillStyle = 'black';
-        ctx.fillRect(0, 0, display.canvas.clientWidth, display.canvas.clientHeight);
+        ctx.fillRect(0, 0, display.width, display.height);
         
         mouse.poll();
         world.sprite.update(dt);
 
-        let width = display.canvas.clientWidth;
-        let height = display.canvas.clientHeight;
+        let width = display.width;
+        let height = display.height;
 
         const viewMatrix = camera.viewMatrix;
         const projectionMatrix = camera.projectionMatrix;

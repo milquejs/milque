@@ -39,10 +39,12 @@ export class QuadTree
         let { x, y, rx, ry } = this.bounds;
         let nextLevel = this.level + 1;
 
-        this.nodes[0] = new QuadTree(nextLevel, createBounds(x + rx, y, rx, ry));
-        this.nodes[1] = new QuadTree(nextLevel, createBounds(x, y, rx, ry));
-        this.nodes[2] = new QuadTree(nextLevel, createBounds(x, y + ry, rx, ry));
-        this.nodes[3] = new QuadTree(nextLevel, createBounds(x + rx, y + ry, rx, ry));
+        let ChildConstructor = this.constructor;
+
+        this.nodes[0] = new ChildConstructor(nextLevel, createBounds(x + rx, y, rx, ry));
+        this.nodes[1] = new ChildConstructor(nextLevel, createBounds(x, y, rx, ry));
+        this.nodes[2] = new ChildConstructor(nextLevel, createBounds(x, y + ry, rx, ry));
+        this.nodes[3] = new ChildConstructor(nextLevel, createBounds(x + rx, y + ry, rx, ry));
     }
 
     findQuadIndex(object)
