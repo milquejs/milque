@@ -21,6 +21,7 @@
         <script type="module">
             import { KeyMapBuilder, createKeyState } from './InputHelper.js';
             import * as Intersection from './IntersectionHelper.js';
+            import { createIntersectionWorld } from './IntersectionWorld.js';
 
             window.addEventListener('DOMContentLoaded', () => {
                 const display = document.querySelector('display-port');
@@ -67,12 +68,12 @@
 
                 display.addEventListener('frame', e => {
                     const ctx = e.detail.canvasContext;
-                    const dt = e.detail.deltaTime;
+                    const dt = e.detail.deltaTime / 60;
 
                     if (world.poll) world.poll();
                     if (world.update) world.update(dt);
 
-                    // Move to first quadrant.
+                    // Transform canvas to first quadrant; (0,0) = bottom left, (width, height) = top right.
                     ctx.setTransform(1, 0, 0, -1, 0, 0);
                     ctx.translate(0, -display.height);
 
@@ -82,8 +83,11 @@
 
                     if (world.render) world.render(ctx);
 
-                    // world.physics.update(dt);
-                    world.physics.draw(ctx);
+                    if (world.physics)
+                    {
+                        world.physics.update(dt);
+                        world.physics.render(ctx);
+                    }
                 });
 
                 main();
@@ -95,98 +99,20 @@
                         player
                     ];
 
-                    world.physics = {
-                        dynamicColliders: [
-                            player.masks.aabb,
-                        ],
-                        maskColliders: [
-                            player.masks.ground,
-                        ],
-                        staticColliders: [
-                            Intersection.createRect(50, 0, 150, 16),
-                            Intersection.createRect(0, 0, 10, display.height),
-                            Intersection.createRect(0, 0, display.width, 10),
-                            Intersection.createRect(display.width - 10, 0, display.width, display.height),
-                            Intersection.createRect(0, display.height - 10, display.width, display.height),
-                        ],
-                        update(dt)
-                        {
-                            let obj = {};
-                            for(let dynamicCollider of this.dynamicColliders)
-                            {
-                                let sweep = Intersection.sweepInto(
-                                    obj,
-                                    dynamicCollider,
-                                    this.staticColliders,
-                                    dynamicCollider.dx || 0,
-                                    dynamicCollider.dy || 0);
-
-                                dynamicCollider.hit = sweep.hit;
-                                dynamicCollider.x = sweep.x;
-                                dynamicCollider.y = sweep.y;
-                            }
-
-                            for(let maskCollider of this.maskColliders)
-                            {
-                                let obj = {};
-                                let hit = null;
-                                switch(maskCollider.type)
-                                {
-                                    case 'point':
-                                        for(let staticCollider of this.staticColliders)
-                                        {
-                                            if (Intersection.intersectPoint(obj, staticCollider, maskCollider.x, maskCollider.y))
-                                            {
-                                                hit = obj;
-                                                break;
-                                            }
-                                        }
-                                        break;
-                                    case 'segment':
-                                        for(let staticCollider of this.staticColliders)
-                                        {
-                                            if (Intersection.intersectSegment(obj, staticCollider, maskCollider.x, maskCollider.y, maskCollider.dx, maskCollider.dy))
-                                            {
-                                                hit = obj;
-                                                break;
-                                            }
-                                        }
-                                        break;
-
-                                }
-                                maskCollider.hit = hit;
-                            }
-                        },
-                        draw(ctx)
-                        {
-                            ctx.strokeStyle = 'lime';
-                            for(let dynamicCollider of this.dynamicColliders)
-                            {
-                                ctx.strokeRect(dynamicCollider.x - dynamicCollider.rx, dynamicCollider.y - dynamicCollider.ry, dynamicCollider.rx * 2, dynamicCollider.ry * 2);
-                            }
-                            ctx.strokeStyle = 'blue';
-                            for(let maskCollider of this.maskColliders)
-                            {
-                                switch(maskCollider.type)
-                                {
-                                    case 'point':
-                                        ctx.strokeRect(maskCollider.x - 1, maskCollider.y - 1, 2, 2);
-                                        break;
-                                    case 'segment':
-                                        ctx.beginPath();
-                                        ctx.moveTo(maskCollider.x, maskCollider.y);
-                                        ctx.lineTo(maskCollider.x + maskCollider.dx, maskCollider.y + maskCollider.dy);
-                                        ctx.stroke();
-                                        break;
-                                }
-                            }
-                            ctx.strokeStyle = 'green';
-                            for(let staticCollider of this.staticColliders)
-                            {
-                                ctx.strokeRect(staticCollider.x - staticCollider.rx, staticCollider.y - staticCollider.ry, staticCollider.rx * 2, staticCollider.ry * 2);
-                            }
-                        }
-                    };
+                    let physics = createIntersectionWorld();
+                    physics.dynamics.push(player.masks.aabb);
+                    physics.masks.push(...[
+                        player.masks.ground,
+                        player.masks.motion,
+                    ]);
+                    physics.statics.push(...[
+                        Intersection.createRect(50, 0, 150, 16),
+                        Intersection.createRect(0, 0, 10, display.height),
+                        Intersection.createRect(0, 0, display.width, 10),
+                        Intersection.createRect(display.width - 10, 0, display.width, display.height),
+                        Intersection.createRect(0, display.height - 10, display.width, display.height),
+                    ]);
+                    world.physics = physics;
                 }
 
                 function Player()
@@ -196,6 +122,8 @@
                         y: 100,
                         dx: 0,
                         dy: 0,
+                        motionX: 0,
+                        motionY: 0,
                         jumping: false,
                         masks: {
                             aabb: {
@@ -208,44 +136,65 @@
 
                                 get dx() { return player.dx; },
                                 get dy() { return player.dy; },
+                                set dx(dx) { player.dx = dx; },
+                                set dy(dy) { player.dy = dy; },
+                                hit: null,
+                            },
+                            motion: {
+                                type: 'segment',
+                                get x() { return player.masks.aabb.x; },
+                                get y() { return player.masks.aabb.y; },
+                                get dx() { return player.motionX; },
+                                get dy() { return player.motionY; },
+                                px: 0,
+                                py: 0,
+                                
                                 hit: null,
                             },
                             ground: {
                                 type: 'segment',
-                                get x() { return player.masks.aabb.x - player.masks.aabb.rx + 0.1; },
+                                get x() { return player.masks.aabb.x - player.masks.aabb.rx; },
                                 get y() { return player.masks.aabb.y - player.masks.aabb.ry - 0.1; },
-                                get dx() { return player.masks.aabb.rx * 2 - 0.2; },
+                                get dx() { return player.masks.aabb.rx * 2; },
                                 get dy() { return 0; },
+                                px: 0,
+                                py: 0,
+                                
                                 hit: null,
                             },
                         },
                         update(dt)
                         {
-                            const moveSpeed = 0.3;
-                            const moveFriction = 1 - 0.1;
-                            const jumpSpeed = 8;
+                            const moveSpeed = 10;
+                            const moveFriction = 1 - 0.2;
+                            const jumpSpeed = 30;
                             const jumpMoveFriction = 1 - 0.08;
-                            const gravitySpeed = 0.5;
+                            const gravitySpeed = 2;
 
                             const hit = this.masks.aabb.hit;
                             const hitGround = this.masks.ground.hit;
 
-                            if (!hitGround) {
-                                this.dy -= gravitySpeed;
-                            } else if (playerControls.up) {
-                                this.dy += jumpSpeed;
+                            if (hitGround && this.motionY < 0) {
+                                this.motionY = 0;
+                            } else {
+                                this.motionY -= gravitySpeed;
                             }
 
-                            const onGround = this.y <= 0 || hitGround;
+                            if (hitGround && playerControls.up) {
+                                this.motionY = jumpSpeed;
+                            }
 
                             if (playerControls.left) {
-                                this.dx -= moveSpeed;
+                                this.motionX = -moveSpeed;
                             }
                             if (playerControls.right) {
-                                this.dx += moveSpeed;
+                                this.motionX = moveSpeed;
                             }
                             
-                            this.dx *= hitGround ? moveFriction : jumpMoveFriction;
+                            this.motionX *= hitGround ? moveFriction : jumpMoveFriction;
+
+                            this.dx += this.motionX;
+                            this.dy += this.motionY;
 
                             // Never fall off
                             if (this.y <= 0) this.y = 0;

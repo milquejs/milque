@@ -1,37 +1,49 @@
-import { intersectPoint, intersectSegment } from './IntersectionHelper.js';
+import { intersectPoint, intersectSegment, intersectAABB, sweepInto, EPSILON } from './IntersectionHelper.js';
 
 const MAX_SWEEP_RESOLUTION_ITERATIONS = 100;
 
 export function computeIntersections(masks, statics = [])
 {
     // Compute physics.
-    for(let other of statics)
+    for(let mask of masks)
     {
-        for(let mask of masks)
+        switch(mask.type)
         {
-            switch(mask.type)
-            {
-                case 'point':
+            case 'point':
+                mask.hit = null;
+                for(let other of statics)
+                {
                     mask.hit = intersectPoint({}, other, mask.x, mask.y);
-                    break;
-                case 'segment':
+                    if (mask.hit) break;
+                }
+                break;
+            case 'segment':
+                mask.hit = null;
+                for(let other of statics)
+                {
                     mask.hit = intersectSegment({}, other, mask.x, mask.y, mask.dx, mask.dy, mask.px, mask.py);
-                    break;
-                case 'aabb':
+                    if (mask.hit) break;
+                }
+                break;
+            case 'aabb':
+                mask.hit = null;
+                for(let other of statics)
+                {
                     mask.hit = intersectAABB({}, other, mask);
-                    break;
-            }
+                    if (mask.hit) break;
+                }
+                break;
         }
     }
 }
 
-export function resolveIntersections(dynamics, statics = [])
+export function resolveIntersections(dynamics, statics = [], dt = 1)
 {
     // Do physics.
     for(let dynamic of dynamics)
     {
-        let dx = dynamic.dx;
-        let dy = dynamic.dy;
+        let dx = dynamic.dx * dt;
+        let dy = dynamic.dy * dt;
         
         let time = 0;
         let tmp = {};
@@ -49,8 +61,8 @@ export function resolveIntersections(dynamics, statics = [])
             time += sweep.time;
             if (sweep.hit)
             {
-                dx += sweep.hit.nx * dx;
-                dy += sweep.hit.ny * dy;
+                dx += sweep.hit.nx * Math.abs(dx);
+                dy += sweep.hit.ny * Math.abs(dy);
     
                 if (Math.abs(dx) < EPSILON) dx = 0;
                 if (Math.abs(dy) < EPSILON) dy = 0;

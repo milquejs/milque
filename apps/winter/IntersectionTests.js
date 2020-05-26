@@ -1,5 +1,5 @@
 import { createRect, testAABB, intersectAABB, intersectPoint, intersectSegment, sweepInto, EPSILON} from './IntersectionHelper.js';
-import { assertNotNull, assertNull, assertTrue, assertFalse, assertEquals, assertGreaterThan, assertEqualsWithError } from './Test.js';
+import { assertNotNull, assertNull, assertTrue, assertFalse, assertEquals, assertGreaterThan, assertEqualsWithError, assertLessThan } from './Test.js';
 
 function testIntersectPoint(a, x, y)
 {
@@ -303,7 +303,26 @@ function testGravitySimulationImpl(
     return [dx, dy];
 }
 
-function testGravitySimulation()
+function testGravityXSimulation()
+{
+    let box = createRect(0, 0, 1, 1);
+    let ground = createRect(10, 0, 11, 100);
+    let others = [ground];
+
+    // Nothing is touching at the moment.
+    assertFalse(testAABB(box, ground));
+
+    let [dx, dy] = testGravitySimulationImpl(box, others, 0.1, 0, 0, 0, 100);
+
+    // Is it on the ground?
+    assertEqualsWithError(box.x, 9.5, EPSILON);
+    assertEquals(box.y, 0.5);
+    assertEquals(dx, 0);
+    assertEquals(dy, 0);
+    assertFalse(testAABB(box, ground));
+}
+
+function testGravityYSimulation()
 {
     let box = createRect(0, 0, 1, 1);
     let ground = createRect(0, 10, 100, 11);
@@ -360,7 +379,8 @@ function main()
         testSweepLeftToRight();
         testSweepRightToLeft();
 
-        testGravitySimulation();
+        testGravityXSimulation();
+        testGravityYSimulation();
         testGravityAndMoveAlongSimulation();
 
         console.log('...Success!');
