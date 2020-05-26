@@ -1,5 +1,7 @@
 // SOURCE: https://noonat.github.io/intersect/#aabb-vs-aabb
 
+/* Surface contacts are considered intersections, including sweeps. */
+
 export const EPSILON = 1e-8;
 
 export function clamp(value, min, max)
@@ -33,11 +35,11 @@ export function intersectAABB(out, a, b)
 {
     let dx = b.x - a.x;
     let px = (b.rx + a.rx) - Math.abs(dx);
-    if (px <= 0) return null;
+    if (px < 0) return null;
 
     let dy = b.y - a.y;
     let py = (b.ry + a.ry) - Math.abs(dy);
-    if (py <= 0) return null;
+    if (py < 0) return null;
 
     if (px < py)
     {
@@ -67,11 +69,11 @@ export function intersectPoint(out, a, x, y)
 {
     let dx = x - a.x;
     let px = a.rx - Math.abs(dx);
-    if (px <= 0) return null;
+    if (px < 0) return null;
 
     let dy = y - a.y;
     let py = a.ry - Math.abs(dy);
-    if (py <= 0) return null;
+    if (py < 0) return null;
 
     if (px < py)
     {
@@ -99,28 +101,31 @@ export function intersectPoint(out, a, x, y)
 
 export function intersectSegment(out, a, x, y, dx, dy, px = 0, py = 0)
 {
-    if (dx === 0 && dy === 0)
+    if (Math.abs(dx) < EPSILON
+        && Math.abs(dy) < EPSILON
+        && px === 0
+        && py === 0)
     {
         return intersectPoint(out, a, x, y);
     }
     
     let arx = a.rx;
     let ary = a.ry;
-    let subpx = px ? px - EPSILON : 0;
-    let subpy = py ? py - EPSILON : 0;
+    let bpx = px;
+    let bpy = py;
     let scaleX = 1.0 / (dx || EPSILON);
     let scaleY = 1.0 / (dy || EPSILON);
     let signX = Math.sign(scaleX);
     let signY = Math.sign(scaleY);
-    let nearTimeX = (a.x - signX * (arx + subpx) - x) * scaleX;
-    let nearTimeY = (a.y - signY * (ary + subpy) - y) * scaleY;
-    let farTimeX = (a.x + signX * (arx + subpx) - x) * scaleX;
-    let farTimeY = (a.y + signY * (ary + subpy) - y) * scaleY;
+    let nearTimeX = (a.x - signX * (arx + bpx) - x) * scaleX;
+    let nearTimeY = (a.y - signY * (ary + bpy) - y) * scaleY;
+    let farTimeX = (a.x + signX * (arx + bpx) - x) * scaleX;
+    let farTimeY = (a.y + signY * (ary + bpy) - y) * scaleY;
     if (nearTimeX > farTimeY || nearTimeY > farTimeX) return null;
 
     let nearTime = Math.max(nearTimeX, nearTimeY);
     let farTime = Math.min(farTimeX, farTimeY);
-    if (nearTime >= 1 || farTime <= 0) return null;
+    if (nearTime > 1 || farTime < 0) return null;
 
     let time = clamp(nearTime, 0, 1);
     let hitdx = (1.0 - time) * -dx;
@@ -152,24 +157,29 @@ export function intersectSegment(out, a, x, y, dx, dy, px = 0, py = 0)
     return out;
 }
 
-export function sweepAABB(out, a, b, dx, dy)
+function intersectSweepAABB(out, a, b, dx, dy)
 {
-    if (dx === 0 && dy === 0)
+    return intersectSegment(out, a, b.x, b.y, dx, dy, b.rx, b.ry);
+}
+
+function sweepIntoAABB(out, a, b, dx, dy)
+{
+    if (Math.abs(dx) < EPSILON && Math.abs(dy) < EPSILON)
     {
         let hit = intersectAABB({}, a, b);
         if (hit) hit.time = 0;
 
-        out.x = a.x;
-        out.y = a.y;
+        out.x = b.x;
+        out.y = b.y;
         out.time = hit ? 0 : 1;
         out.hit = hit;
         return out;
     }
 
-    let hit = intersectSegment({}, a, b.x, b.y, dx, dy, b.rx, b.ry);
+    let hit = intersectSweepAABB({}, a, b, dx, dy);
     if (hit)
     {
-        let time = clamp(hit.time - EPSILON, 0, 1);
+        let time = clamp(hit.time, 0, 1);
         let length = Math.sqrt(dx * dx + dy * dy);
 
         let normaldx;
@@ -210,11 +220,12 @@ export function sweepInto(out, a, staticColliders, dx, dy)
     out.time = 1;
     out.x = a.x + dx;
     out.y = a.y + dy;
+    out.hit = null;
 
     for(let i = 0, l = staticColliders.length; i < l; ++i)
     {
-        let result = sweepAABB(tmp, staticColliders[i], a, dx, dy);
-        if (result.time < out.time)
+        let result = sweepIntoAABB(tmp, staticColliders[i], a, dx, dy);
+        if (result.time <= out.time)
         {
             out.time = result.time;
             out.x = result.x;
