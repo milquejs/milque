@@ -50,7 +50,7 @@ function main()
     
     display.addEventListener('frame', e => {
         let dt = e.detail.deltaTime / 60;
-        let ctx = e.detail.canvasContext;
+        let ctx = e.detail.context;
 
         ctx.imageSmoothingEnabled = false;
         ctx.fillStyle = 'black';

@@ -47,7 +47,7 @@ function main()
     };
 
     display.addEventListener('frame', e => {
-        const ctx = e.detail.canvasContext;
+        const ctx = e.detail.context;
         const dt = e.detail.deltaTime / 60;
 
         if (world.poll) world.poll();

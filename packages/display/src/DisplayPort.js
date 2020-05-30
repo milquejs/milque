@@ -287,7 +287,8 @@ export class DisplayPort extends HTMLElement
                 now,
                 prevTime: this._prevAnimationFrameTime,
                 deltaTime: delta,
-                canvasContext: this._canvasContext
+                canvas: this._canvasElement,
+                context: this._canvasContext,
             },
             bubbles: false,
             composed: true
