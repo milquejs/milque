@@ -49,6 +49,7 @@ export function resolveIntersections(dynamics, statics = [], dt = 1)
         let tmp = {};
         let sweep;
         
+        let hit = null;
         let iterations = MAX_SWEEP_RESOLUTION_ITERATIONS;
         do
         {
@@ -63,6 +64,7 @@ export function resolveIntersections(dynamics, statics = [], dt = 1)
             {
                 dx += sweep.hit.nx * Math.abs(dx);
                 dy += sweep.hit.ny * Math.abs(dy);
+                hit = sweep.hit;
     
                 if (Math.abs(dx) < EPSILON) dx = 0;
                 if (Math.abs(dy) < EPSILON) dy = 0;
@@ -72,5 +74,6 @@ export function resolveIntersections(dynamics, statics = [], dt = 1)
 
         dynamic.dx = dx;
         dynamic.dy = dy;
+        dynamic.hit = hit;
     }
 }
