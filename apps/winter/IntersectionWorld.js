@@ -38,8 +38,8 @@ export function createIntersectionWorld()
                         case 'point':
                             ctx.save();
                             {
-                                ctx.fillStyle = 'blue';
-                                ctx.fillRect(collider.x, collider.y, 1, 1);
+                                ctx.fillStyle = 'red';
+                                ctx.fillRect(collider.x - 1, collider.y - 1, 2, 2);
                             }
                             ctx.restore();
                             break;

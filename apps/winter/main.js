@@ -84,6 +84,7 @@ function main()
         physics.masks.push(...[
             player.masks.ground,
             player.masks.motion,
+            player.masks.aabbHit,
         ]);
         physics.statics.push(...[
             Intersection.createRect(50, 0, 150, 16),
@@ -143,15 +144,23 @@ function main()
                     
                     hit: null,
                 },
+                aabbHit: {
+                    type: 'point',
+                    get x() { return player.masks.aabb.hit ? player.masks.aabb.hit.x : player.masks.aabb.x; },
+                    get y() { return player.masks.aabb.hit ? player.masks.aabb.hit.y : player.masks.aabb.y; },
+                    
+                    hit: null,
+                },
             },
             update(dt)
             {
                 const maxMoveSpeed = 8;
-                const moveSpeed = 1;
+                const moveSpeed = 0.6;
                 const moveFriction = 0.85;
                 const jumpSpeed = 12;
                 const jumpMoveFriction = 0.9;
                 const gravitySpeed = 0.8;
+                const wallSlideFriction = 0.3;
 
                 const hit = this.masks.aabb.hit;
                 const hitGround = hit && hit.ny > 0;
@@ -162,8 +171,31 @@ function main()
                     this.motionY -= gravitySpeed;
                 }
 
+                // Wall slide / bounce
+                if (hit && (hit.nx < 0 && playerControls.right || hit.nx > 0 && playerControls.left)) {
+
+                    if (playerControls.up) {
+                        this.motionX = hit.nx * jumpSpeed;
+                        this.motionY = jumpSpeed;
+                    } else {
+                        this.motionY *= wallSlideFriction;
+                    }
+                }
+
                 if (hitGround && playerControls.up) {
                     this.motionY = jumpSpeed;
+                }
+
+                if (playerControls.down) {
+                    if (this.masks.aabb.ry > 4) {
+                        this.masks.aabb.ry = 4;
+                        this.y -= 4;
+                    }
+                } else {
+                    if (this.masks.aabb.ry < 8) {
+                        this.masks.aabb.ry = 8;
+                        this.y += 4;
+                    }
                 }
 
                 if (playerControls.left) {
@@ -181,7 +213,7 @@ function main()
                 }
 
                 if (hit && Math.abs(hit.ny) > 0 && Math.sign(hit.ny) !== Math.sign(this.motionY)) {
-                    this.motionY = 0;
+                    this.motionY = hit.ny < 0 ? -gravitySpeed : 0;
                 }
 
                 this.dx += this.motionX;
@@ -193,7 +225,7 @@ function main()
             render(ctx)
             {
                 ctx.fillStyle = 'white';
-                ctx.fillRect(this.x - 8, this.y - 8, 16, 16);
+                ctx.fillRect(this.x - this.masks.aabb.rx, this.y - this.masks.aabb.ry, this.masks.aabb.rx * 2, this.masks.aabb.ry * 2);
             }
         };
         return player;
