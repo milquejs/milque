@@ -59,3 +59,14 @@ export function loadSpriteSheet(textureImage, atlasData)
     }
     return result;
 }
+
+export function drawSprite(ctx, sprite, offsetX = 0, offsetY = 0, width = undefined, height = undefined)
+{
+    if (sprite.frames.length > 0)
+    {
+        let frame = sprite.frames[Math.max(0, Math.min(sprite.frameIndex, sprite.frames.length - 1))];
+        ctx.drawImage(sprite.texture,
+            frame.x, frame.y, sprite.width, sprite.height,
+            offsetX, offsetY, width || sprite.width, height || sprite.height);
+    }
+}

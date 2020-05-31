@@ -37,3 +37,20 @@ export function saveTileMap(tileMap)
         tileData: tileMap.tileData,
     };
 }
+
+export function drawTileMap(ctx, tileMap, offsetX = 0, offsetY = 0, tileWidth = 16, tileHeight = tileWidth)
+{
+    let i = 0;
+    for(let y = 0; y < tileHeight; ++y)
+    {
+        for(let x = 0; x < tileWidth; ++x)
+        {
+            if (tileMap.tileData[i])
+            {
+                ctx.fillStyle = 'saddlebrown';
+                ctx.fillRect(offsetX + x * tileWidth, offsetY + y * tileHeight, tileWidth, tileHeight);
+            }
+            ++i;
+        }
+    }
+}

@@ -1,4 +1,4 @@
-import { Mouse } from '../../packages/input/src/index.js';
+import { Mouse, Keyboard } from '../../packages/input/src/index.js';
 import * as Camera from './Camera.js';
 import * as Sprite from './Sprite.js';
 import * as Loader from './Loader.js';
@@ -27,6 +27,7 @@ function main()
 
     let camera = createCamera();
     let mouse = new Mouse(display.canvas);
+    let keyboard = new Keyboard(display.canvas);
 
     let world = {
         position: [0, 0],
@@ -52,12 +53,23 @@ function main()
         let dt = e.detail.deltaTime / 60;
         let ctx = e.detail.context;
 
+        onUpdate(dt);
+        onRender(ctx);
+    });
+
+    function onUpdate(dt)
+    {
+        mouse.poll();
+        keyboard.poll();
+        
+        world.sprite.update(dt);
+    }
+    
+    function onRender(ctx)
+    {
         ctx.imageSmoothingEnabled = false;
         ctx.fillStyle = 'black';
         ctx.fillRect(0, 0, display.width, display.height);
-        
-        mouse.poll();
-        world.sprite.update(dt);
 
         let width = display.width;
         let height = display.height;
@@ -70,11 +82,11 @@ function main()
         ctx.save();
         {
             ctx.setTransform(new DOMMatrix(camera.viewMatrix));
-            drawTileMap(ctx, tileMap);
+            TileMap.drawTileMap(ctx, tileMap);
 
             let x = 54;
             let y = 54;
-            drawSprite(ctx, world.sprite, x, y, 16, 16);
+            Sprite.drawSprite(ctx, world.sprite, x, y, 16, 16);
             drawMask(ctx, world.mask, x, y);
         }
         ctx.restore();
@@ -86,41 +98,13 @@ function main()
         if (mouse.left.state) {
             camera.lookAt(mouse.x * width, mouse.y * height, 0, 1);
         }
-    });
+    }
 }
 
 function drawMask(ctx, mask, offsetX = 0, offsetY = 0)
 {
     ctx.strokeStyle = 'lime';
     ctx.strokeRect(mask.offset.x + offsetX, mask.offset.y + offsetY, mask.width, mask.height);
-}
-
-function drawSprite(ctx, sprite, offsetX = 0, offsetY = 0, width = undefined, height = undefined)
-{
-    if (sprite.frames.length > 0)
-    {
-        let frame = sprite.frames[Math.max(0, Math.min(sprite.frameIndex, sprite.frames.length - 1))];
-        ctx.drawImage(sprite.texture,
-            frame.x, frame.y, sprite.width, sprite.height,
-            offsetX, offsetY, width || sprite.width, height || sprite.height);
-    }
-}
-
-function drawTileMap(ctx, tileMap, offsetX = 0, offsetY = 0, tileWidth = 16, tileHeight = tileWidth)
-{
-    let i = 0;
-    for(let y = 0; y < tileHeight; ++y)
-    {
-        for(let x = 0; x < tileWidth; ++x)
-        {
-            if (tileMap.tileData[i])
-            {
-                ctx.fillStyle = 'saddlebrown';
-                ctx.fillRect(offsetX + x * tileWidth, offsetY + y * tileHeight, tileWidth, tileHeight);
-            }
-            ++i;
-        }
-    }
 }
 
 function lerp(a, b, dt)
