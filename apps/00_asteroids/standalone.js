@@ -1,27 +1,23 @@
 import * as Starfield from './game/Starfield.js';
+import * as Random from './lib/Random.js';
 
-const canvas = document.createElement('canvas');
+const display = document.querySelector('display-port');
+const canvas = display.canvas;
 const ctx = canvas.getContext('2d');
-canvas.style = 'width: 100%; image-rendering: pixelated;';
-document.body.appendChild(canvas);
-const audioContext = new AudioContext();
 
-const sounds = {
-    start: createSound('../../res/space/start.wav'),
-    dead: createSound('../../res/space/dead.wav'),
-    pop: createSound('../../res/space/boop.wav'),
-    music: createSound('../../res/space/music.wav', true),
-    shoot: createSound('../../res/space/click.wav'),
-    boom: createSound('../../res/space/boom.wav'),
-};
+// Will be initialized on load().
+let audioContext = new AudioContext();
+let sounds;
 
 let prevFrameTime = 0;
-let mainScene = { start, update, render };
+let mainScene = { load, start, update, render };
 
 function main()
 {
-    mainScene.start();
-    run(prevFrameTime = performance.now());
+    mainScene.load().then(() => {
+        mainScene.start();
+        run(prevFrameTime = performance.now());
+    });
 }
 
 function run(now)
@@ -79,6 +75,18 @@ const POWER_UP_AMOUNT = 30;
 const POWER_UP_SPAWN_CHANCE = 0.7;
 
 let SHOW_COLLISION = false;
+
+async function load()
+{
+    sounds = {
+        start: createSound('../../res/space/start.wav'),
+        dead: createSound('../../res/space/dead.wav'),
+        pop: createSound('../../res/space/boop.wav'),
+        music: createSound('../../res/space/music.wav', true),
+        shoot: createSound('../../res/space/click.wav'),
+        boom: createSound('../../res/space/boom.wav'),
+    };
+}
 
 function start()
 {
@@ -150,15 +158,15 @@ function start()
         spawn()
         {
             if (this.scene.asteroids.length > MAX_ASTEROID_COUNT) return;
-            let spawnRange = randomChoose(ASTEROID_SPAWN_RANGES);
+            let spawnRange = Random.choose(ASTEROID_SPAWN_RANGES);
             let asteroid = createAsteroid(
                 this.scene,
                 // X range
-                randomRange(spawnRange[0], spawnRange[0] + spawnRange[2]),
+                Random.range(spawnRange[0], spawnRange[0] + spawnRange[2]),
                 // Y range
-                randomRange(spawnRange[1], spawnRange[1] + spawnRange[3]),
-                randomRange(-ASTEROID_SPEED, ASTEROID_SPEED),
-                randomRange(-ASTEROID_SPEED, ASTEROID_SPEED),
+                Random.range(spawnRange[1], spawnRange[1] + spawnRange[3]),
+                Random.range(-ASTEROID_SPEED, ASTEROID_SPEED),
+                Random.range(-ASTEROID_SPEED, ASTEROID_SPEED),
                 ASTEROID_RADIUS
             );
             this.scene.asteroids.push(asteroid);
@@ -171,7 +179,7 @@ function start()
                 if (this.spawnTicks <= 0)
                 {
                     this.spawn();
-                    this.spawnTicks = randomRange(...ASTEROID_SPAWN_RATE);
+                    this.spawnTicks = Random.range(...ASTEROID_SPAWN_RATE);
                 }
             }
         }
@@ -189,15 +197,15 @@ function start()
         },
         spawn()
         {
-            let spawnRange = randomChoose(ASTEROID_SPAWN_RANGES);
+            let spawnRange = Random.choose(ASTEROID_SPAWN_RANGES);
             let powerUp = createPowerUp(
                 this.scene,
                 // X range
-                randomRange(spawnRange[0], spawnRange[0] + spawnRange[2]),
+                Random.range(spawnRange[0], spawnRange[0] + spawnRange[2]),
                 // Y range
-                randomRange(spawnRange[1], spawnRange[1] + spawnRange[3]),
-                randomRange(-ASTEROID_SPEED, ASTEROID_SPEED),
-                randomRange(-ASTEROID_SPEED, ASTEROID_SPEED)
+                Random.range(spawnRange[1], spawnRange[1] + spawnRange[3]),
+                Random.range(-ASTEROID_SPEED, ASTEROID_SPEED),
+                Random.range(-ASTEROID_SPEED, ASTEROID_SPEED)
             );
             this.scene.powerUps.push(powerUp);
         },
@@ -282,7 +290,7 @@ function update(dt)
         thrust(this, this.player.x, this.player.y, 
             -moveControl * Math.cos(this.player.rotation) * PLAYER_MOVE_PARTICLE_DAMP_FACTOR,
             -moveControl * Math.sin(this.player.rotation) * PLAYER_MOVE_PARTICLE_DAMP_FACTOR, 
-            randomChoose.bind(null, PLAYER_MOVE_PARTICLE_COLORS));
+            Random.choose.bind(null, PLAYER_MOVE_PARTICLE_COLORS));
     }
 
     // Update bullet motion
@@ -318,7 +326,7 @@ function update(dt)
                     this.highScore = this.score;
                     localStorage.setItem('highscore', this.highScore);
                 }
-                explode(this, asteroid.x, asteroid.y, 10, randomChoose.bind(null, ASTEROID_EXPLODE_PARTICLE_COLORS));
+                explode(this, asteroid.x, asteroid.y, 10, Random.choose.bind(null, ASTEROID_EXPLODE_PARTICLE_COLORS));
                 sounds.pop.play();
                 bullet.destroy();
                 asteroid.breakUp(bullet.dx * ASTEROID_BREAK_DAMP_FACTOR, bullet.dy * ASTEROID_BREAK_DAMP_FACTOR);
@@ -360,7 +368,7 @@ function update(dt)
     {
         if (withinRadius(asteroid, this.player, asteroid.size + PLAYER_RADIUS))
         {
-            explode(this, asteroid.x, asteroid.y, 10, randomChoose.bind(null, ASTEROID_EXPLODE_PARTICLE_COLORS));
+            explode(this, asteroid.x, asteroid.y, 10, Random.choose.bind(null, ASTEROID_EXPLODE_PARTICLE_COLORS));
             asteroid.destroy();
             killPlayer(this);
             break;
@@ -382,7 +390,7 @@ function update(dt)
     {
         if (withinRadius(powerUp, this.player, POWER_UP_RADIUS + PLAYER_RADIUS))
         {
-            explode(this, powerUp.x, powerUp.y, 10, randomChoose.bind(null, POWER_UP_EXPLODE_PARTICLE_COLORS));
+            explode(this, powerUp.x, powerUp.y, 10, Random.choose.bind(null, POWER_UP_EXPLODE_PARTICLE_COLORS));
             powerUp.destroy();
             this.player.powerMode += POWER_UP_AMOUNT;
             break;
@@ -589,34 +597,34 @@ function createAsteroid(scene, x, y, dx, dy, size)
                 let children = [];
                 children.push(createAsteroid(
                     this.scene,
-                    this.x + randomRange(-ASTEROID_RADIUS, ASTEROID_RADIUS),
-                    this.y + randomRange(-ASTEROID_RADIUS, ASTEROID_RADIUS),
-                    randomRange(-ASTEROID_SPEED, ASTEROID_SPEED) + dx,
-                    randomRange(-ASTEROID_SPEED, ASTEROID_SPEED) + dy,
+                    this.x + Random.range(-ASTEROID_RADIUS, ASTEROID_RADIUS),
+                    this.y + Random.range(-ASTEROID_RADIUS, ASTEROID_RADIUS),
+                    Random.range(-ASTEROID_SPEED, ASTEROID_SPEED) + dx,
+                    Random.range(-ASTEROID_SPEED, ASTEROID_SPEED) + dy,
                     SMALL_ASTEROID_RADIUS)
                 );
                 children.push(createAsteroid(
                     this.scene,
-                    this.x + randomRange(-ASTEROID_RADIUS, ASTEROID_RADIUS),
-                    this.y + randomRange(-ASTEROID_RADIUS, ASTEROID_RADIUS),
-                    randomRange(-ASTEROID_SPEED, ASTEROID_SPEED) + dx,
-                    randomRange(-ASTEROID_SPEED, ASTEROID_SPEED) + dy,
+                    this.x + Random.range(-ASTEROID_RADIUS, ASTEROID_RADIUS),
+                    this.y + Random.range(-ASTEROID_RADIUS, ASTEROID_RADIUS),
+                    Random.range(-ASTEROID_SPEED, ASTEROID_SPEED) + dx,
+                    Random.range(-ASTEROID_SPEED, ASTEROID_SPEED) + dy,
                     SMALL_ASTEROID_RADIUS)
                 );
                 children.push(createAsteroid(
                     this.scene,
-                    this.x + randomRange(-ASTEROID_RADIUS, ASTEROID_RADIUS),
-                    this.y + randomRange(-ASTEROID_RADIUS, ASTEROID_RADIUS),
-                    randomRange(-ASTEROID_SPEED, ASTEROID_SPEED) + dx,
-                    randomRange(-ASTEROID_SPEED, ASTEROID_SPEED) + dy,
+                    this.x + Random.range(-ASTEROID_RADIUS, ASTEROID_RADIUS),
+                    this.y + Random.range(-ASTEROID_RADIUS, ASTEROID_RADIUS),
+                    Random.range(-ASTEROID_SPEED, ASTEROID_SPEED) + dx,
+                    Random.range(-ASTEROID_SPEED, ASTEROID_SPEED) + dy,
                     SMALL_ASTEROID_RADIUS)
                 );
                 children.push(createAsteroid(
                     this.scene,
-                    this.x + randomRange(-ASTEROID_RADIUS, ASTEROID_RADIUS),
-                    this.y + randomRange(-ASTEROID_RADIUS, ASTEROID_RADIUS),
-                    randomRange(-ASTEROID_SPEED, ASTEROID_SPEED) + dx,
-                    randomRange(-ASTEROID_SPEED, ASTEROID_SPEED) + dy,
+                    this.x + Random.range(-ASTEROID_RADIUS, ASTEROID_RADIUS),
+                    this.y + Random.range(-ASTEROID_RADIUS, ASTEROID_RADIUS),
+                    Random.range(-ASTEROID_SPEED, ASTEROID_SPEED) + dx,
+                    Random.range(-ASTEROID_SPEED, ASTEROID_SPEED) + dy,
                     SMALL_ASTEROID_RADIUS)
                 );
                 this.scene.asteroids.push(...children);
@@ -679,19 +687,19 @@ function nextLevel(scene)
         scene.asteroidSpawner.spawn();
     }
 
-    if (Math.random() > POWER_UP_SPAWN_CHANCE)
+    if (Random.next() > POWER_UP_SPAWN_CHANCE)
     {
         scene.powerUpSpawner.spawn();
     }
     
-    if (sounds.music.isPaused()) sounds.music.play();
+    if (!sounds.music.playing) sounds.music.play();
 }
 
 function killPlayer(scene)
 {
     scene.gamePause = true;
     scene.showPlayer = false;
-    explode(scene, scene.player.x, scene.player.y, 100, randomChoose.bind(null, PLAYER_EXPLODE_PARTICLE_COLORS));
+    explode(scene, scene.player.x, scene.player.y, 100, Random.choose.bind(null, PLAYER_EXPLODE_PARTICLE_COLORS));
     sounds.dead.play();
     sounds.boom.play();
     setTimeout(() => scene.gameStart = scene.gameWait = true, 1000);
@@ -699,16 +707,16 @@ function killPlayer(scene)
 
 function thrust(scene, x, y, dx, dy, color)
 {
-    if (Math.random() > 0.3)
+    if (Random.next() > 0.3)
     {
         let particle = createParticle(
             scene,
-            x + randomRange(...PLAYER_MOVE_PARTICLE_OFFSET_RANGE),
-            y + randomRange(...PLAYER_MOVE_PARTICLE_OFFSET_RANGE),
+            x + Random.range(...PLAYER_MOVE_PARTICLE_OFFSET_RANGE),
+            y + Random.range(...PLAYER_MOVE_PARTICLE_OFFSET_RANGE),
             dx, dy,
             color
         );
-        particle.age = randomRange(MAX_PARTICLE_AGE * MIN_PLAYER_MOVE_PARTICLE_LIFE_RATIO, MAX_PARTICLE_AGE * MAX_PLAYER_MOVE_PARTICLE_LIFE_RATIO);
+        particle.age = Random.range(MAX_PARTICLE_AGE * MIN_PLAYER_MOVE_PARTICLE_LIFE_RATIO, MAX_PARTICLE_AGE * MAX_PLAYER_MOVE_PARTICLE_LIFE_RATIO);
         scene.particles.push(particle);
     }
 }
@@ -721,8 +729,8 @@ function explode(scene, x, y, amount = 10, color)
             createParticle(
                 scene,
                 x, y,
-                randomRange(-1, 1) * PARTICLE_SPEED,
-                randomRange(-1, 1) * PARTICLE_SPEED,
+                Random.range(-1, 1) * PARTICLE_SPEED,
+                Random.range(-1, 1) * PARTICLE_SPEED,
                 color
             )
         );
@@ -853,16 +861,6 @@ function createSound(filepath, loop = false)
         .then(data => result._data = data);
 
     return result;
-}
-
-function randomChoose(choices)
-{
-    return choices[Math.floor(Math.random() * choices.length)];
-}
-
-function randomRange(min, max)
-{
-    return Math.random() * (max - min) + min;
 }
 
 main();

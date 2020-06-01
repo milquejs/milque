@@ -1,17 +1,20 @@
-export const AUDIO_CONTEXT = new AudioContext();
+const AUDIO_CONTEXT = new AudioContext();
 
 export async function loadAudio(filepath, opts = {})
 {
+    const audioContext = AUDIO_CONTEXT;
+
     let result = await fetch(filepath);
     let buffer = await result.arrayBuffer();
-    let data = await AUDIO_CONTEXT.decodeAudioData(buffer);
-    return new Sound(data, Boolean(opts.loop));
+    let data = await audioContext.decodeAudioData(buffer);
+    return new Sound(audioContext, data, Boolean(opts.loop));
 }
 
 export class Sound
 {
-    constructor(audioBuffer, loop = false)
+    constructor(audioContext, audioBuffer, loop = false)
     {
+        this.context = audioContext;
         this.buffer = audioBuffer;
 
         this._source = null;
