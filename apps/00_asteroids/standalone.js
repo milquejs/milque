@@ -1,3 +1,5 @@
+import * as Starfield from './game/Starfield.js';
+
 const canvas = document.createElement('canvas');
 const ctx = canvas.getContext('2d');
 canvas.style = 'width: 100%; image-rendering: pixelated;';
@@ -205,6 +207,8 @@ function start()
         }
     };
 
+    this.starfield = Starfield.createStarfield(canvas.width, canvas.height);
+
     this.gamePause = true;
     this.showPlayer = true;
     this.gameStart = true;
@@ -385,6 +389,9 @@ function update(dt)
         }
     }
 
+    // Update starfield
+    Starfield.updateStarfield(this.starfield);
+
     // Update spawner
     this.asteroidSpawner.update(dt);
     this.powerUpSpawner.update(dt);
@@ -403,6 +410,9 @@ function render(ctx)
     // Draw background
     ctx.fillStyle = 'black';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Draw starfield
+    Starfield.renderStarfield(ctx, this.starfield);
 
     // Draw hint
     ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
