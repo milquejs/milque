@@ -1,19 +1,19 @@
-import * as AssetLoader from './AssetLoader.js';
-import * as Audio from './Audio.js';
-import * as Game from './Game.js';
-import * as Random from './Random.js';
+import * as AssetLoader from './lib/AssetLoader.js';
+import * as Audio from './lib/Audio.js';
+import * as Game from './lib/Game.js';
+import * as Random from './lib/Random.js';
 
-import * as FlashAnimation from './FlashAnimation.js';
+import * as FlashAnimation from './game/FlashAnimation.js';
 
-import * as Starfield from './Starfield.js';
-import * as Player from './Player.js';
+import * as Starfield from './game/Starfield.js';
+import * as Player from './game/Player.js';
 
 /*
-import * as Asteroids from './Asteroids.js';
-import * as Bullets from './Bullets.js';
-import * as Particles from './Particles.js';
-import * as PowerUps from './PowerUps.js';
-import * as MainControls from './MainControls.js';
+import * as Asteroids from './game/Asteroids.js';
+import * as Bullets from './game/Bullets.js';
+import * as Particles from './game/Particles.js';
+import * as PowerUps from './game/PowerUps.js';
+import * as MainControls from './game/MainControls.js';
 */
 
 const ASSET_PARENT_PATH = '../../res';
