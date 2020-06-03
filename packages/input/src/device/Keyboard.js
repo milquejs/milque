@@ -1,22 +1,79 @@
 import { createButton, nextButton, pollButton } from './KeyButton.js';
+import { InputDevice } from './InputDevice.js';
 
-export class Keyboard
+const KEYBOARD_CONTEXT_KEY = Symbol('keyboardEventContext');
+
+export class Keyboard extends InputDevice
 {
+    /** @override */
+    static addInputEventListener(eventTarget, listener)
+    {
+        let ctx;
+        if (!(KEYBOARD_CONTEXT_KEY in keyboardEventHandler))
+        {
+            ctx = {
+                handler: keyboardEventHandler,
+                target: elementTarget,
+                down: null,
+                up: null,
+                _keyEvent: {
+                    type: 'key',
+                    target: elementTarget,
+                    device: 'keyboard',
+                    key: null,
+                    event: null,
+                    value: null,
+                },
+            };
+    
+            let down = onKeyDown.bind(ctx);
+            let up = onKeyUp.bind(ctx);
+        
+            ctx.down = down;
+            ctx.up = up;
+        
+            keyboardEventHandler[KEYBOARD_CONTEXT_KEY] = ctx;
+        }
+        else
+        {
+            ctx = keyboardEventHandler[KEYBOARD_CONTEXT_KEY];
+        }
+    
+        elementTarget.addEventListener('keyup', ctx.up);
+        elementTarget.addEventListener('keydown', ctx.down);
+    
+        return elementTarget;
+    }
+
+    /** @override */
+    static removeInputEventListener(eventTarget, listener)
+    {
+        if (KEYBOARD_CONTEXT_KEY in keyboardEventHandler)
+        {
+            let ctx = keyboardEventHandler[KEYBOARD_CONTEXT_KEY];
+        
+            elementTarget.removeEventListener('keyup', ctx.up);
+            elementTarget.removeEventListener('keydown', ctx.down);
+        }
+    
+        return elementTarget;
+    }
+
     constructor(eventTarget)
     {
-        this.target = eventTarget;
+        super(eventTarget);
 
         this._buttons = [];
 
         this.onKeyEvent = this.onKeyEvent.bind(this);
 
-        addKeyboardEventListener(eventTarget, this.onKeyEvent);
+        Keyboard.addInputEventListener(eventTarget, this.onKeyEvent);
     }
 
     destroy()
     {
-        removeKeyboardEventListener(this.target, this.onKeyEvent);
-        this.target = null;
+        Keyboard.removeInputEventListener(this.eventTarget, this.onKeyEvent);
+        this.eventTarget = null;
     }
 
     poll()
@@ -41,60 +98,6 @@ export class Keyboard
 
         return false;
     }
-}
-
-const KEYBOARD_CONTEXT_KEY = Symbol('keyboardEventContext');
-
-export function addKeyboardEventListener(elementTarget, keyboardEventHandler)
-{
-    let ctx;
-    if (!(KEYBOARD_CONTEXT_KEY in keyboardEventHandler))
-    {
-        ctx = {
-            handler: keyboardEventHandler,
-            target: elementTarget,
-            down: null,
-            up: null,
-            _keyEvent: {
-                type: 'key',
-                target: elementTarget,
-                device: 'keyboard',
-                key: null,
-                event: null,
-                value: null,
-            },
-        };
-
-        let down = onKeyDown.bind(ctx);
-        let up = onKeyUp.bind(ctx);
-    
-        ctx.down = down;
-        ctx.up = up;
-    
-        keyboardEventHandler[KEYBOARD_CONTEXT_KEY] = ctx;
-    }
-    else
-    {
-        ctx = keyboardEventHandler[KEYBOARD_CONTEXT_KEY];
-    }
-
-    elementTarget.addEventListener('keyup', ctx.up);
-    elementTarget.addEventListener('keydown', ctx.down);
-
-    return elementTarget;
-}
-
-export function removeKeyboardEventListener(elementTarget, keyboardEventHandler)
-{
-    if (KEYBOARD_CONTEXT_KEY in keyboardEventHandler)
-    {
-        let ctx = keyboardEventHandler[KEYBOARD_CONTEXT_KEY];
-    
-        elementTarget.removeEventListener('keyup', ctx.up);
-        elementTarget.removeEventListener('keydown', ctx.down);
-    }
-
-    return elementTarget;
 }
 
 function onKeyDown(e)
