@@ -3,7 +3,7 @@ export function createButton()
     return {
         up: 0,
         down: 0,
-        state: 0,
+        value: 0,
         next: {
             up: 0,
             down: 0,
@@ -25,16 +25,16 @@ export function nextButton(button, event, value)
 
 export function pollButton(button)
 {
-    if (button.state)
+    if (button.value)
     {
         if (button.up && !button.next.up)
         {
-            button.state = 0;
+            button.value = 0;
         }
     }
     else if (button.next.down)
     {
-        button.state = 1;
+        button.value = 1;
     }
 
     button.down = button.next.down;

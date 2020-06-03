@@ -59,20 +59,43 @@ export class Keyboard extends InputDevice
         return elementTarget;
     }
 
-    constructor(eventTarget)
+    constructor(eventTarget, keyList = undefined)
     {
         super(eventTarget);
 
         this._buttons = [];
+        this._managed = Array.isArray(keyList);
 
-        this.onKeyEvent = this.onKeyEvent.bind(this);
+        this.onManagedKeyEvent = this.onManagedKeyEvent.bind(this);
+        this.onUnmanagedKeyEvent = this.onUnmanagedKeyEvent.bind(this);
 
-        Keyboard.addInputEventListener(eventTarget, this.onKeyEvent);
+        if (this._managed)
+        {
+            for(let key of keyList)
+            {
+                let button = createButton();
+                this[key] = button;
+                this._buttons.push(button);
+            }
+
+            Keyboard.addInputEventListener(eventTarget, this.onManagedKeyEvent);
+        }
+        else
+        {
+            Keyboard.addInputEventListener(eventTarget, this.onUnmanagedKeyEvent);
+        }
     }
 
     destroy()
     {
-        Keyboard.removeInputEventListener(this.eventTarget, this.onKeyEvent);
+        if (this._managed)
+        {
+            Keyboard.removeInputEventListener(this.eventTarget, this.onManagedKeyEvent);
+        }
+        else
+        {
+            Keyboard.removeInputEventListener(this.eventTarget, this.onUnmanagedKeyEvent);
+        }
         this.eventTarget = null;
     }
 
@@ -85,7 +108,7 @@ export class Keyboard extends InputDevice
         return this;
     }
 
-    onKeyEvent(e)
+    onUnmanagedKeyEvent(e)
     {
         if (!(e.key in this))
         {
@@ -95,6 +118,16 @@ export class Keyboard extends InputDevice
         }
         
         nextButton(this[e.key], e.event, e.value);
+
+        return false;
+    }
+
+    onManagedKeyEvent(e)
+    {
+        if (e.key in this)
+        {
+            nextButton(this[e.key], e.event, e.value);
+        }
 
         return false;
     }
