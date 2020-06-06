@@ -1,5 +1,9 @@
 import { SimpleRandomGenerator } from './generators/SimpleRandomGenerator.js';
 
+export const TILE_SIZE = 10;
+export const CHUNK_SIZE = 16;
+export const CHUNK_DATA_LENGTH = CHUNK_SIZE * CHUNK_SIZE;
+
 export function toChunkId(chunkX, chunkY)
 {
     return (chunkX << 16) + chunkY;
@@ -64,10 +68,6 @@ export function renderTile(ctx, value)
 
     ctx.fillRect(0, 0, TILE_SIZE, TILE_SIZE);
 }
-
-export const TILE_SIZE = 10;
-export const CHUNK_SIZE = 16;
-export const CHUNK_DATA_LENGTH = CHUNK_SIZE * CHUNK_SIZE;
 
 export class TileMap
 {

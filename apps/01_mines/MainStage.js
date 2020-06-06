@@ -2,8 +2,10 @@ import { mat4, vec3, quat } from '../../node_modules/gl-matrix/esm/index.js';
 
 import { Mouse, Keyboard } from '../../packages/input/src/index.js';
 import { CanvasView } from './lib/CanvasView.js';
-import { Camera2D } from './lib/Camera2D.js';
-import { TileMap, renderTileMap, TILE_SIZE, CHUNK_SIZE } from './lib/TileMap.js';
+import { Camera2D } from './lib/camera/Camera2D.js';
+import { TileMap, renderTileMap, CHUNK_DATA_LENGTH, CHUNK_SIZE, TILE_SIZE } from './lib/TileMap.js';
+import { createIntersectionWorld } from './lib/intersection/IntersectionWorld.js';
+import { createAABB, createRect } from './lib/intersection/IntersectionHelper.js';
 
 export async function load()
 {
@@ -22,14 +24,21 @@ export async function load()
 export function start()
 {
     this.tileMap = new TileMap();
+    this.tileMap.chunksWithin([], -1, -1, 1, 1, true);
 
-    // this.tileMap.chunksWithin([], -1, -1, 1, 1);
-    this.tileMap.chunkAt(0, 0);
+    setTimeout(() => {
+        let statics = getStaticsForChunk(this.tileMap.chunkAt(0, 0));
+        this.intersections.statics.push(...statics);
+    }, 100);
 
     this.player = {
         x: 0,
         y: 0,
+        aabb: createAABB(-10, -10, 4, 4),
     };
+
+    this.intersections = createIntersectionWorld();
+    this.intersections.dynamics.push(this.player.aabb);
 }
 
 export function update(dt)
@@ -37,12 +46,12 @@ export function update(dt)
     this.keyboard.poll();
     this.mouse.poll();
 
-    const moveSpeed = 3;
-    let dy = this.keyboard.ArrowDown.value - this.keyboard.ArrowUp.value;
+    const moveSpeed = 0.1;
     let dx = this.keyboard.ArrowRight.value - this.keyboard.ArrowLeft.value;
+    let dy = this.keyboard.ArrowDown.value - this.keyboard.ArrowUp.value;
 
-    this.player.x += dx * moveSpeed;
-    this.player.y += dy * moveSpeed;
+    this.player.aabb.dx = dx * moveSpeed;
+    this.player.aabb.dy = dy * moveSpeed;
 
     this.camera.moveTo(this.player.x, this.player.y, 0, 0.05);
 
@@ -53,7 +62,12 @@ export function update(dt)
         this.camera.x - halfDisplayWidth,
         this.camera.y - halfDisplayHeight,
         this.camera.x + halfDisplayWidth,
-        this.camera.y + halfDisplayHeight);
+        this.camera.y + halfDisplayHeight, false);
+    
+    this.intersections.update(dt);
+
+    this.player.x = Math.floor(this.player.aabb.x);
+    this.player.y = Math.floor(this.player.aabb.y);
 }
 
 export function render(ctx)
@@ -80,6 +94,8 @@ export function render(ctx)
         ctx.translate(this.player.x, this.player.y);
         renderPlayer(ctx, this.player);
         ctx.translate(-this.player.x, -this.player.y);
+
+        this.intersections.render(ctx);
     }
     finally
     {
@@ -94,4 +110,18 @@ function renderPlayer(ctx, player)
 {
     ctx.fillStyle = 'red';
     ctx.fillRect(-4, -4, 8, 8);
+}
+
+function getStaticsForChunk(chunk)
+{
+    let statics = [];
+    for(let i = 0; i < CHUNK_DATA_LENGTH; ++i)
+    {
+        if (chunk.getTile(i) === 0) {
+            let tileX = chunk.x + (i % CHUNK_SIZE) * TILE_SIZE;
+            let tileY = chunk.y + Math.floor(i / CHUNK_SIZE) * TILE_SIZE;
+            statics.push(createRect(tileX, tileY, tileX + TILE_SIZE, tileY + TILE_SIZE));
+        }
+    }
+    return statics;
 }
