@@ -172,6 +172,9 @@ export class ApplicationLoop
     {
         if (!this.pause) return;
 
+        // This is an intentional frame skip (due to pause).
+        this.prevFrameTime = ApplicationLoop.currentTime();
+
         this.paused = false;
 
         this.app.onResume();

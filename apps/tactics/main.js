@@ -95,7 +95,7 @@ function main()
 
         ctx.fillStyle = 'white';
         ctx.fillRect(mouse.x * width - 32, mouse.y * height - 32, 64, 64);
-        if (mouse.left.state) {
+        if (mouse.left.value) {
             camera.lookAt(mouse.x * width, mouse.y * height, 0, 1);
         }
     }

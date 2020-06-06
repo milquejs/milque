@@ -1,18 +1,19 @@
+import { InputDevice } from './InputDevice.js';
 import { createButton, nextButton, pollButton } from './KeyButton.js';
 
 const MOUSE_CONTEXT_KEY = Symbol('mouseEventContext');
 
-export class Mouse
+export class Mouse extends InputDevice
 {
     /** @override */
     static addInputEventListener(eventTarget, listener)
     {
         let ctx;
-        if (!(MOUSE_CONTEXT_KEY in mouseEventHandler))
+        if (!(MOUSE_CONTEXT_KEY in listener))
         {
             ctx = {
-                handler: mouseEventHandler,
-                target: elementTarget,
+                handler: listener,
+                target: eventTarget,
                 down: null,
                 up: null,
                 move: null,
@@ -20,7 +21,7 @@ export class Mouse
                 _down: false,
                 _keyEvent: {
                     type: 'key',
-                    target: elementTarget,
+                    target: eventTarget,
                     device: 'mouse',
                     key: null,
                     event: null,
@@ -28,7 +29,7 @@ export class Mouse
                 },
                 _posEvent: {
                     type: 'pos',
-                    target: elementTarget,
+                    target: eventTarget,
                     device: 'mouse',
                     key: 'pos',
                     event: 'move',
@@ -46,35 +47,35 @@ export class Mouse
             ctx.move = move;
             ctx.contextmenu = contextmenu;
         
-            mouseEventHandler[MOUSE_CONTEXT_KEY] = ctx;
+            listener[MOUSE_CONTEXT_KEY] = ctx;
         }
         else
         {
-            ctx = mouseEventHandler[MOUSE_CONTEXT_KEY];
+            ctx = listener[MOUSE_CONTEXT_KEY];
         }
     
-        elementTarget.addEventListener('mousedown', ctx.down);
+        eventTarget.addEventListener('mousedown', ctx.down);
         document.addEventListener('mouseup', ctx.up);
-        elementTarget.addEventListener('contextmenu', ctx.contextmenu);
+        eventTarget.addEventListener('contextmenu', ctx.contextmenu);
         document.addEventListener('mousemove', ctx.move);
     
-        return elementTarget;
+        return eventTarget;
     }
 
     /** @override */
     static removeInputEventListener(eventTarget, listener)
     {
-        if (MOUSE_CONTEXT_KEY in mouseEventHandler)
+        if (MOUSE_CONTEXT_KEY in listener)
         {
-            let ctx = mouseEventHandler[MOUSE_CONTEXT_KEY];
+            let ctx = listener[MOUSE_CONTEXT_KEY];
         
-            elementTarget.removeEventListener('mousedown', ctx.down);
+            eventTarget.removeEventListener('mousedown', ctx.down);
             document.removeEventListener('mouseup', ctx.up);
-            elementTarget.removeEventListener('contextmenu', ctx.contextmenu);
+            eventTarget.removeEventListener('contextmenu', ctx.contextmenu);
             document.removeEventListener('mousemove', ctx.move);
         }
     
-        return elementTarget;
+        return eventTarget;
     }
 
     constructor(eventTarget)
@@ -86,8 +87,8 @@ export class Mouse
 
         this.dx = 0;
         this.dy = 0;
-        this.nextDx = 0;
-        this.nextDy = 0;
+        this.nextdx = 0;
+        this.nextdy = 0;
 
         this.left = createButton();
         this.middle = createButton();
@@ -97,21 +98,21 @@ export class Mouse
 
         this.onMouseEvent = this.onMouseEvent.bind(this);
 
-        addMouseEventListener(eventTarget, this.onMouseEvent);
+        Mouse.addInputEventListener(eventTarget, this.onMouseEvent);
     }
 
     destroy()
     {
-        removeMouseEventListener(this.eventTarget, this.onMouseEvent);
+        Mouse.removeInputEventListener(this.eventTarget, this.onMouseEvent);
         this.eventTarget = null;
     }
 
     poll()
     {
-        this.dx = this.nextDx;
-        this.dy = this.nextDy;
-        this.nextDx = 0;
-        this.nextDy = 0;
+        this.dx = this.nextdx;
+        this.dy = this.nextdy;
+        this.nextdx = 0;
+        this.nextdy = 0;
 
         pollButton(this.left);
         pollButton(this.middle);
@@ -144,8 +145,8 @@ export class Mouse
             case 'pos':
                 this.x = e.x;
                 this.y = e.y;
-                this.nextDx += e.dx;
-                this.nextDy += e.dy;
+                this.nextdx += e.dx;
+                this.nextdy += e.dy;
                 
                 // Cannot consume a position event.
                 return;

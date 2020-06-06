@@ -9,20 +9,23 @@ export class Keyboard extends InputDevice
     static addInputEventListener(eventTarget, listener)
     {
         let ctx;
-        if (!(KEYBOARD_CONTEXT_KEY in keyboardEventHandler))
+        if (!(KEYBOARD_CONTEXT_KEY in listener))
         {
             ctx = {
-                handler: keyboardEventHandler,
-                target: elementTarget,
+                handler: listener,
+                target: eventTarget,
                 down: null,
                 up: null,
                 _keyEvent: {
                     type: 'key',
-                    target: elementTarget,
+                    target: eventTarget,
                     device: 'keyboard',
                     key: null,
                     event: null,
                     value: null,
+                    control: false,
+                    shift: false,
+                    alt: false,
                 },
             };
     
@@ -32,31 +35,31 @@ export class Keyboard extends InputDevice
             ctx.down = down;
             ctx.up = up;
         
-            keyboardEventHandler[KEYBOARD_CONTEXT_KEY] = ctx;
+            listener[KEYBOARD_CONTEXT_KEY] = ctx;
         }
         else
         {
-            ctx = keyboardEventHandler[KEYBOARD_CONTEXT_KEY];
+            ctx = listener[KEYBOARD_CONTEXT_KEY];
         }
     
-        elementTarget.addEventListener('keyup', ctx.up);
-        elementTarget.addEventListener('keydown', ctx.down);
+        eventTarget.addEventListener('keyup', ctx.up);
+        eventTarget.addEventListener('keydown', ctx.down);
     
-        return elementTarget;
+        return eventTarget;
     }
 
     /** @override */
     static removeInputEventListener(eventTarget, listener)
     {
-        if (KEYBOARD_CONTEXT_KEY in keyboardEventHandler)
+        if (KEYBOARD_CONTEXT_KEY in listener)
         {
-            let ctx = keyboardEventHandler[KEYBOARD_CONTEXT_KEY];
+            let ctx = listener[KEYBOARD_CONTEXT_KEY];
         
-            elementTarget.removeEventListener('keyup', ctx.up);
-            elementTarget.removeEventListener('keydown', ctx.down);
+            eventTarget.removeEventListener('keyup', ctx.up);
+            eventTarget.removeEventListener('keydown', ctx.down);
         }
     
-        return elementTarget;
+        return eventTarget;
     }
 
     constructor(eventTarget, keyList = undefined)
@@ -127,6 +130,8 @@ export class Keyboard extends InputDevice
         if (e.key in this)
         {
             nextButton(this[e.key], e.event, e.value);
+
+            return true;
         }
 
         return false;
@@ -139,9 +144,13 @@ function onKeyDown(e)
     if (e.repeat) return;
 
     let event = this._keyEvent;
-    event.key = e.key;
+    // NOTE: You could use `e.key`, but we care about location rather than printable character.
+    event.key = e.code;
     event.event = 'down';
     event.value = 1;
+    event.control = e.ctrlKey;
+    event.shift = e.shiftKey;
+    event.alt = e.altKey;
 
     let result = this.handler.call(undefined, event);
 
@@ -156,9 +165,13 @@ function onKeyDown(e)
 function onKeyUp(e)
 {
     let event = this._keyEvent;
-    event.key = e.key;
+    // NOTE: You could use `e.key`, but we care about location rather than printable character.
+    event.key = e.code;
     event.event = 'up';
     event.value = 1;
+    event.control = e.ctrlKey;
+    event.shift = e.shiftKey;
+    event.alt = e.altKey;
 
     let result = this.handler.call(undefined, event);
 

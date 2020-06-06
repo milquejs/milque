@@ -51,7 +51,7 @@ export function start(context)
         let display = document.querySelector('display-port');
         game.setDisplay(display);
         gameContext.display = display;
-        context.load().then(() => loop.start());
+        gameContext.load().then(() => loop.start());
     });
 
     return gameContext;
