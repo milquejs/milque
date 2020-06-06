@@ -121,8 +121,8 @@ export class Keyboard extends InputDevice
         }
         
         nextButton(this[e.key], e.event, e.value);
-
-        return false;
+        
+        return true;
     }
 
     onManagedKeyEvent(e)
@@ -133,8 +133,6 @@ export class Keyboard extends InputDevice
 
             return true;
         }
-
-        return false;
     }
 }
 
@@ -154,7 +152,7 @@ function onKeyDown(e)
 
     let result = this.handler.call(undefined, event);
 
-    if (!result)
+    if (result)
     {
         e.preventDefault();
         e.stopPropagation();
@@ -175,7 +173,7 @@ function onKeyUp(e)
 
     let result = this.handler.call(undefined, event);
 
-    if (!result)
+    if (result)
     {
         e.preventDefault();
         e.stopPropagation();

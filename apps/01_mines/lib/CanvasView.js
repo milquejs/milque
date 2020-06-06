@@ -22,7 +22,7 @@ export class CanvasView
         return this;
     }
 
-    begin(ctx)
+    begin(ctx, offsetX = 0, offsetY = 0)
     {
         if (this.ctx)
         {
@@ -33,7 +33,7 @@ export class CanvasView
 
         ctx.setTransform(this.projectionMatrix);
         const { a, b, c, d, e, f } = this.viewMatrix;
-        ctx.transform(a, b, c, d, e, f);
+        ctx.transform(a, b, c, d, e + offsetX, f + offsetY);
 
         this.ctx = ctx;
     }
