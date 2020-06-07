@@ -1,11 +1,9 @@
-import { mat4, vec3, quat } from '../../node_modules/gl-matrix/esm/index.js';
-
 import { Mouse, Keyboard } from '../../packages/input/src/index.js';
-import { CanvasView } from './lib/CanvasView.js';
-import { Camera2D } from './lib/camera/Camera2D.js';
-import { TileMap, renderTileMap, Chunk, CHUNK_DATA_LENGTH, CHUNK_SIZE, TILE_SIZE } from './lib/tiles/TileMap.js';
-import { createIntersectionWorld } from './lib/intersection/IntersectionWorld.js';
-import { createAABB, createRect } from './lib/intersection/IntersectionHelper.js';
+import { CanvasView } from '../../packages/lib/src/CanvasView.js';
+import { Camera2D } from '../../packages/lib/src/camera/Camera2D.js';
+import { TileMap, renderTileMap, Chunk, CHUNK_DATA_LENGTH, CHUNK_SIZE, TILE_SIZE } from '../../packages/lib/src/tiles/TileMap.js';
+import { createIntersectionWorld } from '../../packages/lib/src/intersection/IntersectionWorld.js';
+import { createAABB, createRect } from '../../packages/lib/src/intersection/IntersectionHelper.js';
 
 export async function load()
 {

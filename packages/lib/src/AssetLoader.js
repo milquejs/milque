@@ -82,6 +82,11 @@ export async function loadAssetList(assetList, assetParentPath = '.')
 
 export async function loadAsset(assetSrc, assetOpts = undefined, assetParentPath = '.')
 {
+    if (assetSrc.indexOf(':') < 0)
+    {
+        throw new Error('Missing type for asset source.');
+    }
+
     let [assetType, assetPath] = assetSrc.split(':');
     let assetLoader = getAssetLoader(assetType);
     return await assetLoader(assetParentPath + '/' + assetPath, assetOpts);

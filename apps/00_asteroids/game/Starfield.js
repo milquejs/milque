@@ -1,4 +1,4 @@
-import * as Random from '../lib/Random.js';
+import * as Random from '../../../packages/lib/src/Random.js';
 
 /**
  * What I learned:
