@@ -3,7 +3,7 @@ import { mat4, vec3, quat } from '../../node_modules/gl-matrix/esm/index.js';
 import { Mouse, Keyboard } from '../../packages/input/src/index.js';
 import { CanvasView } from './lib/CanvasView.js';
 import { Camera2D } from './lib/camera/Camera2D.js';
-import { TileMap, renderTileMap, CHUNK_DATA_LENGTH, CHUNK_SIZE, TILE_SIZE } from './lib/TileMap.js';
+import { TileMap, renderTileMap, Chunk, CHUNK_DATA_LENGTH, CHUNK_SIZE, TILE_SIZE } from './lib/TileMap.js';
 import { createIntersectionWorld } from './lib/intersection/IntersectionWorld.js';
 import { createAABB, createRect } from './lib/intersection/IntersectionHelper.js';
 
@@ -23,22 +23,18 @@ export async function load()
 
 export function start()
 {
-    this.tileMap = new TileMap();
-    this.tileMap.chunksWithin([], -1, -1, 1, 1, true);
-
-    setTimeout(() => {
-        let statics = getStaticsForChunk(this.tileMap.chunkAt(0, 0));
-        this.intersections.statics.push(...statics);
-    }, 100);
+    this.tileMap = new TileMap(this, IntersectionChunk);
 
     this.player = {
         x: 0,
         y: 0,
-        aabb: createAABB(-10, -10, 4, 4),
+        aabb: createAABB(-10, 0, 4, 4),
     };
 
     this.intersections = createIntersectionWorld();
     this.intersections.dynamics.push(this.player.aabb);
+
+    this.tileMap.chunksWithin([], -1, -1, 1, 1, true);
 }
 
 export function update(dt)
@@ -58,11 +54,16 @@ export function update(dt)
     const halfDisplayWidth = this.display.width / 2;
     const halfDisplayHeight = this.display.height / 2;
 
-    this.tileMap.chunksWithin([],
+    let activeChunks = this.tileMap.chunksWithin([],
         this.camera.x - halfDisplayWidth,
         this.camera.y - halfDisplayHeight,
         this.camera.x + halfDisplayWidth,
-        this.camera.y + halfDisplayHeight, false);
+        this.camera.y + halfDisplayHeight, true);
+
+    for(let chunk of activeChunks)
+    {
+        chunk.markActive(this);
+    }
     
     this.intersections.update(dt);
 
@@ -110,6 +111,39 @@ function renderPlayer(ctx, player)
 {
     ctx.fillStyle = 'red';
     ctx.fillRect(-4, -4, 8, 8);
+}
+
+class IntersectionChunk extends Chunk
+{
+    /** @override */
+    static async loadChunkData(chunk)
+    {
+        super.loadChunkData(chunk);
+
+        chunk.data.statics = getStaticsForChunk(chunk);
+        chunk.data.staticsEnabled = false;
+    }
+
+    constructor(chunkId, chunkX, chunkY)
+    {
+        super(chunkId, chunkX, chunkY);
+    }
+
+    /** @override */
+    onChunkLoaded(world)
+    {
+        world.intersections.statics.push(...this.data.statics);
+    }
+
+    /** @override */
+    onChunkUnloaded(world)
+    {
+        for(let collider of this.data.statics)
+        {
+            let i = world.intersections.statics.indexOf(collider);
+            world.intersections.statics.splice(i, 1);
+        }
+    }
 }
 
 function getStaticsForChunk(chunk)
