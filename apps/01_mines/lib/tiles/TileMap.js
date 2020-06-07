@@ -1,4 +1,4 @@
-import { SimpleRandomGenerator } from './generators/SimpleRandomGenerator.js';
+import { SimpleRandomGenerator } from '../generators/SimpleRandomGenerator.js';
 
 export const TILE_SIZE = 10;
 export const CHUNK_SIZE = 16;
@@ -66,13 +66,22 @@ export function renderTile(ctx, value)
 
 export class ChunkLoader
 {
-    constructor(world, chunkConstructor)
+    constructor(world, chunkConstructor, maxChunkIdleTime = MAX_CHUNK_IDLE_TIME)
     {
         this.world = world;
         this.chunkConstructor = chunkConstructor;
         this.chunksLoaded = new Map();
 
-        this.maxChunkIdleTime = MAX_CHUNK_IDLE_TIME;
+        this.maxChunkIdleTime = maxChunkIdleTime;
+
+        this._isLoading = new Set();
+        this._lastActiveTimes = new Map();
+    }
+
+    hasChunk(chunkX, chunkY)
+    {
+        const chunkId = this.getChunkId(chunkX, chunkY);
+        return this.chunksLoaded.has(chunkId);
     }
     
     getChunk(chunkX, chunkY, forceLoad = true)
@@ -121,13 +130,13 @@ export class ChunkLoader
 
     async _loadChunk(world, chunkId, chunk)
     {
-        chunk.loading = true;
+        this._isLoading.add(chunkId);
         this.chunksLoaded.set(chunkId, chunk);
         await this.chunkConstructor.loadChunkData(chunk)
             .then(() => {
                 this._unloadIdleChunks(world);
 
-                chunk.loading = false;
+                this._isLoading.delete(chunkId);
                 chunk.onChunkLoaded(world);
             })
             .catch(() => {
@@ -144,24 +153,44 @@ export class ChunkLoader
 
     _unloadIdleChunks(world)
     {
-        let currentChunkTime = this.chunkConstructor.getCurrentChunkTime(world);
+        const maxChunkIdleTime = this.maxChunkIdleTime;
+        const currentChunkTime = this.chunkConstructor.getCurrentChunkTime(world);
+        
         for(let chunk of this.chunksLoaded.values())
         {
-            if (chunk.loading) continue;
-            if (currentChunkTime - chunk.lastActiveTime >= this.maxChunkIdleTime)
+            if (this._isLoading.has(chunk.chunkId)) continue;
+            if (currentChunkTime - chunk.lastActiveTime >= maxChunkIdleTime)
             {
                 this._unloadChunk(world, chunk.chunkId, chunk);
             }
         }
     }
 
-    isChunkLoaded(chunkX, chunkY)
+    markActive(chunk)
     {
-        const chunkId = this.getChunkId(chunkX, chunkY);
-        return this.chunksLoaded.has(chunkId);
+        this._lastActiveTimes.set(chunk.chunkId, this.chunkConstructor.getCurrentChunkTime(this.world));
     }
 
-    getLoadedChunks()
+    isChunkLoading(chunk)
+    {
+        return this._isLoading.has(chunk.chunkId);
+    }
+
+    isChunkIdle(chunk)
+    {
+        const chunkId = chunk.chunkId;
+        if (this._lastActiveTimes.has(chunkId))
+        {
+            let idleTime = this.chunkConstructor.getCurrentChunkTime(this.world) - this._lastActiveTimes.get(chunkId);
+            return idleTime >= this.maxChunkIdleTime;
+        }
+        else
+        {
+            return true;
+        }
+    }
+
+    getChunks()
     {
         return this.chunksLoaded.values();
     }
@@ -242,9 +271,6 @@ export class Chunk
         this.x = chunkX * CHUNK_SIZE * TILE_SIZE;
         this.y = chunkY * CHUNK_SIZE * TILE_SIZE;
 
-        this.loading = false;
-        this.lastActiveTime = 0;
-
         this.data = {
             tiles: new Uint8Array(CHUNK_DATA_LENGTH).fill(0),
         };
@@ -255,12 +281,6 @@ export class Chunk
 
     /** @abstract */
     onChunkUnloaded(world) {}
-
-    markActive(world)
-    {
-        this.lastActiveTime = this.constructor.getCurrentChunkTime(world);
-        return this;
-    }
 
     setTile(index, value)
     {

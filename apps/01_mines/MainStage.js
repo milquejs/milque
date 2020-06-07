@@ -3,7 +3,7 @@ import { mat4, vec3, quat } from '../../node_modules/gl-matrix/esm/index.js';
 import { Mouse, Keyboard } from '../../packages/input/src/index.js';
 import { CanvasView } from './lib/CanvasView.js';
 import { Camera2D } from './lib/camera/Camera2D.js';
-import { TileMap, renderTileMap, Chunk, CHUNK_DATA_LENGTH, CHUNK_SIZE, TILE_SIZE } from './lib/TileMap.js';
+import { TileMap, renderTileMap, Chunk, CHUNK_DATA_LENGTH, CHUNK_SIZE, TILE_SIZE } from './lib/tiles/TileMap.js';
 import { createIntersectionWorld } from './lib/intersection/IntersectionWorld.js';
 import { createAABB, createRect } from './lib/intersection/IntersectionHelper.js';
 
@@ -62,7 +62,7 @@ export function update(dt)
 
     for(let chunk of activeChunks)
     {
-        chunk.markActive(this);
+        this.tileMap.chunkLoader.markActive(chunk);
     }
     
     this.intersections.update(dt);
