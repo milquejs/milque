@@ -4,15 +4,9 @@ export const TILE_SIZE = 10;
 export const CHUNK_SIZE = 16;
 export const CHUNK_DATA_LENGTH = CHUNK_SIZE * CHUNK_SIZE;
 
-export function toChunkId(chunkX, chunkY)
-{
-    return (chunkX << 16) + chunkY;
-}
-
 export function renderTileMap(ctx, tileMap, left, top, right, bottom)
 {
     let renderedChunks = tileMap.chunksWithin([], left, top, right, bottom, false);
-    // let renderedChunks = tileMap.loadedChunks.values();
 
     for(let chunk of renderedChunks)
     {
@@ -69,13 +63,84 @@ export function renderTile(ctx, value)
     ctx.fillRect(0, 0, TILE_SIZE, TILE_SIZE);
 }
 
+export class ChunkLoader
+{
+    constructor(chunkConstructor)
+    {
+        this.chunkConstructor = chunkConstructor;
+        this.chunksLoaded = new Map();
+    }
+
+    async loadChunk(chunkX, chunkY)
+    {
+        const chunkId = this.getChunkId(chunkX, chunkY);
+        if (this.chunksLoaded.has(chunkId))
+        {
+            return this.chunksLoaded.get(chunkId);
+        }
+        else
+        {
+            let chunk = new (this.chunkConstructor)(chunkId, chunkX, chunkY);
+            await this._loadChunk(chunkId, chunk);
+            return chunk;
+        }
+    }
+    
+    getChunk(chunkX, chunkY, forceLoad = true)
+    {
+        const chunkId = this.getChunkId(chunkX, chunkY);
+        if (this.chunksLoaded.has(chunkId))
+        {
+            return this.chunksLoaded.get(chunkId);
+        }
+        else if (forceLoad)
+        {
+            let chunk = new (this.chunkConstructor)(chunkId, chunkX, chunkY);
+            this._loadChunk(chunkId, chunk);
+            return chunk;
+        }
+        else
+        {
+            return null;
+        }
+    }
+
+    async _loadChunk(chunkId, chunk)
+    {
+        chunk.loading = true;
+        this.chunksLoaded.set(chunkId, chunk);
+        await this.chunkConstructor.loadChunkData(chunk)
+            .then(chunk => { chunk.loading = false; })
+            .catch(() => this.chunksLoaded.delete(chunkId));
+        return chunk;
+    }
+
+    unloadChunk(chunkX, chunkY)
+    {
+        const chunkId = this.getChunkId(chunkX, chunkY);
+        if (this.chunksLoaded.has(chunkId))
+        {
+            this.chunksLoaded.delete(chunkId);
+        }
+    }
+
+    isChunkLoaded(chunkX, chunkY)
+    {
+        const chunkId = this.getChunkId(chunkX, chunkY);
+        return this.chunksLoaded.has(chunkId);
+    }
+
+    getChunkId(chunkX, chunkY)
+    {
+        return (chunkX << 16) + chunkY;
+    }
+}
+
 export class TileMap
 {
-    constructor()
+    constructor(chunkLoader = new ChunkLoader(Chunk))
     {
-        this.loadedChunks = new Map();
-
-        this._loading = new Set();
+        this.chunkLoader = chunkLoader;
     }
 
     tileAt(x, y, forceLoad = true)
@@ -91,41 +156,7 @@ export class TileMap
     {
         let chunkX = Math.floor((x / TILE_SIZE) / CHUNK_SIZE);
         let chunkY = Math.floor((y / TILE_SIZE) / CHUNK_SIZE);
-        let chunkId = toChunkId(chunkX, chunkY);
-        if (this.loadedChunks.has(chunkId))
-        {
-            return this.loadedChunks.get(chunkId);
-        }
-        else
-        {
-            if (forceLoad)
-            {
-                let chunk = new Chunk(chunkId, chunkX, chunkY);
-
-                let promise = loadChunkData(chunk);
-                promise.then(chunk => {
-                    if (!this.loadedChunks.has(chunk.chunkId))
-                    {
-                        this.loadedChunks.set(chunk.chunkId, chunk);
-                    }
-
-                    if (this._loading.has(promise))
-                    {
-                        this._loading.delete(promise);
-                    }
-                })
-                // Ignore errors.
-                .catch(error => {});
-
-                this._loading.add(promise);
-
-                return chunk;
-            }
-            else
-            {
-                return null;
-            }
-        }
+        return this.chunkLoader.getChunk(chunkX, chunkY, forceLoad);
     }
 
     chunksWithin(out, left, top, right, bottom, forceLoad = true)
@@ -148,19 +179,19 @@ export class TileMap
     }
 }
 
-export async function loadChunkData(chunk)
-{
-    const rand = new SimpleRandomGenerator(chunk.chunkId);
-    for(let i = 0; i < CHUNK_DATA_LENGTH; ++i)
-    {
-        chunk.setTile(i, Math.floor(rand.next() * 10));
-    }
-    return chunk;
-}
-
 export class Chunk
 {
-    constructor(chunkId, chunkX, chunkY, chunkData = undefined)
+    static async loadChunkData(chunk)
+    {
+        const rand = new SimpleRandomGenerator(chunk.chunkId);
+        for(let i = 0; i < CHUNK_DATA_LENGTH; ++i)
+        {
+            chunk.data.tiles[i] = Math.floor(rand.next() * 10);
+        }
+        return chunk;
+    }
+
+    constructor(chunkId, chunkX, chunkY)
     {
         this.chunkId = chunkId;
         this.chunkX = chunkX;
@@ -169,24 +200,20 @@ export class Chunk
         this.x = chunkX * CHUNK_SIZE * TILE_SIZE;
         this.y = chunkY * CHUNK_SIZE * TILE_SIZE;
 
-        this.data = new Uint8Array(CHUNK_DATA_LENGTH);
-        if (chunkData)
-        {
-            this.data.set(chunkData);
-        }
-        else
-        {
-            this.data.fill(0);
-        }
+        this.loading = false;
+
+        this.data = {
+            tiles: new Uint8Array(CHUNK_DATA_LENGTH).fill(0),
+        };
     }
 
     setTile(index, value)
     {
-        this.data[index] = value;
+        this.data.tiles[index] = value;
     }
     
     getTile(index)
     {
-        return this.data[index];
+        return this.data.tiles[index];
     }
 }
