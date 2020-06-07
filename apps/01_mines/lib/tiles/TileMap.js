@@ -130,12 +130,13 @@ export class ChunkLoader
 
     async _loadChunk(world, chunkId, chunk)
     {
+        this._unloadIdleChunks(world);
+
         this._isLoading.add(chunkId);
         this.chunksLoaded.set(chunkId, chunk);
+
         await this.chunkConstructor.loadChunkData(chunk)
             .then(() => {
-                this._unloadIdleChunks(world);
-
                 this._isLoading.delete(chunkId);
                 chunk.onChunkLoaded(world);
             })
@@ -148,7 +149,10 @@ export class ChunkLoader
     _unloadChunk(world, chunkId, chunk)
     {
         this.chunksLoaded.delete(chunkId);
+        
         chunk.onChunkUnloaded(world);
+
+        this._lastActiveTimes.delete(chunkId);
     }
 
     _unloadIdleChunks(world)
@@ -243,6 +247,15 @@ export class TileMap
             }
         }
         return out;
+    }
+
+    markActiveWithin(left, top, right, bottom, forceLoad = true)
+    {
+        let activeChunks = this.chunksWithin([], left, top, right, bottom, forceLoad);
+        for(let chunk of activeChunks)
+        {
+            this.chunkLoader.markActive(chunk);
+        }
     }
 }
 

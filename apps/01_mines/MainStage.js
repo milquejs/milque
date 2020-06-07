@@ -54,21 +54,16 @@ export function update(dt)
     const halfDisplayWidth = this.display.width / 2;
     const halfDisplayHeight = this.display.height / 2;
 
-    let activeChunks = this.tileMap.chunksWithin([],
+    this.tileMap.markActiveWithin(
         this.camera.x - halfDisplayWidth,
         this.camera.y - halfDisplayHeight,
         this.camera.x + halfDisplayWidth,
-        this.camera.y + halfDisplayHeight, true);
-
-    for(let chunk of activeChunks)
-    {
-        this.tileMap.chunkLoader.markActive(chunk);
-    }
+        this.camera.y + halfDisplayHeight);
     
     this.intersections.update(dt);
 
-    this.player.x = Math.floor(this.player.aabb.x);
-    this.player.y = Math.floor(this.player.aabb.y);
+    this.player.x = Math.round(this.player.aabb.x);
+    this.player.y = Math.round(this.player.aabb.y);
 }
 
 export function render(ctx)
@@ -96,7 +91,7 @@ export function render(ctx)
         renderPlayer(ctx, this.player);
         ctx.translate(-this.player.x, -this.player.y);
 
-        this.intersections.render(ctx);
+        // this.intersections.render(ctx);
     }
     finally
     {

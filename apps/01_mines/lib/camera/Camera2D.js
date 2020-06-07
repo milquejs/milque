@@ -27,8 +27,8 @@ export class Camera2D extends Camera
         this.y = lerp(this.y, y, dt);
         this.z = lerp(this.z, z, dt);
 
-        let viewX = -Math.floor(this.x);
-        let viewY = -Math.floor(this.y);
+        let viewX = -Math.round(this.x);
+        let viewY = -Math.round(this.y);
         let viewZ = this.z === 0 ? 1 : 1 / this.z;
 
         vec3.set(this.position, viewX, viewY, 0);
