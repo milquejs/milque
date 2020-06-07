@@ -1,9 +1,6 @@
-import { Mouse, Keyboard } from '../../packages/input/src/index.js';
-import { CanvasView } from '../../packages/lib/src/CanvasView.js';
-import { Camera2D } from '../../packages/lib/src/camera/Camera2D.js';
-import { TileMap, renderTileMap, Chunk, CHUNK_DATA_LENGTH, CHUNK_SIZE, TILE_SIZE } from '../../packages/lib/src/tiles/TileMap.js';
-import { createIntersectionWorld } from '../../packages/lib/src/intersection/IntersectionWorld.js';
-import { createAABB, createRect } from '../../packages/lib/src/intersection/IntersectionHelper.js';
+import { Mouse, Keyboard, CanvasView, Camera2D, IntersectionWorld, IntersectionHelper } from './lib.js';
+
+import { TileMap, renderTileMap, Chunk, CHUNK_DATA_LENGTH, CHUNK_SIZE, TILE_SIZE } from './TileMap.js';
 
 export async function load()
 {
@@ -26,10 +23,10 @@ export function start()
     this.player = {
         x: 0,
         y: 0,
-        aabb: createAABB(-10, 0, 4, 4),
+        aabb: IntersectionHelper.createAABB(-10, 0, 4, 4),
     };
 
-    this.intersections = createIntersectionWorld();
+    this.intersections = IntersectionWorld.createIntersectionWorld();
     this.intersections.dynamics.push(this.player.aabb);
 
     this.tileMap.chunksWithin([], -1, -1, 1, 1, true);
@@ -147,7 +144,7 @@ function getStaticsForChunk(chunk)
         if (chunk.getTile(i) === 0) {
             let tileX = chunk.x + (i % CHUNK_SIZE) * TILE_SIZE;
             let tileY = chunk.y + Math.floor(i / CHUNK_SIZE) * TILE_SIZE;
-            statics.push(createRect(tileX, tileY, tileX + TILE_SIZE, tileY + TILE_SIZE));
+            statics.push(IntersectionHelper.createRect(tileX, tileY, tileX + TILE_SIZE, tileY + TILE_SIZE));
         }
     }
     return statics;

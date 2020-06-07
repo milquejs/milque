@@ -1,4 +1,4 @@
-import * as AssetLoader from '../../packages/lib/src/AssetLoader.js';
+import { AssetLoader } from './lib.js';
 
 import { drawBox, drawText } from './RenderHelper.js';
 import * as Chunk from './Chunk.js';

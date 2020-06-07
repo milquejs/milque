@@ -1,5 +1,5 @@
-import * as Random from '../../packages/lib/src/Random.js';
-import * as Starfield from './game/Starfield.js';
+import { Random } from './lib.js';
+import * as Starfield from './Starfield.js';
 
 const display = document.querySelector('display-port');
 const canvas = display.canvas;

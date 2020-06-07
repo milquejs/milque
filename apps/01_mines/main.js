@@ -1,5 +1,4 @@
-import * as Game from '../../packages/lib/src/Game.js';
-
+import { Game } from './lib.js';
 import * as MainStage from './MainStage.js';
 
 function main()

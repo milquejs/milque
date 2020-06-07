@@ -1,6 +1,6 @@
-import * as PlayerControls from './PlayerControls.js';
-import { Keyboard, Mouse } from '../../packages/input/src/index.js';
+import { Keyboard, Mouse } from './lib.js';
 
+import * as PlayerControls from './PlayerControls.js';
 import * as MainScene from './MainScene.js';
 import * as MainRender from './MainRender.js';
 

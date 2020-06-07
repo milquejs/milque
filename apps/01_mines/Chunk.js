@@ -1,4 +1,4 @@
-import * as Random from '../../packages/lib/src/Random.js';
+import { Random } from './lib.js';
 
 // Some of the bombs are treasures.
 // Either chance it, use a life, or use a scanner.
@@ -8,7 +8,7 @@ export const CHUNK_WIDTH = 16;
 export const CHUNK_HEIGHT = 16;
 
 const MINE_COUNT = 40;
-const CHUNK_RAND = Random;
+const CHUNK_RAND = Random.RAND;
 
 export function createChunk()
 {

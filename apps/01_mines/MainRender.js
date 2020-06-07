@@ -1,4 +1,4 @@
-import * as MathHelper from '../../packages/lib/src/MathHelper.js';
+import { MathHelper } from './lib.js';
 
 import { drawBox, drawText } from './RenderHelper.js';
 import * as MainScene from './MainScene.js';

@@ -1,4 +1,4 @@
-import { SimpleRandomGenerator } from '../generators/SimpleRandomGenerator.js';
+import { SimpleRandomGenerator } from './lib.js';
 
 export const TILE_SIZE = 10;
 export const CHUNK_SIZE = 16;

@@ -1,3 +1,8 @@
+import { loadImage } from './ImageLoader.js';
+import { loadText } from './TextLoader.js';
+import { loadBytes } from './ByteLoader.js';
+import { loadJSON } from './JSONLoader.js';
+
 let ASSET_LOADERS = {};
 
 defineAssetLoader('image', loadImage);
@@ -90,38 +95,4 @@ export async function loadAsset(assetSrc, assetOpts = undefined, assetParentPath
     let [assetType, assetPath] = assetSrc.split(':');
     let assetLoader = getAssetLoader(assetType);
     return await assetLoader(assetParentPath + '/' + assetPath, assetOpts);
-}
-
-export async function loadImage(filepath, opts = {})
-{
-    return new Promise((resolve, reject) => {
-        let img = new Image();
-        img.addEventListener('load', () => {
-            resolve(img);
-        });
-        img.addEventListener('error', ev => {
-            reject(ev);
-        });
-        img.src = filepath;
-    });
-}
-
-export async function loadText(filepath, opts = {})
-{
-    let result = await fetch(filepath);
-    return result.text();
-}
-
-export async function loadBytes(filepath, opts = {})
-{
-    let result = await fetch(filepath);
-    let buffer = await result.arrayBuffer();
-    return buffer;
-}
-
-export async function loadJSON(filepath, opts = {})
-{
-    let result = await fetch(filepath);
-    let json = await result.json();
-    return json;
 }

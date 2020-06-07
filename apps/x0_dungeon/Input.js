@@ -1,4 +1,4 @@
-import { Mouse, Keyboard } from '../../packages/input/src/index.js';
+import { Mouse, Keyboard } from './lib.js';
 
 function insertKeyInput(out, inputName, keyName, useMeta)
 {

@@ -1,4 +1,4 @@
-import * as MathHelper from '../../packages/lib/src/MathHelper.js';
+import { MathHelper } from './lib.js';
 
 import * as Chunk from './Chunk.js';
 import * as PlayerControls from './PlayerControls.js';
