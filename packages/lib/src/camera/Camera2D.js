@@ -18,7 +18,7 @@ export class Camera2D extends Camera
 
         this.viewMatrix = mat4.create();
         this.projectionMatrix = mat4.create();
-        // mat4.ortho(this.projectionMatrix, 1, 1, 1, 1, 1, 1);
+        mat4.ortho(this.projectionMatrix, -1, 1, -1, 1, 0, 1);
     }
 
     moveTo(x, y, z = 0, dt = 1)
@@ -35,6 +35,15 @@ export class Camera2D extends Camera
         vec3.set(this.scale, viewZ, viewZ, 1);
         mat4.fromRotationTranslationScale(this.viewMatrix, this.rotation, this.position, this.scale);
         return this;
+    }
+
+    screenToWorld(screenX, screenY)
+    {
+        let mat = mat4.multiply(mat4.create(), this.projectionMatrix, this.viewMatrix);
+        mat4.invert(mat, mat);
+        let result = vec3.fromValues(screenX, screenY, 0);
+        vec3.transformMat4(result, result, mat);
+        return result;
     }
 
     /** @override */

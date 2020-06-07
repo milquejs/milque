@@ -14,6 +14,10 @@ export async function load()
 
     this.camera = new Camera2D();
     this.view = new CanvasView();
+
+    this.shootCooldown = 0;
+    this.maxShootCooldown = 10;
+    this.bullets = [];
 }
 
 export function start()
@@ -36,6 +40,31 @@ export function update(dt)
 {
     this.keyboard.poll();
     this.mouse.poll();
+
+    if (this.shootCooldown <= 0)
+    {
+        if (this.mouse.left.value)
+        {
+            let pos = this.camera.screenToWorld(
+                this.mouse.x * this.display.width - this.display.width / 2,
+                this.mouse.y * this.display.height - this.display.height / 2);
+
+            let bulletSpeed = 0.1;
+            let dx = pos[0] - this.player.x;
+            let dy = pos[1] - this.player.y;
+            let dist = Math.sqrt(dx * dx + dy * dy);
+            let bullet = createBullet(this.player.x, this.player.y, (dx / dist) * bulletSpeed, (dy / dist) * bulletSpeed, 100);
+            this.bullets.push(bullet);
+
+            this.shootCooldown = this.maxShootCooldown;
+        }
+    }
+    else
+    {
+        --this.shootCooldown;
+    }
+
+    updateBullets(dt, this.bullets);
 
     const moveSpeed = 0.1;
     let dx = this.keyboard.ArrowRight.value - this.keyboard.ArrowLeft.value;
@@ -86,7 +115,17 @@ export function render(ctx)
         renderPlayer(ctx, this.player);
         ctx.translate(-this.player.x, -this.player.y);
 
+        for(let bullet of this.bullets)
+        {
+            ctx.translate(bullet.x, bullet.y);
+            renderBullet(ctx, bullet);
+            ctx.translate(-bullet.x, -bullet.y);
+        }
+
         // this.intersections.render(ctx);
+        let pos = this.camera.screenToWorld(this.mouse.x * this.display.width - this.display.width / 2, this.mouse.y * this.display.height - this.display.height / 2);
+        ctx.fillStyle = 'black';
+        ctx.fillRect(Math.floor(pos[0]), Math.floor(pos[1]), 10, 10);
     }
     finally
     {
@@ -94,13 +133,46 @@ export function render(ctx)
     }
 
     ctx.fillStyle = 'white';
-    ctx.fillRect(Math.floor(this.mouse.x * this.display.width), Math.floor(this.mouse.y * this.display.height), 10, 10);
+    // ctx.fillRect(Math.floor(this.mouse.x * this.display.width), Math.floor(this.mouse.y * this.display.height), 10, 10);
 }
 
 function renderPlayer(ctx, player)
 {
     ctx.fillStyle = 'red';
     ctx.fillRect(-4, -4, 8, 8);
+}
+
+function updateBullets(dt, bullets)
+{
+    for(let bullet of bullets)
+    {
+        updateBullet(dt, bullet);
+
+        if (bullet.age <= 0)
+        {
+            bullets.splice(bullets.indexOf(bullet), 1);
+        }
+    }
+}
+
+function updateBullet(dt, bullet)
+{
+    bullet.x += bullet.dx * dt;
+    bullet.y += bullet.dy * dt;
+    --bullet.age;
+}
+
+function renderBullet(ctx, bullet)
+{
+    ctx.fillStyle = 'gold';
+    ctx.fillRect(-2, -2, 4, 4);
+}
+
+function createBullet(x, y, dx, dy, age = 100)
+{
+    return {
+        x, y, dx, dy, age
+    };
 }
 
 class IntersectionChunk extends Chunk
