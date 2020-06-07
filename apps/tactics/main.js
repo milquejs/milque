@@ -1,7 +1,7 @@
-import { Mouse, Keyboard } from '../../packages/input/src/index.js';
+import { Mouse, Keyboard, AssetLoader } from './lib.js';
+
 import * as Camera from './Camera.js';
 import * as Sprite from './Sprite.js';
-import * as Loader from './Loader.js';
 import { Mask } from './Mask.js';
 import { GameObjectManager } from './GameObject.js';
 import * as TileMap from './TileMap.js';
@@ -12,7 +12,7 @@ let assets = {};
 
 async function load()
 {
-    assets = await Loader.loadAssets([
+    assets = await AssetLoader.loadAssetList([
         'image:dungeon/dungeon.png',
         'text:dungeon/dungeon.atlas',
     ], '../../res');
@@ -37,12 +37,17 @@ function main()
     };
 
     let tileMap;
-    if (localStorage.getItem('tilemap'))
+    try
     {
+        if (!localStorage.getItem('tilemap'))
+        {
+            throw new Error();
+        }
+        
         let tileMapData = JSON.parse(localStorage.getItem('tilemap'));
         tileMap = TileMap.loadTileMap(tileMapData);
     }
-    else
+    catch(e)
     {
         tileMap = TileMap.createTileMap(16, 16, 1);
         let data = TileMap.saveTileMap(tileMap);
