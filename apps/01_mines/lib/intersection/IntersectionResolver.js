@@ -48,7 +48,7 @@ export function resolveIntersections(dynamics, statics = [], dt = 1)
         let time = 0;
         let tmp = {};
         let sweep;
-        
+
         let hit = null;
         let iterations = MAX_SWEEP_RESOLUTION_ITERATIONS;
         do
@@ -65,13 +65,18 @@ export function resolveIntersections(dynamics, statics = [], dt = 1)
                 dx += sweep.hit.nx * Math.abs(dx);
                 dy += sweep.hit.ny * Math.abs(dy);
                 hit = sweep.hit;
+
+                // Make sure that spent motion is consumed.
+                let remainingTime = Math.max(1 - time, 0);
+                dx *= remainingTime;
+                dy *= remainingTime;
     
                 if (Math.abs(dx) < EPSILON) dx = 0;
                 if (Math.abs(dy) < EPSILON) dy = 0;
             }
         }
         while(time < 1 && --iterations >= 0);
-
+        
         dynamic.dx = dx;
         dynamic.dy = dy;
         dynamic.hit = hit;
