@@ -100,7 +100,7 @@ export class ApplicationLoop
         if (this.prevAccumulatedTime > MAX_FIXED_UPDATES * this.fixedTimeStep)
         {
             let max = MAX_FIXED_UPDATES * this.fixedTimeStep;
-            let count = (this.prevAccumulatedTime - max) / this.fixedTimeStep;
+            let count = Math.floor((this.prevAccumulatedTime - max) / this.fixedTimeStep);
             this.prevAccumulatedTime = max;
             console.error(`[ApplicationLoop] Too many updates! Skipped ${count} fixed updates.`);
         }
