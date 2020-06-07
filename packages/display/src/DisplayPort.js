@@ -28,6 +28,7 @@ div {
 canvas {
     background: #000000;
     margin: auto;
+    image-rendering: pixelated;
 }
 label {
     font-family: monospace;
@@ -249,14 +250,14 @@ export class DisplayPort extends HTMLElement
         this._animationRequestHandle = requestAnimationFrame(this.update);
 
         this.updateCanvasSize();
-        const delta = now - this._prevAnimationFrameTime;
+        const deltaTime = now - this._prevAnimationFrameTime;
         this._prevAnimationFrameTime = now;
 
         // NOTE: For debugging purposes...
         if (this.debug)
         {
             // Update FPS...
-            const frames = delta <= 0 ? '--' : String(Math.round(1000 / delta)).padStart(2, '0');
+            const frames = deltaTime <= 0 ? '--' : String(Math.round(1000 / deltaTime)).padStart(2, '0');
             if (this._fpsElement.innerText !== frames)
             {
                 this._fpsElement.innerText = frames;
@@ -284,9 +285,10 @@ export class DisplayPort extends HTMLElement
         this.dispatchEvent(new CustomEvent('frame', {
             detail: {
                 now,
-                prev: this._prevAnimationFrameTime,
-                delta,
-                context: this._canvasContext
+                prevTime: this._prevAnimationFrameTime,
+                deltaTime: deltaTime,
+                canvas: this._canvasElement,
+                context: this._canvasContext,
             },
             bubbles: false,
             composed: true
@@ -357,10 +359,10 @@ export class DisplayPort extends HTMLElement
         canvasWidth = Math.floor(canvasWidth);
         canvasHeight = Math.floor(canvasHeight);
 
-        if (canvas.width !== canvasWidth || canvas.height !== canvasHeight)
+        if (canvas.clientWidth !== canvasWidth || canvas.clientHeight !== canvasHeight)
         {
-            canvas.width = canvasWidth;
-            canvas.height = canvasHeight;
+            canvas.width = this._width;
+            canvas.height = this._height;
             canvas.style = `width: ${canvasWidth}px; height: ${canvasHeight}px`;
             this.dispatchEvent(new CustomEvent('resize', { detail: { width: canvasWidth, height: canvasHeight }, bubbles: false, composed: true }));
         }

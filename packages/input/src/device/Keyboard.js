@@ -1,66 +1,105 @@
-function createButton()
-{
-    return {
-        up: 0,
-        down: 0,
-        state: 0,
-        next: {
-            up: 0,
-            down: 0,
-        },
-    };
-}
+import { createButton, nextButton, pollButton } from './KeyButton.js';
+import { InputDevice } from './InputDevice.js';
 
-function nextButton(button, event, value)
-{
-    if (event === 'down')
-    {
-        button.next.down = value;
-    }
-    else
-    {
-        button.next.up = value;
-    }
-}
+const KEYBOARD_CONTEXT_KEY = Symbol('keyboardEventContext');
 
-function pollButton(button)
+export class Keyboard extends InputDevice
 {
-    if (button.state)
+    /** @override */
+    static addInputEventListener(eventTarget, listener)
     {
-        if (button.up && !button.next.up)
+        let ctx;
+        if (!(KEYBOARD_CONTEXT_KEY in listener))
         {
-            button.state = 0;
+            ctx = {
+                handler: listener,
+                target: eventTarget,
+                down: null,
+                up: null,
+                _keyEvent: {
+                    type: 'key',
+                    target: eventTarget,
+                    device: 'keyboard',
+                    key: null,
+                    event: null,
+                    value: null,
+                    control: false,
+                    shift: false,
+                    alt: false,
+                },
+            };
+    
+            let down = onKeyDown.bind(ctx);
+            let up = onKeyUp.bind(ctx);
+        
+            ctx.down = down;
+            ctx.up = up;
+        
+            listener[KEYBOARD_CONTEXT_KEY] = ctx;
         }
+        else
+        {
+            ctx = listener[KEYBOARD_CONTEXT_KEY];
+        }
+    
+        eventTarget.addEventListener('keyup', ctx.up);
+        eventTarget.addEventListener('keydown', ctx.down);
+    
+        return eventTarget;
     }
-    else if (button.next.down)
+
+    /** @override */
+    static removeInputEventListener(eventTarget, listener)
     {
-        button.state = 1;
+        if (KEYBOARD_CONTEXT_KEY in listener)
+        {
+            let ctx = listener[KEYBOARD_CONTEXT_KEY];
+        
+            eventTarget.removeEventListener('keyup', ctx.up);
+            eventTarget.removeEventListener('keydown', ctx.down);
+        }
+    
+        return eventTarget;
     }
 
-    button.down = button.next.down;
-    button.up = button.next.up;
-
-    button.next.down = 0;
-    button.next.up = 0;
-}
-
-export class Keyboard
-{
-    constructor(eventTarget)
+    constructor(eventTarget, keyList = undefined)
     {
-        this.target = eventTarget;
+        super(eventTarget);
 
         this._buttons = [];
+        this._managed = Array.isArray(keyList);
 
-        this.onKeyEvent = this.onKeyEvent.bind(this);
+        this.onManagedKeyEvent = this.onManagedKeyEvent.bind(this);
+        this.onUnmanagedKeyEvent = this.onUnmanagedKeyEvent.bind(this);
 
-        addKeyboardEventListener(eventTarget, this.onKeyEvent);
+        if (this._managed)
+        {
+            for(let key of keyList)
+            {
+                let button = createButton();
+                this[key] = button;
+                this._buttons.push(button);
+            }
+
+            Keyboard.addInputEventListener(eventTarget, this.onManagedKeyEvent);
+        }
+        else
+        {
+            Keyboard.addInputEventListener(eventTarget, this.onUnmanagedKeyEvent);
+        }
     }
 
     destroy()
     {
-        removeKeyboardEventListener(this.target, this.onKeyEvent);
-        this.target = null;
+        if (this._managed)
+        {
+            Keyboard.removeInputEventListener(this.eventTarget, this.onManagedKeyEvent);
+        }
+        else
+        {
+            Keyboard.removeInputEventListener(this.eventTarget, this.onUnmanagedKeyEvent);
+        }
+        this.eventTarget = null;
     }
 
     poll()
@@ -72,7 +111,7 @@ export class Keyboard
         return this;
     }
 
-    onKeyEvent(e)
+    onUnmanagedKeyEvent(e)
     {
         if (!(e.key in this))
         {
@@ -82,63 +121,19 @@ export class Keyboard
         }
         
         nextButton(this[e.key], e.event, e.value);
-
-        return false;
+        
+        return true;
     }
-}
 
-const KEYBOARD_CONTEXT_KEY = Symbol('keyboardEventContext');
-
-export function addKeyboardEventListener(elementTarget, keyboardEventHandler)
-{
-    let ctx;
-    if (!(KEYBOARD_CONTEXT_KEY in keyboardEventHandler))
+    onManagedKeyEvent(e)
     {
-        ctx = {
-            handler: keyboardEventHandler,
-            target: elementTarget,
-            down: null,
-            up: null,
-            _keyEvent: {
-                type: 'key',
-                target: elementTarget,
-                device: 'keyboard',
-                key: null,
-                event: null,
-                value: null,
-            },
-        };
+        if (e.key in this)
+        {
+            nextButton(this[e.key], e.event, e.value);
 
-        let down = onKeyDown.bind(ctx);
-        let up = onKeyUp.bind(ctx);
-    
-        ctx.down = down;
-        ctx.up = up;
-    
-        keyboardEventHandler[KEYBOARD_CONTEXT_KEY] = ctx;
+            return true;
+        }
     }
-    else
-    {
-        ctx = keyboardEventHandler[KEYBOARD_CONTEXT_KEY];
-    }
-
-    elementTarget.addEventListener('keyup', ctx.down);
-    elementTarget.addEventListener('keydown', ctx.up);
-
-    return elementTarget;
-}
-
-export function removeKeyboardEventListener(elementTarget, keyboardEventHandler)
-{
-    if (KEYBOARD_CONTEXT_KEY in keyboardEventHandler)
-    {
-        let ctx = keyboardEventHandler[KEYBOARD_CONTEXT_KEY];
-    
-        elementTarget.removeEventListener('keyup', ctx.down);
-        elementTarget.removeEventListener('keydown', ctx.up);
-    }
-
-    return elementTarget;
 }
 
 function onKeyDown(e)
@@ -147,13 +142,17 @@ function onKeyDown(e)
     if (e.repeat) return;
 
     let event = this._keyEvent;
-    event.key = e.key;
+    // NOTE: You could use `e.key`, but we care about location rather than printable character.
+    event.key = e.code;
     event.event = 'down';
     event.value = 1;
+    event.control = e.ctrlKey;
+    event.shift = e.shiftKey;
+    event.alt = e.altKey;
 
     let result = this.handler.call(undefined, event);
 
-    if (!result)
+    if (result)
     {
         e.preventDefault();
         e.stopPropagation();
@@ -164,13 +163,17 @@ function onKeyDown(e)
 function onKeyUp(e)
 {
     let event = this._keyEvent;
-    event.key = e.key;
+    // NOTE: You could use `e.key`, but we care about location rather than printable character.
+    event.key = e.code;
     event.event = 'up';
     event.value = 1;
+    event.control = e.ctrlKey;
+    event.shift = e.shiftKey;
+    event.alt = e.altKey;
 
     let result = this.handler.call(undefined, event);
 
-    if (!result)
+    if (result)
     {
         e.preventDefault();
         e.stopPropagation();

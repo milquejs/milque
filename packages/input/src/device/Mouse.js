@@ -1,60 +1,94 @@
-function createButton()
-{
-    return {
-        up: 0,
-        down: 0,
-        state: 0,
-        next: {
-            up: 0,
-            down: 0,
-        },
-    };
-}
+import { InputDevice } from './InputDevice.js';
+import { createButton, nextButton, pollButton } from './KeyButton.js';
 
-function nextButton(button, event, value)
-{
-    if (event === 'down')
-    {
-        button.next.down = value;
-    }
-    else
-    {
-        button.next.up = value;
-    }
-}
+const MOUSE_CONTEXT_KEY = Symbol('mouseEventContext');
 
-function pollButton(button)
+export class Mouse extends InputDevice
 {
-    if (button.state)
+    /** @override */
+    static addInputEventListener(eventTarget, listener)
     {
-        if (button.up && !button.next.up)
+        let ctx;
+        if (!(MOUSE_CONTEXT_KEY in listener))
         {
-            button.state = 0;
+            ctx = {
+                handler: listener,
+                target: eventTarget,
+                down: null,
+                up: null,
+                move: null,
+                contextmenu: null,
+                _down: false,
+                _keyEvent: {
+                    type: 'key',
+                    target: eventTarget,
+                    device: 'mouse',
+                    key: null,
+                    event: null,
+                    value: null,
+                },
+                _posEvent: {
+                    type: 'pos',
+                    target: eventTarget,
+                    device: 'mouse',
+                    key: 'pos',
+                    event: 'move',
+                    x: 0, y: 0, dx: 0, dy: 0,
+                },
+            };
+    
+            let down = onMouseDown.bind(ctx);
+            let up = onMouseUp.bind(ctx);
+            let move = onMouseMove.bind(ctx);
+            let contextmenu = onContextMenu.bind(ctx);
+        
+            ctx.down = down;
+            ctx.up = up;
+            ctx.move = move;
+            ctx.contextmenu = contextmenu;
+        
+            listener[MOUSE_CONTEXT_KEY] = ctx;
         }
+        else
+        {
+            ctx = listener[MOUSE_CONTEXT_KEY];
+        }
+    
+        eventTarget.addEventListener('mousedown', ctx.down);
+        document.addEventListener('mouseup', ctx.up);
+        eventTarget.addEventListener('contextmenu', ctx.contextmenu);
+        document.addEventListener('mousemove', ctx.move);
+    
+        return eventTarget;
     }
-    else if (button.next.down)
+
+    /** @override */
+    static removeInputEventListener(eventTarget, listener)
     {
-        button.state = 1;
+        if (MOUSE_CONTEXT_KEY in listener)
+        {
+            let ctx = listener[MOUSE_CONTEXT_KEY];
+        
+            eventTarget.removeEventListener('mousedown', ctx.down);
+            document.removeEventListener('mouseup', ctx.up);
+            eventTarget.removeEventListener('contextmenu', ctx.contextmenu);
+            document.removeEventListener('mousemove', ctx.move);
+        }
+    
+        return eventTarget;
     }
 
-    button.down = button.next.down;
-    button.up = button.next.up;
-
-    button.next.down = 0;
-    button.next.up = 0;
-}
-
-export class Mouse
-{
     constructor(eventTarget)
     {
+        super(eventTarget);
+
         this.x = 0;
         this.y = 0;
 
         this.dx = 0;
         this.dy = 0;
-        this.nextDx = 0;
-        this.nextDy = 0;
+        this.nextdx = 0;
+        this.nextdy = 0;
 
         this.left = createButton();
         this.middle = createButton();
@@ -62,25 +96,23 @@ export class Mouse
         this.button3 = createButton();
         this.button4 = createButton();
 
-        this.target = eventTarget;
-
         this.onMouseEvent = this.onMouseEvent.bind(this);
 
-        addMouseEventListener(eventTarget, this.onMouseEvent);
+        Mouse.addInputEventListener(eventTarget, this.onMouseEvent);
     }
 
     destroy()
     {
-        removeMouseEventListener(this.target, this.onMouseEvent);
-        this.target = null;
+        Mouse.removeInputEventListener(this.eventTarget, this.onMouseEvent);
+        this.eventTarget = null;
     }
 
     poll()
     {
-        this.dx = this.nextDx;
-        this.dy = this.nextDy;
-        this.nextDx = 0;
-        this.nextDy = 0;
+        this.dx = this.nextdx;
+        this.dy = this.nextdy;
+        this.nextdx = 0;
+        this.nextdy = 0;
 
         pollButton(this.left);
         pollButton(this.middle);
@@ -113,8 +145,8 @@ export class Mouse
             case 'pos':
                 this.x = e.x;
                 this.y = e.y;
-                this.nextDx += e.dx;
-                this.nextDy += e.dy;
+                this.nextdx += e.dx;
+                this.nextdy += e.dy;
                 
                 // Cannot consume a position event.
                 return;
@@ -122,79 +154,6 @@ export class Mouse
 
         return true;
     }
-}
-
-const MOUSE_CONTEXT_KEY = Symbol('mouseEventContext');
-
-export function addMouseEventListener(elementTarget, mouseEventHandler)
-{
-    let ctx;
-    if (!(MOUSE_CONTEXT_KEY in mouseEventHandler))
-    {
-        ctx = {
-            handler: mouseEventHandler,
-            target: elementTarget,
-            down: null,
-            up: null,
-            move: null,
-            contextmenu: null,
-            _down: false,
-            _keyEvent: {
-                type: 'key',
-                target: elementTarget,
-                device: 'mouse',
-                key: null,
-                event: null,
-                value: null,
-            },
-            _posEvent: {
-                type: 'pos',
-                target: elementTarget,
-                device: 'mouse',
-                key: 'pos',
-                event: 'move',
-                x: 0, y: 0, dx: 0, dy: 0,
-            },
-        };
-
-        let down = onMouseDown.bind(ctx);
-        let up = onMouseUp.bind(ctx);
-        let move = onMouseMove.bind(ctx);
-        let contextmenu = onContextMenu.bind(ctx);
-    
-        ctx.down = down;
-        ctx.up = up;
-        ctx.move = move;
-        ctx.contextmenu = contextmenu;
-    
-        mouseEventHandler[MOUSE_CONTEXT_KEY] = ctx;
-    }
-    else
-    {
-        ctx = mouseEventHandler[MOUSE_CONTEXT_KEY];
-    }
-
-    elementTarget.addEventListener('mousedown', ctx.down);
-    document.addEventListener('mouseup', ctx.up);
-    elementTarget.addEventListener('contextmenu', ctx.contextmenu);
-    document.addEventListener('mousemove', ctx.move);
-
-    return elementTarget;
-}
-
-export function removeMouseEventListener(elementTarget, mouseEventHandler)
-{
-    if (MOUSE_CONTEXT_KEY in mouseEventHandler)
-    {
-        let ctx = mouseEventHandler[MOUSE_CONTEXT_KEY];
-    
-        elementTarget.removeEventListener('mousedown', ctx.down);
-        document.removeEventListener('mouseup', ctx.up);
-        elementTarget.removeEventListener('contextmenu', ctx.contextmenu);
-        document.removeEventListener('mousemove', ctx.move);
-    }
-
-    return elementTarget;
 }
 
 function onMouseDown(e)

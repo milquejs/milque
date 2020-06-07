@@ -3,5 +3,8 @@
   "workspaces": [
     "packages/*",
     "apps/*"
-  ]
+  ],
+  "dependencies": {
+    "gl-matrix": "^3.3.0"
+  }
 }

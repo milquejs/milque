@@ -1,48 +1,13 @@
-export class InputDevice extends EventTarget
+export class InputDevice
 {
-    constructor()
-    {
-        super();
-        this.listeners = {};
-    }
+    /** @abstract */
+    static addInputEventListener(elementTarget, listener) {}
+    
+    /** @abstract */
+    static removeInputEventListener(elementTarget, listener) {}
 
-    /** @override */
-    addEventListener(type, listener)
+    constructor(eventTarget)
     {
-        // NOTE: As defined by the web standard.
-        let listeners = type in this.listeners
-            ? this.listeners[type]
-            : this.listeners[type] = new Set();
-        listeners.add(listener);
-    }
-
-    /** @override */
-    removeEventListener(type, listener)
-    {
-        // NOTE: As defined by the web standard.
-        if (type in this.listeners)
-        {
-            listeners[type].delete(listener);
-        }
-    }
-
-    /** @override */
-    dispatchEvent(event)
-    {
-        // HACK: Although not standard, this is a simpler interface.
-        // Anything other than undefined returned is treated as a
-        // preventDefault() call.
-        if (event.type in this.listeners)
-        {
-            let listeners = this.listeners[event.type];
-            let defaultPrevented = false;
-            for(let listener of listeners)
-            {
-                let result = listener.call(undefined, event);
-                if (typeof result !== 'undefined') defaultPrevented = true;
-            }
-            return !defaultPrevented;
-        }
-        return true;
+        this.eventTarget = eventTarget;
     }
 }
