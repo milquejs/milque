@@ -1,6 +1,9 @@
 import * as PlayerControls from './PlayerControls.js';
 import { Keyboard, Mouse } from '../../packages/input/src/index.js';
 
+import * as MainScene from './MainScene.js';
+import * as MainRender from './MainRender.js';
+
 /*
 
 What is good in Minesweeper?
@@ -22,7 +25,6 @@ What is bad in minesweeper?
 
 */
 
-
 export async function load()
 {
     this.devices = {
@@ -30,25 +32,31 @@ export async function load()
         mouse: new Mouse(this.display.canvas),
     };
     PlayerControls.init(this.devices);
+
+    await MainRender.load.call(this);
 }
 
 export function start()
 {
-
+    MainScene.onStart.call(this);
 }
 
 export function update(dt)
 {
+    MainScene.onPreUpdate.call(this, dt);
+
     this.devices.mouse.poll();
     this.devices.keyboard.poll();
 
-    if (PlayerControls.ACTIVATE.value)
-    {
-        console.log('WOOT');
-    }
+    MainScene.onUpdate.call(this, dt);
 }
 
 export function render(ctx)
 {
-
+    const view = {
+        context: ctx,
+        width: this.display.width,
+        height: this.display.height,
+    };
+    MainRender.onRender.call(this, view, this);
 }

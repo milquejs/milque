@@ -1,13 +1,13 @@
 export function init(devices)
 {
     const { mouse, keyboard } = devices;
-    Object.defineProperty(MARK, 'value', {
+    Object.defineProperty(ACTIVATE, 'value', {
         get()
         {
             return mouse.left.down;
         }
     });
-    Object.defineProperty(ACTIVATE, 'value', {
+    Object.defineProperty(MARK, 'value', {
         get()
         {
             return mouse.right.down;

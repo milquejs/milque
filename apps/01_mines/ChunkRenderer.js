@@ -1,5 +1,6 @@
 import * as AssetLoader from '../../packages/lib/src/AssetLoader.js';
 
+import { drawBox, drawText } from './RenderHelper.js';
 import * as Chunk from './Chunk.js';
 
 let TILE_IMAGE;
@@ -17,7 +18,7 @@ export async function load()
     const parentPath = '../../res';
     TILE_IMAGE = await AssetLoader.loadAsset('image:mines/tile.png', {}, parentPath);
     NUMS_IMAGE = await AssetLoader.loadAsset('image:mines/nums.png', {}, parentPath);
-    MARK_IMAGE = await AssetLoader.loadAsset('image:mines/mark.png', {}, parentPath);
+    MARK_IMAGE = await AssetLoader.loadAsset('image:mines/flag.png', {}, parentPath);
 }
 
 export function unload()
@@ -94,29 +95,4 @@ function drawGrid(ctx, offsetX, offsetY, width, height, tileWidth, tileHeight)
     }
 
     ctx.stroke();
-}
-
-function drawBox(ctx, x, y, width, height, color)
-{
-    ctx.translate(x, y);
-    {
-        let halfWidth = width / 2;
-        let halfHeight= height / 2;
-        ctx.fillStyle = color;
-        ctx.fillRect(-halfWidth, -halfHeight, width, height);
-    }
-    ctx.translate(-x, -y);
-}
-
-function drawText(ctx, x, y, text, fontSize, color)
-{
-    ctx.translate(x, y);
-    {
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.font = `${fontSize}px sans-serif`;
-        ctx.fillStyle = color;
-        ctx.fillText(text, 0, 0);
-    }
-    ctx.translate(-x, -y);
 }

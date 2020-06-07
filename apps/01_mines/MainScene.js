@@ -1,8 +1,7 @@
-import { Utils } from './milque.js';
+import * as MathHelper from '../../packages/lib/src/MathHelper.js';
 
 import * as Chunk from './Chunk.js';
 import * as PlayerControls from './PlayerControls.js';
-import * as Views from './Views.js';
 import * as ChunkRenderer from './ChunkRenderer.js';
 
 /*
@@ -26,15 +25,13 @@ What is bad in minesweeper?
 
 */
 
-
 export const MAX_HEALTH = 3;
-
-export async function load() {}
-export function unload() {}
 
 export function onStart()
 {
     this.chunk = Chunk.createChunk();
+
+    this.firstAction = false;
 
     this.health = MAX_HEALTH;
     this.gameOver = false;
@@ -50,7 +47,7 @@ export function onPreUpdate(dt)
 export function onUpdate(dt)
 {
     // Check if restarting...
-    if (PlayerControls.RESTART_ACTION.value)
+    if (PlayerControls.RESTART.value)
     {
         restart(this);
         return;
@@ -60,7 +57,7 @@ export function onUpdate(dt)
     if (this.gameOver || this.gameWin)
     {
         // Do nothing...
-        if (PlayerControls.ACTIVE_ACTION.value || PlayerControls.MARK_ACTION.value)
+        if (PlayerControls.ACTIVATE.value || PlayerControls.MARK.value)
         {
             restart(this);
             return;
@@ -68,14 +65,21 @@ export function onUpdate(dt)
     }
     else
     {
-        this.gameTime += dt;
+        const worldWidth = this.display.width;
+        const worldHeight = this.display.height;
 
-        if (PlayerControls.ACTIVE_ACTION.value)
+        if (this.firstAction)
         {
-            let mouseX = PlayerControls.MOUSE_X.value * Views.WORLD_VIEW.width;
-            let mouseY = PlayerControls.MOUSE_Y.value * Views.WORLD_VIEW.height;
-            let mouseTileX = Utils.clampRange(Math.floor((mouseX - ChunkRenderer.CHUNK_OFFSET_X) / Chunk.TILE_SIZE), 0, Chunk.CHUNK_WIDTH - 1);
-            let mouseTileY = Utils.clampRange(Math.floor((mouseY - ChunkRenderer.CHUNK_OFFSET_Y) / Chunk.TILE_SIZE), 0, Chunk.CHUNK_HEIGHT - 1);
+            this.gameTime += dt;
+        }
+
+        let flag = false;
+        if (PlayerControls.ACTIVATE.value)
+        {
+            let mouseX = PlayerControls.MOUSE_X.value * worldWidth;
+            let mouseY = PlayerControls.MOUSE_Y.value * worldHeight;
+            let mouseTileX = MathHelper.clamp(Math.floor((mouseX - ChunkRenderer.CHUNK_OFFSET_X) / Chunk.TILE_SIZE), 0, Chunk.CHUNK_WIDTH - 1);
+            let mouseTileY = MathHelper.clamp(Math.floor((mouseY - ChunkRenderer.CHUNK_OFFSET_Y) / Chunk.TILE_SIZE), 0, Chunk.CHUNK_HEIGHT - 1);
             let result = Chunk.digTiles(this.chunk, mouseTileX, mouseTileY);
 
             if (!result)
@@ -87,15 +91,24 @@ export function onUpdate(dt)
             {
                 gameWin(this);
             }
+
+            flag = true;
         }
 
-        if (PlayerControls.MARK_ACTION.value)
+        if (PlayerControls.MARK.value)
         {
-            let mouseX = PlayerControls.MOUSE_X.value * Views.WORLD_VIEW.width;
-            let mouseY = PlayerControls.MOUSE_Y.value * Views.WORLD_VIEW.height;
-            let mouseTileX = Utils.clampRange(Math.floor((mouseX - ChunkRenderer.CHUNK_OFFSET_X) / Chunk.TILE_SIZE), 0, Chunk.CHUNK_WIDTH - 1);
-            let mouseTileY = Utils.clampRange(Math.floor((mouseY - ChunkRenderer.CHUNK_OFFSET_Y) / Chunk.TILE_SIZE), 0, Chunk.CHUNK_HEIGHT - 1);
+            let mouseX = PlayerControls.MOUSE_X.value * worldWidth;
+            let mouseY = PlayerControls.MOUSE_Y.value * worldHeight;
+            let mouseTileX = MathHelper.clamp(Math.floor((mouseX - ChunkRenderer.CHUNK_OFFSET_X) / Chunk.TILE_SIZE), 0, Chunk.CHUNK_WIDTH - 1);
+            let mouseTileY = MathHelper.clamp(Math.floor((mouseY - ChunkRenderer.CHUNK_OFFSET_Y) / Chunk.TILE_SIZE), 0, Chunk.CHUNK_HEIGHT - 1);
             Chunk.markTile(this.chunk, mouseTileX, mouseTileY);
+
+            flag = true;
+        }
+
+        if (flag && !this.firstAction)
+        {
+            this.firstAction = true;
         }
     }
 }
@@ -115,6 +128,7 @@ function restart(scene)
     scene.gameOver = false;
     scene.gameWin = false;
     scene.gameTime = 0;
+    scene.firstAction = false;
     scene.health = MAX_HEALTH;
 }
 
