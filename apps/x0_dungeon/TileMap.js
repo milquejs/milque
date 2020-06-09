@@ -42,6 +42,9 @@ export function renderTile(ctx, value)
 {
     switch(value)
     {
+        case 0:
+            ctx.fillStyle = 'black';
+            break;
         case 1:
         case 2:
         case 3:
@@ -215,9 +218,7 @@ export class TileMap
     tileAt(x, y, forceLoad = true)
     {
         let chunk = this.chunkAt(x, y, forceLoad);
-        let tileX = ((x - chunk.x) / TILE_SIZE) % CHUNK_SIZE;
-        let tileY = ((y - chunk.y) / TILE_SIZE) % CHUNK_SIZE;
-        let index = tileX + tileY * CHUNK_SIZE;
+        let index = chunk.getTileIndex(x, y);
         return chunk.getTile(index);
     }
 
@@ -292,6 +293,13 @@ export class Chunk
 
     /** @abstract */
     onChunkUnloaded(world) {}
+
+    getTileIndex(x, y)
+    {
+        let tileX = Math.floor((x - this.x) / TILE_SIZE) % CHUNK_SIZE;
+        let tileY = Math.floor((y - this.y) / TILE_SIZE) % CHUNK_SIZE;
+        return tileX + tileY * CHUNK_SIZE;
+    }
 
     setTile(index, value)
     {

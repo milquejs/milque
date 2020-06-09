@@ -1,7 +1,7 @@
 import { CanvasView, Camera2D, IntersectionWorld, IntersectionHelper } from './lib.js';
 
 import { TileMap, renderTileMap, Chunk, ChunkLoader, CHUNK_DATA_LENGTH, CHUNK_SIZE, TILE_SIZE } from './TileMap.js';
-import { ShootPosX, ShootPosY } from './PlayerControls.js'
+import { ShootPosX, ShootPosY } from './PlayerControls.js';
 
 import * as Players from './Players.js';
 import * as Bullets from './Bullets.js';
@@ -10,8 +10,6 @@ export async function load()
 {
     this.camera = new Camera2D();
     this.view = new CanvasView();
-
-    this.shootCooldown = 0;
 
     await Players.load(this);
     await Bullets.load(this);

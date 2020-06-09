@@ -49,6 +49,7 @@ export function start(context)
 
     window.addEventListener('DOMContentLoaded', () => {
         let display = document.querySelector('display-port');
+        if (!display) throw new Error('Cannot find display-port in document.');
         game.setDisplay(display);
         gameContext.display = display;
         gameContext.load().then(() => loop.start());

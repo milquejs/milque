@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Dungeon Builder</title>
+
+        <style>
+            html { width: 100vw; height: 100vh; }
+            body { margin: 0; width: 100%; height: 100%; }
+        </style>
+
+        <script type="module" src="../../../packages/display/src/index.js"></script>
+    </head>
+    <body>
+        <display-port mode="fit" debug full></display-port>
+
+        <script type="module">
+            import { Game } from '../lib.js';
+
+            import * as BuilderStage from './BuilderStage.js';
+
+            function main()
+            {
+                Game.start(BuilderStage);
+            }
+
+            main();
+        </script>
+    </body>
+</html>
