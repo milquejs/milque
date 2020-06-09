@@ -71,12 +71,26 @@ export class InputContext
 
     getAction(inputName)
     {
-        return this._actions[inputName];
+        if (inputName in this._actions)
+        {
+            return this._actions[inputName];
+        }
+        else
+        {
+            throw new Error(`Cannot find input action with name '${inputName}'.`);
+        }
     }
 
     getRange(inputName)
     {
-        return this._ranges[inputName];
+        if (inputName in this._ranges)
+        {
+            return this._ranges[inputName];
+        }
+        else
+        {
+            throw new Error(`Cannot find input range with name '${inputName}'.`);
+        }
     }
 }
 
@@ -97,25 +111,30 @@ function createAction(inputContext, inputName, keyName, keyEvent)
 
 function createRange(inputContext, inputName, keyName, scale)
 {
+    let i = keyName.indexOf(':');
+    let posIndex = keyName.indexOf('pos', i + 1);
+    let baseKeyName;
     let result;
-    if (keyName.indexOf('pos', keyName.indexOf(':') + 1) >= 0)
+    if (posIndex >= 0)
     {
+        baseKeyName = keyName.substring(0, i + 4);
         let posName = keyName.substring(i + 5);
-        result = new PosRangeInput(inputName, keyName, posName, scale);
+        result = new PosRangeInput(inputName, baseKeyName, posName, scale);
     }
     else
     {
+        baseKeyName = keyName;
         result = new RangeInput(inputName, keyName, scale);
     }
 
     inputContext._ranges[inputName] = result;
-    if (keyName in inputContext._keys)
+    if (baseKeyName in inputContext._keys)
     {
-        inputContext._keys[keyName].push(result);
+        inputContext._keys[baseKeyName].push(result);
     }
     else
     {
-        inputContext._keys[keyName] = [ result ];
+        inputContext._keys[baseKeyName] = [ result ];
     }
     return result;
 }
@@ -128,7 +147,6 @@ function parseInputOption(inputContext, inputName, inputOption)
         {
             // Range
             const { key, scale } = inputOption;
-            
             createRange(inputContext, inputName, key, scale);
         }
         else if ('event' in inputOption)

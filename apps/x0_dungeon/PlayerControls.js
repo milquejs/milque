@@ -1,15 +1,15 @@
 import { InputContext } from './Input.js';
 
 export const MOVE_MAPPING = {
-    up: [ { key: 'keyboard:ArrowUp', event: 'down' } ],
-    down: { key: 'keyboard:ArrowDown', event: 'down' },
-    left: [ 'keyboard:ArrowLeft' ],
-    right: 'keyboard:ArrowRight',
+    up: [ { key: 'keyboard:ArrowUp', scale: 1 } ],
+    down: { key: 'keyboard:ArrowDown', scale: 1 },
+    left: [ { key: 'keyboard:ArrowLeft', scale: 1 } ],
+    right: { key: 'keyboard:ArrowRight', scale: 1 },
 };
 export const SHOOT_MAPPING = {
     shootx: [ { key: 'mouse:pos.x', scale: 1 } ],
     shooty: { key: 'mouse:pos.y', scale: 1 },
-    shoot: 'mouse:0',
+    shoot: { key: 'mouse:0', scale: 1 },
 };
 
 export const CONTEXT = new InputContext({ ...MOVE_MAPPING, ...SHOOT_MAPPING });
