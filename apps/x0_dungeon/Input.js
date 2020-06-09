@@ -1,5 +1,11 @@
 import { Mouse, Keyboard } from './lib.js';
 
+// TODO: Pos inputs are non-elegant
+// TODO: Pos inputs cannot be used as Range
+// TODO: Different range inputs?
+// TODO: What about using the same keys per input?
+// TODO: Different keys per input?
+
 export class InputContext
 {
     constructor(inputMapping)
@@ -94,6 +100,52 @@ export class InputContext
     }
 }
 
+function parseInputOption(inputContext, inputName, inputOption)
+{
+    if (typeof inputOption === 'object')
+    {
+        if ('scale' in inputOption)
+        {
+            // Range
+            const { key, scale } = inputOption;
+            if (inputName in inputContext._ranges)
+            {
+                throw new Error('Not yet implemented.');
+            }
+            else
+            {
+                createRange(inputContext, inputName, key, scale);
+            }
+        }
+        else if ('event' in inputOption)
+        {
+            // Action
+            const { key, event } = inputOption;
+            if (inputName in inputContext._actions)
+            {
+                throw new Error('Not yet implemented.');
+            }
+            else
+            {
+                createAction(inputContext, inputName, key, event);
+            }
+        }
+        else
+        {
+            throw new Error(`Missing 'scale' or 'event' for input option '${inputName}'.`);
+        }
+    }
+    else if (typeof inputOption === 'string')
+    {
+        // Assumes to be an action.
+        createAction(inputContext, inputName, inputOption, 'down');
+    }
+    else
+    {
+        throw new Error('Invalid type for input mapping option.');
+    }
+}
+
 function createAction(inputContext, inputName, keyName, keyEvent)
 {
     let result = new ActionInput(inputName, keyName, keyEvent);
@@ -137,38 +189,6 @@ function createRange(inputContext, inputName, keyName, scale)
         inputContext._keys[baseKeyName] = [ result ];
     }
     return result;
-}
-
-function parseInputOption(inputContext, inputName, inputOption)
-{
-    if (typeof inputOption === 'object')
-    {
-        if ('scale' in inputOption)
-        {
-            // Range
-            const { key, scale } = inputOption;
-            createRange(inputContext, inputName, key, scale);
-        }
-        else if ('event' in inputOption)
-        {
-            // Action
-            const { key, event } = inputOption;
-            createAction(inputContext, inputName, key, event);
-        }
-        else
-        {
-            throw new Error(`Missing 'scale' or 'event' for input option '${inputName}'.`);
-        }
-    }
-    else if (typeof inputOption === 'string')
-    {
-        // Assumes to be an action.
-        createAction(inputContext, inputName, inputOption, 'down');
-    }
-    else
-    {
-        throw new Error('Invalid type for input mapping option.');
-    }
 }
 
 class Input
@@ -250,10 +270,10 @@ class RangeInput extends Input
             switch(e.event)
             {
                 case 'down':
-                    this._next = e.value * this.scale;
+                    this._next += e.value * this.scale;
                     break;
                 case 'up':
-                    this._next = 0;
+                    this._next -= this.scale;
                     break;
                 default:
                     this._next = e.value * this.scale;
