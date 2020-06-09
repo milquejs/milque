@@ -1,18 +1,22 @@
-import { InputMapping, InputContext } from './Input.js';
+import { InputContext } from './Input.js';
 
-export const MAPPING = InputMapping.create({
-    actions: {
-        jump: [ 'key:Space' ],
-    },
-    ranges: {
-        moveForward: { 'key:KeyW': 1, 'key:ArrowUp': 1 },
-        moveBackward: { 'key:KeyS': 1, 'key:ArrowDown': 1 },
-    },
-});
-export const CONTEXT = new InputContext(MAPPING);
+const MoveMapping = {
+    up: [ { key: 'keyboard:ArrowUp', event: 'down' } ],
+    down: { key: 'keyboard:ArrowDown', event: 'down' },
+    left: [ 'keyboard:ArrowLeft' ],
+    right: 'keyboard:ArrowRight',
+};
+const ShootMapping = {
+    shootx: [ { key: 'mouse:pos.x', scale: 1 } ],
+    shooty: { key: 'mouse:pos.y', scale: 1 },
+    shoot: 'mouse:0',
+};
 
-export const MoveForward = CONTEXT.getRange('moveForward');
-export const MoveBackward = CONTEXT.getRange('moveBackward');
-export const Jump = CONTEXT.getPressed('jump');
-export const Inventory = CONTEXT.getReleased('inventory');
-export const Running = CONTEXT.getState('running');
+export const CONTEXT = new InputContext({ ...MoveMapping, ...ShootMapping });
+export const MoveUp = CONTEXT.getRange('up');
+export const MoveDown = CONTEXT.getRange('down');
+export const MoveLeft = CONTEXT.getRange('left');
+export const MoveRight = CONTEXT.getRange('right');
+export const ShootPosX = CONTEXT.getRange('shootx');
+export const ShootPosY = CONTEXT.getRange('shooty');
+export const ShootAction = CONTEXT.getRange('shoot');

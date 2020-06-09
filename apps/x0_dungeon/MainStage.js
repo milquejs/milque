@@ -1,16 +1,11 @@
-import { Mouse, Keyboard, CanvasView, Camera2D, IntersectionWorld, IntersectionHelper } from './lib.js';
+import { CanvasView, Camera2D, IntersectionWorld, IntersectionHelper } from './lib.js';
 
 import { TileMap, renderTileMap, Chunk, CHUNK_DATA_LENGTH, CHUNK_SIZE, TILE_SIZE } from './TileMap.js';
+import { MoveUp, MoveDown, MoveLeft, MoveRight, ShootAction, ShootPosX, ShootPosY, CONTEXT as PLAYER_INPUT_CONTEXT } from './PlayerControls.js'
 
 export async function load()
 {
-    this.keyboard = new Keyboard(document, [
-        'ArrowUp',
-        'ArrowDown',
-        'ArrowLeft',
-        'ArrowRight',
-    ]);
-    this.mouse = new Mouse(this.display.canvas);
+    PLAYER_INPUT_CONTEXT.attach(document, this.display.canvas);
 
     this.camera = new Camera2D();
     this.view = new CanvasView();
@@ -38,16 +33,15 @@ export function start()
 
 export function update(dt)
 {
-    this.keyboard.poll();
-    this.mouse.poll();
+    PLAYER_INPUT_CONTEXT.poll();
 
     if (this.shootCooldown <= 0)
     {
-        if (this.mouse.left.value)
+        if (ShootAction.value)
         {
             let pos = this.camera.screenToWorld(
-                this.mouse.x * this.display.width - this.display.width / 2,
-                this.mouse.y * this.display.height - this.display.height / 2);
+                ShootPosX.value * this.display.width - this.display.width / 2,
+                ShootPosY.value * this.display.height - this.display.height / 2);
 
             let bulletSpeed = 0.1;
             let dx = pos[0] - this.player.x;
@@ -67,8 +61,8 @@ export function update(dt)
     updateBullets(dt, this.bullets);
 
     const moveSpeed = 0.1;
-    let dx = this.keyboard.ArrowRight.value - this.keyboard.ArrowLeft.value;
-    let dy = this.keyboard.ArrowDown.value - this.keyboard.ArrowUp.value;
+    let dx = MoveRight.value - MoveLeft.value;
+    let dy = MoveDown.value - MoveUp.value;
 
     this.player.aabb.dx = dx * moveSpeed;
     this.player.aabb.dy = dy * moveSpeed;
@@ -123,7 +117,7 @@ export function render(ctx)
         }
 
         // this.intersections.render(ctx);
-        let pos = this.camera.screenToWorld(this.mouse.x * this.display.width - this.display.width / 2, this.mouse.y * this.display.height - this.display.height / 2);
+        let pos = this.camera.screenToWorld(ShootPosX.value * this.display.width - this.display.width / 2, ShootPosY.value * this.display.height - this.display.height / 2);
         ctx.fillStyle = 'black';
         ctx.fillRect(Math.floor(pos[0]), Math.floor(pos[1]), 10, 10);
     }
@@ -133,7 +127,7 @@ export function render(ctx)
     }
 
     ctx.fillStyle = 'white';
-    // ctx.fillRect(Math.floor(this.mouse.x * this.display.width), Math.floor(this.mouse.y * this.display.height), 10, 10);
+    // ctx.fillRect(Math.floor(ShootPosX.value * this.display.width), Math.floor(ShootPosY.value * this.display.height), 10, 10);
 }
 
 function renderPlayer(ctx, player)
