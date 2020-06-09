@@ -66,7 +66,7 @@ export function renderTile(ctx, value)
 
 export class ChunkLoader
 {
-    constructor(world, chunkConstructor, maxChunkIdleTime = MAX_CHUNK_IDLE_TIME)
+    constructor(world = undefined, chunkConstructor = Chunk, maxChunkIdleTime = MAX_CHUNK_IDLE_TIME)
     {
         this.world = world;
         this.chunkConstructor = chunkConstructor;
@@ -207,11 +207,9 @@ export class ChunkLoader
 
 export class TileMap
 {
-    constructor(world = undefined, chunkConstructor = Chunk)
+    constructor(chunkLoader)
     {
-        this.world = world;
-        
-        this.chunkLoader = new ChunkLoader(world, chunkConstructor);
+        this.chunkLoader = chunkLoader;
     }
 
     tileAt(x, y, forceLoad = true)

@@ -1,71 +1,40 @@
 import { CanvasView, Camera2D, IntersectionWorld, IntersectionHelper } from './lib.js';
 
-import { TileMap, renderTileMap, Chunk, CHUNK_DATA_LENGTH, CHUNK_SIZE, TILE_SIZE } from './TileMap.js';
-import { MoveUp, MoveDown, MoveLeft, MoveRight, ShootAction, ShootPosX, ShootPosY, CONTEXT as PLAYER_INPUT_CONTEXT } from './PlayerControls.js'
+import { TileMap, renderTileMap, Chunk, ChunkLoader, CHUNK_DATA_LENGTH, CHUNK_SIZE, TILE_SIZE } from './TileMap.js';
+import { ShootPosX, ShootPosY } from './PlayerControls.js';
+
+import * as Players from './Players.js';
+import * as Bullets from './Bullets.js';
 
 export async function load()
 {
-    PLAYER_INPUT_CONTEXT.attach(document, this.display.canvas);
-
     this.camera = new Camera2D();
     this.view = new CanvasView();
 
     this.shootCooldown = 0;
-    this.maxShootCooldown = 10;
+
+    await Players.load(this);
+    await Bullets.load(this);
+
+    this.players = [];
     this.bullets = [];
 }
 
 export function start()
 {
-    this.tileMap = new TileMap(this, IntersectionChunk);
-
-    this.player = {
-        x: 0,
-        y: 0,
-        aabb: IntersectionHelper.createAABB(-10, 0, 4, 4),
-    };
-
+    this.tileMap = new TileMap(new ChunkLoader(this, IntersectionChunk));
     this.intersections = IntersectionWorld.createIntersectionWorld();
-    this.intersections.dynamics.push(this.player.aabb);
+
+    this.player = Players.create(this, -10, 0);
+    this.players.push(this.player);
 
     this.tileMap.chunksWithin([], -1, -1, 1, 1, true);
 }
 
 export function update(dt)
 {
-    PLAYER_INPUT_CONTEXT.poll();
-
-    if (this.shootCooldown <= 0)
-    {
-        if (ShootAction.value)
-        {
-            let pos = this.camera.screenToWorld(
-                ShootPosX.value * this.display.width - this.display.width / 2,
-                ShootPosY.value * this.display.height - this.display.height / 2);
-
-            let bulletSpeed = 0.1;
-            let dx = pos[0] - this.player.x;
-            let dy = pos[1] - this.player.y;
-            let dist = Math.sqrt(dx * dx + dy * dy);
-            let bullet = createBullet(this.player.x, this.player.y, (dx / dist) * bulletSpeed, (dy / dist) * bulletSpeed, 100);
-            this.bullets.push(bullet);
-
-            this.shootCooldown = this.maxShootCooldown;
-        }
-    }
-    else
-    {
-        --this.shootCooldown;
-    }
-
-    updateBullets(dt, this.bullets);
-
-    const moveSpeed = 0.1;
-    let dx = MoveRight.value - MoveLeft.value;
-    let dy = MoveDown.value - MoveUp.value;
-
-    this.player.aabb.dx = dx * moveSpeed;
-    this.player.aabb.dy = dy * moveSpeed;
+    Players.update(dt, this, this.players);
+    Bullets.update(dt, this, this.bullets);
 
     this.camera.moveTo(this.player.x, this.player.y, 0, 0.05);
 
@@ -80,8 +49,7 @@ export function update(dt)
     
     this.intersections.update(dt);
 
-    this.player.x = Math.round(this.player.aabb.x);
-    this.player.y = Math.round(this.player.aabb.y);
+    Players.postUpdate(dt, this, this.players);
 }
 
 export function render(ctx)
@@ -105,16 +73,8 @@ export function render(ctx)
             this.camera.x + halfDisplayWidth,
             this.camera.y + halfDisplayHeight);
 
-        ctx.translate(this.player.x, this.player.y);
-        renderPlayer(ctx, this.player);
-        ctx.translate(-this.player.x, -this.player.y);
-
-        for(let bullet of this.bullets)
-        {
-            ctx.translate(bullet.x, bullet.y);
-            renderBullet(ctx, bullet);
-            ctx.translate(-bullet.x, -bullet.y);
-        }
+        Players.render(ctx, this, this.players);
+        Bullets.render(ctx, this, this.bullets);
 
         // this.intersections.render(ctx);
         let pos = this.camera.screenToWorld(ShootPosX.value * this.display.width - this.display.width / 2, ShootPosY.value * this.display.height - this.display.height / 2);
@@ -128,45 +88,6 @@ export function render(ctx)
 
     ctx.fillStyle = 'white';
     // ctx.fillRect(Math.floor(ShootPosX.value * this.display.width), Math.floor(ShootPosY.value * this.display.height), 10, 10);
-}
-
-function renderPlayer(ctx, player)
-{
-    ctx.fillStyle = 'red';
-    ctx.fillRect(-4, -4, 8, 8);
-}
-
-function updateBullets(dt, bullets)
-{
-    for(let bullet of bullets)
-    {
-        updateBullet(dt, bullet);
-
-        if (bullet.age <= 0)
-        {
-            bullets.splice(bullets.indexOf(bullet), 1);
-        }
-    }
-}
-
-function updateBullet(dt, bullet)
-{
-    bullet.x += bullet.dx * dt;
-    bullet.y += bullet.dy * dt;
-    --bullet.age;
-}
-
-function renderBullet(ctx, bullet)
-{
-    ctx.fillStyle = 'gold';
-    ctx.fillRect(-2, -2, 4, 4);
-}
-
-function createBullet(x, y, dx, dy, age = 100)
-{
-    return {
-        x, y, dx, dy, age
-    };
 }
 
 class IntersectionChunk extends Chunk

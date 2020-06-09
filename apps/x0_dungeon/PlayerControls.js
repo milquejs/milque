@@ -12,12 +12,12 @@ export const SHOOT_MAPPING = {
     shoot: { key: 'mouse:0', scale: 1 },
 };
 
-export const CONTEXT = new InputContext({ ...MOVE_MAPPING, ...SHOOT_MAPPING });
+export const PLAYER_INPUT_CONTEXT = new InputContext({ ...MOVE_MAPPING, ...SHOOT_MAPPING });
 
-export const MoveUp = CONTEXT.getRange('up');
-export const MoveDown = CONTEXT.getRange('down');
-export const MoveLeft = CONTEXT.getRange('left');
-export const MoveRight = CONTEXT.getRange('right');
-export const ShootPosX = CONTEXT.getRange('shootx');
-export const ShootPosY = CONTEXT.getRange('shooty');
-export const ShootAction = CONTEXT.getRange('shoot');
+export const MoveUp = PLAYER_INPUT_CONTEXT.getRange('up');
+export const MoveDown = PLAYER_INPUT_CONTEXT.getRange('down');
+export const MoveLeft = PLAYER_INPUT_CONTEXT.getRange('left');
+export const MoveRight = PLAYER_INPUT_CONTEXT.getRange('right');
+export const ShootPosX = PLAYER_INPUT_CONTEXT.getRange('shootx');
+export const ShootPosY = PLAYER_INPUT_CONTEXT.getRange('shooty');
+export const ShootAction = PLAYER_INPUT_CONTEXT.getRange('shoot');
