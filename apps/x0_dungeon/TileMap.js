@@ -1,9 +1,6 @@
-import { SimpleRandomGenerator } from './lib.js';
+import { ChunkManager, TILE_SIZE, CHUNK_SIZE } from './ChunkManager.js';
 
-export const TILE_SIZE = 10;
-export const CHUNK_SIZE = 16;
-export const CHUNK_DATA_LENGTH = CHUNK_SIZE * CHUNK_SIZE;
-export const MAX_CHUNK_IDLE_TIME = 10_000; // 10 seconds.
+export { TILE_SIZE, CHUNK_SIZE, CHUNK_DATA_LENGTH } from './ChunkManager.js';
 
 export function renderTileMap(ctx, tileMap, left, top, right, bottom)
 {
@@ -67,162 +64,12 @@ export function renderTile(ctx, value)
     ctx.fillRect(0, 0, TILE_SIZE, TILE_SIZE);
 }
 
-export class ChunkLoader
-{
-    constructor(world = undefined, chunkConstructor = Chunk, maxChunkIdleTime = MAX_CHUNK_IDLE_TIME)
-    {
-        this.world = world;
-        this.chunkConstructor = chunkConstructor;
-        this.chunksLoaded = new Map();
-
-        this.maxChunkIdleTime = maxChunkIdleTime;
-
-        this._isLoading = new Set();
-        this._lastActiveTimes = new Map();
-    }
-
-    clear(world)
-    {
-        for(let chunk of this.chunksLoaded.values())
-        {
-            this._unloadChunk(world, chunk.chunkId, chunk);
-        }
-
-        if (this.chunksLoaded.size > 0) throw new Error(`Unable to unload ${this.chunksLoaded.size} chunks.`);
-    }
-
-    hasChunk(chunkX, chunkY)
-    {
-        const chunkId = this.getChunkId(chunkX, chunkY);
-        return this.chunksLoaded.has(chunkId);
-    }
-    
-    getChunk(chunkX, chunkY, forceLoad = true)
-    {
-        const chunkId = this.getChunkId(chunkX, chunkY);
-        if (this.chunksLoaded.has(chunkId))
-        {
-            return this.chunksLoaded.get(chunkId);
-        }
-        else if (forceLoad)
-        {
-            let chunk = new (this.chunkConstructor)(chunkId, chunkX, chunkY);
-            this._loadChunk(this.world, chunkId, chunk);
-            return chunk;
-        }
-        else
-        {
-            return null;
-        }
-    }
-
-    async loadChunk(chunkX, chunkY)
-    {
-        const chunkId = this.getChunkId(chunkX, chunkY);
-        if (this.chunksLoaded.has(chunkId))
-        {
-            return this.chunksLoaded.get(chunkId);
-        }
-        else
-        {
-            let chunk = new (this.chunkConstructor)(chunkId, chunkX, chunkY);
-            await this._loadChunk(this.world, chunkId, chunk);
-            return chunk;
-        }
-    }
-
-    unloadChunk(chunkX, chunkY)
-    {
-        const chunkId = this.getChunkId(chunkX, chunkY);
-        if (this.chunksLoaded.has(chunkId))
-        {
-            let chunk = this.chunksLoaded.get(chunkId);
-            this._unloadChunk(this.world, chunkId, chunk);
-        }
-    }
-
-    async _loadChunk(world, chunkId, chunk)
-    {
-        this._unloadIdleChunks(world);
-
-        this._isLoading.add(chunkId);
-        this.chunksLoaded.set(chunkId, chunk);
-
-        await this.chunkConstructor.loadChunkData(chunk)
-            .then(() => {
-                this._isLoading.delete(chunkId);
-                chunk.onChunkLoaded(world);
-            })
-            .catch(() => {
-                this._unloadChunk(world, chunkId, chunk);
-            });
-        return chunk;
-    }
-
-    _unloadChunk(world, chunkId, chunk)
-    {
-        this.chunksLoaded.delete(chunkId);
-        
-        chunk.onChunkUnloaded(world);
-
-        this._lastActiveTimes.delete(chunkId);
-    }
-
-    _unloadIdleChunks(world)
-    {
-        const maxChunkIdleTime = this.maxChunkIdleTime;
-        const currentChunkTime = this.chunkConstructor.getCurrentChunkTime(world);
-        
-        for(let chunk of this.chunksLoaded.values())
-        {
-            if (this._isLoading.has(chunk.chunkId)) continue;
-            if (currentChunkTime - chunk.lastActiveTime >= maxChunkIdleTime)
-            {
-                this._unloadChunk(world, chunk.chunkId, chunk);
-            }
-        }
-    }
-
-    markActive(chunk)
-    {
-        this._lastActiveTimes.set(chunk.chunkId, this.chunkConstructor.getCurrentChunkTime(this.world));
-    }
-
-    isChunkLoading(chunk)
-    {
-        return this._isLoading.has(chunk.chunkId);
-    }
-
-    isChunkIdle(chunk)
-    {
-        const chunkId = chunk.chunkId;
-        if (this._lastActiveTimes.has(chunkId))
-        {
-            let idleTime = this.chunkConstructor.getCurrentChunkTime(this.world) - this._lastActiveTimes.get(chunkId);
-            return idleTime >= this.maxChunkIdleTime;
-        }
-        else
-        {
-            return true;
-        }
-    }
-
-    getChunks()
-    {
-        return this.chunksLoaded.values();
-    }
-
-    getChunkId(chunkX, chunkY)
-    {
-        return (chunkX << 16) + chunkY;
-    }
-}
-
 export class TileMap
 {
-    constructor(chunkLoader)
+    constructor(world)
     {
-        this.chunkLoader = chunkLoader;
+        this.world = world;
+        this.chunkManager = new ChunkManager();
     }
 
     tileAt(x, y, forceLoad = true)
@@ -236,7 +83,19 @@ export class TileMap
     {
         let chunkX = Math.floor((x / TILE_SIZE) / CHUNK_SIZE);
         let chunkY = Math.floor((y / TILE_SIZE) / CHUNK_SIZE);
-        return this.chunkLoader.getChunk(chunkX, chunkY, forceLoad);
+        let chunkId = this.chunkManager.getChunkId(chunkX, chunkY);
+        if (this.chunkManager.hasChunk(chunkId))
+        {
+            return this.chunkManager.getChunk(chunkId);
+        }
+        else if (forceLoad)
+        {
+            return this.chunkManager.loadChunkImmediately(this.world, chunkId, chunkX, chunkY);
+        }
+        else
+        {
+            return null;
+        }
     }
 
     chunksWithin(out, left, top, right, bottom, forceLoad = true)
@@ -263,71 +122,7 @@ export class TileMap
         let activeChunks = this.chunksWithin([], left, top, right, bottom, forceLoad);
         for(let chunk of activeChunks)
         {
-            this.chunkLoader.markActive(chunk);
+            this.chunkManager.markActive(this.world, chunk.chunkId);
         }
-    }
-}
-
-export class Chunk
-{
-    static async loadChunkData(chunk)
-    {
-        const rand = new SimpleRandomGenerator(chunk.chunkId);
-        for(let i = 0; i < CHUNK_DATA_LENGTH; ++i)
-        {
-            chunk.data.tiles[i] = Math.floor(rand.next() * 10);
-        }
-    }
-
-    static saveChunkData(chunk)
-    {
-        let result = {};
-        result.tiles = chunk.data.tiles.slice();
-        result.chunkId = chunk.chunkId;
-        result.chunkX = chunk.chunkX;
-        result.chunkY = chunk.chunkY;
-        return result;
-    }
-
-    static getCurrentChunkTime(world)
-    {
-        return Date.now();
-    }
-
-    constructor(chunkId, chunkX, chunkY)
-    {
-        this.chunkId = chunkId;
-        this.chunkX = chunkX;
-        this.chunkY = chunkY;
-
-        this.x = chunkX * CHUNK_SIZE * TILE_SIZE;
-        this.y = chunkY * CHUNK_SIZE * TILE_SIZE;
-
-        this.data = {
-            tiles: new Uint8Array(CHUNK_DATA_LENGTH).fill(0),
-        };
-    }
-
-    /** @abstract */
-    onChunkLoaded(world) {}
-
-    /** @abstract */
-    onChunkUnloaded(world) {}
-
-    getTileIndex(x, y)
-    {
-        let tileX = Math.floor((x - this.x) / TILE_SIZE) % CHUNK_SIZE;
-        let tileY = Math.floor((y - this.y) / TILE_SIZE) % CHUNK_SIZE;
-        return tileX + tileY * CHUNK_SIZE;
-    }
-
-    setTile(index, value)
-    {
-        this.data.tiles[index] = value;
-    }
-    
-    getTile(index)
-    {
-        return this.data.tiles[index];
     }
 }

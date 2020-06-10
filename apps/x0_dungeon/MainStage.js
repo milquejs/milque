@@ -1,6 +1,7 @@
 import { CanvasView, Camera2D, IntersectionWorld, IntersectionHelper } from './lib.js';
 
-import { TileMap, renderTileMap, Chunk, ChunkLoader, CHUNK_DATA_LENGTH, CHUNK_SIZE, TILE_SIZE } from './TileMap.js';
+import { ChunkLoader } from './ChunkManager.js';
+import { TileMap, renderTileMap, CHUNK_DATA_LENGTH, CHUNK_SIZE, TILE_SIZE } from './TileMap.js';
 import { ShootPosX, ShootPosY } from './PlayerControls.js';
 
 import * as Players from './Players.js';
@@ -20,7 +21,9 @@ export async function load()
 
 export function start()
 {
-    this.tileMap = new TileMap(new ChunkLoader(this, IntersectionChunk));
+    this.tileMap = new TileMap(this);
+    this.tileMap.chunkManager.addChunkLoader(new IntersectionChunkLoader());
+
     this.intersections = IntersectionWorld.createIntersectionWorld();
 
     this.player = Players.create(this, -10, 0);
@@ -88,49 +91,42 @@ export function render(ctx)
     // ctx.fillRect(Math.floor(ShootPosX.value * this.display.width), Math.floor(ShootPosY.value * this.display.height), 10, 10);
 }
 
-class IntersectionChunk extends Chunk
+class IntersectionChunkLoader extends ChunkLoader
 {
-    /** @override */
-    static async loadChunkData(chunk)
+    static getStaticsForChunk(chunk)
     {
-        super.loadChunkData(chunk);
-
-        chunk.data.statics = getStaticsForChunk(chunk);
+        let statics = [];
+        for(let i = 0; i < CHUNK_DATA_LENGTH; ++i)
+        {
+            if (chunk.getTile(i) === 0) {
+                let tileX = chunk.x + (i % CHUNK_SIZE) * TILE_SIZE;
+                let tileY = chunk.y + Math.floor(i / CHUNK_SIZE) * TILE_SIZE;
+                statics.push(IntersectionHelper.createRect(tileX, tileY, tileX + TILE_SIZE, tileY + TILE_SIZE));
+            }
+        }
+        return statics;
+    }
+    
+    /** @override */
+    async loadChunkData(world, chunk)
+    {
+        await super.loadChunkData(world, chunk);
+        
+        chunk.data.statics = IntersectionChunkLoader.getStaticsForChunk(chunk);
         chunk.data.staticsEnabled = false;
-    }
 
-    constructor(chunkId, chunkX, chunkY)
-    {
-        super(chunkId, chunkX, chunkY);
+        world.intersections.statics.push(...chunk.data.statics);
     }
 
     /** @override */
-    onChunkLoaded(world)
+    destroyChunk(world, chunkId, chunk)
     {
-        world.intersections.statics.push(...this.data.statics);
-    }
-
-    /** @override */
-    onChunkUnloaded(world)
-    {
-        for(let collider of this.data.statics)
+        super.destroyChunk(world, chunkId, chunk);
+        
+        for(let collider of chunk.data.statics)
         {
             let i = world.intersections.statics.indexOf(collider);
             world.intersections.statics.splice(i, 1);
         }
     }
-}
-
-function getStaticsForChunk(chunk)
-{
-    let statics = [];
-    for(let i = 0; i < CHUNK_DATA_LENGTH; ++i)
-    {
-        if (chunk.getTile(i) === 0) {
-            let tileX = chunk.x + (i % CHUNK_SIZE) * TILE_SIZE;
-            let tileY = chunk.y + Math.floor(i / CHUNK_SIZE) * TILE_SIZE;
-            statics.push(IntersectionHelper.createRect(tileX, tileY, tileX + TILE_SIZE, tileY + TILE_SIZE));
-        }
-    }
-    return statics;
 }

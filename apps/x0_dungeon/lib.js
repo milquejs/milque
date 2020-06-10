@@ -10,3 +10,4 @@ export { Camera2D } from '../../packages/lib/src/camera/Camera2D.js';
 export { CanvasView } from '../../packages/lib/src/CanvasView.js';
 export { RandomGenerator } from '../../packages/lib/src/random/generators/RandomGenerator.js';
 export { SimpleRandomGenerator } from '../../packages/lib/src/random/generators/SimpleRandomGenerator.js';
+export { PriorityQueue } from '../../packages/util/src/PriorityQueue.js';
