@@ -1,4 +1,4 @@
-import { CanvasView, Camera2D } from './lib.js';
+import { CanvasView, Camera2D, Downloader, Uploader } from './lib.js';
 
 import { TileMap, renderTileMap, Chunk, ChunkLoader, CHUNK_DATA_LENGTH, CHUNK_SIZE, TILE_SIZE, renderTile } from '../TileMap.js';
 import * as BuilderControls from './BuilderControls.js'
@@ -8,6 +8,38 @@ export async function load()
     BuilderControls.BUILDER_INPUT_CONTEXT.attach(document, this.display.canvas);
     this.camera = new Camera2D();
     this.view = new CanvasView();
+
+    this.importButton = document.querySelector('#import');
+    this.exportButton = document.querySelector('#export');
+    this.clearButton = document.querySelector('#clear');
+
+    this.importButton.addEventListener('click', () => {
+        Uploader.uploadFile(['.wld']).then(fileList => {
+            if (fileList.length > 0)
+            {
+                return fileList[0].json();
+            }
+        }).then(jsonData => {
+            this.tileMap.clearChunkLoaders();
+            this.tileMap.addChunkLoader(new FileChunkLoader(jsonData));
+        });
+    });
+    this.exportButton.addEventListener('click', () => {
+        let chunks = [];
+        let result = {
+            chunks,
+        };
+        for(let chunk of this.tileMap.chunkLoader.getChunks())
+        {
+            let filename = `world${chunk.chunkX}_${chunk.chunkY}.cnk`;
+            chunks.push(filename);
+            Downloader.downloadText(filename, JSON.stringify(Chunk.saveChunkData(chunk)));
+        }
+        Downloader.downloadText(`world.wld`, JSON.stringify(result));
+    });
+    this.clearButton.addEventListener('click', () => {
+        this.tileMap.chunkLoader.clear();
+    });
 }
 
 export function start()
@@ -125,23 +157,5 @@ export function render(ctx)
     finally
     {
         this.view.end(ctx);
-    }
-}
-
-class EmptyChunk extends Chunk
-{
-    /** @override */
-    static loadChunkData(chunk)
-    {
-        const rand = new SimpleRandomGenerator(chunk.chunkId);
-        for(let i = 0; i < CHUNK_DATA_LENGTH; ++i)
-        {
-            chunk.data.tiles[i] = Math.floor(rand.next() * 10);
-        }
-    }
-
-    constructor(chunkId, chunkX, chunkY)
-    {
-        super(chunkId, chunkX, chunkY);
     }
 }

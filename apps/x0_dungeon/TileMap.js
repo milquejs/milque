@@ -81,6 +81,16 @@ export class ChunkLoader
         this._lastActiveTimes = new Map();
     }
 
+    clear(world)
+    {
+        for(let chunk of this.chunksLoaded.values())
+        {
+            this._unloadChunk(world, chunk.chunkId, chunk);
+        }
+
+        if (this.chunksLoaded.size > 0) throw new Error(`Unable to unload ${this.chunksLoaded.size} chunks.`);
+    }
+
     hasChunk(chunkX, chunkY)
     {
         const chunkId = this.getChunkId(chunkX, chunkY);
@@ -267,6 +277,16 @@ export class Chunk
         {
             chunk.data.tiles[i] = Math.floor(rand.next() * 10);
         }
+    }
+
+    static saveChunkData(chunk)
+    {
+        let result = {};
+        result.tiles = chunk.data.tiles.slice();
+        result.chunkId = chunk.chunkId;
+        result.chunkX = chunk.chunkX;
+        result.chunkY = chunk.chunkY;
+        return result;
     }
 
     static getCurrentChunkTime(world)
