@@ -1,7 +1,38 @@
 import { CanvasView, Camera2D, Downloader, Uploader } from './lib.js';
 
-import { TileMap, renderTileMap, Chunk, ChunkLoader, CHUNK_DATA_LENGTH, CHUNK_SIZE, TILE_SIZE, renderTile } from '../TileMap.js';
-import * as BuilderControls from './BuilderControls.js'
+import { saveChunkData, ChunkLoader, CHUNK_DATA_LENGTH } from '../ChunkManager.js';
+import { TileMap, renderTileMap, TILE_SIZE, renderTile } from '../TileMap.js';
+import * as BuilderControls from './BuilderControls.js';
+
+class FileChunkLoader extends ChunkLoader
+{
+    constructor(worldData)
+    {
+        super();
+
+        this.worldData = worldData;
+    }
+
+    /** @override */
+    async loadChunkData(world, chunk)
+    {
+        let filename = `world${chunk.chunkX}_${chunk.chunkY}.cnk`;
+        if (this.worldData.chunks.includes(filename))
+        {
+            for(let chunkData of this.worldData.datas)
+            {
+                if (chunkData.chunkId === chunk.chunkId)
+                {
+                    for(let i = 0; i < CHUNK_DATA_LENGTH; ++i)
+                    {
+                        chunk.data.tiles[i] = chunkData.tiles[i];
+                    }
+                    return;
+                }
+            }
+        }
+    }
+}
 
 export async function load()
 {
@@ -14,37 +45,44 @@ export async function load()
     this.clearButton = document.querySelector('#clear');
 
     this.importButton.addEventListener('click', () => {
-        Uploader.uploadFile(['.wld']).then(fileList => {
-            if (fileList.length > 0)
-            {
-                return fileList[0].json();
-            }
-        }).then(jsonData => {
-            this.tileMap.clearChunkLoaders();
-            this.tileMap.addChunkLoader(new FileChunkLoader(jsonData));
-        });
+        Uploader.uploadFile(['.wld'])
+            .then(fileList => fileList[0].text())
+            .then(textData => {
+                let jsonData = JSON.parse(textData);
+                this.tileMap.chunkManager.unloadLoadedChunks(this);
+                this.tileMap.chunkManager.clearChunkLoaders();
+                this.tileMap.chunkManager.addChunkLoader(new FileChunkLoader(jsonData));
+
+                for(let chunkData of jsonData.datas)
+                {
+                    this.tileMap.chunkManager.loadChunk(this, chunkData.chunkId, chunkData.chunkX, chunkData.chunkY);
+                }
+            });
     });
     this.exportButton.addEventListener('click', () => {
         let chunks = [];
+        let datas = [];
         let result = {
             chunks,
+            datas,
         };
-        for(let chunk of this.tileMap.chunkLoader.getChunks())
+        for(let chunk of this.tileMap.chunkManager.getChunks())
         {
             let filename = `world${chunk.chunkX}_${chunk.chunkY}.cnk`;
             chunks.push(filename);
-            Downloader.downloadText(filename, JSON.stringify(Chunk.saveChunkData(chunk)));
+            datas.push(saveChunkData(chunk));
         }
         Downloader.downloadText(`world.wld`, JSON.stringify(result));
     });
     this.clearButton.addEventListener('click', () => {
-        this.tileMap.chunkLoader.clear();
+        this.tileMap.chunkManager.unloadLoadedChunks(this);
     });
 }
 
 export function start()
 {
-    this.tileMap = new TileMap(new ChunkLoader(this, Chunk, Infinity));
+    this.tileMap = new TileMap(this);
+    this.tileMap.chunkManager.addChunkLoader(new ChunkLoader());
 
     this.worldX = 0;
     this.worldY = 0;

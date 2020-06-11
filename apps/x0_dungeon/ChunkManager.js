@@ -41,7 +41,7 @@ export class ChunkManager
             {
                 let chunk = chunkLoader.createChunk(world, chunkId, chunkX, chunkY);
                 await this.performChunkLoading(world, chunkLoader, chunkId, chunk);
-                return result;
+                return chunk;
             }
         }
         return null;
@@ -53,6 +53,7 @@ export class ChunkManager
         {
             if (chunkLoader.isValidChunk(chunkId))
             {
+                console.log(chunkId);
                 let chunk = chunkLoader.createChunk(world, chunkId, chunkX, chunkY);
                 this.performChunkLoading(world, chunkLoader, chunkId, chunk);
                 return chunk;
