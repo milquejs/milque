@@ -105,24 +105,7 @@ export class InputContext extends HTMLElement
 
         if (inputMapping)
         {
-            this._mapping = {};
-            for(let inputName of Object.keys(inputMapping))
-            {
-                let inputOptions = inputMapping[inputName];
-                if (Array.isArray(inputOptions))
-                {
-                    for(let inputOption of inputOptions)
-                    {
-                        parseInputOption(this, inputName, inputOption);
-                        appendInputOption(this, inputName, inputOption);
-                    }
-                }
-                else
-                {
-                    parseInputOption(this, inputName, inputOptions);
-                    appendInputOption(this, inputName, inputOptions);
-                }
-            }
+            parseInputOptions(this, inputMapping);
         }
     }
 
@@ -130,7 +113,6 @@ export class InputContext extends HTMLElement
     connectedCallback()
     {
         if (this._mapping) return;
-
         this._mapping = {};
 
         let src = this.src;
@@ -140,32 +122,18 @@ export class InputContext extends HTMLElement
                 .then(blob => blob.json())
                 .then(data => {
                     this._mapping = data;
-
-                    for(let inputName of Object.keys(data))
-                    {
-                        let inputOptions = data[inputName];
-                        if (Array.isArray(inputOptions))
-                        {
-                            for(let inputOption of inputOptions)
-                            {
-                                parseInputOption(this, inputName, inputOption);
-                                appendInputOption(this, inputName, inputOption);
-                            }
-                        }
-                        else
-                        {
-                            parseInputOption(this, inputName, inputOptions);
-                            appendInputOption(this, inputName, inputOptions);
-                        }
-                    }
                 })
                 .then(() => {
-                    processChildren(this);
+                    let result = processChildrenToInputMapping(this);
+                    this._mapping = { ...this._mapping, ...result };
+                    parseInputOptions(this, this._mapping);
                 });
         }
         else
         {
-            processChildren(this);
+            let result = processChildrenToInputMapping(this);
+            this._mapping = { ...this._mapping, ...result };
+            parseInputOptions(this, result);
         }
     }
 
@@ -305,16 +273,45 @@ export class InputContext extends HTMLElement
 }
 window.customElements.define('input-context', InputContext);
 
-function processChildren(inputContext)
+function processChildrenToInputMapping(inputContext)
 {
+    let result = {};
     for(let node of inputContext._children.assignedNodes())
     {
         if (node instanceof InputMapping)
         {
-            parseInputOption(inputContext, node.name, node);
-            appendInputOption(inputContext, node.name, node);
+            let inputName = node.name;
+
+            let keys;
+            if (inputName in result)
+            {
+                keys = result[inputName];
+            }
+            else
+            {
+                result[inputName] = keys = [];
+            }
+
+            switch(node.type)
+            {
+                case 'action':
+                    keys.push({
+                        key: node.key,
+                        event: node.event,
+                    });
+                    break;
+                case 'range':
+                    keys.push({
+                        key: node.key,
+                        scale: node.scale,
+                    });
+                    break;
+                default:
+                    throw new Error('Unknown input type.');
+            }
         }
     }
+    return result;
 }
 
 function appendInputOption(inputContext, inputName, inputOption)
@@ -388,6 +385,27 @@ function evalInputOptionType(inputOption)
     else
     {
         throw new Error('Invalid type for input mapping option.');
+    }
+}
+
+function parseInputOptions(inputContext, inputMapping)
+{
+    for(let inputName of Object.keys(inputMapping))
+    {
+        let inputOptions = inputMapping[inputName];
+        if (Array.isArray(inputOptions))
+        {
+            for(let inputOption of inputOptions)
+            {
+                parseInputOption(inputContext, inputName, inputOption);
+                appendInputOption(inputContext, inputName, inputOption);
+            }
+        }
+        else
+        {
+            parseInputOption(inputContext, inputName, inputOptions);
+            appendInputOption(inputContext, inputName, inputOptions);
+        }
     }
 }
 
