@@ -1,10 +1,7 @@
 import { Mouse, Keyboard } from './lib.js';
 
 // TODO: Pos inputs are non-elegant
-// TODO: Pos inputs cannot be used as Range
-// TODO: Different range inputs?
-// TODO: What about using the same keys per input?
-// TODO: Different keys per input?
+// TODO: multiple keys per input?
 
 export class InputContext
 {
@@ -14,7 +11,9 @@ export class InputContext
 
         this._actions = {};
         this._ranges = {};
+
         this._keys = {};
+        this._pos = [];
 
         for(let inputName of Object.keys(inputMapping))
         {
@@ -57,20 +56,30 @@ export class InputContext
 
     onInputEvent(e)
     {
-        const keyName = e.device + ':' + e.key;
-        if (keyName in this._keys)
+        if (e.type === 'key')
         {
-            let flag = false;
-            for(let input of this._keys[keyName])
+            const keyName = e.device + ':' + e.key;
+            if (keyName in this._keys)
             {
-                if (input.update(e))
+                let flag = false;
+                for(let input of this._keys[keyName])
                 {
-                    flag = true;
+                    if (input.update(e))
+                    {
+                        flag = true;
+                    }
+                }
+                if (flag)
+                {
+                    return true;
                 }
             }
-            if (flag)
+        }
+        else if (e.type === 'pos')
+        {
+            for(let input of this._pos)
             {
-                return true;
+                input.update(e);
             }
         }
     }
@@ -163,30 +172,20 @@ function createAction(inputContext, inputName, keyName, keyEvent)
 
 function createRange(inputContext, inputName, keyName, scale)
 {
-    let i = keyName.indexOf(':');
-    let posIndex = keyName.indexOf('pos', i + 1);
-    let baseKeyName;
-    let result;
-    if (posIndex >= 0)
-    {
-        baseKeyName = keyName.substring(0, i + 4);
-        let posName = keyName.substring(i + 5);
-        result = new PosRangeInput(inputName, baseKeyName, posName, scale);
-    }
-    else
-    {
-        baseKeyName = keyName;
-        result = new RangeInput(inputName, keyName, scale);
-    }
+    let result = new RangeInput(inputName, keyName, scale);
 
     inputContext._ranges[inputName] = result;
-    if (baseKeyName in inputContext._keys)
+    if (keyName in inputContext._keys)
     {
-        inputContext._keys[baseKeyName].push(result);
+        inputContext._keys[keyName].push(result);
+    }
+    else if (keyName.includes(':pos'))
+    {
+        inputContext._pos.push(result);
     }
     else
     {
-        inputContext._keys[baseKeyName] = [ result ];
+        inputContext._keys[keyName] = [ result ];
     }
     return result;
 }
@@ -260,6 +259,8 @@ class RangeInput extends Input
         super(inputName, keyName);
 
         this.scale = scale;
+
+        this._key = keyName.substring(keyName.indexOf(':') + 1);
     }
 
     /** @override */
@@ -280,6 +281,24 @@ class RangeInput extends Input
             }
             return true;
         }
+        else if (e.type === 'pos')
+        {
+            switch(this._key)
+            {
+                case 'pos.x':
+                    this._next = this._value = e.x * this.scale;
+                    break;
+                case 'pos.y':
+                    this._next = this._value = e.y * this.scale;
+                    break;
+                case 'pos.dx':
+                    this._next = this._value = e.dx * this.scale;
+                    break;
+                case 'pos.dy':
+                    this._next = this._value = e.dy * this.scale;
+                    break;
+            }
+        }
     }
 
     /** @override */
@@ -287,38 +306,5 @@ class RangeInput extends Input
     {
         let prev = this._value;
         this._value = this._next;
-    }
-}
-
-class PosRangeInput extends RangeInput
-{
-    constructor(inputName, keyName, posName, scale)
-    {
-        super(inputName, keyName, scale);
-
-        this.posName = posName;
-    }
-
-    /** @override */
-    update(e)
-    {
-        if (e.type ===  'pos')
-        {
-            switch(this.posName)
-            {
-                case 'x':
-                    this._next = this._value = e.x * this.scale;
-                    break;
-                case 'y':
-                    this._next = this._value = e.y * this.scale;
-                    break;
-                case 'dx':
-                    this._next = this._value = e.dx * this.scale;
-                    break;
-                case 'dy':
-                    this._next = this._value = e.dy * this.scale;
-                    break;
-            }
-        }
     }
 }

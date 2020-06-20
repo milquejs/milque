@@ -1,4 +1,4 @@
-import { InputContext } from './Input.js';
+import { InputContext } from './InputContext.js';
 
 export const MOVE_MAPPING = {
     up: [ { key: 'keyboard:ArrowUp', scale: 1 } ],
