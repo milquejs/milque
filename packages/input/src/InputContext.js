@@ -88,7 +88,7 @@ export class InputContext extends HTMLElement
     /** @override */
     static get observedAttributes()
     {
-        return ['for', 'strict'];
+        return ['for', 'strict', 'onattach', 'ondetach'];
     }
 
     constructor(inputMap = null)
@@ -98,6 +98,9 @@ export class InputContext extends HTMLElement
         this.attachShadow({ mode: 'open' });
         this.shadowRoot.appendChild(this.constructor[TEMPLATE_KEY].content.cloneNode(true));
         this.shadowRoot.appendChild(this.constructor[STYLE_KEY].cloneNode(true));
+
+        this._onattach = null;
+        this._ondetach = null;
 
         this._tableBody = this.shadowRoot.querySelector('tbody');
         this._children = this.shadowRoot.querySelector('slot');
@@ -166,8 +169,23 @@ export class InputContext extends HTMLElement
             case 'for':
                 if (this._inputTarget)
                 {
-                    Keyboard.removeInputEventListener(this._inputTarget, this.onInputEvent);
-                    Mouse.removeInputEventListener(this._inputTarget, this.onInputEvent);
+                    let target = this._inputTarget;
+                    this._inputTarget = null;
+
+                    if (target.canvas)
+                    {
+                        Keyboard.removeInputEventListener(target, this.onInputEvent);
+                        Mouse.removeInputEventListener(target.canvas, this.onInputEvent);
+                    }
+                    else
+                    {
+                        Keyboard.removeInputEventListener(target, this.onInputEvent);
+                        Mouse.removeInputEventListener(target, this.onInputEvent);
+                    }
+
+                    this.dispatchEvent(new CustomEvent('detach', {
+                        composed: true, bubbles: false, detail: { eventTarget: target, inputCallback: this.onInputEvent }
+                    }));
                 }
 
                 let target;
@@ -182,11 +200,30 @@ export class InputContext extends HTMLElement
 
                 if (target)
                 {
-                    Keyboard.addInputEventListener(target, this.onInputEvent);
-                    Mouse.addInputEventListener(target.canvas || target, this.onInputEvent);
+                    if (target.canvas)
+                    {
+                        Keyboard.addInputEventListener(target, this.onInputEvent);
+                        Mouse.addInputEventListener(target.canvas, this.onInputEvent);
+                    }
+                    else
+                    {
+                        Keyboard.addInputEventListener(target, this.onInputEvent);
+                        Mouse.addInputEventListener(target, this.onInputEvent);
+                    }
+
+                    this.dispatchEvent(new CustomEvent('attach', {
+                        composed: true, bubbles: false, detail: { eventTarget: target, inputCallback: this.onInputEvent }
+                    }));
                 }
 
                 this._inputTarget = target;
+                break;
+            // Event handlers...
+            case 'onattach':
+                this.onattach = new Function('event', `with(document){with(this){${value}}}`).bind(this);
+                break;
+            case 'ondetach':
+                this.ondetach = new Function('event', `with(document){with(this){${value}}}`).bind(this);
                 break;
         }
     }
@@ -199,6 +236,22 @@ export class InputContext extends HTMLElement
 
     get strict() { return this.hasAttribute('strict'); }
     set strict(value) { if (value) this.setAttribute('strict', ''); else this.removeAttribute('strict'); }
+
+    get onattach() { return this._onattach; }
+    set onattach(value)
+    {
+        if (this._onattach) this.removeEventListener('attach', this._onattach);
+        this._onattach = value;
+        if (this._onattach) this.addEventListener('attach', value);
+    }
+
+    get ondetach() { return this._ondetach; }
+    set ondetach(value)
+    {
+        if (this._ondetach) this.removeEventListener('detach', this._ondetach);
+        this._ondetach = value;
+        if (this._ondetach) this.addEventListener('detach', value);
+    }
 
     poll()
     {
