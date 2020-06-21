@@ -2,8 +2,6 @@ import { InputDevice, Button } from './InputDevice.js';
 
 const KEYBOARD_CONTEXT_KEY = Symbol('keyboardEventContext');
 
-// TODO: Focusable keyboard target is currently not supported. It must be document.
-
 export class Keyboard extends InputDevice
 {
     /** @override */

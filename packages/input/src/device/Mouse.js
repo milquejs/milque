@@ -168,9 +168,12 @@ function onMouseDown(e)
 
     if (result)
     {
-        e.preventDefault();
-        e.stopPropagation();
-        return false;
+        if (document.activeElement === this.target)
+        {
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+        }
     }
 }
 
