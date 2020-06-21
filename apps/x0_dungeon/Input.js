@@ -385,6 +385,7 @@ class InputKey
                 if (this.keyEvent === e.event)
                 {
                     this.value = e.value * this.scale;
+                    return true;
                 }
             }
             else
@@ -393,13 +394,13 @@ class InputKey
                 {
                     case 'down':
                         this.value = this.scale;
-                        break;
+                        return true;
                     case 'up':
                         this.value = 0;
-                        break;
+                        return true;
                     default:
                         this.value = e.value * this.scale;
-                        break;
+                        return;
                 }
             }
         }
