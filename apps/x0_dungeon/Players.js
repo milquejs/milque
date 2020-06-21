@@ -17,7 +17,7 @@ export const MAX_SHOOT_COOLDOWN = 10;
 
 export async function load(world)
 {
-    PLAYER_INPUT_CONTEXT.attach(document, world.display.canvas);
+    // PlayerControls.PLAYER_INPUT_CONTEXT.for = 'main';
 }
 
 export function create(world, x, y)

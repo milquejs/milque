@@ -25,8 +25,7 @@ What is bad in minesweeper?
 
 export async function load()
 {
-    PlayerControls.PLAYER_INPUT_CONTEXT.attach(document, this.display.canvas);
-
+    // PlayerControls.PLAYER_INPUT_CONTEXT.for = 'main';
     await MainRender.load.call(this);
 }
 

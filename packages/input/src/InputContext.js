@@ -88,7 +88,7 @@ export class InputContext extends HTMLElement
     /** @override */
     static get observedAttributes()
     {
-        return ['strict'];
+        return ['for', 'strict'];
     }
 
     constructor(inputMap = null)
@@ -106,6 +106,8 @@ export class InputContext extends HTMLElement
 
         this._inputMap = inputMap;
 
+        this._inputTarget = null;
+
         this._inputs = {};
         this._inputKeys = {};
         this._keys = {};
@@ -122,6 +124,8 @@ export class InputContext extends HTMLElement
     /** @override */
     connectedCallback()
     {
+        if (!this.hasAttribute('for')) this.setAttribute('for', '');
+
         if (!this._inputMap)
         {
             this._inputMap = {};
@@ -154,18 +158,47 @@ export class InputContext extends HTMLElement
         cancelAnimationFrame(this._animationFrameHandle);
     }
 
+    /** @override */
+    attributeChangedCallback(attribute, prev, value)
+    {
+        switch(attribute)
+        {
+            case 'for':
+                if (this._inputTarget)
+                {
+                    Keyboard.removeInputEventListener(this._inputTarget, this.onInputEvent);
+                    Mouse.removeInputEventListener(this._inputTarget, this.onInputEvent);
+                }
+
+                let target;
+                if (value)
+                {
+                    target = document.getElementById(value);
+                }
+                else
+                {
+                    target = document.querySelector('display-port') || document.querySelector('canvas');
+                }
+
+                if (target)
+                {
+                    Keyboard.addInputEventListener(target, this.onInputEvent);
+                    Mouse.addInputEventListener(target.canvas || target, this.onInputEvent);
+                }
+
+                this._inputTarget = target;
+                break;
+        }
+    }
+
     get src() { return this.getAttribute('src'); }
     set src(value) { this.setAttribute('src', value); }
 
+    get for() { return this.getAttribute('for'); }
+    set for(value) { this.setAttribute('for', value); }
+
     get strict() { return this.hasAttribute('strict'); }
     set strict(value) { if (value) this.setAttribute('strict', ''); else this.removeAttribute('strict'); }
-
-    attach(keyboardTarget, mouseTarget)
-    {
-        Keyboard.addInputEventListener(keyboardTarget, this.onInputEvent);
-        Mouse.addInputEventListener(mouseTarget, this.onInputEvent);
-        return this;
-    }
 
     poll()
     {
