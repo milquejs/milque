@@ -1,9 +1,6 @@
 import { InputMapping } from './InputMapping.js';
 import { Mouse, Keyboard } from './lib.js';
 
-// TODO: Pos inputs are non-elegant
-// TODO: multiple keys per input?
-
 const INNER_HTML = `
 <table>
     <thead>

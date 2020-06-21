@@ -1,5 +1,4 @@
-import { createButton, nextButton, pollButton } from './KeyButton.js';
-import { InputDevice } from './InputDevice.js';
+import { InputDevice, Button } from './InputDevice.js';
 
 const KEYBOARD_CONTEXT_KEY = Symbol('keyboardEventContext');
 
@@ -76,7 +75,7 @@ export class Keyboard extends InputDevice
         {
             for(let key of keyList)
             {
-                let button = createButton();
+                let button = new Button();
                 this[key] = button;
                 this._buttons.push(button);
             }
@@ -88,6 +87,11 @@ export class Keyboard extends InputDevice
             Keyboard.addInputEventListener(eventTarget, this.onUnmanagedKeyEvent);
         }
     }
+
+    get Up() { return Math.min((this.ArrowUp || 0) + (this.KeyW || 0), 1); }
+    get Down() { return Math.min((this.ArrowDown || 0) + (this.KeyS || 0), 1); }
+    get Left() { return Math.min((this.ArrowLeft || 0) + (this.KeyA || 0), 1); }
+    get Right() { return Math.min((this.ArrowRight || 0) + (this.KeyD || 0), 1); }
 
     destroy()
     {
@@ -106,7 +110,7 @@ export class Keyboard extends InputDevice
     {
         for(let button of this._buttons)
         {
-            pollButton(button);
+            button.poll();
         }
         return this;
     }
@@ -115,12 +119,12 @@ export class Keyboard extends InputDevice
     {
         if (!(e.key in this))
         {
-            let button = createButton();
+            let button = new Button();
             this[e.key] = button;
             this._buttons.push(button);
         }
         
-        nextButton(this[e.key], e.event, e.value);
+        this[e.key].update(e.event, e.value);
         
         return true;
     }
@@ -129,7 +133,7 @@ export class Keyboard extends InputDevice
     {
         if (e.key in this)
         {
-            nextButton(this[e.key], e.event, e.value);
+            this[e.key].update(e.event, e.value);
 
             return true;
         }
