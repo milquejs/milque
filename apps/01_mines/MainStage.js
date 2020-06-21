@@ -1,5 +1,3 @@
-import { Keyboard, Mouse } from './lib.js';
-
 import * as PlayerControls from './PlayerControls.js';
 import * as MainScene from './MainScene.js';
 import * as MainRender from './MainRender.js';
@@ -27,11 +25,7 @@ What is bad in minesweeper?
 
 export async function load()
 {
-    this.devices = {
-        keyboard: new Keyboard(this.display, [ 'KeyR' ]),
-        mouse: new Mouse(this.display.canvas),
-    };
-    PlayerControls.init(this.devices);
+    PlayerControls.PLAYER_INPUT_CONTEXT.attach(document, this.display.canvas);
 
     await MainRender.load.call(this);
 }
@@ -45,8 +39,7 @@ export function update(dt)
 {
     MainScene.onPreUpdate.call(this, dt);
 
-    this.devices.mouse.poll();
-    this.devices.keyboard.poll();
+    PlayerControls.PLAYER_INPUT_CONTEXT.poll();
 
     MainScene.onUpdate.call(this, dt);
 }

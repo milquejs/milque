@@ -1,40 +1,18 @@
-export function init(devices)
-{
-    const { mouse, keyboard } = devices;
-    Object.defineProperty(ACTIVATE, 'value', {
-        get()
-        {
-            return mouse.left.down;
-        }
-    });
-    Object.defineProperty(MARK, 'value', {
-        get()
-        {
-            return mouse.right.down;
-        }
-    });
-    Object.defineProperty(RESTART, 'value', {
-        get()
-        {
-            return keyboard.KeyR.up;
-        }
-    });
-    Object.defineProperty(MOUSE_X, 'value', {
-        get()
-        {
-            return mouse.x;
-        }
-    });
-    Object.defineProperty(MOUSE_Y, 'value', {
-        get()
-        {
-            return mouse.y;
-        }
-    });
-}
+import { InputContext } from './lib.js';
 
-export const MARK = { value: 0 };
-export const RESTART = { value: 0 };
-export const ACTIVATE = { value: 0 };
-export const MOUSE_X = { value: 0 };
-export const MOUSE_Y = { value: 0 };
+export const PLAYER_MAPPING = {
+    activate: 'mouse:0',
+    mark: 'mouse:2',
+    restart: { key: 'keyboard:KeyR', event: 'up' },
+    pointerX: { key: 'mouse:pos.x', scale: 1 },
+    pointerY: { key: 'mouse:pos.y', scale: 1 },
+};
+
+export const PLAYER_INPUT_CONTEXT = new InputContext(PLAYER_MAPPING);
+document.body.appendChild(PLAYER_INPUT_CONTEXT);
+
+export const MARK = PLAYER_INPUT_CONTEXT.getInput('mark');
+export const RESTART = PLAYER_INPUT_CONTEXT.getInput('restart');
+export const ACTIVATE = PLAYER_INPUT_CONTEXT.getInput('activate');
+export const MOUSE_X = PLAYER_INPUT_CONTEXT.getInput('pointerX');
+export const MOUSE_Y = PLAYER_INPUT_CONTEXT.getInput('pointerY');

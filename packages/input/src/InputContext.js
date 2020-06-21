@@ -168,6 +168,7 @@ export class InputContext extends HTMLElement
             {
                 case 'action':
                     // Action should be any key value.
+                    let consumed = false;
                     for(let inputKey of this._inputKeys[inputName])
                     {
                         let value = inputKey.value;
@@ -175,8 +176,13 @@ export class InputContext extends HTMLElement
                         {
                             flag = input.update(value, inputKey);
                             inputKey.consumeKey();
+                            consumed = true;
                             break;
                         }
+                    }
+                    if (!consumed)
+                    {
+                        flag = input.update(0, null);
                     }
                     break;
                 case 'range':
@@ -310,6 +316,7 @@ class InputKey
 
     updateKey(e, keyName)
     {
+        // NOTE: This condition is only really used for parameterized key events.
         if (keyName === this.keyName)
         {
             if (this.keyEvent)
@@ -349,12 +356,20 @@ function parseInputMapping(inputContext, inputMapping)
             for(let inputOption of inputOptions)
             {
                 parseInputOption(inputContext, inputName, inputOption);
+                if (typeof inputOption === 'string')
+                {
+                    inputOption = { key: inputOption, event: 'down' };
+                }
                 appendInputOption(inputContext, inputName, inputOption);
             }
         }
         else
         {
             parseInputOption(inputContext, inputName, inputOptions);
+            if (typeof inputOptions === 'string')
+            {
+                inputOptions = { key: inputOptions, event: 'down' };
+            }
             appendInputOption(inputContext, inputName, inputOptions);
         }
     }

@@ -1,4 +1,4 @@
-export { Keyboard, Mouse } from '../../packages/input/src/index.js';
+export { InputContext } from '../../packages/input/src/index.js';
 
 export * as Random from '../../packages/lib/src/random/Random.js';
 export * as Game from '../../packages/lib/src/Game.js';
