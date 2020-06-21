@@ -1,7 +1,8 @@
 import { Mouse } from './device/Mouse.js';
 import { Keyboard } from './device/Keyboard.js';
-import { InputMapping } from './InputMapping.js';
+
 import { Input } from './Input.js';
+import { InputMapping } from './InputMapping.js';
 
 const INNER_HTML = `
 <table>
@@ -87,10 +88,10 @@ export class InputContext extends HTMLElement
     /** @override */
     static get observedAttributes()
     {
-        return ['strict', 'editable'];
+        return ['strict'];
     }
 
-    constructor(inputMapping = null)
+    constructor(inputMap = null)
     {
         super();
 
@@ -102,7 +103,7 @@ export class InputContext extends HTMLElement
         this._children = this.shadowRoot.querySelector('slot');
         this._tableInputs = {};
 
-        this._mapping = inputMapping;
+        this._inputMap = inputMap;
 
         this._inputs = {};
         this._inputKeys = {};
@@ -110,34 +111,34 @@ export class InputContext extends HTMLElement
 
         this.onInputEvent = this.onInputEvent.bind(this);
 
-        if (inputMapping)
+        if (inputMap)
         {
-            parseInputMapping(this, inputMapping);
+            parseInputMapping(this, inputMap);
         }
     }
 
     /** @override */
     connectedCallback()
     {
-        if (this._mapping) return;
-        this._mapping = {};
+        if (this._inputMap) return;
+        this._inputMap = {};
 
-        let src = this.src;
-        if (src)
+        const childInputMap = InputMapping.toInputMap(this._children.assignedNodes());
+        const inputMapSource = this.src;
+
+        if (inputMapSource)
         {
-            fetch(src)
+            fetch(inputMapSource)
                 .then(blob => blob.json())
                 .then(data => {
-                    let result = getInputMappingFromNodes(this, this._children.assignedNodes());
-                    this._mapping = { ...data, ...result };
-                    parseInputMapping(this, this._mapping);
+                    this._inputMap = { ...data, ...childInputMap };
+                    parseInputMapping(this, this._inputMap);
                 });
         }
         else
         {
-            let result = getInputMappingFromNodes(this, this._children.assignedNodes());
-            this._mapping = { ...result };
-            parseInputMapping(this, this._mapping);
+            this._inputMap = { ...childInputMap };
+            parseInputMapping(this, this._inputMap);
         }
     }
 
@@ -336,48 +337,6 @@ class InputKey
             }
         }
     }
-}
-
-function getInputMappingFromNodes(inputContext, nodes)
-{
-    let result = {};
-    for(let node of nodes)
-    {
-        if (node instanceof InputMapping)
-        {
-            let inputName = node.name;
-
-            let keys;
-            if (inputName in result)
-            {
-                keys = result[inputName];
-            }
-            else
-            {
-                result[inputName] = keys = [];
-            }
-
-            let inputType = node.type;
-            switch(inputType)
-            {
-                case 'action':
-                    keys.push({
-                        key: node.key,
-                        event: node.event,
-                    });
-                    break;
-                case 'range':
-                    keys.push({
-                        key: node.key,
-                        scale: node.scale,
-                    });
-                    break;
-                default:
-                    throw new Error('Unknown input type.');
-            }
-        }
-    }
-    return result;
 }
 
 function parseInputMapping(inputContext, inputMapping)

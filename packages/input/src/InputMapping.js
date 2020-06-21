@@ -21,6 +21,8 @@ kbd {
 const TEMPLATE_KEY = Symbol('template');
 const STYLE_KEY = Symbol('style');
 
+// TODO: Consider a rename? This is just a data entry holder, not a full input map.
+
 export class InputMapping extends HTMLElement
 {
     static toInputMap(nodes)
