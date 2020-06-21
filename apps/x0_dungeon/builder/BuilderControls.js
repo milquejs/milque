@@ -1,4 +1,4 @@
-import { InputContext } from '../Input.js';
+import { InputContext } from './lib.js';
 
 export const BUILDER_MAPPING = {
     buildx: { key: 'mouse:pos.x', scale: 1 },
@@ -11,11 +11,12 @@ export const BUILDER_MAPPING = {
 };
 
 export const BUILDER_INPUT_CONTEXT = new InputContext(BUILDER_MAPPING);
+document.body.appendChild(BUILDER_INPUT_CONTEXT);
 
-export const BuildX = BUILDER_INPUT_CONTEXT.getRange('buildx');
-export const BuildY = BUILDER_INPUT_CONTEXT.getRange('buildy');
-export const BuildAction = BUILDER_INPUT_CONTEXT.getRange('build');
-export const BuildDragStart = BUILDER_INPUT_CONTEXT.getAction('build_dragstart');
-export const BuildDragStop = BUILDER_INPUT_CONTEXT.getAction('build_dragstop');
-export const BuildNextTile = BUILDER_INPUT_CONTEXT.getAction('build_nexttile');
-export const BuildPrevTile = BUILDER_INPUT_CONTEXT.getAction('build_prevtile');
+export const BuildX = BUILDER_INPUT_CONTEXT.getInput('buildx');
+export const BuildY = BUILDER_INPUT_CONTEXT.getInput('buildy');
+export const BuildAction = BUILDER_INPUT_CONTEXT.getInput('build');
+export const BuildDragStart = BUILDER_INPUT_CONTEXT.getInput('build_dragstart');
+export const BuildDragStop = BUILDER_INPUT_CONTEXT.getInput('build_dragstop');
+export const BuildNextTile = BUILDER_INPUT_CONTEXT.getInput('build_nexttile');
+export const BuildPrevTile = BUILDER_INPUT_CONTEXT.getInput('build_prevtile');
