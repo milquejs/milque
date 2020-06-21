@@ -1,31 +1,10 @@
 const INNER_HTML = `
-<div>
-    <p><slot>Input</slot></p>
-    <button id="main">
-        <kbd>---</kbd>
-    </button>
-</div>`;
+<kbd></kbd>`;
 const INNER_STYLE = `
 :host {
     display: inline-block;
 }
-div {
-    display: flex;
-    align-items: center;
-}
-div > * {
-    margin: 0;
-    padding: 3px 6px;
-}
-button {
-    background: transparent;
-    border: none;
-}
-button:hover {
-    background: rgba(0, 0, 0, 0.1);
-}
 kbd {
-    display: inline-block;
     background-color: #EEEEEE;
     border-radius: 3px;
     border: 1px solid #B4B4B4;
@@ -44,6 +23,50 @@ const STYLE_KEY = Symbol('style');
 
 export class InputMapping extends HTMLElement
 {
+    static toInputMap(nodes)
+    {
+        let inputMap = {};
+        
+        for(let node of nodes)
+        {
+            if (node instanceof InputMapping)
+            {
+                let inputName = node.name;
+    
+                let keys;
+                if (inputName in inputMap)
+                {
+                    keys = inputMap[inputName];
+                }
+                else
+                {
+                    inputMap[inputName] = keys = [];
+                }
+    
+                let inputType = node.type;
+                switch(inputType)
+                {
+                    case 'action':
+                        keys.push({
+                            key: node.key,
+                            event: node.event,
+                        });
+                        break;
+                    case 'range':
+                        keys.push({
+                            key: node.key,
+                            scale: node.scale,
+                        });
+                        break;
+                    default:
+                        throw new Error('Unknown input type.');
+                }
+            }
+        }
+
+        return inputMap;
+    }
+
     static get [TEMPLATE_KEY]()
     {
         let template = document.createElement('template');
@@ -79,40 +102,20 @@ export class InputMapping extends HTMLElement
         this.shadowRoot.appendChild(this.constructor[TEMPLATE_KEY].content.cloneNode(true));
         this.shadowRoot.appendChild(this.constructor[STYLE_KEY].cloneNode(true));
 
-        this.mainButton = this.shadowRoot.querySelector('#main');
-        this.mainKey = this.shadowRoot.querySelector('#main > kbd');
-
-        this.onMainClick = this.onMainClick.bind(this);
+        this.keyElement = this.shadowRoot.querySelector('kbd');
     }
 
     /** @override */
-    connectedCallback()
-    {
-        this.mainButton.addEventListener('click', this.onMainClick);
-    }
-
-    /** @override */
-    disconnectedCallback()
-    {
-        this.mainButton.removeEventListener('click', this.onMainClick);
-    }
-
-    /** @override */
-    attributeChangedCallback(attribute, old, value)
+    attributeChangedCallback(attribute, prev, value)
     {
         switch(attribute)
         {
             case 'name':
                 break;
             case 'key':
-                this.mainKey.textContent = value;
+                this.keyElement.textContent = value;
                 break;
         }
-    }
-
-    onMainClick()
-    {
-        
     }
 
     get type() { return this.hasAttribute('event') ? 'action' : 'range'; }
