@@ -358,6 +358,12 @@ class Input
             listeners.splice(listeners.indexOf(listener), 1);
         }
     }
+
+    /** @override */
+    toString()
+    {
+        return this.value;
+    }
 }
 
 class InputKey
