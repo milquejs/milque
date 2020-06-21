@@ -102,6 +102,7 @@ export class InputContext extends HTMLElement
         this._tableBody = this.shadowRoot.querySelector('tbody');
         this._children = this.shadowRoot.querySelector('slot');
         this._tableInputs = {};
+        this._animationFrameHandle = 0;
 
         this._inputMap = inputMap;
 
@@ -110,6 +111,7 @@ export class InputContext extends HTMLElement
         this._keys = {};
 
         this.onInputEvent = this.onInputEvent.bind(this);
+        this.onAnimationFrame = this.onAnimationFrame.bind(this);
 
         if (inputMap)
         {
@@ -120,26 +122,36 @@ export class InputContext extends HTMLElement
     /** @override */
     connectedCallback()
     {
-        if (this._inputMap) return;
-        this._inputMap = {};
-
-        const childInputMap = InputMapping.toInputMap(this._children.assignedNodes());
-        const inputMapSource = this.src;
-
-        if (inputMapSource)
+        if (!this._inputMap)
         {
-            fetch(inputMapSource)
-                .then(blob => blob.json())
-                .then(data => {
-                    this._inputMap = { ...data, ...childInputMap };
-                    parseInputMapping(this, this._inputMap);
-                });
+            this._inputMap = {};
+
+            const childInputMap = InputMapping.toInputMap(this._children.assignedNodes());
+            const inputMapSource = this.src;
+    
+            if (inputMapSource)
+            {
+                fetch(inputMapSource)
+                    .then(blob => blob.json())
+                    .then(data => {
+                        this._inputMap = { ...data, ...childInputMap };
+                        parseInputMapping(this, this._inputMap);
+                    });
+            }
+            else
+            {
+                this._inputMap = { ...childInputMap };
+                parseInputMapping(this, this._inputMap);
+            }
         }
-        else
-        {
-            this._inputMap = { ...childInputMap };
-            parseInputMapping(this, this._inputMap);
-        }
+
+        this._animationFrameHandle = requestAnimationFrame(this.onAnimationFrame);
+    }
+
+    /** @override */
+    disconnectedCallback()
+    {
+        cancelAnimationFrame(this._animationFrameHandle);
     }
 
     get src() { return this.getAttribute('src'); }
@@ -160,8 +172,6 @@ export class InputContext extends HTMLElement
         // Update all inputs to the current key's values.
         for(let inputName in this._inputs)
         {
-            let flag = false;
-
             let input = this._inputs[inputName];
             let inputType = input.inputType;
             switch(inputType)
@@ -174,7 +184,7 @@ export class InputContext extends HTMLElement
                         let value = inputKey.value;
                         if (value)
                         {
-                            flag = input.update(value, inputKey);
+                            input.update(value, inputKey);
                             inputKey.consumeKey();
                             consumed = true;
                             break;
@@ -182,7 +192,7 @@ export class InputContext extends HTMLElement
                     }
                     if (!consumed)
                     {
-                        flag = input.update(0, null);
+                        input.update(0, null);
                     }
                     break;
                 case 'range':
@@ -192,28 +202,10 @@ export class InputContext extends HTMLElement
                     {
                         value += inputKey.value;
                     }
-                    flag = input.update(value, null);
+                    input.update(value, null);
                     break;
                 default:
                     throw new Error('Unknown input type.');
-            }
-
-            if (flag)
-            {
-                let result;
-                if (input.value)
-                {
-                    result = Number(input.value).toFixed(2);
-                }
-                else
-                {
-                    result = 0;
-                }
-                let element = this._tableInputs[inputName];
-                element.textContent = result;
-                let parent = element.parentNode;
-                element.parentNode.removeChild(element);
-                parent.appendChild(element);
             }
         }
     }
@@ -275,6 +267,34 @@ export class InputContext extends HTMLElement
                 break;
             default:
                 throw new Error(`Unknown input event type '${eventType}'.`);
+        }
+    }
+
+    onAnimationFrame(now)
+    {
+        this._animationFrameHandle = requestAnimationFrame(this.onAnimationFrame);
+
+        // Update all inputs to the current key's values.
+        for(let inputName in this._inputs)
+        {
+            let input = this._inputs[inputName];
+            let result;
+            if (input.value)
+            {
+                result = Number(input.value).toFixed(2);
+            }
+            else
+            {
+                result = 0;
+            }
+            let element = this._tableInputs[inputName];
+            if (element.textContent != result)
+            {
+                element.textContent = result;
+                let parent = element.parentNode;
+                element.parentNode.removeChild(element);
+                parent.appendChild(element);
+            }
         }
     }
 
