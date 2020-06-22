@@ -64,8 +64,58 @@ output {
 }
 `;
 
+class InputKey
+{
+    constructor(keyName, keyEvent, scale)
+    {
+        this.keyName = keyName;
+        this.keyEvent = keyEvent;
+        this.scale = scale;
+
+        this.value = 0;
+    }
+
+    consumeKey()
+    {
+        this.value = 0;
+    }
+
+    updateKey(e, keyName)
+    {
+        // NOTE: This condition is only really used for parameterized key events.
+        if (keyName === this.keyName)
+        {
+            if (this.keyEvent)
+            {
+                if (this.keyEvent === e.event)
+                {
+                    this.value = e.value * this.scale;
+                    return true;
+                }
+            }
+            else
+            {
+                switch(e.event)
+                {
+                    case 'down':
+                        this.value = this.scale;
+                        return true;
+                    case 'up':
+                        this.value = 0;
+                        return true;
+                    default:
+                        this.value = e.value * this.scale;
+                        return;
+                }
+            }
+        }
+    }
+}
+
 const TEMPLATE_KEY = Symbol('template');
 const STYLE_KEY = Symbol('style');
+
+const POLL_WARNING_TIME = 3000;
 
 export class InputContext extends HTMLElement
 {
@@ -105,12 +155,13 @@ export class InputContext extends HTMLElement
         this._tableBody = this.shadowRoot.querySelector('tbody');
         this._children = this.shadowRoot.querySelector('slot');
         this._tableInputs = {};
+
+        this._lastPollTime = 0;
+        this._pollWarningTimeoutHandle = 0;
         this._animationFrameHandle = 0;
 
-        this._inputMap = inputMap;
-
         this._inputTarget = null;
-
+        this._inputMap = inputMap;
         this._inputs = {};
         this._inputKeys = {};
         this._keys = {};
@@ -129,6 +180,7 @@ export class InputContext extends HTMLElement
     {
         if (!this.hasAttribute('for')) this.setAttribute('for', '');
 
+        // Setup keys and inputs from the input mapping
         if (!this._inputMap)
         {
             this._inputMap = {};
@@ -152,6 +204,15 @@ export class InputContext extends HTMLElement
             }
         }
 
+        // Check to see if polling cause it is easy to forget it :P
+        this._lastPollTime = 0;
+        this._pollWarningTimeoutHandle = setTimeout(() => {
+            if (this._lastPollTime <= 0)
+            {
+                console.warn('[INPUT] No input updated. Did you forget to poll() the input context?');
+            }
+        }, POLL_WARNING_TIME);
+
         this._animationFrameHandle = requestAnimationFrame(this.onAnimationFrame);
     }
 
@@ -159,6 +220,7 @@ export class InputContext extends HTMLElement
     disconnectedCallback()
     {
         cancelAnimationFrame(this._animationFrameHandle);
+        clearTimeout(this._pollWarningTimeoutHandle);
     }
 
     /** @override */
@@ -255,6 +317,8 @@ export class InputContext extends HTMLElement
 
     poll()
     {
+        this._lastPollTime = performance.now();
+
         // Update all inputs to the current key's values.
         for(let inputName in this._inputs)
         {
@@ -403,54 +467,6 @@ export class InputContext extends HTMLElement
     }
 }
 window.customElements.define('input-context', InputContext);
-
-class InputKey
-{
-    constructor(keyName, keyEvent, scale)
-    {
-        this.keyName = keyName;
-        this.keyEvent = keyEvent;
-        this.scale = scale;
-
-        this.value = 0;
-    }
-
-    consumeKey()
-    {
-        this.value = 0;
-    }
-
-    updateKey(e, keyName)
-    {
-        // NOTE: This condition is only really used for parameterized key events.
-        if (keyName === this.keyName)
-        {
-            if (this.keyEvent)
-            {
-                if (this.keyEvent === e.event)
-                {
-                    this.value = e.value * this.scale;
-                    return true;
-                }
-            }
-            else
-            {
-                switch(e.event)
-                {
-                    case 'down':
-                        this.value = this.scale;
-                        return true;
-                    case 'up':
-                        this.value = 0;
-                        return true;
-                    default:
-                        this.value = e.value * this.scale;
-                        return;
-                }
-            }
-        }
-    }
-}
 
 function parseInputMapping(inputContext, inputMapping)
 {
