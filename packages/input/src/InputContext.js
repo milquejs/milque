@@ -7,11 +7,15 @@ import { InputMapping } from './InputMapping.js';
 const INNER_HTML = `
 <table>
     <thead>
-        <tr>
-            <th>Input</th>
-            <th>Key</th>
-            <th>Mod</th>
-            <th>Value</th>
+        <tr class="header">
+            <th id="title" colspan=3>input-context</th>
+            <th id="poll">&nbsp;</th>
+        </tr>
+        <tr class="hint">
+            <th>name</th>
+            <th>key</th>
+            <th>mod</th>
+            <th>value</th>
         </tr>
     </thead>
     <tbody>
@@ -30,6 +34,29 @@ table {
 }
 table, th, td {
     border: 1px solid gray;
+}
+#poll {
+    position: relative;
+    font-size: 0.9em;
+}
+#poll:after {
+    content: "(poll)";
+    position: absolute;
+    left: 0;
+    right: 0;
+    z-index: -1;
+    opacity: 0.1;
+    font-family: monospace;
+    letter-spacing: 3px;
+    overflow: hidden;
+}
+.hint > th {
+    font-size: 0.5em;
+    font-family: monospace;
+    padding: 0 10px;
+    letter-spacing: 3px;
+    background-color: #AAA;
+    color: #666666;
 }
 th, td {
     padding: 5px 10px;
@@ -112,6 +139,9 @@ class InputKey
     }
 }
 
+const NONE_POLL_TEXT = '✗';
+const ACTIVE_POLL_TEXT = '✓';
+
 const TEMPLATE_KEY = Symbol('template');
 const STYLE_KEY = Symbol('style');
 
@@ -138,7 +168,15 @@ export class InputContext extends HTMLElement
     /** @override */
     static get observedAttributes()
     {
-        return ['for', 'strict', 'onattach', 'ondetach'];
+        return [
+            'for',
+            'strict',
+            'onattach',
+            'ondetach',
+            // ...listening for built-in attribs...
+            'id',
+            'class',
+        ];
     }
 
     constructor(inputMap = null)
@@ -151,6 +189,9 @@ export class InputContext extends HTMLElement
 
         this._onattach = null;
         this._ondetach = null;
+
+        this._titleElement = this.shadowRoot.querySelector('#title');
+        this._pollElement = this.shadowRoot.querySelector('#poll');
 
         this._tableBody = this.shadowRoot.querySelector('tbody');
         this._children = this.shadowRoot.querySelector('slot');
@@ -209,7 +250,12 @@ export class InputContext extends HTMLElement
         this._pollWarningTimeoutHandle = setTimeout(() => {
             if (this._lastPollTime <= 0)
             {
+                this._pollElement.textContent = NONE_POLL_TEXT;
                 console.warn('[INPUT] No input updated. Did you forget to poll() the input context?');
+            }
+            else
+            {
+                this._pollElement.textContent = ACTIVE_POLL_TEXT;
             }
         }, POLL_WARNING_TIME);
 
@@ -286,6 +332,11 @@ export class InputContext extends HTMLElement
                 break;
             case 'ondetach':
                 this.ondetach = new Function('event', `with(document){with(this){${value}}}`).bind(this);
+                break;
+            // NOTE: For debugging purposes...
+            case 'id':
+            case 'class':
+                this._titleElement.innerHTML = `input-context${this.className ? '.' + this.className : ''}${this.hasAttribute('id') ? '#' + this.getAttribute('id') : ''}`;
                 break;
         }
     }

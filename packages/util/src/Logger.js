@@ -84,6 +84,8 @@ function prependMessageTags(out, name, domain, level)
 const LEVEL = Symbol('level');
 const DOMAIN = Symbol('domain');
 const LOGGERS = { /** To be populated by logger instances. */ };
+let DEFAULT_LEVEL = WARN;
+let DEFAULT_DOMAIN = 'app';
 export default class Logger
 {
     static get TRACE() { return TRACE; }
@@ -110,11 +112,23 @@ export default class Logger
         }
     }
 
+    static useDefaultLevel(level)
+    {
+        DEFAULT_LEVEL = level;
+        return this;
+    }
+
+    static useDefaultDomain(domain)
+    {
+        DEFAULT_DOMAIN = domain;
+        return this;
+    }
+
     constructor(name)
     {
         this.name = name;
-        this[LEVEL] = WARN;
-        this[DOMAIN] = 'app';
+        this[LEVEL] = DEFAULT_LEVEL;
+        this[DOMAIN] = DEFAULT_DOMAIN;
     }
 
     setLevel(level)
