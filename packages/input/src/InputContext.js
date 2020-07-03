@@ -299,6 +299,9 @@ export class InputContext extends HTMLElement
     get strict() { return this.hasAttribute('strict'); }
     set strict(value) { if (value) this.setAttribute('strict', ''); else this.removeAttribute('strict'); }
 
+    get auto() { return this.hasAttribute('auto'); }
+    set auto(value) { if (value) this.setAttribute('auto', ''); else this.removeAttribute('auto'); }
+
     get onattach() { return this._onattach; }
     set onattach(value)
     {
@@ -423,6 +426,9 @@ export class InputContext extends HTMLElement
     onAnimationFrame(now)
     {
         this._animationFrameHandle = requestAnimationFrame(this.onAnimationFrame);
+
+        // If enabled, do auto-polling
+        if (this.auto) this.poll();
 
         // Update all inputs to the current key's values.
         for(let inputName in this._inputs)
