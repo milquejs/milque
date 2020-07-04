@@ -1,1 +1,1 @@
-export * as Random from '../../packages/lib/src/random/Random.js';
+export { Random } from '../../packages/random/src/index.js';
