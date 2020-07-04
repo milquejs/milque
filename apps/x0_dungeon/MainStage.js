@@ -60,13 +60,13 @@ export function render(ctx)
 
     ctx.fillStyle = 'black';
     ctx.fillRect(0, 0, this.display.width, this.display.height);
-
-    this.view.setViewMatrix(this.camera.getViewMatrix());
-    this.view.setProjectionMatrix(this.camera.getProjectionMatrix());
+    
+    let viewMatrix = this.camera.getViewMatrix();
+    let projectionMatrix = this.camera.getProjectionMatrix();
 
     try
     {
-        this.view.begin(ctx, halfDisplayWidth, halfDisplayHeight);
+        this.view.begin(ctx, viewMatrix, projectionMatrix, halfDisplayWidth, halfDisplayHeight);
 
         renderTileMap(ctx, this.tileMap,
             this.camera.x - halfDisplayWidth,
@@ -78,7 +78,11 @@ export function render(ctx)
         Bullets.render(ctx, this, this.bullets);
 
         // this.intersections.render(ctx);
-        let pos = this.camera.screenToWorld(ShootPosX.value * this.display.width - this.display.width / 2, ShootPosY.value * this.display.height - this.display.height / 2);
+        let pos = Camera2D.screenToWorld(
+            ShootPosX.value * this.display.width - this.display.width / 2,
+            ShootPosY.value * this.display.height - this.display.height / 2,
+            viewMatrix,
+            projectionMatrix);
         ctx.fillStyle = 'black';
         ctx.fillRect(Math.floor(pos[0]), Math.floor(pos[1]), 10, 10);
     }

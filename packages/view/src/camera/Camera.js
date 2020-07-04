@@ -1,8 +1,8 @@
 export class Camera
 {
     /** @abstract */
-    getViewMatrix() {}
+    getViewMatrix(out) {}
     
     /** @abstract */
-    getProjectionMatrix() {}
+    getProjectionMatrix(out) {}
 }

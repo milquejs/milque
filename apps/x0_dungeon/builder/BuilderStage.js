@@ -130,7 +130,10 @@ export function update(dt)
         }
     }
 
-    let pos = this.camera.screenToWorld(buildX, buildY);
+    let viewMatrix = this.camera.getViewMatrix();
+    let projectionMatrix = this.camera.getProjectionMatrix();
+
+    let pos = Camera2D.screenToWorld(buildX, buildY, viewMatrix, projectionMatrix);
     this.viewX = Math.floor(pos[0]);
     this.viewY = Math.floor(pos[1]);
 
@@ -167,12 +170,12 @@ export function render(ctx)
     ctx.fillStyle = 'black';
     ctx.fillRect(0, 0, this.display.width, this.display.height);
 
-    this.view.setViewMatrix(this.camera.getViewMatrix());
-    this.view.setProjectionMatrix(this.camera.getProjectionMatrix());
+    let viewMatrix = this.camera.getViewMatrix();
+    let projectionMatrix = this.camera.getProjectionMatrix();
 
     try
     {
-        this.view.begin(ctx, halfDisplayWidth, halfDisplayHeight);
+        this.view.begin(ctx, viewMatrix, projectionMatrix, halfDisplayWidth, halfDisplayHeight);
 
         renderTileMap(ctx, this.tileMap,
             this.camera.x - halfDisplayWidth,

@@ -1,38 +1,33 @@
+import { mat4 } from '../../../../node_modules/gl-matrix/esm/index.js';
+
+const IDENTITY_MATRIX = mat4.create();
+
 export class CanvasView
 {
     constructor()
     {
         this.prevTransformMatrix = null;
 
-        this.projectionMatrix = new DOMMatrix();
-        this.viewMatrix = new DOMMatrix();
+        this.domProjectionMatrix = new DOMMatrix();
+        this.domViewMatrix = new DOMMatrix();
 
         this.ctx = null;
     }
 
-    setProjectionMatrix(matrix)
-    {
-        setDOMMatrix(this.projectionMatrix, matrix);
-        return this;
-    }
-
-    setViewMatrix(matrix)
-    {
-        setDOMMatrix(this.viewMatrix, matrix);
-        return this;
-    }
-
-    begin(ctx, offsetX = 0, offsetY = 0)
+    begin(ctx, viewMatrix = IDENTITY_MATRIX, projectionMatrix = IDENTITY_MATRIX, offsetX = 0, offsetY = 0)
     {
         if (this.ctx)
         {
             throw new Error('View already begun - maybe missing end() call?');
         }
 
+        if (viewMatrix) setDOMMatrix(this.domViewMatrix, viewMatrix);
+        if (projectionMatrix) setDOMMatrix(this.domProjectionMatrix, projectionMatrix);
+
         this.prevTransformMatrix = ctx.getTransform();
 
-        ctx.setTransform(this.projectionMatrix);
-        const { a, b, c, d, e, f } = this.viewMatrix;
+        ctx.setTransform(this.domProjectionMatrix);
+        const { a, b, c, d, e, f } = this.domViewMatrix;
         ctx.transform(a, b, c, d, e + offsetX, f + offsetY);
 
         this.ctx = ctx;

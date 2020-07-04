@@ -1,4 +1,4 @@
-import { IntersectionHelper } from './lib.js';
+import { IntersectionHelper, Camera2D } from './lib.js';
 
 import * as Bullets from './Bullets.js';
 import {
@@ -51,9 +51,11 @@ export function update(dt, world, players)
     {
         if (ShootAction.value)
         {
-            let pos = world.camera.screenToWorld(
+            let pos = Camera2D.screenToWorld(
                 ShootPosX.value * world.display.width - world.display.width / 2,
-                ShootPosY.value * world.display.height - world.display.height / 2);
+                ShootPosY.value * world.display.height - world.display.height / 2,
+                world.camera.getViewMatrix(),
+                world.camera.getProjectionMatrix());
 
             let bulletSpeed = 0.1;
             let dx = pos[0] - player.x;

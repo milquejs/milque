@@ -86,7 +86,7 @@ const DOMAIN = Symbol('domain');
 const LOGGERS = { /** To be populated by logger instances. */ };
 let DEFAULT_LEVEL = WARN;
 let DEFAULT_DOMAIN = 'app';
-export default class Logger
+export class Logger
 {
     static get TRACE() { return TRACE; }
     static get DEBUG() { return DEBUG; }
