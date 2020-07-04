@@ -36,7 +36,7 @@ class FileChunkLoader extends ChunkLoader
 
 export async function load()
 {
-    BuilderControls.BUILDER_INPUT_CONTEXT.attach(document, this.display.canvas);
+    BuilderControls.BUILDER_INPUT_CONTEXT.attach(this.display);
     this.camera = new Camera2D();
     this.view = new CanvasView();
 

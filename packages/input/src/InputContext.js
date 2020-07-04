@@ -275,27 +275,6 @@ export class InputContext extends HTMLElement
         switch(attribute)
         {
             case 'for':
-                if (this._inputTarget)
-                {
-                    let target = this._inputTarget;
-                    this._inputTarget = null;
-
-                    if (target.canvas)
-                    {
-                        Keyboard.removeInputEventListener(target, this.onInputEvent);
-                        Mouse.removeInputEventListener(target.canvas, this.onInputEvent);
-                    }
-                    else
-                    {
-                        Keyboard.removeInputEventListener(target, this.onInputEvent);
-                        Mouse.removeInputEventListener(target, this.onInputEvent);
-                    }
-
-                    this.dispatchEvent(new CustomEvent('detach', {
-                        composed: true, bubbles: false, detail: { eventTarget: target, inputCallback: this.onInputEvent }
-                    }));
-                }
-
                 let target;
                 if (value)
                 {
@@ -306,25 +285,15 @@ export class InputContext extends HTMLElement
                     target = document.querySelector('display-port') || document.querySelector('canvas');
                 }
 
-                if (target)
+                if (this._inputTarget)
                 {
-                    if (target.canvas)
-                    {
-                        Keyboard.addInputEventListener(target, this.onInputEvent);
-                        Mouse.addInputEventListener(target.canvas, this.onInputEvent);
-                    }
-                    else
-                    {
-                        Keyboard.addInputEventListener(target, this.onInputEvent);
-                        Mouse.addInputEventListener(target, this.onInputEvent);
-                    }
-
-                    this.dispatchEvent(new CustomEvent('attach', {
-                        composed: true, bubbles: false, detail: { eventTarget: target, inputCallback: this.onInputEvent }
-                    }));
+                    this.detach();
                 }
 
-                this._inputTarget = target;
+                if (target)
+                {
+                    this.attach(target);
+                }
                 break;
             // Event handlers...
             case 'onattach':
@@ -367,6 +336,74 @@ export class InputContext extends HTMLElement
         if (this._ondetach) this.removeEventListener('detach', this._ondetach);
         this._ondetach = value;
         if (this._ondetach) this.addEventListener('detach', value);
+    }
+
+    attach(targetElement)
+    {
+        if (!targetElement)
+        {
+            throw new Error('Cannot attach input context to null.');
+        }
+
+        if (this._inputTarget)
+        {
+            if (this._inputTarget !== targetElement)
+            {
+                throw new Error('Input context already attached to another element.');
+            }
+            else
+            {
+                // It's already attached.
+                return this;
+            }
+        }
+
+        let target = targetElement;
+        if (target)
+        {
+            if (target.canvas)
+            {
+                Keyboard.addInputEventListener(target, this.onInputEvent);
+                Mouse.addInputEventListener(target.canvas, this.onInputEvent);
+            }
+            else
+            {
+                Keyboard.addInputEventListener(target, this.onInputEvent);
+                Mouse.addInputEventListener(target, this.onInputEvent);
+            }
+
+            this.dispatchEvent(new CustomEvent('attach', {
+                composed: true, bubbles: false, detail: { eventTarget: target, inputCallback: this.onInputEvent }
+            }));
+        }
+
+        this._inputTarget = target;
+        return this;
+    }
+
+    detach()
+    {
+        if (!this._inputTarget) return this;
+
+        let target = this._inputTarget;
+        this._inputTarget = null;
+
+        if (target.canvas)
+        {
+            Keyboard.removeInputEventListener(target, this.onInputEvent);
+            Mouse.removeInputEventListener(target.canvas, this.onInputEvent);
+        }
+        else
+        {
+            Keyboard.removeInputEventListener(target, this.onInputEvent);
+            Mouse.removeInputEventListener(target, this.onInputEvent);
+        }
+
+        this.dispatchEvent(new CustomEvent('detach', {
+            composed: true, bubbles: false, detail: { eventTarget: target, inputCallback: this.onInputEvent }
+        }));
+
+        return this;
     }
 
     poll()

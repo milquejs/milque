@@ -8,7 +8,7 @@ export const CHUNK_WIDTH = 16;
 export const CHUNK_HEIGHT = 16;
 
 const MINE_COUNT = 40;
-const CHUNK_RAND = Random.RAND;
+const CHUNK_RAND = new Random();
 
 export function createChunk()
 {

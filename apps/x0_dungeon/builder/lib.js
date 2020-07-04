@@ -1,6 +1,5 @@
 export * as Game from '../../../packages/lib/src/Game.js';
-export { Camera2D } from '../../../packages/lib/src/camera/Camera2D.js';
-export { CanvasView } from '../../../packages/lib/src/CanvasView.js';
+export { Camera2D, CanvasView } from '../../../packages/view/src/index.js';
 export { InputContext } from '../../../packages/input/src/index.js';
 
 export * as Downloader from '../../../packages/util/src/Downloader.js';

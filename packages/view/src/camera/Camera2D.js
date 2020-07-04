@@ -1,6 +1,10 @@
 import { mat4, vec3, quat } from '../../../../node_modules/gl-matrix/esm/index.js';
-import { lerp } from '../MathHelper.js';
 import { Camera } from './Camera.js';
+
+function lerp(a, b, t)
+{
+    return a + (b - a) * t;
+}
 
 export class Camera2D extends Camera
 {
