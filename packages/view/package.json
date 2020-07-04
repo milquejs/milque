@@ -1,0 +1,20 @@
+{
+  "name": "@milque/view",
+  "version": "0.1.0",
+  "description": "The view module for Milque",
+  "module": "dist/esm/index.js",
+  "browser": "dist/index.js",
+  "author": "Andrew Kuo",
+  "license": "MIT",
+  "keywords": [
+    "milque",
+    "view"
+  ],
+  "scripts": {
+    "build": "rollup --config"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "rollup": "^2.1.0"
+  }
+}
