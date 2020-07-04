@@ -1,11 +1,9 @@
 import { mat4, vec3, quat } from '../../../../node_modules/gl-matrix/esm/index.js';
 import { Camera } from './Camera.js';
 
-const IDENTITY_MATRIX = mat4.create();
-
 export class Camera2D extends Camera
 {
-    static screenToWorld(screenX, screenY, viewMatrix = IDENTITY_MATRIX, projectionMatrix = IDENTITY_MATRIX)
+    static screenToWorld(screenX, screenY, viewMatrix, projectionMatrix)
     {
         let mat = mat4.multiply(mat4.create(), projectionMatrix, viewMatrix);
         mat4.invert(mat, mat);
@@ -14,22 +12,20 @@ export class Camera2D extends Camera
         return result;
     }
     
-    constructor()
+    constructor(left = -1, right = 1, top = -1, bottom = 1, near = 0, far = 1)
     {
         super();
 
         this.position = vec3.create();
         this.rotation = quat.create();
-        this.scale = vec3.create();
+        this.scale = vec3.fromValues(1, 1, 1);
 
-        this.projection = mat4.create();
-        mat4.ortho(this.projection, -1, 1, -1, 1, 0, 1);
-        
-        this._viewPosition = vec3.create();
-        this._viewScale = vec3.create();
+        this.clippingPlane = {
+            left, right, top, bottom, near, far,
+        };
         
         this._viewMatrix = mat4.create();
-        this._projMatrix = mat4.create();
+        this._projectionMatrix = mat4.create();
     }
 
     get x() { return this.position[0]; }
@@ -42,7 +38,7 @@ export class Camera2D extends Camera
     /** Moves the camera. This is the only way to change the position. */
     moveTo(x, y, z = 0, dt = 1)
     {
-        const nextPosition = vec3.set(this._viewPosition, x, y, z);
+        let nextPosition = vec3.fromValues(x, y, z);
         vec3.lerp(this.position, this.position, nextPosition, dt);
     }
 
@@ -52,17 +48,17 @@ export class Camera2D extends Camera
         let viewX = -Math.round(this.x);
         let viewY = -Math.round(this.y);
         let viewZ = this.z === 0 ? 1 : 1 / this.z;
-
-        vec3.set(this._viewPosition, viewX, viewY, 0);
-        vec3.set(this._viewScale, viewZ, viewZ, 1);
-        mat4.fromRotationTranslationScale(out, this.rotation, this._viewPosition, this._viewScale);
+        let invPosition = vec3.fromValues(viewX, viewY, 0);
+        let invScale = vec3.fromValues(this.scale[0] * viewZ, this.scale[1] * viewZ, 1);
+        mat4.fromRotationTranslationScale(out, this.rotation, invPosition, invScale);
         return out;
     }
 
     /** @override */
-    getProjectionMatrix(out = this._projMatrix)
+    getProjectionMatrix(out = this._projectionMatrix)
     {
-        mat4.copy(out, this.projection);
+        let { left, right, top, bottom, near, far } = this.clippingPlane;
+        mat4.ortho(out, left, right, top, bottom, near, far);
         return out;
     }
 }

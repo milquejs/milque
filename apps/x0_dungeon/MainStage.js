@@ -66,7 +66,9 @@ export function render(ctx)
 
     try
     {
-        this.view.begin(ctx, viewMatrix, projectionMatrix, halfDisplayWidth, halfDisplayHeight);
+        this.view.begin(ctx, viewMatrix, projectionMatrix);
+        
+        ctx.translate(halfDisplayWidth, halfDisplayHeight);
 
         renderTileMap(ctx, this.tileMap,
             this.camera.x - halfDisplayWidth,

@@ -1,7 +1,3 @@
-import { mat4 } from '../../../../node_modules/gl-matrix/esm/index.js';
-
-const IDENTITY_MATRIX = mat4.create();
-
 export class CanvasView
 {
     constructor()
@@ -14,7 +10,7 @@ export class CanvasView
         this.ctx = null;
     }
 
-    begin(ctx, viewMatrix = IDENTITY_MATRIX, projectionMatrix = IDENTITY_MATRIX, offsetX = 0, offsetY = 0)
+    begin(ctx, viewMatrix, projectionMatrix)
     {
         if (this.ctx)
         {
@@ -28,7 +24,7 @@ export class CanvasView
 
         ctx.setTransform(this.domProjectionMatrix);
         const { a, b, c, d, e, f } = this.domViewMatrix;
-        ctx.transform(a, b, c, d, e + offsetX, f + offsetY);
+        ctx.transform(a, b, c, d, e, f);
 
         this.ctx = ctx;
     }
