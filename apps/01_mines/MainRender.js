@@ -4,6 +4,7 @@ import * as MainScene from './MainScene.js';
 
 import * as MinesControls from './MinesControls.js';
 import * as MinesRenderer from './MinesRenderer.js';
+import { Camera2D } from '../../packages/view/src/index.js';
 
 const HEALTH_X = 0;
 const HEALTH_Y = 0;
@@ -21,11 +22,14 @@ export function unload()
 export function onRender(view, world)
 {
     let ctx = view.context;
-    ctx.translate(MainScene.CHUNK_OFFSET_X, MainScene.CHUNK_OFFSET_Y);
+    const viewMatrix = world.camera.getViewMatrix();
+    const projectionMatrix = world.camera.getProjectionMatrix();
+
+    world.minesView.begin(ctx, viewMatrix, projectionMatrix);
     {
         MinesRenderer.renderMines(ctx, world.mines, MainScene.CHUNK_TILE_SIZE);
     }
-    ctx.translate(-MainScene.CHUNK_OFFSET_X, -MainScene.CHUNK_OFFSET_Y);
+    world.minesView.end(ctx);
 
     const chunkWidth = world.mines.width;
     const chunkHeight = world.mines.height;
@@ -35,8 +39,9 @@ export function onRender(view, world)
 
     let mouseX = MinesControls.CursorX.value * view.width;
     let mouseY = MinesControls.CursorY.value * view.height;
-    let mouseTileX = MathHelper.clamp(Math.floor((mouseX - chunkOffsetX) / tileSize), 0, chunkWidth - 1);
-    let mouseTileY = MathHelper.clamp(Math.floor((mouseY - chunkOffsetY) / tileSize), 0, chunkHeight - 1);
+    let minesPos = Camera2D.screenToWorld(mouseX, mouseY, viewMatrix, projectionMatrix);
+    let mouseTileX = MathHelper.clamp(Math.floor(minesPos[0] / tileSize), 0, chunkWidth - 1);
+    let mouseTileY = MathHelper.clamp(Math.floor(minesPos[1] / tileSize), 0, chunkHeight - 1);
     
     ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
     ctx.fillRect(

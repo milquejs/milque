@@ -50,6 +50,7 @@ async function main()
             width: display.width,
             height: display.height,
         };
+        ctx.clearRect(0, 0, view.width, view.height);
         MainRender.onRender.call(world, view, world);
     });
 }

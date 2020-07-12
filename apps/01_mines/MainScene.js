@@ -1,17 +1,19 @@
-import { MathHelper } from './lib.js';
+import { MathHelper, CanvasView, Camera2D } from './lib.js';
 
 import { Mines } from './Mines.js';
 import * as MinesControls from './MinesControls.js';
 
 export const MAX_HEALTH = 3;
 
-export const CHUNK_OFFSET_X = 32;
-export const CHUNK_OFFSET_Y = 32;
 export const CHUNK_TILE_SIZE = 16;
 
 export function onStart()
 {
     this.mines = new Mines(16, 16);
+    this.minesView = new CanvasView();
+    this.camera = new Camera2D();
+    this.camera.x = -32;
+    this.camera.y = -32;
 
     this.firstAction = false;
 
@@ -60,8 +62,10 @@ export function onUpdate(dt)
         {
             let mouseX = MinesControls.CursorX.value * worldWidth;
             let mouseY = MinesControls.CursorY.value * worldHeight;
-            let mouseTileX = MathHelper.clamp(Math.floor((mouseX - CHUNK_OFFSET_X) / CHUNK_TILE_SIZE), 0, this.mines.width - 1);
-            let mouseTileY = MathHelper.clamp(Math.floor((mouseY - CHUNK_OFFSET_Y) / CHUNK_TILE_SIZE), 0, this.mines.height - 1);
+
+            let minesPos = Camera2D.screenToWorld(mouseX, mouseY, this.camera.getViewMatrix(), this.camera.getProjectionMatrix());
+            let mouseTileX = MathHelper.clamp(Math.floor(minesPos[0] / CHUNK_TILE_SIZE), 0, this.mines.width - 1);
+            let mouseTileY = MathHelper.clamp(Math.floor(minesPos[1] / CHUNK_TILE_SIZE), 0, this.mines.height - 1);
             let result = this.mines.dig(mouseTileX, mouseTileY);
 
             if (!result)
@@ -81,8 +85,9 @@ export function onUpdate(dt)
         {
             let mouseX = MinesControls.CursorX.value * worldWidth;
             let mouseY = MinesControls.CursorY.value * worldHeight;
-            let mouseTileX = MathHelper.clamp(Math.floor((mouseX - CHUNK_OFFSET_X) / CHUNK_TILE_SIZE), 0, this.mines.width - 1);
-            let mouseTileY = MathHelper.clamp(Math.floor((mouseY - CHUNK_OFFSET_Y) / CHUNK_TILE_SIZE), 0, this.mines.height - 1);
+            let minesPos = Camera2D.screenToWorld(mouseX, mouseY, this.camera.getViewMatrix(), this.camera.getProjectionMatrix());
+            let mouseTileX = MathHelper.clamp(Math.floor(minesPos[0] / CHUNK_TILE_SIZE), 0, this.mines.width - 1);
+            let mouseTileY = MathHelper.clamp(Math.floor(minesPos[1] / CHUNK_TILE_SIZE), 0, this.mines.height - 1);
             this.mines.mark(mouseTileX, mouseTileY);
 
             flag = true;
