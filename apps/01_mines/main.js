@@ -31,9 +31,9 @@ Maybe:
 async function main()
 {
     const display = document.querySelector('display-port');
-    const input = document.querySelector('input-context');
+    MinesControls.show();
 
-    const world = { display, input };
+    const world = { display };
     await MainRender.load.call(world);
     MainScene.onStart.call(world);
 
@@ -42,7 +42,7 @@ async function main()
         const ctx = e.detail.context;
 
         MainScene.onPreUpdate.call(world, dt);
-        MinesControls.INPUT_CONTEXT.poll();
+        MinesControls.poll();
         MainScene.onUpdate.call(world, dt);
 
         const view = {
