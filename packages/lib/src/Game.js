@@ -1,11 +1,9 @@
-import { Application, ApplicationLoop } from './ApplicationLoop.js'
+import { ApplicationLoop } from './ApplicationLoop.js'
 
-class Game extends Application
+class Game
 {
     constructor(context)
     {
-        super();
-
         this.context = context;
 
         this.display = null;

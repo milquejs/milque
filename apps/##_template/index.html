@@ -11,10 +11,16 @@
         </style>
 
         <script type="module" src="../../packages/display/src/index.js"></script>
+        <script type="module" src="../../packages/input/src/index.js"></script>
     </head>
     <body>
-        <display-port id="main" mode="fit" debug full></display-port>
-
+        <display-port mode="fit" id="main" debug></display-port>
+        <input-context for="main" auto>
+            <!-- Cursor -->
+            <input-mapping name="cursorX" key="mouse:pos.x" scale="1"></input-mapping>
+            <input-mapping name="cursorY" key="mouse:pos.y" scale="1"></input-mapping>
+        </input-context>
+        
         <script type="module" src="main.js"></script>
     </body>
 </html>

@@ -1,6 +1,7 @@
-import * as PlayerControls from './PlayerControls.js';
 import * as MainScene from './MainScene.js';
 import * as MainRender from './MainRender.js';
+
+import * as MinesControls from './MinesControls.js';
 
 /*
 
@@ -21,6 +22,10 @@ What is bad in minesweeper?
     - Hard ceiling
 - CANNOT BE IMPOSSIBLE TO WIN
 
+Maybe:
+// Some of the bombs are treasures.
+// Either chance it, use a life, or use a scanner.
+
 */
 
 async function main()
@@ -37,7 +42,7 @@ async function main()
         const ctx = e.detail.context;
 
         MainScene.onPreUpdate.call(world, dt);
-        PlayerControls.PLAYER_INPUT_CONTEXT.poll();
+        MinesControls.INPUT_CONTEXT.poll();
         MainScene.onUpdate.call(world, dt);
 
         const view = {
