@@ -143,7 +143,12 @@ export class Keyboard extends InputDevice
 function onKeyDown(e)
 {
     // Ignore repeat events.
-    if (e.repeat) return;
+    if (e.repeat)
+    {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+    }
 
     let event = this._keyEvent;
     // NOTE: You could use `e.key`, but we care about location rather than printable character.

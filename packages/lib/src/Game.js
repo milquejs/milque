@@ -20,13 +20,13 @@ class Game extends Application
     }
 
     /** @override */
-    onStart()
+    start()
     {
         this.context.start();
     }
 
     /** @override */
-    onUpdate(dt)
+    update(dt)
     {
         this.context.update(dt);
         this.context.render(this.renderContext);

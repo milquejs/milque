@@ -4,7 +4,7 @@ export class Input
     {
         this.inputName = inputName;
         this.inputType = inputType;
-
+        
         this.value = 0;
 
         this._onchange = null;

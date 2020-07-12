@@ -1,8 +1,8 @@
 import { InputContext } from './lib.js';
 
 export const PLAYER_MAPPING = {
-    activate: 'mouse:0',
-    mark: 'mouse:2',
+    activate: { key: 'mouse:0', event: 'up' },
+    mark: { key: 'mouse:2', event: 'up' },
     restart: { key: 'keyboard:KeyR', event: 'up' },
     pointerX: { key: 'mouse:pos.x', scale: 1 },
     pointerY: { key: 'mouse:pos.y', scale: 1 },

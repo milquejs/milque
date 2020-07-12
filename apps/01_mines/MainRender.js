@@ -75,5 +75,5 @@ export function onRender(view, world)
         drawText(ctx, view.width / 2 - 1, view.height / 2 + 24 - 1, 'Click to continue', 16, 'white');
     }
 
-    drawText(ctx, view.width / 2, view.height - Chunk.TILE_SIZE, `Time: ${Math.floor(world.gameTime / FRAMES_PER_SECOND)}`, 16, 'white');
+    drawText(ctx, view.width / 2, view.height - Chunk.TILE_SIZE, `Time: ${Math.floor(world.gameTime)}`, 16, 'white');
 }
