@@ -39,7 +39,7 @@ export class Camera2D extends Camera
     moveTo(x, y, z = 0, dt = 1)
     {
         let nextPosition = vec3.fromValues(x, y, z);
-        vec3.lerp(this.position, this.position, nextPosition, dt);
+        vec3.lerp(this.position, this.position, nextPosition, Math.min(1, dt));
     }
 
     /** @override */
