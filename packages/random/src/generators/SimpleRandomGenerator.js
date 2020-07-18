@@ -18,5 +18,14 @@ export class SimpleRandomGenerator extends RandomGenerator
         return this._next / 2147483646;
     }
 
-    get seed() { return this._seed; }
+    get seed()
+    {
+        return this._seed;
+    }
+
+    set seed(value)
+    {
+        this._seed = Math.abs(value % 2147483647);
+        this._next = this._seed;
+    }
 }
