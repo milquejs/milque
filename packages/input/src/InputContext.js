@@ -91,7 +91,7 @@ output {
 }
 `;
 
-class InputKey
+class InputKeyPair
 {
     constructor(keyName, keyEvent, scale)
     {
@@ -747,7 +747,7 @@ function parseRangeOption(inputContext, inputName, inputOption)
         inputContext._keys[key] = keys;
     }
     
-    let inputKey = new InputKey(key, null, scale);
+    let inputKey = new InputKeyPair(key, null, scale);
     keys.push(inputKey);
     inputKeys.push(inputKey);
 }
@@ -789,7 +789,7 @@ function parseActionOption(inputContext, inputName, inputOption)
         inputContext._keys[key] = keys;
     }
     
-    let inputKey = new InputKey(key, event, 1);
+    let inputKey = new InputKeyPair(key, event, 1);
     keys.push(inputKey);
     inputKeys.push(inputKey);
 }
