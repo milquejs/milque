@@ -21,9 +21,7 @@ kbd {
 const TEMPLATE_KEY = Symbol('template');
 const STYLE_KEY = Symbol('style');
 
-// TODO: Consider a rename? This is just a data entry holder, not a full input map.
-
-export class InputMapping extends HTMLElement
+export class InputKey extends HTMLElement
 {
     static toInputMap(nodes)
     {
@@ -31,9 +29,9 @@ export class InputMapping extends HTMLElement
         
         for(let node of nodes)
         {
-            if (node instanceof InputMapping)
+            if (node instanceof InputKey)
             {
-                let inputName = node.name;
+                let inputName = node.input;
     
                 let keys;
                 if (inputName in inputMap)
@@ -89,7 +87,7 @@ export class InputMapping extends HTMLElement
     static get observedAttributes()
     {
         return [
-            'name',
+            'input',
             'key',
             'scale',
             'event'
@@ -112,8 +110,6 @@ export class InputMapping extends HTMLElement
     {
         switch(attribute)
         {
-            case 'name':
-                break;
             case 'key':
                 this.keyElement.textContent = value;
                 break;
@@ -122,8 +118,8 @@ export class InputMapping extends HTMLElement
 
     get type() { return this.hasAttribute('event') ? 'action' : 'range'; }
 
-    get name() { return this.getAttribute('name'); }
-    set name(value) { this.setAttribute('name', value); }
+    get input() { return this.getAttribute('input'); }
+    set input(value) { this.setAttribute('input', value); }
 
     get key() { return this.getAttribute('key'); }
     set key(value) { this.setAttribute('key', value); }
@@ -134,4 +130,4 @@ export class InputMapping extends HTMLElement
     get event() { return this.getAttribute('event'); }
     set event(value) { this.setAttribute('event', value); }
 }
-window.customElements.define('input-mapping', InputMapping);
+window.customElements.define('input-key', InputKey);

@@ -2,7 +2,7 @@ import { Mouse } from './device/Mouse.js';
 import { Keyboard } from './device/Keyboard.js';
 
 import { Input } from './Input.js';
-import { InputMapping } from './InputMapping.js';
+import { InputKey } from './InputKey.js';
 
 const INNER_HTML = `
 <table>
@@ -12,7 +12,7 @@ const INNER_HTML = `
             <th id="poll">&nbsp;</th>
         </tr>
         <tr class="hint">
-            <th>name</th>
+            <th>input</th>
             <th>key</th>
             <th>mod</th>
             <th>value</th>
@@ -226,7 +226,7 @@ export class InputContext extends HTMLElement
         {
             this._inputMap = {};
 
-            const childInputMap = InputMapping.toInputMap(this._children.assignedNodes());
+            const childInputMap = InputKey.toInputMap(this._children.assignedNodes());
             const inputMapSource = this.src;
     
             if (inputMapSource)
