@@ -47,8 +47,9 @@ InputContextGroup
             const world = {};
 
             const display = document.querySelector('display-port');
+            const ctx = display.canvas.getContext('2d');
+            ctx.imageSmoothingEnabled = false;
             display.addEventListener('frame', e => {
-                const ctx = e.detail.context;
                 const dt = e.detail.deltaTime;
 
                 if (world.update) world.update(dt);

@@ -5,6 +5,8 @@ import { KeyMapBuilder, createKeyState } from './InputHelper.js';
 function main()
 {
     const display = document.querySelector('display-port');
+    const ctx = display.canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
     
     // This is what the user sees and can edit.
     const keyMap = KeyMapBuilder()
@@ -47,7 +49,6 @@ function main()
     };
 
     display.addEventListener('frame', e => {
-        const ctx = e.detail.context;
         const dt = e.detail.deltaTime / 60;
 
         if (world.poll) world.poll();

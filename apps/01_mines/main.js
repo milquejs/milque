@@ -31,6 +31,9 @@ Maybe:
 async function main()
 {
     const display = document.querySelector('display-port');
+    const ctx = display.canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+    
     MinesControls.show();
 
     const world = { display };
@@ -39,7 +42,6 @@ async function main()
 
     display.addEventListener('frame', e => {
         const dt = e.detail.deltaTime / 1000;
-        const ctx = e.detail.context;
 
         MainScene.onPreUpdate.call(world, dt);
         MinesControls.poll();

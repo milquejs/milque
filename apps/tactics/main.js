@@ -24,6 +24,8 @@ async function load()
 function main()
 {
     const display = document.querySelector('display-port');
+    const ctx = display.canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
 
     let camera = createCamera();
     let mouse = new Mouse(display.canvas);
@@ -56,7 +58,6 @@ function main()
     
     display.addEventListener('frame', e => {
         let dt = e.detail.deltaTime / 60;
-        let ctx = e.detail.context;
 
         onUpdate(dt);
         onRender(ctx);
