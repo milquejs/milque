@@ -1,49 +1,7 @@
 import { CanvasView, Camera2D, Random } from './lib.js';
+import * as Tetrominoes from './Tetrominoes.js';
 
 document.addEventListener('DOMContentLoaded', main);
-
-const LONG = [
-    { w: 1, h: 4, m: [1, 1, 1, 1] },
-    { w: 4, h: 1, m: [1, 1, 1, 1] },
-];
-const RIGHT_L = [
-    { w: 2, h: 3, m: [1, 0, 1, 0, 1, 1] },
-    { w: 3, h: 2, m: [0, 0, 1, 1, 1, 1] },
-    { w: 2, h: 3, m: [1, 1, 0, 1, 0, 1] },
-    { w: 3, h: 2, m: [1, 1, 1, 1, 0, 0] },
-];
-const LEFT_L = [
-    { w: 2, h: 3, m: [0, 1, 0, 1, 1, 1] },
-    { w: 3, h: 2, m: [1, 0, 0, 1, 1, 1] },
-    { w: 2, h: 3, m: [1, 1, 1, 0, 1, 0] },
-    { w: 3, h: 2, m: [1, 1, 1, 0, 0, 1] },
-];
-const RIGHT_Z = [
-    { w: 3, h: 2, m: [0, 1, 1, 1, 1, 0] },
-    { w: 2, h: 3, m: [1, 0, 1, 1, 0, 1] },
-];
-const LEFT_Z = [
-    { w: 3, h: 2, m: [1, 1, 0, 0, 1, 1] },
-    { w: 2, h: 3, m: [0, 1, 1, 1, 1, 0] },
-];
-const TEE = [
-    { w: 3, h: 2, m: [0, 1, 0, 1, 1, 1] },
-    { w: 2, h: 3, m: [1, 0, 1, 1, 1, 0] },
-    { w: 3, h: 2, m: [1, 1, 1, 0, 1, 0] },
-    { w: 2, h: 3, m: [0, 1, 1, 1, 0, 1] },
-];
-const SQUARE = [
-    { w: 2, h: 2, m: [1, 1, 1, 1] },
-];
-const BLOCK_SHAPES = [
-    LONG,
-    RIGHT_L,
-    LEFT_L,
-    RIGHT_Z,
-    LEFT_Z,
-    SQUARE,
-    TEE,
-];
 
 const MAX_PLACEMENT_TICKS = 100;
 const RESPAWN_PLACEMENT_TICKS = 30;
@@ -426,7 +384,7 @@ function randomizePlacement()
 {
     return {
         value: Random.choose([1, 3, 4, 5, 1, 1, 1]),
-        shapeType: Random.choose(BLOCK_SHAPES),
+        shapeType: Random.choose(Tetrominoes.ALL),
         shapeIndex: 0,
         get shape() { return this.shapeType[this.shapeIndex]; },
         rotate()
