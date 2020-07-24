@@ -14,7 +14,8 @@ export function line(fromX, fromY, toX, toY, callback)
 
     let x = fx;
     let y = fy;
-    callback(x, y);
+    let flag = callback(x, y);
+    if (typeof flag !== 'undefined') return flag;
     
     let maxLength = dx * dx + dy * dy;
     let length = 0;
@@ -37,6 +38,7 @@ export function line(fromX, fromY, toX, toY, callback)
             y += sy;
         }
 
-        callback(x, y);
+        flag = callback(x, y);
+        if (typeof flag !== 'undefined') return flag;
     }
 }

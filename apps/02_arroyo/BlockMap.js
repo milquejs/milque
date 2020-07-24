@@ -8,6 +8,7 @@ export class BlockMap
         
         this.data = new Uint8Array(this.length);
         this.meta = new Uint8Array(this.length);
+        this.neighbor = new Uint8Array(this.length);
     }
 
     blockAt(x, y)
@@ -18,6 +19,11 @@ export class BlockMap
     metaAt(x, y)
     {
         return this.meta[x + y * this.width];
+    }
+
+    neighborAt(x, y)
+    {
+        return this.neighbor[x + y * this.width];
     }
 
     at(x, y)
@@ -35,16 +41,26 @@ export class BlockPos
         this.y = y;
     }
 
-    get block() { return this.blockMap.blockAt(this.x, this.y); }
+    get block() { return this.blockMap.data[this.index]; }
     set block(value) { this.blockMap.data[this.index] = value; }
-    get meta() { return this.blockMap.metaAt(this.x, this.y); }
+    get meta() { return this.blockMap.meta[this.index]; }
     set meta(value) { this.blockMap.meta[this.index] = value; }
+
+    get neighbor() { return this.blockMap.neighbor[this.index]; }
+    set neighbor(value) { this.blockMap.neighbor[this.index] = value; }
     
     get index() { return this.x + this.y * this.blockMap.width; }
     set index(value)
     {
         this.x = value % this.blockMap.width;
         this.y = Math.floor(value / this.blockMap.width);
+    }
+
+    set(x, y)
+    {
+        this.x = x;
+        this.y = y;
+        return this;
     }
 
     down(out = this, offset = 1)
@@ -75,7 +91,7 @@ export class BlockPos
         }
     }
 
-    left(out, offset = 1)
+    left(out = this, offset = 1)
     {
         if (this.x - offset < 0)
         {
@@ -89,9 +105,9 @@ export class BlockPos
         }
     }
 
-    right(out, offset = 1)
+    right(out = this, offset = 1)
     {
-        if (this.x + offset > blockMap.width)
+        if (this.x + offset > this.blockMap.width)
         {
             return null;
         }

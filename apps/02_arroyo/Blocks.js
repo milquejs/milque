@@ -13,9 +13,9 @@ function registerBlock(blockId, blockColor)
     return BLOCKS[blockId] = { blockId, color: blockColor };
 }
 
-export function getBlocks()
+export function getBlockIds()
 {
-    return BLOCKS;
+    return Object.keys(BLOCKS);
 }
 
 export function getBlockById(blockId)
@@ -36,6 +36,11 @@ export function isBlockFluid(blockId)
 export function isBlockSolid(blockId)
 {
     return !isBlockAir(blockId) && !isBlockFluid(blockId);
+}
+
+export function isBlockNeighborable(blockId, otherBlockId)
+{
+    return blockId === otherBlockId;
 }
 
 export function getBlockColor(blockId)
