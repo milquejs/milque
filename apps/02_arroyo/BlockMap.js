@@ -1,4 +1,4 @@
-import { Block, BlockFluid } from './Block.js';
+import { Block, BlockFluid, BlockAir } from './Block.js';
 
 export class BlockMap
 {
@@ -21,6 +21,15 @@ export class BlockMap
             let prevBlockId = this.data[i];
             let prevBlock = Block.getBlock(prevBlockId);
             prevBlock.onBlockBreak(this, x, y, i);
+        }
+        else
+        {
+            let prevBlockId = this.data[i];
+            let prevBlock = Block.getBlock(prevBlockId);
+            if (!(prevBlock instanceof BlockAir))
+            {
+                return this;
+            }
         }
         this.data[i] = block.blockId;
         block.onBlockPlace(this, x, y, i);
