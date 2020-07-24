@@ -22,25 +22,27 @@ async function main()
     const ctx = display.canvas.getContext('2d');
     ctx.imageSmoothingEnabled = false;
 
+    await BlockRenderer.load();
+
     const view = new CanvasView();
     const camera = new Camera2D();
 
-    const blockSize = 5;
-    const blockMap = new BlockMap(20, 30);
+    const blockSize = 16;
+    const blockMap = new BlockMap(10, 15);
     let blockTicks = 0;
     {
         let centerX = Math.floor(blockMap.width / 2);
         let centerY = Math.floor(blockMap.height / 2);
-        blockMap.at(centerX, centerY).block = Blocks.GOLD.blockId;
-        blockMap.at(centerX - 1, centerY + 0).block = Blocks.DIRT.blockId;
-        blockMap.at(centerX + 1, centerY + 0).block = Blocks.DIRT.blockId;
-        blockMap.at(centerX + 0, centerY - 1).block = Blocks.GRASS.blockId;
-        blockMap.at(centerX + 0, centerY + 1).block = Blocks.DIRT.blockId;
+        blockMap.placeBlock(centerX, centerY, Blocks.GOLD);
+        blockMap.placeBlock(centerX - 1, centerY + 0, Blocks.DIRT);
+        blockMap.placeBlock(centerX + 1, centerY + 0, Blocks.DIRT);
+        blockMap.placeBlock(centerX + 0, centerY - 1, Blocks.GRASS);
+        blockMap.placeBlock(centerX + 0, centerY + 1, Blocks.DIRT);
 
-        blockMap.at(centerX - 1, centerY - 1).block = Blocks.GRASS.blockId;
-        blockMap.at(centerX + 1, centerY - 1).block = Blocks.GRASS.blockId;
-        blockMap.at(centerX + 1, centerY + 1).block = Blocks.DIRT.blockId;
-        blockMap.at(centerX - 1, centerY + 1).block = Blocks.DIRT.blockId;
+        blockMap.placeBlock(centerX - 1, centerY - 1, Blocks.GRASS);
+        blockMap.placeBlock(centerX + 1, centerY - 1, Blocks.GRASS);
+        blockMap.placeBlock(centerX + 1, centerY + 1, Blocks.DIRT);
+        blockMap.placeBlock(centerX - 1, centerY + 1, Blocks.DIRT);
     }
 
     camera.moveTo(-display.width / 2 + (blockSize * blockMap.width / 2), 0);
@@ -81,7 +83,7 @@ async function main()
             {
                 ctx.fillStyle = Blocks.getBlockColor(placement.value);
                 ctx.translate(placement.placeX * blockSize, placement.placeY * blockSize);
-                BlockRenderer.drawBlock(ctx, placement.shape, blockSize);
+                BlockRenderer.drawPlacement(ctx, placement, blockSize);
                 ctx.translate(-placement.placeX * blockSize, -placement.placeY * blockSize);
             }
         }

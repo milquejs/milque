@@ -41,3 +41,23 @@ export const ALL = [
     SMINO,
     ZMINO,
 ];
+
+let minw = Infinity;
+let minh = Infinity;
+let maxw = 1;
+let maxh = 1;
+for(let tetromino of ALL)
+{
+    for(let shape of tetromino)
+    {
+        minw = Math.min(shape.w, minw);
+        minh = Math.min(shape.h, minh);
+        maxw = Math.max(shape.w, maxw);
+        maxh = Math.max(shape.h, maxh);
+    }
+}
+
+export const MIN_WIDTH = minw;
+export const MIN_HEIGHT = minh;
+export const MAX_WIDTH = maxw;
+export const MAX_HEIGHT = maxh;

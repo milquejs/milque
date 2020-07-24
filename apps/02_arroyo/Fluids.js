@@ -1,7 +1,6 @@
 import { Random } from './lib.js';
+import { BlockFluid } from './Block.js';
 import * as Blocks from './Blocks.js';
-
-export const MAX_FLUID_LEVELS = 3;
 
 export function update(blockMap)
 {
@@ -26,7 +25,7 @@ function updateBlock(blockMap, x, y, i, block)
     {
         // Is it stable? Probably not.
         let pos = blockMap.at(x, y);
-        if (pos.meta >= MAX_FLUID_LEVELS)
+        if (pos.meta >= BlockFluid.MAX_FLUID_LEVELS)
         {
             let flag = true;    
             flag &= !pos.down() || (!Blocks.isBlockAir(pos.block) && !Blocks.isBlockFluid(pos.block));
@@ -47,7 +46,7 @@ function updateBlock(blockMap, x, y, i, block)
 
 function tryFlowWaterDown(blockMap, x, y)
 {
-    return flowWater(blockMap, x, y, x, y + 1, MAX_FLUID_LEVELS);
+    return flowWater(blockMap, x, y, x, y + 1, BlockFluid.MAX_FLUID_LEVELS);
 }
 
 function tryFlowWaterSide(blockMap, x, y)
@@ -99,11 +98,11 @@ function flowWater(blockMap, fromX, fromY, toX, toY, amount, allowBackflow = tru
                 return true;
             }
         }
-        else if (Blocks.isBlockFluid(toBlock) && toMeta < MAX_FLUID_LEVELS)
+        else if (Blocks.isBlockFluid(toBlock) && toMeta < BlockFluid.MAX_FLUID_LEVELS)
         {
             if (!allowBackflow && fromMeta <= toMeta) return false;
             
-            if (toMeta + amount <= MAX_FLUID_LEVELS)
+            if (toMeta + amount <= BlockFluid.MAX_FLUID_LEVELS)
             {
                 blockMap.meta[toIndex] = toMeta + amount;
 
@@ -120,9 +119,9 @@ function flowWater(blockMap, fromX, fromY, toX, toY, amount, allowBackflow = tru
             }
             else
             {
-                blockMap.meta[toIndex] = MAX_FLUID_LEVELS;
+                blockMap.meta[toIndex] = BlockFluid.MAX_FLUID_LEVELS;
 
-                let remainder = amount - (MAX_FLUID_LEVELS - toMeta);
+                let remainder = amount - (BlockFluid.MAX_FLUID_LEVELS - toMeta);
                 blockMap.meta[fromIndex] = remainder;
                 return true;
             }

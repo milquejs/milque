@@ -1,6 +1,6 @@
-import { Block, BlockFluid } from './Block.js';
+import { Block, BlockFluid, BlockAir } from './Block.js';
 
-export const AIR = Block.registerBlock(0, new Block('air', 'transparent'));
+export const AIR = Block.registerBlock(0, new BlockAir('air'));
 export const WATER = Block.registerBlock(1, new BlockFluid('water', 'dodgerblue'));
 export const WATER_STABLE = Block.registerBlock(2, new Block('stableWater', 'cornflowerblue'));
 export const DIRT = Block.registerBlock(3, new Block('dirt', 'saddlebrown'));

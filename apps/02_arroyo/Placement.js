@@ -1,3 +1,4 @@
+import { BlockMap } from './BlockMap.js';
 import { Random } from './lib.js';
 import { Block } from './Block.js';
 import * as Tetrominoes from './Tetrominoes.js';
@@ -10,6 +11,7 @@ export function initialize()
         placing: false,
         shape: null,
         shapeType: null,
+        shapeMap: new BlockMap(Tetrominoes.MAX_WIDTH, Tetrominoes.MAX_HEIGHT),
         value: 0,
         placeX: 0,
         placeY: 0,
@@ -69,7 +71,7 @@ export function update(dt, state, placeInput, rotateInput, blockMap, cx, cy)
         {
             if (placeInput.value)
             {
-                placeBlock(state.value, state.shape, state.placeX, state.placeY, blockMap);
+                placeBlockShape(state.value, state.shape, state.placeX, state.placeY, blockMap);
                 state.placing = false;
                 state.placeY = 0;
                 state.placeTicks = RESPAWN_PLACEMENT_TICKS;
@@ -121,7 +123,7 @@ function intersectBlock(blockShape, blockX, blockY, blockMap)
     return false;
 }
 
-function placeBlock(blockValue, blockShape, blockX, blockY, blockMap)
+function placeBlockShape(blockValue, blockShape, blockX, blockY, blockMap)
 {
     const { w, h, m } = blockShape;
     for(let y = 0; y < h; ++y)
@@ -146,4 +148,12 @@ function randomizePlacement(state)
     state.value = block;
     state.shapeType = shapeType;
     state.shape = shapeType[shapeIndex];
+    for(let y = 0; y < state.shapeMap.height; ++y)
+    {
+        for(let x = 0; x < state.shapeMap.width; ++x)
+        {
+            state.shapeMap.placeBlock(x, y, Block.getBlock(0));
+        }
+    }
+    placeBlockShape(block, state.shape, 0, 0, state.shapeMap);
 }

@@ -1,3 +1,5 @@
+import { Block } from './Block.js';
+
 export class BlockMap
 {
     constructor(width, height)
@@ -14,6 +16,12 @@ export class BlockMap
     placeBlock(x, y, block)
     {
         let i = x + y * this.width;
+        let prevBlockId = this.data[i];
+        if (prevBlockId)
+        {
+            let prevBlock = Block.getBlock(prevBlockId);
+            prevBlock.onBlockBreak(this, x, y, i);
+        }
         this.data[i] = block.blockId;
         block.onBlockPlace(this, x, y, i);
         return this;
@@ -27,6 +35,11 @@ export class BlockMap
     metaAt(x, y)
     {
         return this.meta[x + y * this.width];
+    }
+
+    neighborAt(x, y)
+    {
+        return this.neighbor[x + y * this.width];
     }
 
     at(x, y)
@@ -48,11 +61,18 @@ export class BlockPos
     set block(value) { this.blockMap.data[this.index] = value; }
     get meta() { return this.blockMap.meta[this.index]; }
     set meta(value) { this.blockMap.meta[this.index] = value; }
+    get neighbor() { return this.blockMap.neighbor[this.index]; }
+    set neighbor(value) { this.blockMap.neighbor[this.index] = value; }
     get index() { return this.x + this.y * this.blockMap.width; }
     set index(value)
     {
         this.x = value % this.blockMap.width;
         this.y = Math.floor(value / this.blockMap.width);
+    }
+
+    copy()
+    {
+        return new BlockPos(this.blockMap, this.x, this.y);
     }
 
     set(x, y)
