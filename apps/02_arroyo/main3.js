@@ -27,8 +27,8 @@ async function main()
     const view = new CanvasView();
     const camera = new Camera2D();
 
-    const blockSize = 16;
-    const blockMap = new BlockMap(10, 15);
+    const blockSize = 4;
+    const blockMap = new BlockMap(30, 40);
     let blockTicks = 0;
     {
         let centerX = Math.floor(blockMap.width / 2);

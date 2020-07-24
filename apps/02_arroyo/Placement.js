@@ -1,7 +1,8 @@
-import { BlockMap } from './BlockMap.js';
 import { Random } from './lib.js';
-import { Block } from './Block.js';
+import { BlockMap } from './BlockMap.js';
+import { Block, BlockAir, BlockFluid } from './Block.js';
 import * as Tetrominoes from './Tetrominoes.js';
+import * as Blocks from './Blocks.js';
 
 export const RESPAWN_PLACEMENT_TICKS = 30;
 
@@ -62,6 +63,8 @@ export function update(dt, state, placeInput, rotateInput, blockMap, cx, cy)
                 state.placeY -= 1;
             }
         }
+
+        state.valid = canPlaceBlockShape(state.value, shape, state.placeX, state.placeY, blockMap);
     }
 
     // Try placing and rotating
@@ -69,7 +72,7 @@ export function update(dt, state, placeInput, rotateInput, blockMap, cx, cy)
     {
         if (state.placing)
         {
-            if (placeInput.value)
+            if (placeInput.value && state.valid)
             {
                 placeBlockShape(state.value, state.shape, state.placeX, state.placeY, blockMap);
                 state.placing = false;
@@ -89,6 +92,7 @@ export function update(dt, state, placeInput, rotateInput, blockMap, cx, cy)
             state.placing = true;
             state.placeX = mapCenterX;
             state.placeY = 0;
+            state.valid = false;
         }
     }
     else
@@ -99,7 +103,6 @@ export function update(dt, state, placeInput, rotateInput, blockMap, cx, cy)
 
 function intersectBlock(blockShape, blockX, blockY, blockMap)
 {
-    const blockMapData = blockMap.data;
     const blockMapWidth = blockMap.width;
     const blockMapHeight = blockMap.height;
     const { w, h, m } = blockShape;
@@ -113,10 +116,38 @@ function intersectBlock(blockShape, blockX, blockY, blockMap)
             if (m[i])
             {
                 let bi = (x + blockX) + (y + blockY) * blockMapWidth;
-                if (blockMapData[bi])
+                let blockId = blockMap.data[bi];
+                let block = Block.getBlock(blockId);
+                if (block instanceof BlockFluid)
+                {
+                    if (blockMap.meta[bi] >= BlockFluid.MAX_FLUID_LEVELS)
+                    {
+                        return true;
+                    }
+                }
+                else if (!(block instanceof BlockAir))
                 {
                     return true;
                 }
+            }
+        }
+    }
+    return false;
+}
+
+function canPlaceBlockShape(blockValue, blockShape, blockX, blockY, blockMap)
+{
+    if (Blocks.isBlockFluid(blockValue)) return true;
+
+    const { w, h, m } = blockShape;
+    for(let y = 0; y < h; ++y)
+    {
+        for(let x = 0; x < w; ++x)
+        {
+            let i = x + y * w;
+            if (m[i] && blockMap.neighborAt(x + blockX, y + blockY) !== 0b1111)
+            {
+                return true;
             }
         }
     }

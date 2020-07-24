@@ -1,4 +1,4 @@
-import { Block } from './Block.js';
+import { Block, BlockFluid } from './Block.js';
 
 export class BlockMap
 {
@@ -8,17 +8,17 @@ export class BlockMap
         this.height = height;
         this.length = width * height;
         
-        this.data = new Uint8Array(this.length);
-        this.meta = new Uint8Array(this.length);
-        this.neighbor = new Uint8Array(this.length);
+        this.data = new Uint8Array(this.length).fill(0);
+        this.meta = new Uint8Array(this.length).fill(0);
+        this.neighbor = new Uint8Array(this.length).fill(0b1111);
     }
 
     placeBlock(x, y, block)
     {
         let i = x + y * this.width;
-        let prevBlockId = this.data[i];
-        if (prevBlockId)
+        if (!(block instanceof BlockFluid))
         {
+            let prevBlockId = this.data[i];
             let prevBlock = Block.getBlock(prevBlockId);
             prevBlock.onBlockBreak(this, x, y, i);
         }
@@ -57,8 +57,13 @@ export class BlockPos
         this.y = y;
     }
 
+    /** @deprecated */
     get block() { return this.blockMap.data[this.index]; }
+    /** @deprecated */
     set block(value) { this.blockMap.data[this.index] = value; }
+
+    get blockId() { return this.blockMap.data[this.index]; }
+    set blockId(value) { this.blockMap.data[this.index] = value; }
     get meta() { return this.blockMap.meta[this.index]; }
     set meta(value) { this.blockMap.meta[this.index] = value; }
     get neighbor() { return this.blockMap.neighbor[this.index]; }

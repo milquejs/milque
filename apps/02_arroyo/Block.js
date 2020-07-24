@@ -32,8 +32,15 @@ export class Block
         this.blockColor = blockColor;
     }
 
-    onBlockPlace(blockMap, x, y, i) {}
-    onBlockBreak(blockMap, x, y, i) {}
+    onBlockPlace(blockMap, x, y, i)
+    {
+        NeighborBehavior.onBlockPlace(blockMap, x, y, i, this, this.blockId);
+    }
+
+    onBlockBreak(blockMap, x, y, i)
+    {
+        NeighborBehavior.onBlockBreak(blockMap, x, y, i, this, this.blockId);
+    }
 
     /** @override */
     toString()
@@ -47,18 +54,6 @@ export class BlockAir extends Block
     constructor(blockName)
     {
         super(blockName, 'transparent');
-    }
-
-    /** @override */
-    onBlockPlace()
-    {
-        // Do nothing.
-    }
-
-    /** @override */
-    onBlockBreak()
-    {
-        // Do nothing.
     }
 }
 
@@ -76,10 +71,16 @@ export class BlockFluid extends Block
     {
         blockMap.meta[i] = BlockFluid.MAX_FLUID_LEVELS;
     }
+
+    /** @override */
+    onBlockBreak(blockMap, x, y, i)
+    {
+        // Do nothing.
+    }
 }
 
 export const NeighborBehavior = {
-    onBlockPlace(blockMap, x, y, i, blockId)
+    onBlockPlace(blockMap, x, y, i, block, blockId)
     {
         let neighbor = 0b000;
         let pos = blockMap.at(x, y);
@@ -106,7 +107,7 @@ export const NeighborBehavior = {
         }
         blockMap.neighbor[i] = neighbor;
     },
-    onBlockBreak(blockMap, x, y, i, blockId)
+    onBlockBreak(blockMap, x, y, i, block, blockId)
     {
         let pos = blockMap.at(x, y);
         let out = pos.copy();
