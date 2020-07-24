@@ -1,6 +1,5 @@
 import { Random } from './lib.js';
-import * as Fluids from './Fluids.js';
-import * as Blocks from './Blocks.js';
+import { Block } from './Block.js';
 import * as Tetrominoes from './Tetrominoes.js';
 
 export const RESPAWN_PLACEMENT_TICKS = 30;
@@ -18,7 +17,7 @@ export function initialize()
     };
 }
 
-export function update(dt, state, placeInput, rotateInput, blockMap, blockSize, cx, cy)
+export function update(dt, state, placeInput, rotateInput, blockMap, cx, cy)
 {
     const mapCenterX = Math.floor(blockMap.width / 2);
     
@@ -27,8 +26,8 @@ export function update(dt, state, placeInput, rotateInput, blockMap, blockSize, 
     {
         const shape = state.shape;
 
-        const nextPlaceX = Math.min(blockMap.width - shape.w, Math.max(0, cx / blockSize - Math.floor((shape.w - 1) / 2)));
-        const nextPlaceY = Math.min(blockMap.height - shape.h, Math.max(0, cy / blockSize - Math.floor((shape.h - 1) / 2)));
+        const nextPlaceX = Math.min(blockMap.width - shape.w, Math.max(0, cx - Math.floor((shape.w - 1) / 2)));
+        const nextPlaceY = Math.min(blockMap.height - shape.h, Math.max(0, cy - Math.floor((shape.h - 1) / 2)));
 
         const prevPlaceX = state.placeX;
         if (prevPlaceX < nextPlaceX)
@@ -124,8 +123,6 @@ function intersectBlock(blockShape, blockX, blockY, blockMap)
 
 function placeBlock(blockValue, blockShape, blockX, blockY, blockMap)
 {
-    const blockMapWidth = blockMap.width;
-    const blockMapData = blockMap.data;
     const { w, h, m } = blockShape;
     for(let y = 0; y < h; ++y)
     {
@@ -134,13 +131,8 @@ function placeBlock(blockValue, blockShape, blockX, blockY, blockMap)
             let i = x + y * w;
             if (m[i])
             {
-                let bi = (x + blockX) + (y + blockY) * blockMapWidth;
-                blockMapData[bi] = blockValue;
-
-                if (Blocks.isBlockFluid(blockValue))
-                {
-                    blockMap.meta[bi] = Fluids.MAX_FLUID_LEVELS;
-                }
+                let block = Block.getBlock(blockValue);
+                blockMap.placeBlock(x + blockX, y + blockY, block);
             }
         }
     }

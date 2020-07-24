@@ -11,6 +11,14 @@ export class BlockMap
         this.neighbor = new Uint8Array(this.length);
     }
 
+    placeBlock(x, y, block)
+    {
+        let i = x + y * this.width;
+        this.data[i] = block.blockId;
+        block.onBlockPlace(this, x, y, i);
+        return this;
+    }
+
     blockAt(x, y)
     {
         return this.data[x + y * this.width];
@@ -19,11 +27,6 @@ export class BlockMap
     metaAt(x, y)
     {
         return this.meta[x + y * this.width];
-    }
-
-    neighborAt(x, y)
-    {
-        return this.neighbor[x + y * this.width];
     }
 
     at(x, y)
@@ -45,10 +48,6 @@ export class BlockPos
     set block(value) { this.blockMap.data[this.index] = value; }
     get meta() { return this.blockMap.meta[this.index]; }
     set meta(value) { this.blockMap.meta[this.index] = value; }
-
-    get neighbor() { return this.blockMap.neighbor[this.index]; }
-    set neighbor(value) { this.blockMap.neighbor[this.index] = value; }
-    
     get index() { return this.x + this.y * this.blockMap.width; }
     set index(value)
     {

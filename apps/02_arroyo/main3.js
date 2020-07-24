@@ -55,31 +55,18 @@ async function main()
         let projectionMatrix = camera.getProjectionMatrix();
 
         // Cursor worldPos
-        let [ cx, cy ] = Camera2D.screenToWorld(CursorX.value * display.width, CursorY.value * display.height, viewMatrix, projectionMatrix);
-        cx = Math.floor(cx / blockSize) * blockSize;
-        cy = Math.floor(cy / blockSize) * blockSize;
+        const cursorPos = Camera2D.screenToWorld(CursorX.value * display.width, CursorY.value * display.height, viewMatrix, projectionMatrix);
+        const nextPlaceX = Math.floor(cursorPos[0] / blockSize);
+        const nextPlaceY = Math.floor(cursorPos[1] / blockSize);
 
-        Placement.update(dt, placement, Place, Rotate, blockMap, blockSize, cx, cy);
+        Placement.update(dt, placement, Place, Rotate, blockMap, nextPlaceX, nextPlaceY);
 
         // Compute block physics
         if (blockTicks <= 0)
         {
             blockTicks = MAX_BLOCK_TICKS;
 
-            // Do water physics.
-            for(let y = blockMap.height - 1; y >= 0; --y)
-            {
-                for(let x = 0; x < blockMap.width; ++x)
-                {
-                    let i = x + y * blockMap.width;
-                    let block = blockMap.data[i];
-
-                    if (Blocks.isBlockFluid(block))
-                    {
-                        Fluids.update(blockMap, x, y, i, block);
-                    }
-                }
-            }
+            Fluids.update(blockMap);
         }
         else
         {

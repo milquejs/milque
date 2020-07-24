@@ -3,25 +3,44 @@ import * as Blocks from './Blocks.js';
 
 export const MAX_FLUID_LEVELS = 3;
 
-export function update(blockMap, x, y, i, block)
+export function update(blockMap)
+{
+    // Do water physics.
+    for(let y = blockMap.height - 1; y >= 0; --y)
+    {
+        for(let x = 0; x < blockMap.width; ++x)
+        {
+            let i = x + y * blockMap.width;
+            let block = blockMap.data[i];
+            if (Blocks.isBlockFluid(block))
+            {
+                updateBlock(blockMap, x, y, i, block);
+            }
+        }
+    }
+}
+
+function updateBlock(blockMap, x, y, i, block)
 {
     if (!tryFlowWaterDown(blockMap, x, y) && !tryFlowWaterSide(blockMap, x, y))
     {
         // Is it stable? Probably not.
-        let flag = true;
-
         let pos = blockMap.at(x, y);
-        flag &= !pos.down() || (!Blocks.isBlockAir(pos.block) && !Blocks.isBlockFluid(pos.block));
-        pos.set(x, y);
-        flag &= !pos.left() || (!Blocks.isBlockAir(pos.block) && !Blocks.isBlockFluid(pos.block));
-        pos.set(x, y);
-        flag &= !pos.right() || (!Blocks.isBlockAir(pos.block) && !Blocks.isBlockFluid(pos.block));
-        pos.set(x, y);
-
-        if (flag)
+        if (pos.meta >= MAX_FLUID_LEVELS)
         {
-            blockMap.data[i] = 2;
-            blockMap.meta[i] = 0;
+            let flag = true;    
+            flag &= !pos.down() || (!Blocks.isBlockAir(pos.block) && !Blocks.isBlockFluid(pos.block));
+            pos.set(x, y);
+            flag &= !pos.left() || (!Blocks.isBlockAir(pos.block) && !Blocks.isBlockFluid(pos.block));
+            pos.set(x, y);
+            flag &= !pos.right() || (!Blocks.isBlockAir(pos.block) && !Blocks.isBlockFluid(pos.block));
+            pos.set(x, y);
+
+            if (flag)
+            {
+                blockMap.data[i] = 2;
+                blockMap.meta[i] = 0;
+            }
         }
     }
 }

@@ -1,27 +1,12 @@
-const BLOCKS = {};
+import { Block, BlockFluid } from './Block.js';
 
-export const AIR = registerBlock(0, 'transparent');
-export const WATER = registerBlock(1, 'dodgerblue');
-export const WATER_STABLE = registerBlock(2, 'cornflowerblue');
-export const DIRT = registerBlock(3, 'saddlebrown');
-export const GOLD = registerBlock(4, 'gold');
-export const GRASS = registerBlock(5, 'limegreen');
-export const STONE = registerBlock(6, 'slategray');
-
-function registerBlock(blockId, blockColor)
-{
-    return BLOCKS[blockId] = { blockId, color: blockColor };
-}
-
-export function getBlockIds()
-{
-    return Object.keys(BLOCKS);
-}
-
-export function getBlockById(blockId)
-{
-    return BLOCKS[blockId];
-}
+export const AIR = Block.registerBlock(0, new Block('air', 'transparent'));
+export const WATER = Block.registerBlock(1, new BlockFluid('water', 'dodgerblue'));
+export const WATER_STABLE = Block.registerBlock(2, new Block('stableWater', 'cornflowerblue'));
+export const DIRT = Block.registerBlock(3, new Block('dirt', 'saddlebrown'));
+export const GOLD = Block.registerBlock(4, new Block('goldOre', 'gold'));
+export const GRASS = Block.registerBlock(5, new Block('grass', 'limegreen'));
+export const STONE = Block.registerBlock(6, new Block('stone', 'slategray'));
 
 export function isBlockAir(blockId)
 {
@@ -38,17 +23,12 @@ export function isBlockSolid(blockId)
     return !isBlockAir(blockId) && !isBlockFluid(blockId);
 }
 
-export function isBlockNeighborable(blockId, otherBlockId)
-{
-    return blockId === otherBlockId;
-}
-
 export function getBlockColor(blockId)
 {
-    let block = getBlockById(blockId);
+    let block = Block.getBlock(blockId);
     if (block)
     {
-        return block.color;
+        return block.blockColor;
     }
     else
     {
