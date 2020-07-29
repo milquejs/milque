@@ -1,5 +1,4 @@
 import { CanvasView, Camera2D, Random } from './lib.js';
-import * as Tetrominoes from './Tetrominoes.js';
 
 document.addEventListener('DOMContentLoaded', main);
 
@@ -8,6 +7,54 @@ const RESPAWN_PLACEMENT_TICKS = 30;
 const MAX_BLOCK_TICKS = 10;
 
 const MAX_FLUID_LEVELS = 3;
+
+const Tetrominoes = {
+    IMINO: [
+        { w: 1, h: 4, m: [1, 1, 1, 1] },
+        { w: 4, h: 1, m: [1, 1, 1, 1] },
+    ],
+    OMINO: [
+        { w: 2, h: 2, m: [1, 1, 1, 1] },
+    ],
+    TMINO: [
+        { w: 3, h: 2, m: [0, 1, 0, 1, 1, 1] },
+        { w: 2, h: 3, m: [1, 0, 1, 1, 1, 0] },
+        { w: 3, h: 2, m: [1, 1, 1, 0, 1, 0] },
+        { w: 2, h: 3, m: [0, 1, 1, 1, 0, 1] },
+    ],
+    LMINO: [
+        { w: 2, h: 3, m: [1, 0, 1, 0, 1, 1] },
+        { w: 3, h: 2, m: [0, 0, 1, 1, 1, 1] },
+        { w: 2, h: 3, m: [1, 1, 0, 1, 0, 1] },
+        { w: 3, h: 2, m: [1, 1, 1, 1, 0, 0] },
+    ],
+    JMINO: [
+        { w: 2, h: 3, m: [0, 1, 0, 1, 1, 1] },
+        { w: 3, h: 2, m: [1, 0, 0, 1, 1, 1] },
+        { w: 2, h: 3, m: [1, 1, 1, 0, 1, 0] },
+        { w: 3, h: 2, m: [1, 1, 1, 0, 0, 1] },
+    ],
+    ZMINO: [
+        { w: 3, h: 2, m: [1, 1, 0, 0, 1, 1] },
+        { w: 2, h: 3, m: [0, 1, 1, 1, 1, 0] },
+    ],
+    SMINO: [
+        { w: 3, h: 2, m: [0, 1, 1, 1, 1, 0] },
+        { w: 2, h: 3, m: [1, 0, 1, 1, 0, 1] },
+    ],
+    get ALL()
+    {
+        return [
+            this.IMINO,
+            this.OMINO,
+            this.TMINO,
+            this.JMINO,
+            this.LMINO,
+            this.SMINO,
+            this.ZMINO,
+        ];
+    }
+};
 
 async function main()
 {

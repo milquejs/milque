@@ -5,6 +5,13 @@ import * as Fluids from './Fluids.js';
 import * as Placement from './Placement.js';
 import * as BlockRenderer from './BlockRenderer.js';
 
+// TODO: Move the camera towards the placed block each time.
+// TODO: Regionize the block maps.
+// TODO: Multiple fluids?
+// TODO: Sound?
+// TODO: Trees? Plants?
+// TODO: Sunlight? Light map.
+
 document.addEventListener('DOMContentLoaded', main);
 
 const MAX_BLOCK_TICKS = 10;

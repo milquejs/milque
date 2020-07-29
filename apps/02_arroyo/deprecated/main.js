@@ -1,4 +1,4 @@
-import { CanvasView, Camera2D } from './lib.js';
+import { CanvasView, Camera2D } from '../lib.js';
 /**
  * It should place using gravity instead of the line algorithm.
  * (if there is no ground, use the other side's gravity).
