@@ -10,7 +10,7 @@ export async function load()
 
 export function drawBlock(ctx, blockMap, x, y, i, blockSize)
 {
-    let block = blockMap.data[i];
+    let block = blockMap.block[i];
     if (!Blocks.isBlockAir(block))
     {
         if (Blocks.isBlockFluid(block))

@@ -116,7 +116,7 @@ function intersectBlock(blockShape, blockX, blockY, blockMap)
             if (m[i])
             {
                 let bi = (x + blockX) + (y + blockY) * blockMapWidth;
-                let blockId = blockMap.data[bi];
+                let blockId = blockMap.block[bi];
                 let block = Block.getBlock(blockId);
                 if (block instanceof BlockFluid)
                 {

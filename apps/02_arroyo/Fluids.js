@@ -10,7 +10,7 @@ export function update(blockMap)
         for(let x = 0; x < blockMap.width; ++x)
         {
             let i = x + y * blockMap.width;
-            let block = blockMap.data[i];
+            let block = blockMap.block[i];
             if (Blocks.isBlockFluid(block))
             {
                 updateBlock(blockMap, x, y, i, block);
@@ -37,7 +37,7 @@ function updateBlock(blockMap, x, y, i, block)
 
             if (flag)
             {
-                blockMap.data[i] = 2;
+                blockMap.block[i] = 2;
                 blockMap.meta[i] = 0;
             }
         }
@@ -70,11 +70,11 @@ function flowWater(blockMap, fromX, fromY, toX, toY, amount, allowBackflow = tru
     if (toX >= 0 && toY >= 0 && toX < blockMap.width && toY < blockMap.height)
     {
         let toIndex = toX + toY * blockMap.width;
-        let toBlock = blockMap.data[toIndex];
+        let toBlock = blockMap.block[toIndex];
         let toMeta = blockMap.meta[toIndex];
 
         let fromIndex = fromX + fromY * blockMap.width;
-        let fromBlock = blockMap.data[fromIndex];
+        let fromBlock = blockMap.block[fromIndex];
         let fromMeta = blockMap.meta[fromIndex];
 
         if (amount > fromMeta) amount = fromMeta;
@@ -84,15 +84,15 @@ function flowWater(blockMap, fromX, fromY, toX, toY, amount, allowBackflow = tru
             let remainder = fromMeta - amount;
             if (remainder <= 0)
             {
-                blockMap.data[toIndex] = fromBlock;
+                blockMap.block[toIndex] = fromBlock;
                 blockMap.meta[toIndex] = fromMeta;
-                blockMap.data[fromIndex] = 0;
+                blockMap.block[fromIndex] = 0;
                 blockMap.meta[fromIndex] = 0;
                 return true;
             }
             else
             {
-                blockMap.data[toIndex] = fromBlock;
+                blockMap.block[toIndex] = fromBlock;
                 blockMap.meta[toIndex] = amount;
                 blockMap.meta[fromIndex] = remainder;
                 return true;
@@ -108,7 +108,7 @@ function flowWater(blockMap, fromX, fromY, toX, toY, amount, allowBackflow = tru
 
                 if (amount >= fromMeta)
                 {
-                    blockMap.data[fromIndex] = 0;
+                    blockMap.block[fromIndex] = 0;
                     blockMap.meta[fromIndex] = 0;
                 }
                 else

@@ -32,14 +32,14 @@ export class Block
         this.blockColor = blockColor;
     }
 
-    onBlockPlace(blockMap, x, y, i)
+    onBlockPlace(blockMap, blockPos)
     {
-        NeighborBehavior.onBlockPlace(blockMap, x, y, i, this, this.blockId);
+        NeighborBehavior.onBlockPlace(blockMap, blockPos, this, this.blockId);
     }
 
-    onBlockBreak(blockMap, x, y, i)
+    onBlockBreak(blockMap, blockPos)
     {
-        NeighborBehavior.onBlockBreak(blockMap, x, y, i, this, this.blockId);
+        NeighborBehavior.onBlockBreak(blockMap, blockPos, this, this.blockId);
     }
 
     /** @override */
@@ -67,21 +67,22 @@ export class BlockFluid extends Block
     }
 
     /** @override */
-    onBlockPlace(blockMap, x, y, i)
+    onBlockPlace(blockMap, blockPos)
     {
-        blockMap.meta[i] = BlockFluid.MAX_FLUID_LEVELS;
+        blockMap.meta[blockPos.index] = BlockFluid.MAX_FLUID_LEVELS;
     }
 
     /** @override */
-    onBlockBreak(blockMap, x, y, i)
+    onBlockBreak(blockMap, blockPos)
     {
         // Do nothing.
     }
 }
 
 export const NeighborBehavior = {
-    onBlockPlace(blockMap, x, y, i, block, blockId)
+    onBlockPlace(blockMap, blockPos, block, blockId)
     {
+        const { x, y, index: i } = blockPos;
         let neighbor = 0b000;
         let pos = blockMap.at(x, y);
         let out = pos.copy();
@@ -107,8 +108,9 @@ export const NeighborBehavior = {
         }
         blockMap.neighbor[i] = neighbor;
     },
-    onBlockBreak(blockMap, x, y, i, block, blockId)
+    onBlockBreak(blockMap, blockPos, block, blockId)
     {
+        const { x, y, index: i } = blockPos;
         let pos = blockMap.at(x, y);
         let out = pos.copy();
         if (pos.right(out) && out.block === blockId)

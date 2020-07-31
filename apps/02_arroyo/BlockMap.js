@@ -7,38 +7,43 @@ export class BlockMap
         this.width = width;
         this.height = height;
         this.length = width * height;
+
+        this.data = {
+
+        };
         
-        this.data = new Uint8Array(this.length).fill(0);
+        this.block = new Uint8Array(this.length).fill(0);
         this.meta = new Uint8Array(this.length).fill(0);
         this.neighbor = new Uint8Array(this.length).fill(0b1111);
     }
 
     placeBlock(x, y, block)
     {
+        let pos = this.at(x, y);
         let i = x + y * this.width;
         if (!(block instanceof BlockFluid))
         {
-            let prevBlockId = this.data[i];
+            let prevBlockId = this.block[i];
             let prevBlock = Block.getBlock(prevBlockId);
-            prevBlock.onBlockBreak(this, x, y, i);
+            prevBlock.onBlockBreak(this, pos);
         }
         else
         {
-            let prevBlockId = this.data[i];
+            let prevBlockId = this.block[i];
             let prevBlock = Block.getBlock(prevBlockId);
             if (!(prevBlock instanceof BlockAir))
             {
                 return this;
             }
         }
-        this.data[i] = block.blockId;
-        block.onBlockPlace(this, x, y, i);
+        this.block[i] = block.blockId;
+        block.onBlockPlace(this, pos);
         return this;
     }
 
     blockAt(x, y)
     {
-        return this.data[x + y * this.width];
+        return this.block[x + y * this.width];
     }
 
     metaAt(x, y)
@@ -67,12 +72,12 @@ export class BlockPos
     }
 
     /** @deprecated */
-    get block() { return this.blockMap.data[this.index]; }
+    get block() { return this.blockMap.block[this.index]; }
     /** @deprecated */
-    set block(value) { this.blockMap.data[this.index] = value; }
+    set block(value) { this.blockMap.block[this.index] = value; }
 
-    get blockId() { return this.blockMap.data[this.index]; }
-    set blockId(value) { this.blockMap.data[this.index] = value; }
+    get blockId() { return this.blockMap.block[this.index]; }
+    set blockId(value) { this.blockMap.block[this.index] = value; }
     get meta() { return this.blockMap.meta[this.index]; }
     set meta(value) { this.blockMap.meta[this.index] = value; }
     get neighbor() { return this.blockMap.neighbor[this.index]; }

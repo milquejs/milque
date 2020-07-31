@@ -14,6 +14,8 @@ export function drawBlockMap(ctx, blockMap, blockSize)
             BlockRenderer.drawBlock(ctx, blockMap, x, y, i, blockSize);
         }
     }
+    ctx.strokeStyle = 'white';
+    ctx.strokeRect(0, 0, blockMapWidth * blockSize, blockMapHeight * blockSize);
 }
 
 export function drawPlacement(ctx, placementState, blockSize)
