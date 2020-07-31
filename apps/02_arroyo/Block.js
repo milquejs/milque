@@ -82,61 +82,58 @@ export class BlockFluid extends Block
 export const NeighborBehavior = {
     onBlockPlace(blockMap, blockPos, block, blockId)
     {
-        const { x, y, index: i } = blockPos;
         let neighbor = 0b000;
-        let pos = blockMap.at(x, y);
-        let out = pos.copy();
-        if (blockMap.isWithinBounds(pos.right(out))
+        let out = blockPos.copy();
+        if (blockMap.isWithinBounds(blockPos.right(out))
             && blockMap.getBlockId(out) === blockId)
         {
             neighbor |= 0b0001;
-            out.neighbor |= 0b0100;
+            blockMap.setBlockNeighbor(out, blockMap.getBlockNeighbor(out) | 0b0100);
         }
-        if (blockMap.isWithinBounds(pos.up(out))
+        if (blockMap.isWithinBounds(blockPos.up(out))
             && blockMap.getBlockId(out) === blockId)
         {
             neighbor |= 0b0010;
-            out.neighbor |= 0b1000;
+            blockMap.setBlockNeighbor(out, blockMap.getBlockNeighbor(out) | 0b1000);
         }
-        if (blockMap.isWithinBounds(pos.left(out))
+        if (blockMap.isWithinBounds(blockPos.left(out))
             && blockMap.getBlockId(out) === blockId)
         {
             neighbor |= 0b0100;
-            out.neighbor |= 0b0001;
+            blockMap.setBlockNeighbor(out, blockMap.getBlockNeighbor(out) | 0b0001);
         }
-        if (blockMap.isWithinBounds(pos.down(out))
+        if (blockMap.isWithinBounds(blockPos.down(out))
             && blockMap.getBlockId(out) === blockId)
         {
             neighbor |= 0b1000;
-            out.neighbor |= 0b0010;
+            blockMap.setBlockNeighbor(out, blockMap.getBlockNeighbor(out) | 0b0010);
         }
-        blockMap.neighbor[i] = neighbor;
+        blockMap.setBlockNeighbor(blockPos, neighbor);
     },
     onBlockBreak(blockMap, blockPos, block, blockId)
     {
-        const { x, y, index: i } = blockPos;
-        let pos = blockMap.at(x, y);
+        let pos = blockPos;
         let out = pos.copy();
         if (blockMap.isWithinBounds(pos.right(out))
             && blockMap.getBlockId(out) === blockId)
         {
-            out.neighbor &= 0b1011;
+            blockMap.setBlockNeighbor(out, blockMap.getBlockNeighbor(out) & 0b1011);
         }
         if (blockMap.isWithinBounds(pos.up(out))
             && blockMap.getBlockId(out) === blockId)
         {
-            out.neighbor &= 0x0111;
+            blockMap.setBlockNeighbor(out, blockMap.getBlockNeighbor(out) & 0b0111);
         }
         if (blockMap.isWithinBounds(pos.left(out))
             && blockMap.getBlockId(out) === blockId)
         {
-            out.neighbor &= 0b1110;
+            blockMap.setBlockNeighbor(out, blockMap.getBlockNeighbor(out) & 0b1110);
         }
         if (blockMap.isWithinBounds(pos.down(out))
             && blockMap.getBlockId(out) === blockId)
         {
-            out.neighbor &= 0b1101;
+            blockMap.setBlockNeighbor(out, blockMap.getBlockNeighbor(out) & 0b1101);
         }
-        blockMap.neighbor[i] = 0;
+        blockMap.setBlockNeighbor(blockPos, 0);
     }
 };

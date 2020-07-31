@@ -110,18 +110,6 @@ export class BlockPos
         this.x = x;
         this.y = y;
     }
-
-    /** @deprecated */
-    get block() { return this.blockMap.block[this.index]; }
-    /** @deprecated */
-    set block(value) { this.blockMap.block[this.index] = value; }
-
-    get blockId() { return this.blockMap.block[this.index]; }
-    set blockId(value) { this.blockMap.block[this.index] = value; }
-    get meta() { return this.blockMap.meta[this.index]; }
-    set meta(value) { this.blockMap.meta[this.index] = value; }
-    get neighbor() { return this.blockMap.neighbor[this.index]; }
-    set neighbor(value) { this.blockMap.neighbor[this.index] = value; }
     
     get index() { return this.x + this.y * this.blockMap.width; }
     set index(value)
