@@ -4,14 +4,15 @@ export async function load() {}
 
 export function drawBlockMap(ctx, blockMap, blockSize)
 {
+    let blockPos = blockMap.at(0, 0);
     const blockMapWidth = blockMap.width;
     const blockMapHeight = blockMap.height;
     for(let y = 0; y < blockMapHeight; ++y)
     {
         for(let x = 0; x < blockMapWidth; ++x)
         {
-            let i = x + y * blockMapWidth;
-            BlockRenderer.drawBlock(ctx, blockMap, x, y, i, blockSize);
+            blockPos.set(x, y);
+            BlockRenderer.drawBlock(ctx, blockMap, blockPos, blockSize);
         }
     }
     ctx.strokeStyle = 'white';

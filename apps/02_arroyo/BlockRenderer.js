@@ -8,42 +8,43 @@ export async function load()
     assets.meteorite = await AssetLoader.loadAsset('image:sprite/meteorite.png', {}, '../../res');
 }
 
-export function drawBlock(ctx, blockMap, x, y, i, blockSize)
+export function drawBlock(ctx, blockMap, blockPos, blockSize)
 {
-    let blockPos = blockMap.at(x, y);
-    let block = blockMap.getBlockId(blockPos);
-    if (!Blocks.isBlockAir(block))
+    let blockId = blockMap.getBlockId(blockPos);
+    if (!Blocks.isBlockAir(blockId))
     {
-        if (Blocks.isBlockFluid(block))
+        if (Blocks.isBlockFluid(blockId))
         {
-            drawBlockFluid(ctx, blockMap, blockPos, block, blockSize);
+            drawBlockFluid(ctx, blockMap, blockPos, blockSize);
         }
         else
         {
-            drawBlockSolid(ctx, blockMap, blockPos, block, blockSize);
+            drawBlockSolid(ctx, blockMap, blockPos, blockSize);
         }
     }
 }
 
-function drawBlockFluid(ctx, blockMap, blockPos, block, blockSize)
+function drawBlockFluid(ctx, blockMap, blockPos, blockSize)
 {
     const { x, y } = blockPos;
-    let meta = blockMap.getBlockMeta(blockPos);
-    let fluidRatio = meta / BlockFluid.MAX_FLUID_LEVELS;
-    let color = Blocks.getBlockColor(block);
+    let blockId = blockMap.getBlockId(blockPos);
+    let blockMeta = blockMap.getBlockMeta(blockPos);
+    let fluidRatio = blockMeta / BlockFluid.MAX_FLUID_LEVELS;
+    let color = Blocks.getBlockColor(blockId);
     ctx.fillStyle = color;
     ctx.fillRect(x * blockSize, y * blockSize + (1 - fluidRatio) * blockSize, blockSize, blockSize * fluidRatio);
 }
 
-function drawBlockSolid(ctx, blockMap, blockPos, block, blockSize)
+function drawBlockSolid(ctx, blockMap, blockPos, blockSize)
 {
     const { x, y } = blockPos;
-    let color = Blocks.getBlockColor(block);
+    let blockId = blockMap.getBlockId(blockPos);
+    let color = Blocks.getBlockColor(blockId);
     ctx.fillStyle = color;
     ctx.fillRect(x * blockSize, y * blockSize, blockSize, blockSize);
 }
 
-function drawBlockNeighbor(ctx, blockMap, blockPos, block, blockSize)
+function drawBlockNeighbor(ctx, blockMap, blockPos, blockSize)
 {
     const { x, y } = blockPos;
     let neighbor = blockMap.getBlockNeighbor(blockPos);

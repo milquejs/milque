@@ -83,7 +83,7 @@ export const NeighborBehavior = {
     onBlockPlace(blockMap, blockPos, block, blockId)
     {
         let neighbor = 0b000;
-        let out = blockPos.copy();
+        let out = blockPos.clone();
         if (blockMap.isWithinBounds(blockPos.right(out))
             && blockMap.getBlockId(out) === blockId)
         {
@@ -112,24 +112,23 @@ export const NeighborBehavior = {
     },
     onBlockBreak(blockMap, blockPos, block, blockId)
     {
-        let pos = blockPos;
-        let out = pos.copy();
-        if (blockMap.isWithinBounds(pos.right(out))
+        let out = blockPos.clone();
+        if (blockMap.isWithinBounds(blockPos.right(out))
             && blockMap.getBlockId(out) === blockId)
         {
             blockMap.setBlockNeighbor(out, blockMap.getBlockNeighbor(out) & 0b1011);
         }
-        if (blockMap.isWithinBounds(pos.up(out))
+        if (blockMap.isWithinBounds(blockPos.up(out))
             && blockMap.getBlockId(out) === blockId)
         {
             blockMap.setBlockNeighbor(out, blockMap.getBlockNeighbor(out) & 0b0111);
         }
-        if (blockMap.isWithinBounds(pos.left(out))
+        if (blockMap.isWithinBounds(blockPos.left(out))
             && blockMap.getBlockId(out) === blockId)
         {
             blockMap.setBlockNeighbor(out, blockMap.getBlockNeighbor(out) & 0b1110);
         }
-        if (blockMap.isWithinBounds(pos.down(out))
+        if (blockMap.isWithinBounds(blockPos.down(out))
             && blockMap.getBlockId(out) === blockId)
         {
             blockMap.setBlockNeighbor(out, blockMap.getBlockNeighbor(out) & 0b1101);
