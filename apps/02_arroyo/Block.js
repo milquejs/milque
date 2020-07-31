@@ -69,7 +69,7 @@ export class BlockFluid extends Block
     /** @override */
     onBlockPlace(blockMap, blockPos)
     {
-        blockMap.meta[blockPos.index] = BlockFluid.MAX_FLUID_LEVELS;
+        blockMap.setBlockMeta(blockPos, BlockFluid.MAX_FLUID_LEVELS);
     }
 
     /** @override */
@@ -86,22 +86,26 @@ export const NeighborBehavior = {
         let neighbor = 0b000;
         let pos = blockMap.at(x, y);
         let out = pos.copy();
-        if (pos.right(out) && out.block === blockId)
+        if (blockMap.isWithinBounds(pos.right(out))
+            && blockMap.getBlockId(out) === blockId)
         {
             neighbor |= 0b0001;
             out.neighbor |= 0b0100;
         }
-        if (pos.up(out) && out.block === blockId)
+        if (blockMap.isWithinBounds(pos.up(out))
+            && blockMap.getBlockId(out) === blockId)
         {
             neighbor |= 0b0010;
             out.neighbor |= 0b1000;
         }
-        if (pos.left(out) && out.block === blockId)
+        if (blockMap.isWithinBounds(pos.left(out))
+            && blockMap.getBlockId(out) === blockId)
         {
             neighbor |= 0b0100;
             out.neighbor |= 0b0001;
         }
-        if (pos.down(out) && out.block === blockId)
+        if (blockMap.isWithinBounds(pos.down(out))
+            && blockMap.getBlockId(out) === blockId)
         {
             neighbor |= 0b1000;
             out.neighbor |= 0b0010;
@@ -113,19 +117,23 @@ export const NeighborBehavior = {
         const { x, y, index: i } = blockPos;
         let pos = blockMap.at(x, y);
         let out = pos.copy();
-        if (pos.right(out) && out.block === blockId)
+        if (blockMap.isWithinBounds(pos.right(out))
+            && blockMap.getBlockId(out) === blockId)
         {
             out.neighbor &= 0b1011;
         }
-        if (pos.up(out) && out.block === blockId)
+        if (blockMap.isWithinBounds(pos.up(out))
+            && blockMap.getBlockId(out) === blockId)
         {
             out.neighbor &= 0x0111;
         }
-        if (pos.left(out) && out.block === blockId)
+        if (blockMap.isWithinBounds(pos.left(out))
+            && blockMap.getBlockId(out) === blockId)
         {
             out.neighbor &= 0b1110;
         }
-        if (pos.down(out) && out.block === blockId)
+        if (blockMap.isWithinBounds(pos.down(out))
+            && blockMap.getBlockId(out) === blockId)
         {
             out.neighbor &= 0b1101;
         }

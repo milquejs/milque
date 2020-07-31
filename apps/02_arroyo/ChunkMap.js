@@ -24,34 +24,6 @@ export class ChunkMap
         this.chunks = {};
     }
 
-    placeBlock(x, y, block)
-    {
-        let pos = this.at(x, y);
-        if (!(block instanceof BlockFluid))
-        {
-            let prevBlockId = pos.blockId;
-            let prevBlock = Block.getBlock(prevBlockId);
-            prevBlock.onBlockBreak(this, pos);
-        }
-        else
-        {
-            let prevBlockId = pos.blockId;
-            let prevBlock = Block.getBlock(prevBlockId);
-            if (!(prevBlock instanceof BlockAir))
-            {
-                return this;
-            }
-        }
-        pos.blockId = block.blockId;
-        block.onBlockPlace(this, pos);
-        return this;
-    }
-
-    at(x, y)
-    {
-        return new BlockPos(this, x, y);
-    }
-
     getChunkById(chunkId)
     {
         if (chunkId in this.chunks)

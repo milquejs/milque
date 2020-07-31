@@ -20,46 +20,86 @@ export class BlockMap
     placeBlock(x, y, block)
     {
         let pos = this.at(x, y);
-        let i = x + y * this.width;
         if (!(block instanceof BlockFluid))
         {
-            let prevBlockId = this.block[i];
+            let prevBlockId = this.getBlockId(pos);
             let prevBlock = Block.getBlock(prevBlockId);
             prevBlock.onBlockBreak(this, pos);
         }
         else
         {
-            let prevBlockId = this.block[i];
+            let prevBlockId = this.getBlockId(pos);
             let prevBlock = Block.getBlock(prevBlockId);
             if (!(prevBlock instanceof BlockAir))
             {
                 return this;
             }
         }
-        this.block[i] = block.blockId;
+        this.setBlockId(pos, block.blockId);
         block.onBlockPlace(this, pos);
         return this;
     }
 
-    blockAt(x, y)
+    isWithinBounds(blockPos)
     {
-        return this.block[x + y * this.width];
+        if (!blockPos) return false;
+        const { x, y } = blockPos;
+        return (x <= this.width)
+            && (x > 0)
+            && (y <= this.height)
+            && (y > 0);
     }
 
-    metaAt(x, y)
+    getBlockId(blockPos)
     {
-        return this.meta[x + y * this.width];
+        return this.block[blockPos.index];
     }
 
-    neighborAt(x, y)
+    getBlockMeta(blockPos)
     {
-        return this.neighbor[x + y * this.width];
+        return this.meta[blockPos.index];
+    }
+
+    getBlockNeighbor(blockPos)
+    {
+        return this.neighbor[blockPos.index];
+    }
+
+    setBlockId(blockPos, value)
+    {
+        this.block[blockPos.index] = value;
+        return this;
+    }
+    
+    setBlockMeta(blockPos, value)
+    {
+        this.meta[blockPos.index] = value;
+        return this;
+    }
+
+    setBlockNeighbor(blockPos, value)
+    {
+        this.neighbor[blockPos.index] = value;
+        return this;
     }
 
     at(x, y)
     {
         return new BlockPos(this, x, y);
     }
+}
+
+export class BlockPosReadOnly
+{
+    constructor(blockMap, x, y)
+    {
+        this.blockMap = blockMap;
+        this._x = x;
+        this._y = y;
+    }
+
+    get x() { return this._x; }
+    get y() { return this._y; }
 }
 
 export class BlockPos
@@ -82,6 +122,7 @@ export class BlockPos
     set meta(value) { this.blockMap.meta[this.index] = value; }
     get neighbor() { return this.blockMap.neighbor[this.index]; }
     set neighbor(value) { this.blockMap.neighbor[this.index] = value; }
+    
     get index() { return this.x + this.y * this.blockMap.width; }
     set index(value)
     {
@@ -99,6 +140,33 @@ export class BlockPos
         this.x = x;
         this.y = y;
         return this;
+    }
+
+    offset(out, dx = 0, dy = 0)
+    {
+        let x = this.x + dx;
+        if (x > this.blockMap.width)
+        {
+            return null;
+        }
+        else if (x <= 0)
+        {
+            return null;
+        }
+
+        let y = this.y + dy;
+        if (y > this.blockMap.height)
+        {
+            return null;
+        }
+        else if (y <= 0)
+        {
+            return null;
+        }
+
+        out.x = x;
+        out.y = y;
+        return out;
     }
 
     down(out = this, offset = 1)

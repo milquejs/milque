@@ -1,5 +1,5 @@
 import { Random } from './lib.js';
-import { BlockMap } from './BlockMap.js';
+import { BlockMap, BlockPos } from './BlockMap.js';
 import { Block, BlockAir, BlockFluid } from './Block.js';
 import * as Tetrominoes from './Tetrominoes.js';
 import * as Blocks from './Blocks.js';
@@ -108,6 +108,8 @@ function intersectBlock(blockShape, blockX, blockY, blockMap)
     const { w, h, m } = blockShape;
     if (blockX + w > blockMapWidth) return true;
     if (blockY + h > blockMapHeight) return true;
+
+    let blockPos = blockMap.at(0, 0);
     for(let y = 0; y < h; ++y)
     {
         for(let x = 0; x < w; ++x)
@@ -115,12 +117,12 @@ function intersectBlock(blockShape, blockX, blockY, blockMap)
             let i = x + y * w;
             if (m[i])
             {
-                let bi = (x + blockX) + (y + blockY) * blockMapWidth;
-                let blockId = blockMap.block[bi];
+                blockPos.set(x + blockX, y + blockY);
+                let blockId = blockMap.getBlockId(blockPos);
                 let block = Block.getBlock(blockId);
                 if (block instanceof BlockFluid)
                 {
-                    if (blockMap.meta[bi] >= BlockFluid.MAX_FLUID_LEVELS)
+                    if (blockMap.getBlockMeta(blockPos) >= BlockFluid.MAX_FLUID_LEVELS)
                     {
                         return true;
                     }
@@ -138,14 +140,16 @@ function intersectBlock(blockShape, blockX, blockY, blockMap)
 function canPlaceBlockShape(blockValue, blockShape, blockX, blockY, blockMap)
 {
     if (Blocks.isBlockFluid(blockValue)) return true;
-
+    
+    let blockPos = blockMap.at(blockX, blockY);
     const { w, h, m } = blockShape;
     for(let y = 0; y < h; ++y)
     {
         for(let x = 0; x < w; ++x)
         {
+            blockPos.set(x + blockX, y + blockY);
             let i = x + y * w;
-            if (m[i] && blockMap.neighborAt(x + blockX, y + blockY) !== 0b1111)
+            if (m[i] && blockMap.getBlockNeighbor(blockPos) !== 0b1111)
             {
                 return true;
             }
