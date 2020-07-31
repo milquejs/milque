@@ -8,34 +8,20 @@ export async function load()
     assets.meteorite = await AssetLoader.loadAsset('image:sprite/meteorite.png', {}, '../../res');
 }
 
-export function drawBlockMap(ctx, blockMap, blockSize)
+export function drawBlock(ctx, blockMap, x, y, i, blockSize)
 {
-    const blockMapWidth = blockMap.width;
-    const blockMapHeight = blockMap.height;
-    for(let y = 0; y < blockMapHeight; ++y)
+    let block = blockMap.data[i];
+    if (!Blocks.isBlockAir(block))
     {
-        for(let x = 0; x < blockMapWidth; ++x)
+        if (Blocks.isBlockFluid(block))
         {
-            let i = x + y * blockMapWidth;
-            let block = blockMap.data[i];
-            if (!Blocks.isBlockAir(block))
-            {
-                if (Blocks.isBlockFluid(block))
-                {
-                    drawBlockFluid(ctx, blockMap, x, y, i, block, blockSize);
-                }
-                else
-                {
-                    drawBlockSolid(ctx, blockMap, x, y, i, block, blockSize);
-                }
-            }
+            drawBlockFluid(ctx, blockMap, x, y, i, block, blockSize);
+        }
+        else
+        {
+            drawBlockSolid(ctx, blockMap, x, y, i, block, blockSize);
         }
     }
-}
-
-export function drawPlacement(ctx, placementState, blockSize)
-{
-    drawBlockMap(ctx, placementState.shapeMap, blockSize);
 }
 
 export function drawBlockFluid(ctx, blockMap, x, y, i, block, blockSize)

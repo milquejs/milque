@@ -1,4 +1,4 @@
-import { CanvasView, Camera2D, Random } from './lib.js';
+import { CanvasView, Camera2D, Random } from '../lib.js';
 
 document.addEventListener('DOMContentLoaded', main);
 

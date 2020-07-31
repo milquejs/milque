@@ -3,7 +3,7 @@ import { BlockMap } from './BlockMap.js';
 import * as Blocks from './Blocks.js';
 import * as Fluids from './Fluids.js';
 import * as Placement from './Placement.js';
-import * as BlockRenderer from './BlockRenderer.js';
+import * as BlockMapRenderer from './BlockMapRenderer.js';
 
 // TODO: Move the camera towards the placed block each time.
 // TODO: Regionize the block maps.
@@ -29,7 +29,7 @@ async function main()
     const ctx = display.canvas.getContext('2d');
     ctx.imageSmoothingEnabled = false;
 
-    await BlockRenderer.load();
+    await BlockMapRenderer.load();
 
     const view = new CanvasView();
     const camera = new Camera2D();
@@ -84,13 +84,13 @@ async function main()
 
         view.begin(ctx, viewMatrix, projectionMatrix);
         {
-            BlockRenderer.drawBlockMap(ctx, blockMap, blockSize);
+            BlockMapRenderer.drawBlockMap(ctx, blockMap, blockSize);
 
             if (placement.placing)
             {
                 ctx.fillStyle = Blocks.getBlockColor(placement.value);
                 ctx.translate(placement.placeX * blockSize, placement.placeY * blockSize);
-                BlockRenderer.drawPlacement(ctx, placement, blockSize);
+                BlockMapRenderer.drawPlacement(ctx, placement, blockSize);
                 ctx.translate(-placement.placeX * blockSize, -placement.placeY * blockSize);
             }
         }
