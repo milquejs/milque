@@ -32,15 +32,15 @@ function updateBlock(blockMap, blockPos)
             flag &= !blockMap.isWithinBounds(pos.down())
                 || (!Blocks.isBlockAir(blockMap.getBlockId(pos))
                     && !Blocks.isBlockFluid(blockMap.getBlockId(pos)));
-            pos.set(blockPos.x, blockPos.y);
+            pos.reset(blockPos);
             flag &= !blockMap.isWithinBounds(pos.left())
                 || (!Blocks.isBlockAir(blockMap.getBlockId(pos))
                     && !Blocks.isBlockFluid(blockMap.getBlockId(pos)));
-            pos.set(blockPos.x, blockPos.y);
+            pos.reset(blockPos);
             flag &= !blockMap.isWithinBounds(pos.right())
                 || (!Blocks.isBlockAir(blockMap.getBlockId(pos))
                     && !Blocks.isBlockFluid(blockMap.getBlockId(pos)));
-            pos.set(blockPos.x, blockPos.y);
+            pos.reset(blockPos);
 
             if (flag)
             {

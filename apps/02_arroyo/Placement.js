@@ -1,5 +1,5 @@
 import { Random } from './lib.js';
-import { BlockMap, BlockPos } from './BlockMap.js';
+import { BlockMap } from './BlockMap.js';
 import { Block, BlockAir, BlockFluid } from './Block.js';
 import * as Tetrominoes from './Tetrominoes.js';
 import * as Blocks from './Blocks.js';
