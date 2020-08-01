@@ -87,25 +87,13 @@ async function main()
 
         function onReset(placeState, blockMap)
         {
-            // Find reset places
-            const topLeft = Camera2D.screenToWorld(0, 0, viewMatrix, projectionMatrix);
-            const bottomLeft = Camera2D.screenToWorld(0, display.height, viewMatrix, projectionMatrix);
-            const topRight = Camera2D.screenToWorld(display.width, 0, viewMatrix, projectionMatrix);
-            const bottomRight = Camera2D.screenToWorld(display.width, display.height, viewMatrix, projectionMatrix);
-            const resetPlaces = [
-                [Math.floor(topLeft[0] / blockSize), Math.floor(topLeft[1] / blockSize)],
-                [Math.floor(bottomLeft[0] / blockSize), Math.floor(bottomLeft[1] / blockSize)],
-                [Math.floor(topRight[0] / blockSize), Math.floor(topRight[1] / blockSize)],
-                [Math.floor(bottomRight[0] / blockSize), Math.floor(bottomRight[1] / blockSize)],
-            ];
-
-            let isLessCursorX = CursorX.value <= 0.5;
-            let isLessCursorY = CursorY.value <= 0.5;
-            let quadrant = (isLessCursorX ? 0 : 1) * 2 + (isLessCursorY ? 0 : 1);
-            
-            let resetPlace = resetPlaces[quadrant];
-            placeState.placeX = resetPlace[0];
-            placeState.placeY = resetPlace[1];
+            let [resetPlaceX, resetPlaceY] = getPlacementSpawnPosition(
+                CursorX.value, CursorY.value, blockSize,
+                display.width, display.height,
+                viewMatrix, projectionMatrix
+            );
+            placeState.placeX = resetPlaceX;
+            placeState.placeY = resetPlaceY;
         }
 
         Placement.update(dt, placement, Place, Rotate, blockMap, nextPlaceX, nextPlaceY, onPlace, onReset);
@@ -141,4 +129,63 @@ async function main()
         }
         view.end(ctx);
     });
+}
+
+function getPlacementSpawnPosition(
+    cursorX, cursorY, blockSize,
+    displayWidth, displayHeight,
+    viewMatrix, projectionMatrix)
+{
+    let resultX = 0;
+    let resultY = 0;
+    
+    const quadIndex = (cursorX <= 0.5 ? 0 : 2) + (cursorY <= 0.5 ? 0 : 1);
+    switch(quadIndex)
+    {
+        case 0: // TopLeft
+        {
+            let corner = Camera2D.screenToWorld(
+                0, 0,
+                viewMatrix, projectionMatrix
+            );
+            resultX = corner[0];
+            resultY = corner[1];
+        }
+        break;
+        case 1: // BottomLeft
+        {
+            let corner = Camera2D.screenToWorld(
+                0, displayHeight,
+                viewMatrix, projectionMatrix
+            );
+            resultX = corner[0];
+            resultY = corner[1];
+        }
+        break;
+        case 2: // TopRight
+        {
+            let corner = Camera2D.screenToWorld(
+                displayWidth, 0,
+                viewMatrix, projectionMatrix
+            );
+            resultX = corner[0];
+            resultY = corner[1];
+        }
+        break;
+        case 3: // BottomRight
+        {
+            let corner = Camera2D.screenToWorld(
+                displayWidth, displayHeight,
+                viewMatrix, projectionMatrix
+            );
+            resultX = corner[0];
+            resultY = corner[1];
+        }
+        break;
+    }
+
+    return [
+        Math.floor(resultX / blockSize),
+        Math.floor(resultY / blockSize)
+    ];
 }
