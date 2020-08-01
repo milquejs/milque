@@ -7,13 +7,7 @@ export class BlockMap
     {
         this.chunkWidth = width;
         this.chunkHeight = height;
-        
-        const length = width * height;
-        this.data = {
-            block: new Uint8Array(length).fill(0),
-            meta: new Uint8Array(length).fill(0),
-            neighbor: new Uint8Array(length).fill(0b1111),
-        };
+        this.data = new ChunkData(width, height);
     }
 
     placeBlock(x, y, block)
@@ -85,5 +79,16 @@ export class BlockMap
     at(x, y)
     {
         return new BlockPos(this).set(x, y);
+    }
+}
+
+export class ChunkData
+{
+    constructor(chunkWidth, chunkHeight)
+    {
+        const length = chunkWidth * chunkHeight;
+        this.block = new Uint8Array(length).fill(0);
+        this.meta = new Uint8Array(length).fill(0);
+        this.neighbor = new Uint8Array(length).fill(0b1111);
     }
 }

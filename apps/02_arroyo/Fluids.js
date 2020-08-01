@@ -2,9 +2,9 @@ import { Random } from './lib.js';
 import { BlockFluid } from './Block.js';
 import * as Blocks from './Blocks.js';
 
-export function updateChunkMap(chunkMap)
+export function updateChunkMap(world)
 {
-    let sortedChunks = chunkMap.getLoadedChunks().sort((a, b) => {
+    let sortedChunks = world.getLoadedChunks().sort((a, b) => {
         if (a.chunkCoordY < b.chunkCoordY)
         {
             return 1;
@@ -29,56 +29,56 @@ export function updateChunkMap(chunkMap)
     
     for(let chunk of sortedChunks)
     {
-        update(chunkMap, chunk);
+        update(world, chunk);
     }
 }
 
-export function update(chunkMap, chunk)
+export function update(world, chunk)
 {
-    let blockPos = chunkMap.at(0, 0);
-    const chunkX = chunk.chunkCoordX * chunkMap.chunkWidth;
-    const chunkY = chunk.chunkCoordY * chunkMap.chunkHeight;
+    let blockPos = world.at(0, 0);
+    const chunkX = chunk.chunkCoordX * world.chunkWidth;
+    const chunkY = chunk.chunkCoordY * world.chunkHeight;
     // Do water physics.
-    for(let y = chunkMap.chunkHeight - 1; y >= 0; --y)
+    for(let y = world.chunkHeight - 1; y >= 0; --y)
     {
-        for(let x = 0; x < chunkMap.chunkWidth; ++x)
+        for(let x = 0; x < world.chunkWidth; ++x)
         {
             blockPos.set(x + chunkX, y + chunkY);
-            let blockId = chunkMap.getBlockId(blockPos);
+            let blockId = world.getBlockId(blockPos);
             if (Blocks.isBlockFluid(blockId))
             {
-                updateBlock(chunkMap, blockPos);
+                updateBlock(world, blockPos);
             }
         }
     }
 }
 
-function updateBlock(chunkMap, blockPos)
+function updateBlock(world, blockPos)
 {
-    if (!tryFlowWaterDown(chunkMap, blockPos) && !tryFlowWaterSide(chunkMap, blockPos))
+    if (!tryFlowWaterDown(world, blockPos) && !tryFlowWaterSide(world, blockPos))
     {
         /*
         // Is it stable? Probably not.
-        if (blockMap.getBlockMeta(blockPos) >= BlockFluid.MAX_FLUID_LEVELS)
+        if (world.getBlockMeta(blockPos) >= BlockFluid.MAX_FLUID_LEVELS)
         {
             let pos = blockPos.copy();
             let flag = true;
-            flag &= !blockMap.isWithinBounds(pos.down())
-                || (!Blocks.isBlockAir(blockMap.getBlockId(pos))
-                    && !Blocks.isBlockFluid(blockMap.getBlockId(pos)));
+            flag &= !world.isWithinBounds(pos.down())
+                || (!Blocks.isBlockAir(world.getBlockId(pos))
+                    && !Blocks.isBlockFluid(world.getBlockId(pos)));
             pos.reset(blockPos);
-            flag &= !blockMap.isWithinBounds(pos.left())
-                || (!Blocks.isBlockAir(blockMap.getBlockId(pos))
-                    && !Blocks.isBlockFluid(blockMap.getBlockId(pos)));
+            flag &= !world.isWithinBounds(pos.left())
+                || (!Blocks.isBlockAir(world.getBlockId(pos))
+                    && !Blocks.isBlockFluid(world.getBlockId(pos)));
             pos.reset(blockPos);
-            flag &= !blockMap.isWithinBounds(pos.right())
-                || (!Blocks.isBlockAir(blockMap.getBlockId(pos))
-                    && !Blocks.isBlockFluid(blockMap.getBlockId(pos)));
+            flag &= !world.isWithinBounds(pos.right())
+                || (!Blocks.isBlockAir(world.getBlockId(pos))
+                    && !Blocks.isBlockFluid(world.getBlockId(pos)));
             pos.reset(blockPos);
 
             if (flag)
             {
-                blockMap.setBlockId(blockPos, 2)
+                world.setBlockId(blockPos, 2)
                     .setBlockMeta(blockPos, 0);
             }
         }
@@ -86,40 +86,40 @@ function updateBlock(chunkMap, blockPos)
     }
 }
 
-function tryFlowWaterDown(chunkMap, blockPos)
+function tryFlowWaterDown(world, blockPos)
 {
     let toBlockPos = blockPos.copy().down();
-    return flowWater(chunkMap, blockPos, toBlockPos, BlockFluid.MAX_FLUID_LEVELS);
+    return flowWater(world, blockPos, toBlockPos, BlockFluid.MAX_FLUID_LEVELS);
 }
 
-function tryFlowWaterSide(chunkMap, blockPos)
+function tryFlowWaterSide(world, blockPos)
 {
     let flag = false;
-    let meta = chunkMap.getBlockMeta(blockPos);
+    let meta = world.getBlockMeta(blockPos);
     let toBlockPos = blockPos.copy();
     if (meta <= 1)
     {
         blockPos.offset(toBlockPos, 1 * Random.sign(), 0);
-        flag |= flowWater(chunkMap, blockPos, toBlockPos, 1, false);
+        flag |= flowWater(world, blockPos, toBlockPos, 1, false);
     }
     else
     {
         blockPos.offset(toBlockPos, 1 * Random.sign(), 0);
-        flag |= flowWater(chunkMap, blockPos, toBlockPos, 1, false);
+        flag |= flowWater(world, blockPos, toBlockPos, 1, false);
         blockPos.offset(toBlockPos, 1 * Random.sign(), 0);
-        flag |= flowWater(chunkMap, blockPos, toBlockPos, 1, false);
+        flag |= flowWater(world, blockPos, toBlockPos, 1, false);
     }
     return flag;
 }
 
-function flowWater(chunkMap, fromBlockPos, toBlockPos, amount, allowBackflow = true)
+function flowWater(world, fromBlockPos, toBlockPos, amount, allowBackflow = true)
 {
-    if (chunkMap.isWithinBounds(toBlockPos) && chunkMap.isWithinLoaded(toBlockPos))
+    if (world.isWithinBounds(toBlockPos) && world.isWithinLoaded(toBlockPos))
     {
-        let fromBlock = chunkMap.getBlockId(fromBlockPos);
-        let fromMeta = chunkMap.getBlockMeta(fromBlockPos);
-        let toBlock = chunkMap.getBlockId(toBlockPos);
-        let toMeta = chunkMap.getBlockMeta(toBlockPos);
+        let fromBlock = world.getBlockId(fromBlockPos);
+        let fromMeta = world.getBlockMeta(fromBlockPos);
+        let toBlock = world.getBlockId(toBlockPos);
+        let toMeta = world.getBlockMeta(toBlockPos);
 
         if (amount > fromMeta) amount = fromMeta;
 
@@ -128,17 +128,17 @@ function flowWater(chunkMap, fromBlockPos, toBlockPos, amount, allowBackflow = t
             let remainder = fromMeta - amount;
             if (remainder <= 0)
             {
-                chunkMap.setBlockId(toBlockPos, fromBlock)
+                world.setBlockId(toBlockPos, fromBlock)
                     .setBlockMeta(toBlockPos, fromMeta);
-                chunkMap.setBlockId(fromBlockPos, 0)
+                world.setBlockId(fromBlockPos, 0)
                     .setBlockMeta(fromBlockPos, 0);
                 return true;
             }
             else
             {
-                chunkMap.setBlockId(toBlockPos, fromBlock)
+                world.setBlockId(toBlockPos, fromBlock)
                     .setBlockMeta(toBlockPos, amount);
-                chunkMap.setBlockMeta(fromBlockPos, remainder);
+                world.setBlockMeta(fromBlockPos, remainder);
                 return true;
             }
         }
@@ -148,25 +148,25 @@ function flowWater(chunkMap, fromBlockPos, toBlockPos, amount, allowBackflow = t
             
             if (toMeta + amount <= BlockFluid.MAX_FLUID_LEVELS)
             {
-                chunkMap.setBlockMeta(toBlockPos, toMeta + amount);
+                world.setBlockMeta(toBlockPos, toMeta + amount);
 
                 if (amount >= fromMeta)
                 {
-                    chunkMap.setBlockId(fromBlockPos, 0)
+                    world.setBlockId(fromBlockPos, 0)
                         .setBlockMeta(fromBlockPos, 0);
                 }
                 else
                 {
-                    chunkMap.setBlockMeta(fromBlockPos, fromMeta - amount);
+                    world.setBlockMeta(fromBlockPos, fromMeta - amount);
                 }
                 return true;
             }
             else
             {
-                chunkMap.setBlockMeta(toBlockPos, BlockFluid.MAX_FLUID_LEVELS);
+                world.setBlockMeta(toBlockPos, BlockFluid.MAX_FLUID_LEVELS);
 
                 let remainder = amount - (BlockFluid.MAX_FLUID_LEVELS - toMeta);
-                chunkMap.setBlockMeta(fromBlockPos, remainder);
+                world.setBlockMeta(fromBlockPos, remainder);
                 return true;
             }
         }

@@ -32,14 +32,14 @@ export class Block
         this.blockColor = blockColor;
     }
 
-    onBlockPlace(blockMap, blockPos)
+    onBlockPlace(world, blockPos)
     {
-        NeighborBehavior.onBlockPlace(blockMap, blockPos, this, this.blockId);
+        NeighborBehavior.onBlockPlace(world, blockPos, this, this.blockId);
     }
 
-    onBlockBreak(blockMap, blockPos)
+    onBlockBreak(world, blockPos)
     {
-        NeighborBehavior.onBlockBreak(blockMap, blockPos, this, this.blockId);
+        NeighborBehavior.onBlockBreak(world, blockPos, this, this.blockId);
     }
 
     /** @override */
@@ -67,72 +67,72 @@ export class BlockFluid extends Block
     }
 
     /** @override */
-    onBlockPlace(blockMap, blockPos)
+    onBlockPlace(world, blockPos)
     {
-        blockMap.setBlockMeta(blockPos, BlockFluid.MAX_FLUID_LEVELS);
+        world.setBlockMeta(blockPos, BlockFluid.MAX_FLUID_LEVELS);
     }
 
     /** @override */
-    onBlockBreak(blockMap, blockPos)
+    onBlockBreak(world, blockPos)
     {
         // Do nothing.
     }
 }
 
 export const NeighborBehavior = {
-    onBlockPlace(blockMap, blockPos, block, blockId)
+    onBlockPlace(world, blockPos, block, blockId)
     {
         let neighbor = 0b000;
         let out = blockPos.clone();
-        if (blockMap.isWithinBounds(blockPos.right(out))
-            && blockMap.getBlockId(out) === blockId)
+        if (world.isWithinBounds(blockPos.right(out))
+            && world.getBlockId(out) === blockId)
         {
             neighbor |= 0b0001;
-            blockMap.setBlockNeighbor(out, blockMap.getBlockNeighbor(out) | 0b0100);
+            world.setBlockNeighbor(out, world.getBlockNeighbor(out) | 0b0100);
         }
-        if (blockMap.isWithinBounds(blockPos.up(out))
-            && blockMap.getBlockId(out) === blockId)
+        if (world.isWithinBounds(blockPos.up(out))
+            && world.getBlockId(out) === blockId)
         {
             neighbor |= 0b0010;
-            blockMap.setBlockNeighbor(out, blockMap.getBlockNeighbor(out) | 0b1000);
+            world.setBlockNeighbor(out, world.getBlockNeighbor(out) | 0b1000);
         }
-        if (blockMap.isWithinBounds(blockPos.left(out))
-            && blockMap.getBlockId(out) === blockId)
+        if (world.isWithinBounds(blockPos.left(out))
+            && world.getBlockId(out) === blockId)
         {
             neighbor |= 0b0100;
-            blockMap.setBlockNeighbor(out, blockMap.getBlockNeighbor(out) | 0b0001);
+            world.setBlockNeighbor(out, world.getBlockNeighbor(out) | 0b0001);
         }
-        if (blockMap.isWithinBounds(blockPos.down(out))
-            && blockMap.getBlockId(out) === blockId)
+        if (world.isWithinBounds(blockPos.down(out))
+            && world.getBlockId(out) === blockId)
         {
             neighbor |= 0b1000;
-            blockMap.setBlockNeighbor(out, blockMap.getBlockNeighbor(out) | 0b0010);
+            world.setBlockNeighbor(out, world.getBlockNeighbor(out) | 0b0010);
         }
-        blockMap.setBlockNeighbor(blockPos, neighbor);
+        world.setBlockNeighbor(blockPos, neighbor);
     },
-    onBlockBreak(blockMap, blockPos, block, blockId)
+    onBlockBreak(world, blockPos, block, blockId)
     {
         let out = blockPos.clone();
-        if (blockMap.isWithinBounds(blockPos.right(out))
-            && blockMap.getBlockId(out) === blockId)
+        if (world.isWithinBounds(blockPos.right(out))
+            && world.getBlockId(out) === blockId)
         {
-            blockMap.setBlockNeighbor(out, blockMap.getBlockNeighbor(out) & 0b1011);
+            world.setBlockNeighbor(out, world.getBlockNeighbor(out) & 0b1011);
         }
-        if (blockMap.isWithinBounds(blockPos.up(out))
-            && blockMap.getBlockId(out) === blockId)
+        if (world.isWithinBounds(blockPos.up(out))
+            && world.getBlockId(out) === blockId)
         {
-            blockMap.setBlockNeighbor(out, blockMap.getBlockNeighbor(out) & 0b0111);
+            world.setBlockNeighbor(out, world.getBlockNeighbor(out) & 0b0111);
         }
-        if (blockMap.isWithinBounds(blockPos.left(out))
-            && blockMap.getBlockId(out) === blockId)
+        if (world.isWithinBounds(blockPos.left(out))
+            && world.getBlockId(out) === blockId)
         {
-            blockMap.setBlockNeighbor(out, blockMap.getBlockNeighbor(out) & 0b1110);
+            world.setBlockNeighbor(out, world.getBlockNeighbor(out) & 0b1110);
         }
-        if (blockMap.isWithinBounds(blockPos.down(out))
-            && blockMap.getBlockId(out) === blockId)
+        if (world.isWithinBounds(blockPos.down(out))
+            && world.getBlockId(out) === blockId)
         {
-            blockMap.setBlockNeighbor(out, blockMap.getBlockNeighbor(out) & 0b1101);
+            world.setBlockNeighbor(out, world.getBlockNeighbor(out) & 0b1101);
         }
-        blockMap.setBlockNeighbor(blockPos, 0);
+        world.setBlockNeighbor(blockPos, 0);
     }
 };

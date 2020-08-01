@@ -1,4 +1,4 @@
-import { Random } from './lib.js';
+import { Random, Camera2D } from './lib.js';
 import { BlockMap } from './BlockMap.js';
 import { Block, BlockAir, BlockFluid } from './Block.js';
 import * as Tetrominoes from './Tetrominoes.js';
@@ -23,27 +23,27 @@ export function initialize()
     };
 }
 
-export function update(dt, state, placeInput, rotateInput, blockMap, cx, cy, onplace, onreset)
+export function update(dt, state, placeInput, rotateInput, world, cx, cy, onplace, onreset)
 {
     // Block placement
     if (state.placing)
     {
         const shape = state.shape;
 
-        const nextPlaceX = Math.min(blockMap.bounds.right - shape.w, Math.max(blockMap.bounds.left, cx - Math.floor((shape.w - 1) / 2)));
-        const nextPlaceY = Math.min(blockMap.bounds.bottom - shape.h, Math.max(blockMap.bounds.top, cy - Math.floor((shape.h - 1) / 2)));
+        const nextPlaceX = Math.min(world.bounds.right - shape.w, Math.max(world.bounds.left, cx - Math.floor((shape.w - 1) / 2)));
+        const nextPlaceY = Math.min(world.bounds.bottom - shape.h, Math.max(world.bounds.top, cy - Math.floor((shape.h - 1) / 2)));
 
         const prevPlaceX = state.placeX;
         if (prevPlaceX < nextPlaceX)
         {
-            if (!intersectBlock(shape, prevPlaceX + 1, state.placeY, blockMap))
+            if (!intersectBlock(shape, prevPlaceX + 1, state.placeY, world))
             {
                 state.placeX += 1;
             }
         }
         else if (prevPlaceX > nextPlaceX)
         {
-            if (!intersectBlock(shape, prevPlaceX - 1, state.placeY, blockMap))
+            if (!intersectBlock(shape, prevPlaceX - 1, state.placeY, world))
             {
                 state.placeX -= 1;
             }
@@ -52,20 +52,20 @@ export function update(dt, state, placeInput, rotateInput, blockMap, cx, cy, onp
         const prevPlaceY = state.placeY;
         if (prevPlaceY < nextPlaceY)
         {
-            if (!intersectBlock(shape, state.placeX, prevPlaceY + 1, blockMap))
+            if (!intersectBlock(shape, state.placeX, prevPlaceY + 1, world))
             {
                 state.placeY += 1;
             }
         }
         else if (prevPlaceY > nextPlaceY)
         {
-            if (!intersectBlock(shape, state.placeX, prevPlaceY - 1, blockMap))
+            if (!intersectBlock(shape, state.placeX, prevPlaceY - 1, world))
             {
                 state.placeY -= 1;
             }
         }
 
-        state.valid = canPlaceBlockShape(state.value, shape, state.placeX, state.placeY, blockMap);
+        state.valid = canPlaceBlockShape(state.value, shape, state.placeX, state.placeY, world);
     }
 
     // Try placing and rotating
@@ -75,11 +75,11 @@ export function update(dt, state, placeInput, rotateInput, blockMap, cx, cy, onp
         {
             if (placeInput.value && state.valid)
             {
-                placeBlockShape(state.value, state.shape, state.placeX, state.placeY, blockMap);
+                placeBlockShape(state.value, state.shape, state.placeX, state.placeY, world);
                 state.placing = false;
                 state.placeTicks = RESPAWN_PLACEMENT_TICKS;
 
-                onplace(state, blockMap);
+                onplace(state, world);
             }
 
             if (rotateInput.value)
@@ -93,7 +93,7 @@ export function update(dt, state, placeInput, rotateInput, blockMap, cx, cy, onp
             state.placing = true;
             state.valid = false;
 
-            onreset(state, blockMap);
+            onreset(state, world);
         }
     }
     else
@@ -102,10 +102,10 @@ export function update(dt, state, placeInput, rotateInput, blockMap, cx, cy, onp
     }
 }
 
-function intersectBlock(blockShape, blockX, blockY, blockMap)
+function intersectBlock(blockShape, blockX, blockY, world)
 {
     const { w, h, m } = blockShape;
-    let blockPos = blockMap.at(0, 0);
+    let blockPos = world.at(0, 0);
     for(let y = 0; y < h; ++y)
     {
         for(let x = 0; x < w; ++x)
@@ -114,16 +114,16 @@ function intersectBlock(blockShape, blockX, blockY, blockMap)
             if (m[i])
             {
                 blockPos.set(x + blockX, y + blockY);
-                if (!blockMap.isWithinLoaded(blockPos))
+                if (!world.isWithinLoaded(blockPos))
                 {
                     continue;
                 }
 
-                let blockId = blockMap.getBlockId(blockPos);
+                let blockId = world.getBlockId(blockPos);
                 let block = Block.getBlock(blockId);
                 if (block instanceof BlockFluid)
                 {
-                    if (blockMap.getBlockMeta(blockPos) >= BlockFluid.MAX_FLUID_LEVELS)
+                    if (world.getBlockMeta(blockPos) >= BlockFluid.MAX_FLUID_LEVELS)
                     {
                         return true;
                     }
@@ -138,11 +138,11 @@ function intersectBlock(blockShape, blockX, blockY, blockMap)
     return false;
 }
 
-function canPlaceBlockShape(blockValue, blockShape, blockX, blockY, blockMap)
+function canPlaceBlockShape(blockValue, blockShape, blockX, blockY, world)
 {
     if (Blocks.isBlockFluid(blockValue)) return true;
     
-    let blockPos = blockMap.at(blockX, blockY);
+    let blockPos = world.at(blockX, blockY);
     const { w, h, m } = blockShape;
     for(let y = 0; y < h; ++y)
     {
@@ -152,11 +152,11 @@ function canPlaceBlockShape(blockValue, blockShape, blockX, blockY, blockMap)
             let i = x + y * w;
             if (m[i])
             {
-                if (!blockMap.isWithinLoaded(blockPos))
+                if (!world.isWithinLoaded(blockPos))
                 {
                     continue;
                 }
-                if (blockMap.getBlockNeighbor(blockPos) !== 0b1111)
+                if (world.getBlockNeighbor(blockPos) !== 0b1111)
                 {
                     return true;
                 }
@@ -166,7 +166,7 @@ function canPlaceBlockShape(blockValue, blockShape, blockX, blockY, blockMap)
     return false;
 }
 
-function placeBlockShape(blockValue, blockShape, blockX, blockY, blockMap)
+function placeBlockShape(blockValue, blockShape, blockX, blockY, world)
 {
     const { w, h, m } = blockShape;
     for(let y = 0; y < h; ++y)
@@ -177,7 +177,7 @@ function placeBlockShape(blockValue, blockShape, blockX, blockY, blockMap)
             if (m[i])
             {
                 let block = Block.getBlock(blockValue);
-                blockMap.placeBlock(x + blockX, y + blockY, block);
+                world.placeBlock(x + blockX, y + blockY, block);
             }
         }
     }
@@ -199,4 +199,63 @@ function randomizePlacement(state)
         }
     }
     placeBlockShape(block, state.shape, 0, 0, state.shapeMap);
+}
+
+export function getPlacementSpawnPosition(
+    cursorX, cursorY, blockSize,
+    displayWidth, displayHeight,
+    viewMatrix, projectionMatrix)
+{
+    let resultX = 0;
+    let resultY = 0;
+    
+    const quadIndex = (cursorX <= 0.5 ? 0 : 2) + (cursorY <= 0.5 ? 0 : 1);
+    switch(quadIndex)
+    {
+        case 0: // TopLeft
+        {
+            let corner = Camera2D.screenToWorld(
+                0, 0,
+                viewMatrix, projectionMatrix
+            );
+            resultX = corner[0];
+            resultY = corner[1];
+        }
+        break;
+        case 1: // BottomLeft
+        {
+            let corner = Camera2D.screenToWorld(
+                0, displayHeight,
+                viewMatrix, projectionMatrix
+            );
+            resultX = corner[0];
+            resultY = corner[1];
+        }
+        break;
+        case 2: // TopRight
+        {
+            let corner = Camera2D.screenToWorld(
+                displayWidth, 0,
+                viewMatrix, projectionMatrix
+            );
+            resultX = corner[0];
+            resultY = corner[1];
+        }
+        break;
+        case 3: // BottomRight
+        {
+            let corner = Camera2D.screenToWorld(
+                displayWidth, displayHeight,
+                viewMatrix, projectionMatrix
+            );
+            resultX = corner[0];
+            resultY = corner[1];
+        }
+        break;
+    }
+
+    return [
+        Math.floor(resultX / blockSize),
+        Math.floor(resultY / blockSize)
+    ];
 }

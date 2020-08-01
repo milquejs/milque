@@ -1,4 +1,4 @@
-import { CanvasView, Camera2D, Random, MathHelper } from './lib.js';
+import { CanvasView, Camera2D, MathHelper } from './lib.js';
 import { ChunkMap } from './ChunkMap.js';
 import * as Blocks from './Blocks.js';
 import * as Fluids from './Fluids.js';
@@ -38,16 +38,25 @@ async function main()
     const camera = new Camera2D();
 
     const blockSize = 4;
-    const blockMap = new ChunkMap();
-    let blockTicks = 0;
+    const world = new ChunkMap();
+
+    let chunkData = localStorage.getItem('chunkData');
+    if (chunkData)
     {
+        // TODO: Load old world
+    }
+    else
+    {
+        // Initialize new world
         let centerX = 0;
         let centerY = 0;
-        blockMap.placeBlock(centerX, centerY, Blocks.STONE);
-        blockMap.placeBlock(centerX - 1, centerY, Blocks.STONE);
-        blockMap.placeBlock(centerX, centerY - 1, Blocks.STONE);
-        blockMap.placeBlock(centerX - 1, centerY - 1, Blocks.STONE);
+        world.placeBlock(centerX, centerY, Blocks.STONE);
+        world.placeBlock(centerX - 1, centerY, Blocks.STONE);
+        world.placeBlock(centerX, centerY - 1, Blocks.STONE);
+        world.placeBlock(centerX - 1, centerY - 1, Blocks.STONE);
     }
+
+    let blockTicks = 0;
 
     const cameraSpeed = 0.1;
     let nextCameraX = -display.width / 2;
@@ -55,6 +64,7 @@ async function main()
     camera.moveTo(nextCameraX, nextCameraY);
 
     let placement = Placement.initialize();
+    let blockCount = 0;
 
     display.addEventListener('frame', e => {
         const dt = e.detail.deltaTime / 1000 * 60;
@@ -74,7 +84,7 @@ async function main()
         const nextPlaceX = Math.floor(cursorX / blockSize);
         const nextPlaceY = Math.floor(cursorY / blockSize);
 
-        function onPlace(placeState, blockMap)
+        function onPlace(placeState, world)
         {
             const [centerX, centerY] = Camera2D.screenToWorld(display.width / 2, display.height / 2, viewMatrix, projectionMatrix);
             const centerCoordX = Math.floor(centerX / blockSize);
@@ -83,11 +93,12 @@ async function main()
             let dy = Math.floor(Math.sign(placeState.placeY - centerCoordY));
             nextCameraX += dx * blockSize;
             nextCameraY += dy * blockSize;
+            blockCount += 1;
         }
 
-        function onReset(placeState, blockMap)
+        function onReset(placeState, world)
         {
-            let [resetPlaceX, resetPlaceY] = getPlacementSpawnPosition(
+            let [resetPlaceX, resetPlaceY] = Placement.getPlacementSpawnPosition(
                 CursorX.value, CursorY.value, blockSize,
                 display.width, display.height,
                 viewMatrix, projectionMatrix
@@ -96,7 +107,7 @@ async function main()
             placeState.placeY = resetPlaceY;
         }
 
-        Placement.update(dt, placement, Place, Rotate, blockMap, nextPlaceX, nextPlaceY, onPlace, onReset);
+        Placement.update(dt, placement, Place, Rotate, world, nextPlaceX, nextPlaceY, onPlace, onReset);
 
         // Compute block physics
         if (blockTicks <= 0)
@@ -105,7 +116,7 @@ async function main()
 
             // if (Debug.value)
             {
-                Fluids.updateChunkMap(blockMap);
+                Fluids.updateChunkMap(world);
             }
         }
         else
@@ -115,7 +126,7 @@ async function main()
 
         view.begin(ctx, viewMatrix, projectionMatrix);
         {
-            ChunkMapRenderer.drawChunkMap(ctx, blockMap, blockSize);
+            ChunkMapRenderer.drawChunkMap(ctx, world, blockSize);
 
             if (placement.placing)
             {
@@ -128,64 +139,8 @@ async function main()
             }
         }
         view.end(ctx);
+
+        ctx.fillStyle = 'white';
+        ctx.fillText(blockCount, 4, 12);
     });
-}
-
-function getPlacementSpawnPosition(
-    cursorX, cursorY, blockSize,
-    displayWidth, displayHeight,
-    viewMatrix, projectionMatrix)
-{
-    let resultX = 0;
-    let resultY = 0;
-    
-    const quadIndex = (cursorX <= 0.5 ? 0 : 2) + (cursorY <= 0.5 ? 0 : 1);
-    switch(quadIndex)
-    {
-        case 0: // TopLeft
-        {
-            let corner = Camera2D.screenToWorld(
-                0, 0,
-                viewMatrix, projectionMatrix
-            );
-            resultX = corner[0];
-            resultY = corner[1];
-        }
-        break;
-        case 1: // BottomLeft
-        {
-            let corner = Camera2D.screenToWorld(
-                0, displayHeight,
-                viewMatrix, projectionMatrix
-            );
-            resultX = corner[0];
-            resultY = corner[1];
-        }
-        break;
-        case 2: // TopRight
-        {
-            let corner = Camera2D.screenToWorld(
-                displayWidth, 0,
-                viewMatrix, projectionMatrix
-            );
-            resultX = corner[0];
-            resultY = corner[1];
-        }
-        break;
-        case 3: // BottomRight
-        {
-            let corner = Camera2D.screenToWorld(
-                displayWidth, displayHeight,
-                viewMatrix, projectionMatrix
-            );
-            resultX = corner[0];
-            resultY = corner[1];
-        }
-        break;
-    }
-
-    return [
-        Math.floor(resultX / blockSize),
-        Math.floor(resultY / blockSize)
-    ];
 }
