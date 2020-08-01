@@ -99,7 +99,11 @@ async function main()
                 [Math.floor(bottomRight[0] / blockSize), Math.floor(bottomRight[1] / blockSize)],
             ];
 
-            let resetPlace = Random.choose(resetPlaces);
+            let isLessCursorX = CursorX.value <= 0.5;
+            let isLessCursorY = CursorY.value <= 0.5;
+            let quadrant = (isLessCursorX ? 0 : 1) * 2 + (isLessCursorY ? 0 : 1);
+            
+            let resetPlace = resetPlaces[quadrant];
             placeState.placeX = resetPlace[0];
             placeState.placeY = resetPlace[1];
         }
