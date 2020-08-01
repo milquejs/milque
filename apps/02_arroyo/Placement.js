@@ -5,6 +5,9 @@ import * as Tetrominoes from './Tetrominoes.js';
 import * as Blocks from './Blocks.js';
 
 export const RESPAWN_PLACEMENT_TICKS = 30;
+export const PLACEMENT_BLOCK_IDS = [
+    1, 3, 4, 5, 6,
+];
 
 export function initialize()
 {
@@ -184,7 +187,7 @@ function randomizePlacement(state)
 {
     const shapeType = Random.choose(Tetrominoes.ALL);
     const shapeIndex = Math.floor(Random.range(0, shapeType.length));
-    const block = Random.choose([1, 3, 4, 5, 1, 1, 1, 6]);
+    const block = Random.choose(PLACEMENT_BLOCK_IDS);
     state.value = block;
     state.shapeType = shapeType;
     state.shape = shapeType[shapeIndex];

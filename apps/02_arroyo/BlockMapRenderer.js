@@ -12,7 +12,11 @@ export function drawBlockMap(ctx, blockMap, blockSize)
         for(let x = 0; x < blockMapWidth; ++x)
         {
             blockPos.set(x, y);
-            BlockRenderer.drawBlock(ctx, blockMap, blockPos, blockSize);
+            ctx.translate(x * blockSize, y * blockSize);
+            {
+                BlockRenderer.drawBlock(ctx, blockMap, blockPos, blockSize);
+            }
+            ctx.translate(-x * blockSize, -y * blockSize);
         }
     }
 }

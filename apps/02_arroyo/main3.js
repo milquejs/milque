@@ -43,10 +43,10 @@ async function main()
     {
         let centerX = 0;
         let centerY = 0;
-        blockMap.placeBlock(centerX, centerY, Blocks.GOLD);
-        blockMap.placeBlock(centerX - 1, centerY, Blocks.GOLD);
-        blockMap.placeBlock(centerX, centerY - 1, Blocks.GOLD);
-        blockMap.placeBlock(centerX - 1, centerY - 1, Blocks.GOLD);
+        blockMap.placeBlock(centerX, centerY, Blocks.STONE);
+        blockMap.placeBlock(centerX - 1, centerY, Blocks.STONE);
+        blockMap.placeBlock(centerX, centerY - 1, Blocks.STONE);
+        blockMap.placeBlock(centerX - 1, centerY - 1, Blocks.STONE);
     }
 
     const cameraSpeed = 0.1;

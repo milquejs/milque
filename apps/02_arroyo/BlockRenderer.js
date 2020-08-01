@@ -26,27 +26,24 @@ export function drawBlock(ctx, blockMap, blockPos, blockSize)
 
 function drawBlockFluid(ctx, blockMap, blockPos, blockSize)
 {
-    const { x, y } = blockPos;
     let blockId = blockMap.getBlockId(blockPos);
     let blockMeta = blockMap.getBlockMeta(blockPos);
     let fluidRatio = blockMeta / BlockFluid.MAX_FLUID_LEVELS;
     let color = Blocks.getBlockColor(blockId);
     ctx.fillStyle = color;
-    ctx.fillRect(x * blockSize, y * blockSize + (1 - fluidRatio) * blockSize, blockSize, blockSize * fluidRatio);
+    ctx.fillRect(0, (1 - fluidRatio) * blockSize, blockSize, blockSize * fluidRatio);
 }
 
 function drawBlockSolid(ctx, blockMap, blockPos, blockSize)
 {
-    const { x, y } = blockPos;
     let blockId = blockMap.getBlockId(blockPos);
     let color = Blocks.getBlockColor(blockId);
     ctx.fillStyle = color;
-    ctx.fillRect(x * blockSize, y * blockSize, blockSize, blockSize);
+    ctx.fillRect(0, 0, blockSize, blockSize);
 }
 
 function drawBlockNeighbor(ctx, blockMap, blockPos, blockSize)
 {
-    const { x, y } = blockPos;
     let neighbor = blockMap.getBlockNeighbor(blockPos);
-    ctx.drawImage(assets.meteorite, neighbor * 16, 0, 16, 16, x * blockSize, y * blockSize, blockSize, blockSize)
+    ctx.drawImage(assets.meteorite, neighbor * 16, 0, 16, 16, 0, 0, blockSize, blockSize)
 }
