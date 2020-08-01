@@ -114,7 +114,7 @@ function tryFlowWaterSide(chunkMap, blockPos)
 
 function flowWater(chunkMap, fromBlockPos, toBlockPos, amount, allowBackflow = true)
 {
-    if (chunkMap.isWithinBounds(toBlockPos))
+    if (chunkMap.isWithinBounds(toBlockPos) && chunkMap.isWithinLoaded(toBlockPos))
     {
         let fromBlock = chunkMap.getBlockId(fromBlockPos);
         let fromMeta = chunkMap.getBlockMeta(fromBlockPos);

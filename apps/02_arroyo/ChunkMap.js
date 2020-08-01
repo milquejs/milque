@@ -105,6 +105,11 @@ export class ChunkMap
             && (y >= this.bounds.top);
     }
 
+    isWithinLoaded(blockPos)
+    {
+        return blockPos.chunkId in this.chunks;
+    }
+
     getChunk(blockPos)
     {
         return this.getChunkById(blockPos.chunkId);

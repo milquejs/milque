@@ -1,4 +1,4 @@
-import { CanvasView, Camera2D } from './lib.js';
+import { CanvasView, Camera2D, Random, MathHelper } from './lib.js';
 import { ChunkMap } from './ChunkMap.js';
 import * as Blocks from './Blocks.js';
 import * as Fluids from './Fluids.js';
@@ -38,24 +38,21 @@ async function main()
     const camera = new Camera2D();
 
     const blockSize = 4;
-    const blockMap = new ChunkMap(0, 0, 30, 34, 16, 16);
+    const blockMap = new ChunkMap();
     let blockTicks = 0;
     {
-        let centerX = Math.floor(blockMap.bounds.right / 2);
-        let centerY = Math.floor(blockMap.bounds.bottom / 2);
+        let centerX = 0;
+        let centerY = 0;
         blockMap.placeBlock(centerX, centerY, Blocks.GOLD);
-        blockMap.placeBlock(centerX - 1, centerY + 0, Blocks.DIRT);
-        blockMap.placeBlock(centerX + 1, centerY + 0, Blocks.DIRT);
-        blockMap.placeBlock(centerX + 0, centerY - 1, Blocks.GRASS);
-        blockMap.placeBlock(centerX + 0, centerY + 1, Blocks.DIRT);
-
-        blockMap.placeBlock(centerX - 1, centerY - 1, Blocks.GRASS);
-        blockMap.placeBlock(centerX + 1, centerY - 1, Blocks.GRASS);
-        blockMap.placeBlock(centerX + 1, centerY + 1, Blocks.DIRT);
-        blockMap.placeBlock(centerX - 1, centerY + 1, Blocks.DIRT);
+        blockMap.placeBlock(centerX - 1, centerY, Blocks.GOLD);
+        blockMap.placeBlock(centerX, centerY - 1, Blocks.GOLD);
+        blockMap.placeBlock(centerX - 1, centerY - 1, Blocks.GOLD);
     }
 
-    camera.moveTo(-display.width / 2, 0);
+    const cameraSpeed = 0.1;
+    let nextCameraX = -display.width / 2;
+    let nextCameraY = -display.height / 2;
+    camera.moveTo(nextCameraX, nextCameraY);
 
     let placement = Placement.initialize();
 
@@ -63,15 +60,51 @@ async function main()
         const dt = e.detail.deltaTime / 1000 * 60;
         ctx.clearRect(0, 0, display.width, display.height);
 
+        // Update camera
+        camera.moveTo(
+            MathHelper.lerp(camera.x, nextCameraX, dt * cameraSpeed),
+            MathHelper.lerp(camera.y, nextCameraY, dt * cameraSpeed)
+        );
+
         let viewMatrix = camera.getViewMatrix();
         let projectionMatrix = camera.getProjectionMatrix();
 
         // Cursor worldPos
-        const cursorPos = Camera2D.screenToWorld(CursorX.value * display.width, CursorY.value * display.height, viewMatrix, projectionMatrix);
-        const nextPlaceX = Math.floor(cursorPos[0] / blockSize);
-        const nextPlaceY = Math.floor(cursorPos[1] / blockSize);
+        const [cursorX, cursorY] = Camera2D.screenToWorld(CursorX.value * display.width, CursorY.value * display.height, viewMatrix, projectionMatrix);
+        const nextPlaceX = Math.floor(cursorX / blockSize);
+        const nextPlaceY = Math.floor(cursorY / blockSize);
 
-        Placement.update(dt, placement, Place, Rotate, blockMap, nextPlaceX, nextPlaceY);
+        function onPlace(placeState, blockMap)
+        {
+            const [centerX, centerY] = Camera2D.screenToWorld(display.width / 2, display.height / 2, viewMatrix, projectionMatrix);
+            const centerCoordX = Math.floor(centerX / blockSize);
+            const centerCoordY = Math.floor(centerY / blockSize);
+            let dx = Math.floor(Math.sign(placeState.placeX - centerCoordX));
+            let dy = Math.floor(Math.sign(placeState.placeY - centerCoordY));
+            nextCameraX += dx * blockSize;
+            nextCameraY += dy * blockSize;
+        }
+
+        function onReset(placeState, blockMap)
+        {
+            // Find reset places
+            const topLeft = Camera2D.screenToWorld(0, 0, viewMatrix, projectionMatrix);
+            const bottomLeft = Camera2D.screenToWorld(0, display.height, viewMatrix, projectionMatrix);
+            const topRight = Camera2D.screenToWorld(display.width, 0, viewMatrix, projectionMatrix);
+            const bottomRight = Camera2D.screenToWorld(display.width, display.height, viewMatrix, projectionMatrix);
+            const resetPlaces = [
+                [Math.floor(topLeft[0] / blockSize), Math.floor(topLeft[1] / blockSize)],
+                [Math.floor(bottomLeft[0] / blockSize), Math.floor(bottomLeft[1] / blockSize)],
+                [Math.floor(topRight[0] / blockSize), Math.floor(topRight[1] / blockSize)],
+                [Math.floor(bottomRight[0] / blockSize), Math.floor(bottomRight[1] / blockSize)],
+            ];
+
+            let resetPlace = Random.choose(resetPlaces);
+            placeState.placeX = resetPlace[0];
+            placeState.placeY = resetPlace[1];
+        }
+
+        Placement.update(dt, placement, Place, Rotate, blockMap, nextPlaceX, nextPlaceY, onPlace, onReset);
 
         // Compute block physics
         if (blockTicks <= 0)

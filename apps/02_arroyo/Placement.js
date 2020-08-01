@@ -20,10 +20,8 @@ export function initialize()
     };
 }
 
-export function update(dt, state, placeInput, rotateInput, blockMap, cx, cy)
+export function update(dt, state, placeInput, rotateInput, blockMap, cx, cy, onplace, onreset)
 {
-    const mapPlacementX = 0;
-    
     // Block placement
     if (state.placing)
     {
@@ -76,23 +74,23 @@ export function update(dt, state, placeInput, rotateInput, blockMap, cx, cy)
             {
                 placeBlockShape(state.value, state.shape, state.placeX, state.placeY, blockMap);
                 state.placing = false;
-                state.placeY = 0;
                 state.placeTicks = RESPAWN_PLACEMENT_TICKS;
+
+                onplace(state, blockMap);
             }
 
             if (rotateInput.value)
             {
                 state.placing = false;
-                state.placeY = 0;
             }
         }
         else
         {
             randomizePlacement(state);
             state.placing = true;
-            state.placeX = mapPlacementX;
-            state.placeY = 0;
             state.valid = false;
+
+            onreset(state, blockMap);
         }
     }
     else
@@ -113,6 +111,11 @@ function intersectBlock(blockShape, blockX, blockY, blockMap)
             if (m[i])
             {
                 blockPos.set(x + blockX, y + blockY);
+                if (!blockMap.isWithinLoaded(blockPos))
+                {
+                    continue;
+                }
+
                 let blockId = blockMap.getBlockId(blockPos);
                 let block = Block.getBlock(blockId);
                 if (block instanceof BlockFluid)
@@ -144,9 +147,16 @@ function canPlaceBlockShape(blockValue, blockShape, blockX, blockY, blockMap)
         {
             blockPos.set(x + blockX, y + blockY);
             let i = x + y * w;
-            if (m[i] && blockMap.getBlockNeighbor(blockPos) !== 0b1111)
+            if (m[i])
             {
-                return true;
+                if (!blockMap.isWithinLoaded(blockPos))
+                {
+                    continue;
+                }
+                if (blockMap.getBlockNeighbor(blockPos) !== 0b1111)
+                {
+                    return true;
+                }
             }
         }
     }
