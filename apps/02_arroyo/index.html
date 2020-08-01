@@ -12,6 +12,7 @@
 
         <script type="module" src="../../packages/display/src/index.js"></script>
         <script type="module" src="../../packages/input/src/index.js"></script>
+        <script type="module" src="./test.js"></script>
     </head>
     <body>
         <display-port mode="fit" id="main" debug></display-port>
@@ -21,6 +22,7 @@
             <input-key input="cursorY" key="mouse:pos.y" scale="1"></input-key>
             <input-key input="place" key="mouse:0" scale="1"></input-key>
             <input-key input="rotate" key="mouse:2" event="down"></input-key>
+            <input-key input="debug" key="keyboard:Space" scale="1"></input-key>
             <!-- Movement -->
             <input-key input="up" key="keyboard:KeyW" scale="1"></input-key>
             <input-key input="up" key="keyboard:ArrowUp" scale="1"></input-key>

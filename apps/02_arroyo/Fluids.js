@@ -2,33 +2,67 @@ import { Random } from './lib.js';
 import { BlockFluid } from './Block.js';
 import * as Blocks from './Blocks.js';
 
-export function update(blockMap)
+export function updateChunkMap(chunkMap)
 {
-    let blockPos = blockMap.at(0, 0);
-    // Do water physics.
-    for(let y = blockMap.height - 1; y >= 0; --y)
-    {
-        for(let x = 0; x < blockMap.width; ++x)
+    let sortedChunks = chunkMap.getLoadedChunks().sort((a, b) => {
+        if (a.chunkCoordY < b.chunkCoordY)
         {
-            blockPos.set(x, y);
-            let block = blockMap.getBlockId(blockPos);
-            if (Blocks.isBlockFluid(block))
+            return 1;
+        }
+        else if (a.chunkCoordY > b.chunkCoordY)
+        {
+            return -1;
+        }
+        else if (a.chunkCoordX < b.chunkCoordX)
+        {
+            return 1;
+        }
+        else if (a.chunkCoordX > b.chunkCoordX)
+        {
+            return -1;
+        }
+        else
+        {
+            return 0;
+        }
+    });
+    
+    for(let chunk of sortedChunks)
+    {
+        update(chunkMap, chunk);
+    }
+}
+
+export function update(chunkMap, chunk)
+{
+    let blockPos = chunkMap.at(0, 0);
+    const chunkX = chunk.chunkCoordX * chunkMap.chunkWidth;
+    const chunkY = chunk.chunkCoordY * chunkMap.chunkHeight;
+    // Do water physics.
+    for(let y = chunkMap.chunkHeight - 1; y >= 0; --y)
+    {
+        for(let x = 0; x < chunkMap.chunkWidth; ++x)
+        {
+            blockPos.set(x + chunkX, y + chunkY);
+            let blockId = chunkMap.getBlockId(blockPos);
+            if (Blocks.isBlockFluid(blockId))
             {
-                updateBlock(blockMap, blockPos);
+                updateBlock(chunkMap, blockPos);
             }
         }
     }
 }
 
-function updateBlock(blockMap, blockPos)
+function updateBlock(chunkMap, blockPos)
 {
-    if (!tryFlowWaterDown(blockMap, blockPos) && !tryFlowWaterSide(blockMap, blockPos))
+    if (!tryFlowWaterDown(chunkMap, blockPos) && !tryFlowWaterSide(chunkMap, blockPos))
     {
+        /*
         // Is it stable? Probably not.
         if (blockMap.getBlockMeta(blockPos) >= BlockFluid.MAX_FLUID_LEVELS)
         {
             let pos = blockPos.copy();
-            let flag = true;    
+            let flag = true;
             flag &= !blockMap.isWithinBounds(pos.down())
                 || (!Blocks.isBlockAir(blockMap.getBlockId(pos))
                     && !Blocks.isBlockFluid(blockMap.getBlockId(pos)));
@@ -48,46 +82,45 @@ function updateBlock(blockMap, blockPos)
                     .setBlockMeta(blockPos, 0);
             }
         }
+        */
     }
 }
 
-function tryFlowWaterDown(blockMap, blockPos)
+function tryFlowWaterDown(chunkMap, blockPos)
 {
     let toBlockPos = blockPos.copy().down();
-    return flowWater(blockMap, blockPos, toBlockPos, BlockFluid.MAX_FLUID_LEVELS);
+    console.log(toBlockPos);
+    return flowWater(chunkMap, blockPos, toBlockPos, BlockFluid.MAX_FLUID_LEVELS);
 }
 
-function tryFlowWaterSide(blockMap, blockPos)
+function tryFlowWaterSide(chunkMap, blockPos)
 {
     let flag = false;
-    let meta = blockMap.getBlockMeta(blockPos);
+    let meta = chunkMap.getBlockMeta(blockPos);
     let toBlockPos = blockPos.copy();
     if (meta <= 1)
     {
         blockPos.offset(toBlockPos, 1 * Random.sign(), 0);
-        flag |= flowWater(blockMap, blockPos, toBlockPos, 1, false);
+        flag |= flowWater(chunkMap, blockPos, toBlockPos, 1, false);
     }
     else
     {
         blockPos.offset(toBlockPos, 1 * Random.sign(), 0);
-        flag |= flowWater(blockMap, blockPos, toBlockPos, 1, false);
+        flag |= flowWater(chunkMap, blockPos, toBlockPos, 1, false);
         blockPos.offset(toBlockPos, 1 * Random.sign(), 0);
-        flag |= flowWater(blockMap, blockPos, toBlockPos, 1, false);
+        flag |= flowWater(chunkMap, blockPos, toBlockPos, 1, false);
     }
     return flag;
 }
 
-function flowWater(blockMap, fromBlockPos, toBlockPos, amount, allowBackflow = true)
+function flowWater(chunkMap, fromBlockPos, toBlockPos, amount, allowBackflow = true)
 {
-    const { x: fromX, y: fromY, index: fromIndex } = fromBlockPos;
-    const { x: toX, y: toY, index: toIndex } = toBlockPos;
-
-    if (toX >= 0 && toY >= 0 && toX < blockMap.width && toY < blockMap.height)
+    if (chunkMap.isWithinBounds(toBlockPos))
     {
-        let fromBlock = blockMap.getBlockId(fromBlockPos);
-        let fromMeta = blockMap.getBlockMeta(fromBlockPos);
-        let toBlock = blockMap.getBlockId(toBlockPos);
-        let toMeta = blockMap.getBlockMeta(toBlockPos);
+        let fromBlock = chunkMap.getBlockId(fromBlockPos);
+        let fromMeta = chunkMap.getBlockMeta(fromBlockPos);
+        let toBlock = chunkMap.getBlockId(toBlockPos);
+        let toMeta = chunkMap.getBlockMeta(toBlockPos);
 
         if (amount > fromMeta) amount = fromMeta;
 
@@ -96,17 +129,17 @@ function flowWater(blockMap, fromBlockPos, toBlockPos, amount, allowBackflow = t
             let remainder = fromMeta - amount;
             if (remainder <= 0)
             {
-                blockMap.setBlockId(toBlockPos, fromBlock)
+                chunkMap.setBlockId(toBlockPos, fromBlock)
                     .setBlockMeta(toBlockPos, fromMeta);
-                blockMap.setBlockId(fromBlockPos, 0)
+                chunkMap.setBlockId(fromBlockPos, 0)
                     .setBlockMeta(fromBlockPos, 0);
                 return true;
             }
             else
             {
-                blockMap.setBlockId(toBlockPos, fromBlock)
+                chunkMap.setBlockId(toBlockPos, fromBlock)
                     .setBlockMeta(toBlockPos, amount);
-                blockMap.setBlockMeta(fromBlockPos, remainder);
+                chunkMap.setBlockMeta(fromBlockPos, remainder);
                 return true;
             }
         }
@@ -116,25 +149,25 @@ function flowWater(blockMap, fromBlockPos, toBlockPos, amount, allowBackflow = t
             
             if (toMeta + amount <= BlockFluid.MAX_FLUID_LEVELS)
             {
-                blockMap.setBlockMeta(toBlockPos, toMeta + amount);
+                chunkMap.setBlockMeta(toBlockPos, toMeta + amount);
 
                 if (amount >= fromMeta)
                 {
-                    blockMap.setBlockId(fromBlockPos, 0)
+                    chunkMap.setBlockId(fromBlockPos, 0)
                         .setBlockMeta(fromBlockPos, 0);
                 }
                 else
                 {
-                    blockMap.setBlockMeta(fromBlockPos, fromMeta - amount);
+                    chunkMap.setBlockMeta(fromBlockPos, fromMeta - amount);
                 }
                 return true;
             }
             else
             {
-                blockMap.setBlockMeta(toBlockPos, BlockFluid.MAX_FLUID_LEVELS);
+                chunkMap.setBlockMeta(toBlockPos, BlockFluid.MAX_FLUID_LEVELS);
 
                 let remainder = amount - (BlockFluid.MAX_FLUID_LEVELS - toMeta);
-                blockMap.setBlockMeta(fromBlockPos, remainder);
+                chunkMap.setBlockMeta(fromBlockPos, remainder);
                 return true;
             }
         }

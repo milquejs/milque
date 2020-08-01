@@ -1,9 +1,10 @@
 import { CanvasView, Camera2D } from './lib.js';
-import { BlockMap } from './BlockMap.js';
+import { ChunkMap } from './ChunkMap.js';
 import * as Blocks from './Blocks.js';
 import * as Fluids from './Fluids.js';
 import * as Placement from './Placement.js';
 import * as BlockMapRenderer from './BlockMapRenderer.js';
+import * as ChunkMapRenderer from './ChunkMapRenderer.js';
 
 // TODO: Move the camera towards the placed block each time.
 // TODO: Regionize the block maps.
@@ -25,21 +26,23 @@ async function main()
     const CursorY = input.getInput('cursorY');
     const Place = input.getInput('place');
     const Rotate = input.getInput('rotate');
+    const Debug = input.getInput('debug');
 
     const ctx = display.canvas.getContext('2d');
     ctx.imageSmoothingEnabled = false;
 
     await BlockMapRenderer.load();
+    await ChunkMapRenderer.load();
 
     const view = new CanvasView();
     const camera = new Camera2D();
 
     const blockSize = 4;
-    const blockMap = new BlockMap(30, 36);
+    const blockMap = new ChunkMap(0, 0, 30, 34, 16, 16);
     let blockTicks = 0;
     {
-        let centerX = Math.floor(blockMap.width / 2);
-        let centerY = Math.floor(blockMap.height / 2);
+        let centerX = Math.floor(blockMap.bounds.right / 2);
+        let centerY = Math.floor(blockMap.bounds.bottom / 2);
         blockMap.placeBlock(centerX, centerY, Blocks.GOLD);
         blockMap.placeBlock(centerX - 1, centerY + 0, Blocks.DIRT);
         blockMap.placeBlock(centerX + 1, centerY + 0, Blocks.DIRT);
@@ -52,7 +55,7 @@ async function main()
         blockMap.placeBlock(centerX - 1, centerY + 1, Blocks.DIRT);
     }
 
-    camera.moveTo(-display.width / 2 + (blockSize * blockMap.width / 2), 0);
+    camera.moveTo(-display.width / 2, 0);
 
     let placement = Placement.initialize();
 
@@ -75,7 +78,10 @@ async function main()
         {
             blockTicks = MAX_BLOCK_TICKS;
 
-            Fluids.update(blockMap);
+            // if (Debug.value)
+            {
+                Fluids.updateChunkMap(blockMap);
+            }
         }
         else
         {
@@ -84,13 +90,15 @@ async function main()
 
         view.begin(ctx, viewMatrix, projectionMatrix);
         {
-            BlockMapRenderer.drawBlockMap(ctx, blockMap, blockSize);
+            ChunkMapRenderer.drawChunkMap(ctx, blockMap, blockSize);
 
             if (placement.placing)
             {
                 ctx.fillStyle = Blocks.getBlockColor(placement.value);
                 ctx.translate(placement.placeX * blockSize, placement.placeY * blockSize);
-                BlockMapRenderer.drawPlacement(ctx, placement, blockSize);
+                {
+                    BlockMapRenderer.drawPlacement(ctx, placement, blockSize);
+                }
                 ctx.translate(-placement.placeX * blockSize, -placement.placeY * blockSize);
             }
         }

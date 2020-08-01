@@ -22,15 +22,15 @@ export function initialize()
 
 export function update(dt, state, placeInput, rotateInput, blockMap, cx, cy)
 {
-    const mapCenterX = Math.floor(blockMap.width / 2);
+    const mapPlacementX = 0;
     
     // Block placement
     if (state.placing)
     {
         const shape = state.shape;
 
-        const nextPlaceX = Math.min(blockMap.width - shape.w, Math.max(0, cx - Math.floor((shape.w - 1) / 2)));
-        const nextPlaceY = Math.min(blockMap.height - shape.h, Math.max(0, cy - Math.floor((shape.h - 1) / 2)));
+        const nextPlaceX = Math.min(blockMap.bounds.right - shape.w, Math.max(blockMap.bounds.left, cx - Math.floor((shape.w - 1) / 2)));
+        const nextPlaceY = Math.min(blockMap.bounds.bottom - shape.h, Math.max(blockMap.bounds.top, cy - Math.floor((shape.h - 1) / 2)));
 
         const prevPlaceX = state.placeX;
         if (prevPlaceX < nextPlaceX)
@@ -90,7 +90,7 @@ export function update(dt, state, placeInput, rotateInput, blockMap, cx, cy)
         {
             randomizePlacement(state);
             state.placing = true;
-            state.placeX = mapCenterX;
+            state.placeX = mapPlacementX;
             state.placeY = 0;
             state.valid = false;
         }
@@ -103,12 +103,7 @@ export function update(dt, state, placeInput, rotateInput, blockMap, cx, cy)
 
 function intersectBlock(blockShape, blockX, blockY, blockMap)
 {
-    const blockMapWidth = blockMap.width;
-    const blockMapHeight = blockMap.height;
     const { w, h, m } = blockShape;
-    if (blockX + w > blockMapWidth) return true;
-    if (blockY + h > blockMapHeight) return true;
-
     let blockPos = blockMap.at(0, 0);
     for(let y = 0; y < h; ++y)
     {
@@ -183,9 +178,9 @@ function randomizePlacement(state)
     state.value = block;
     state.shapeType = shapeType;
     state.shape = shapeType[shapeIndex];
-    for(let y = 0; y < state.shapeMap.height; ++y)
+    for(let y = 0; y < state.shapeMap.chunkHeight; ++y)
     {
-        for(let x = 0; x < state.shapeMap.width; ++x)
+        for(let x = 0; x < state.shapeMap.chunkWidth; ++x)
         {
             state.shapeMap.placeBlock(x, y, Block.getBlock(0));
         }

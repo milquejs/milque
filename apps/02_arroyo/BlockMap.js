@@ -5,14 +5,14 @@ export class BlockMap
 {
     constructor(width, height)
     {
-        this.width = width;
-        this.height = height;
-        this.length = width * height;
-
+        this.chunkWidth = width;
+        this.chunkHeight = height;
+        
+        const length = width * height;
         this.data = {
-            block: new Uint8Array(this.length).fill(0),
-            meta: new Uint8Array(this.length).fill(0),
-            neighbor: new Uint8Array(this.length).fill(0b1111),
+            block: new Uint8Array(length).fill(0),
+            meta: new Uint8Array(length).fill(0),
+            neighbor: new Uint8Array(length).fill(0b1111),
         };
     }
 
@@ -43,9 +43,9 @@ export class BlockMap
     {
         if (!blockPos) return false;
         const { x, y } = blockPos;
-        return (x <= this.width)
+        return (x <= this.chunkWidth)
             && (x > 0)
-            && (y <= this.height)
+            && (y <= this.chunkHeight)
             && (y > 0);
     }
 

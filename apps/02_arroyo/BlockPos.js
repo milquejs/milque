@@ -1,36 +1,33 @@
+import { toChunkId } from './ChunkUtils.js';
+
 export class BlockPos
 {
     constructor(blockMap)
     {
         this.blockMap = blockMap;
+        
         this._x = 0;
         this._y = 0;
+
+        this._blockCoordX = 0;
+        this._blockCoordY = 0;
         this._index = 0;
+
+        this._chunkCoordX = 0;
+        this._chunkCoordY = 0;
+        this._chunkId = null;
     }
 
-    /** @override */
     get x() { return this._x; }
-    /** @override */
     get y() { return this._y; }
-    /** @override */
+
+    get blockCoordX() { return this._blockCoordX; }
+    get blockCoordY() { return this._blockCoordY; }
     get index() { return this._index; }
 
-    set x(value)
-    {
-        this._x = value;
-        this._index += value;
-    }
-    set y(value)
-    {
-        this._y = value;
-        this._index += value * this.blockMap.width;
-    }
-    set index(value)
-    {
-        this._x = value % this.blockMap.width;
-        this._y = Math.floor(value / this.blockMap.width);
-        this._index = value;
-    }
+    get chunkCoordX() { return this._chunkCoordX; }
+    get chunkCoordY() { return this._chunkCoordY; }
+    get chunkId() { return this._chunkId; }
 
     /**
      * Creates a new instance of this BlockPos. This does not copy values, only initializes a new instance.
@@ -41,12 +38,37 @@ export class BlockPos
         return new BlockPos(this.blockMap);
     }
 
-    /** @override */
     set(x, y)
     {
         this._x = x;
         this._y = y;
-        this._index = x + y * this.blockMap.width;
+
+        const chunkWidth = this.blockMap.chunkWidth;
+        const chunkHeight = this.blockMap.chunkHeight;
+
+        if (x < 0)
+        {
+            this._blockCoordX = Math.abs(chunkWidth + Math.floor(x)) % chunkWidth;
+        }
+        else
+        {
+            this._blockCoordX = Math.floor(x) % chunkWidth;
+        }
+
+        if (y < 0)
+        {
+            this._blockCoordY = Math.abs(chunkHeight + Math.floor(y)) % chunkHeight;
+        }
+        else
+        {
+            this._blockCoordY = Math.floor(y) % chunkHeight;
+        }
+        
+        this._index = this._blockCoordX + this._blockCoordY * chunkWidth;
+
+        this._chunkCoordX = Math.floor(x / chunkWidth);
+        this._chunkCoordY = Math.floor(y / chunkHeight);
+        this._chunkId = toChunkId(this._chunkCoordX, this._chunkCoordY);
         return this;
     }
 
@@ -54,7 +76,14 @@ export class BlockPos
     {
         out._x = this.x;
         out._y = this.y;
+
+        out._blockCoordX = this.blockCoordX;
+        out._blockCoordY = this.blockCoordY;
         out._index = this.index;
+
+        out._chunkCoordX = this.chunkCoordX;
+        out._chunkCoordY = this.chunkCoordY;
+        out._chunkId = this.chunkId;
         return out;
     }
 
@@ -99,5 +128,15 @@ export class BlockPos
     {
         return Math.abs(this.x - blockPos.x) < Number.EPSILON
             && Math.abs(this.y - blockPos.y) < Number.EPSILON;
+    }
+
+    /** @override */
+    toString(details = false)
+    {
+        return `BlockPos(${this.x},${this.y})`
+        + (details
+            ? `:Chunk[${this.chunkId}]@{${this.blockCoordX},${this.blockCoordY}}[${this.index}],`
+            + `${this.blockMap.isWithinBounds(this)}`
+            : '');
     }
 }
