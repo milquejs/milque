@@ -89,7 +89,6 @@ function updateBlock(chunkMap, blockPos)
 function tryFlowWaterDown(chunkMap, blockPos)
 {
     let toBlockPos = blockPos.copy().down();
-    console.log(toBlockPos);
     return flowWater(chunkMap, blockPos, toBlockPos, BlockFluid.MAX_FLUID_LEVELS);
 }
 

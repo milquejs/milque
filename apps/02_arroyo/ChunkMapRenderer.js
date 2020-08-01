@@ -13,8 +13,10 @@ export function drawChunkMap(ctx, chunkMap, blockSize)
         ctx.translate(chunkX, chunkY);
         {
             drawBlockMap(ctx, chunk, blockSize);
-            ctx.fillStyle = 'white';
-            ctx.fillText(chunk.chunkId, 0, 16);
+            // ctx.fillStyle = 'white';
+            // ctx.fillText(chunk.chunkId, 0, 16);
+            // ctx.strokeStyle = 'white';
+            // ctx.strokeRect(0, 0, blockMapWidth * blockSize, blockMapHeight * blockSize);
         }
         ctx.translate(-chunkX, -chunkY);
     }

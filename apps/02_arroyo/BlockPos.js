@@ -4,6 +4,7 @@ export class BlockPos
 {
     constructor(blockMap)
     {
+        // TODO: Should not have access to blockmap
         this.blockMap = blockMap;
         
         this._x = 0;
