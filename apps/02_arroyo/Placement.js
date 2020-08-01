@@ -1,5 +1,5 @@
 import { Random, Camera2D } from './lib.js';
-import { BlockMap } from './BlockMap.js';
+import { ChunkMap } from './ChunkMap.js';
 import { Block, BlockAir, BlockFluid } from './Block.js';
 import * as Tetrominoes from './Tetrominoes.js';
 import * as Blocks from './Blocks.js';
@@ -15,7 +15,7 @@ export function initialize()
         placing: false,
         shape: null,
         shapeType: null,
-        shapeMap: new BlockMap(Tetrominoes.MAX_WIDTH, Tetrominoes.MAX_HEIGHT),
+        shapeMap: new ChunkMap(0, 0, Tetrominoes.MAX_WIDTH, Tetrominoes.MAX_HEIGHT),
         value: 0,
         placeX: 0,
         placeY: 0,
@@ -166,7 +166,7 @@ function canPlaceBlockShape(blockValue, blockShape, blockX, blockY, world)
     return false;
 }
 
-function placeBlockShape(blockValue, blockShape, blockX, blockY, world)
+function placeBlockShape(blockValue, blockShape, blockX, blockY, shapeMap)
 {
     const { w, h, m } = blockShape;
     for(let y = 0; y < h; ++y)
@@ -177,7 +177,7 @@ function placeBlockShape(blockValue, blockShape, blockX, blockY, world)
             if (m[i])
             {
                 let block = Block.getBlock(blockValue);
-                world.placeBlock(x + blockX, y + blockY, block);
+                shapeMap.placeBlock(x + blockX, y + blockY, block);
             }
         }
     }
@@ -191,13 +191,7 @@ function randomizePlacement(state)
     state.value = block;
     state.shapeType = shapeType;
     state.shape = shapeType[shapeIndex];
-    for(let y = 0; y < state.shapeMap.chunkHeight; ++y)
-    {
-        for(let x = 0; x < state.shapeMap.chunkWidth; ++x)
-        {
-            state.shapeMap.placeBlock(x, y, Block.getBlock(0));
-        }
-    }
+    state.shapeMap.clear();
     placeBlockShape(block, state.shape, 0, 0, state.shapeMap);
 }
 

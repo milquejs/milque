@@ -37,7 +37,7 @@ export function drawChunk(ctx, chunkMap, chunk, blockSize)
             blockPos.set(x + chunkOffsetX, y + chunkOffsetY);
             ctx.translate(x * blockSize, y * blockSize);
             {
-                BlockRenderer.drawBlock(ctx, chunk, blockPos, blockSize);
+                BlockRenderer.drawBlock(ctx, chunkMap, blockPos, blockSize);
             }
             ctx.translate(-x * blockSize, -y * blockSize);
         }

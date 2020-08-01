@@ -1,4 +1,3 @@
-import { BlockMap } from './BlockMap.js';
 import { BlockPos } from './BlockPos.js';
 import { Block, BlockFluid, BlockAir } from './Block.js';
 import { toChunkId, toChunkCoords } from './ChunkUtils.js';
@@ -17,6 +16,11 @@ export class ChunkMap
         };
         this.chunkWidth = chunkWidth;
         this.chunkHeight = chunkHeight;
+        this.chunks = {};
+    }
+
+    clear()
+    {
         this.chunks = {};
     }
 
@@ -154,14 +158,31 @@ export class ChunkMap
     }
 }
 
-export class Chunk extends BlockMap
+export class Chunk
 {
     constructor(chunkManager, chunkId, chunkCoordX, chunkCoordY)
     {
-        super(chunkManager.chunkWidth, chunkManager.chunkHeight);
+        const width = chunkManager.chunkWidth;
+        const height = chunkManager.chunkHeight;
+
+        this.chunkWidth = width;
+        this.chunkHeight = height;
 
         this.chunkId = chunkId;
         this.chunkCoordX = chunkCoordX;
         this.chunkCoordY = chunkCoordY;
+
+        this.data = new ChunkData(width, height);
+    }
+}
+
+export class ChunkData
+{
+    constructor(width, height)
+    {
+        const length = width * height;
+        this.block = new Uint8Array(length).fill(0);
+        this.meta = new Uint8Array(length).fill(0);
+        this.neighbor = new Uint8Array(length).fill(0b1111);
     }
 }
