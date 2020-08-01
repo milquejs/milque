@@ -1,80 +1,22 @@
 import { BlockPos } from './BlockPos.js';
 import { Block, BlockFluid, BlockAir } from './Block.js';
-import { toChunkId, toChunkCoords } from './ChunkUtils.js';
+import { ChunkManager } from './Chunk.js';
 
-export class ChunkMap
+export class ChunkMap extends ChunkManager
 {
     constructor(left = -Infinity, top = -Infinity,
         right = Infinity, bottom = Infinity,
         chunkWidth = Number.isFinite(right - left) ? right - left : 16, chunkHeight = Number.isFinite(bottom - top) ? bottom - top : 16)
     {
+        super(chunkWidth, chunkHeight);
+
         this.bounds = {
             left,
             right,
             top,
             bottom,
         };
-        this.chunkWidth = chunkWidth;
-        this.chunkHeight = chunkHeight;
-        this.chunks = {};
     }
-
-    clear()
-    {
-        this.chunks = {};
-    }
-
-    getChunkById(chunkId)
-    {
-        if (chunkId in this.chunks)
-        {
-            return this.chunks[chunkId];
-        }
-        else
-        {
-            const [chunkCoordX, chunkCoordY] = toChunkCoords(chunkId);
-            let chunk = new Chunk(this, chunkId, chunkCoordX, chunkCoordY);
-            this.chunks[chunkId] = chunk;
-            return chunk;
-        }
-    }
-
-    getChunkByCoord(chunkCoordX, chunkCoordY)
-    {
-        const chunkId = toChunkId(chunkCoordX, chunkCoordY);
-        return this.getChunkById(chunkId);
-    }
-
-    getChunksWithinBounds(fromBlockPos, toBlockPos)
-    {
-        let dst = [];
-        const fromChunkCoordX = fromBlockPos.chunkCoordX;
-        const fromChunkCoordY = fromBlockPos.chunkCoordY;
-        const toChunkCoordX = toBlockPos.chunkCoordX;
-        const toChunkCoordY = toBlockPos.chunkCoordY;
-        for(let chunkCoordY = fromChunkCoordY; chunkCoordY <= toChunkCoordY; ++chunkCoordY)
-        {
-            for(let chunkCoordX = fromChunkCoordX; chunkCoordX <= toChunkCoordX; ++chunkCoordX)
-            {
-                const chunkId = toChunkId(chunkCoordX, chunkCoordY);
-                dst.push(this.getChunkById(chunkId));
-            }
-        }
-        return dst;
-    }
-
-    getLoadedChunks()
-    {
-        let dst = [];
-        for(let chunkId of Object.keys(this.chunks))
-        {
-            let chunk = this.chunks[chunkId];
-            dst.push(chunk);
-        }
-        return dst;
-    }
-
-    
 
     placeBlock(x, y, block)
     {
@@ -155,34 +97,5 @@ export class ChunkMap
     at(x, y)
     {
         return new BlockPos(this).set(x, y);
-    }
-}
-
-export class Chunk
-{
-    constructor(chunkManager, chunkId, chunkCoordX, chunkCoordY)
-    {
-        const width = chunkManager.chunkWidth;
-        const height = chunkManager.chunkHeight;
-
-        this.chunkWidth = width;
-        this.chunkHeight = height;
-
-        this.chunkId = chunkId;
-        this.chunkCoordX = chunkCoordX;
-        this.chunkCoordY = chunkCoordY;
-
-        this.data = new ChunkData(width, height);
-    }
-}
-
-export class ChunkData
-{
-    constructor(width, height)
-    {
-        const length = width * height;
-        this.block = new Uint8Array(length).fill(0);
-        this.meta = new Uint8Array(length).fill(0);
-        this.neighbor = new Uint8Array(length).fill(0b1111);
     }
 }

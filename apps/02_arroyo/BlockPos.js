@@ -1,4 +1,4 @@
-import { toChunkId } from './ChunkUtils.js';
+import { toChunkId } from './Chunk.js';
 
 export class BlockPos
 {
