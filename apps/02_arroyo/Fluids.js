@@ -114,62 +114,66 @@ function tryFlowWaterSide(world, blockPos)
 
 function flowWater(world, fromBlockPos, toBlockPos, amount, allowBackflow = true)
 {
-    if (world.isWithinBounds(toBlockPos) && world.isWithinLoaded(toBlockPos))
+    if (!world.isWithinBounds(toBlockPos)) return false;
+    if (!world.isWithinLoaded(toBlockPos))
     {
-        let fromBlock = world.getBlockId(fromBlockPos);
-        let fromMeta = world.getBlockMeta(fromBlockPos);
-        let toBlock = world.getBlockId(toBlockPos);
-        let toMeta = world.getBlockMeta(toBlockPos);
+        world.setBlockId(fromBlockPos, 0);
+        world.setBlockMeta(fromBlockPos, 0);
+        return true;
+    }
+    
+    let fromBlock = world.getBlockId(fromBlockPos);
+    let fromMeta = world.getBlockMeta(fromBlockPos);
+    let toBlock = world.getBlockId(toBlockPos);
+    let toMeta = world.getBlockMeta(toBlockPos);
 
-        if (amount > fromMeta) amount = fromMeta;
+    if (amount > fromMeta) amount = fromMeta;
 
-        if (Blocks.isBlockAir(toBlock))
+    if (Blocks.isBlockAir(toBlock))
+    {
+        let remainder = fromMeta - amount;
+        if (remainder <= 0)
         {
-            let remainder = fromMeta - amount;
-            if (remainder <= 0)
-            {
-                world.setBlockId(toBlockPos, fromBlock)
-                    .setBlockMeta(toBlockPos, fromMeta);
-                world.setBlockId(fromBlockPos, 0)
-                    .setBlockMeta(fromBlockPos, 0);
-                return true;
-            }
-            else
-            {
-                world.setBlockId(toBlockPos, fromBlock)
-                    .setBlockMeta(toBlockPos, amount);
-                world.setBlockMeta(fromBlockPos, remainder);
-                return true;
-            }
+            world.setBlockId(toBlockPos, fromBlock)
+                .setBlockMeta(toBlockPos, fromMeta);
+            world.setBlockId(fromBlockPos, 0)
+                .setBlockMeta(fromBlockPos, 0);
+            return true;
         }
-        else if (Blocks.isBlockFluid(toBlock) && toMeta < BlockFluid.MAX_FLUID_LEVELS)
+        else
         {
-            if (!allowBackflow && fromMeta <= toMeta) return false;
-            
-            if (toMeta + amount <= BlockFluid.MAX_FLUID_LEVELS)
-            {
-                world.setBlockMeta(toBlockPos, toMeta + amount);
-
-                if (amount >= fromMeta)
-                {
-                    world.setBlockId(fromBlockPos, 0)
-                        .setBlockMeta(fromBlockPos, 0);
-                }
-                else
-                {
-                    world.setBlockMeta(fromBlockPos, fromMeta - amount);
-                }
-                return true;
-            }
-            else
-            {
-                world.setBlockMeta(toBlockPos, BlockFluid.MAX_FLUID_LEVELS);
-
-                let remainder = amount - (BlockFluid.MAX_FLUID_LEVELS - toMeta);
-                world.setBlockMeta(fromBlockPos, remainder);
-                return true;
-            }
+            world.setBlockId(toBlockPos, fromBlock)
+                .setBlockMeta(toBlockPos, amount);
+            world.setBlockMeta(fromBlockPos, remainder);
+            return true;
         }
     }
-    return false;
+    else if (Blocks.isBlockFluid(toBlock) && toMeta < BlockFluid.MAX_FLUID_LEVELS)
+    {
+        if (!allowBackflow && fromMeta <= toMeta) return false;
+        
+        if (toMeta + amount <= BlockFluid.MAX_FLUID_LEVELS)
+        {
+            world.setBlockMeta(toBlockPos, toMeta + amount);
+
+            if (amount >= fromMeta)
+            {
+                world.setBlockId(fromBlockPos, 0)
+                    .setBlockMeta(fromBlockPos, 0);
+            }
+            else
+            {
+                world.setBlockMeta(fromBlockPos, fromMeta - amount);
+            }
+            return true;
+        }
+        else
+        {
+            world.setBlockMeta(toBlockPos, BlockFluid.MAX_FLUID_LEVELS);
+
+            let remainder = amount - (BlockFluid.MAX_FLUID_LEVELS - toMeta);
+            world.setBlockMeta(fromBlockPos, remainder);
+            return true;
+        }
+    }
 }
