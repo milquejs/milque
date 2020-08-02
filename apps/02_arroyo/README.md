@@ -5,3 +5,7 @@ Regionize?
 
 - Blocks disintigrates into points
 
+- Change Pitch for the type of block GOLD is placed on.
+- OR Change pitch when placing a block on water.
+
+- Change pitch for every repeated sound.
