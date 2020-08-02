@@ -79,7 +79,7 @@ export function update(dt, state, placeInput, rotateInput, world, cx, cy, onplac
                 state.placing = false;
                 state.placeTicks = RESPAWN_PLACEMENT_TICKS;
 
-                onplace(state, world);
+                onplace(state);
             }
 
             if (rotateInput.value)
@@ -93,7 +93,7 @@ export function update(dt, state, placeInput, rotateInput, world, cx, cy, onplac
             state.placing = true;
             state.valid = false;
 
-            onreset(state, world);
+            onreset(state);
         }
     }
     else

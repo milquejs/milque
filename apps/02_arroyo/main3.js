@@ -1,4 +1,4 @@
-import { CanvasView, Camera2D, MathHelper } from './lib.js';
+import { CanvasView, Camera2D, MathHelper, Audio } from './lib.js';
 import { Chunk, ChunkData, toChunkCoords } from './Chunk.js';
 import { ChunkMap } from './ChunkMap.js';
 import * as Blocks from './Blocks.js';
@@ -17,6 +17,25 @@ document.addEventListener('DOMContentLoaded', main);
 
 const MAX_BLOCK_TICKS = 10;
 const MAX_AUTO_SAVE_TICKS = 100;
+const MAX_FADE_IN_TICKS = 300;
+
+const SOUNDS = {};
+
+async function load()
+{
+    SOUNDS.flick = await Audio.loadAudio('../../res/arroyo/flick.wav');
+    SOUNDS.melt = await Audio.loadAudio('../../res/arroyo/melt.mp3');
+
+    SOUNDS.dirt = await Audio.loadAudio('../../res/arroyo/dirt.wav');
+    SOUNDS.ding = await Audio.loadAudio('../../res/arroyo/ding.wav');
+    SOUNDS.waterpop = await Audio.loadAudio('../../res/arroyo/waterpop.wav');
+
+    SOUNDS.place = SOUNDS.dirt;
+    SOUNDS.reset = SOUNDS.flick;
+    SOUNDS.background = SOUNDS.melt;
+
+    await ChunkMapRenderer.load();
+}
 
 async function main()
 {
@@ -33,7 +52,7 @@ async function main()
     const ctx = display.canvas.getContext('2d');
     ctx.imageSmoothingEnabled = false;
 
-    await ChunkMapRenderer.load();
+    await load();
 
     const view = new CanvasView();
     const camera = new Camera2D();
@@ -45,6 +64,7 @@ async function main()
         cameraX: 0,
         cameraY: 0,
         time: 0,
+        firstPlace: true,
     };
 
     let worldData = localStorage.getItem('worldData');
@@ -69,7 +89,6 @@ async function main()
         if (Reset.value)
         {
             localStorage.removeItem('worldData');
-            world.score = 0;
             world.map.clear();
             initializeWorld(world, display);
             return;
@@ -93,7 +112,7 @@ async function main()
         const nextPlaceX = Math.floor(cursorX / blockSize);
         const nextPlaceY = Math.floor(cursorY / blockSize);
 
-        function onPlace(placeState, worldMap)
+        function onPlace(placeState)
         {
             const [centerX, centerY] = Camera2D.screenToWorld(display.width / 2, display.height / 2, viewMatrix, projectionMatrix);
             const centerCoordX = Math.floor(centerX / blockSize);
@@ -103,9 +122,32 @@ async function main()
             world.cameraX += dx * blockSize;
             world.cameraY += dy * blockSize;
             world.score += 1;
+
+            if (placeState.value === Blocks.DIRT.blockId)
+            {
+                SOUNDS.dirt.play();
+            }
+            else if (placeState.value === Blocks.WATER.blockId)
+            {
+                SOUNDS.waterpop.play();
+            }
+            else if (placeState.value === Blocks.GOLD.blockId)
+            {
+                SOUNDS.ding.play();
+            }
+            else
+            {
+                SOUNDS.place.play();
+            }
+
+            if (world.firstPlace)
+            {
+                world.firstPlace = false;
+                SOUNDS.background.play();
+            }
         }
 
-        function onReset(placeState, worldMap)
+        function onReset(placeState)
         {
             let [resetPlaceX, resetPlaceY] = Placement.getPlacementSpawnPosition(
                 CursorX.value, CursorY.value, blockSize,
@@ -114,6 +156,7 @@ async function main()
             );
             placeState.placeX = resetPlaceX;
             placeState.placeY = resetPlaceY;
+            SOUNDS.reset.play();
         }
 
         Placement.update(dt, placement, Place, Rotate, world.map, nextPlaceX, nextPlaceY, onPlace, onReset);
@@ -161,6 +204,12 @@ async function main()
         }
         view.end(ctx);
 
+        if (world.time < MAX_FADE_IN_TICKS)
+        {
+            ctx.fillStyle = `rgba(0, 0, 0, ${1 - (world.time / MAX_FADE_IN_TICKS)})`;
+            ctx.fillRect(0, 0, display.width, display.height);
+        }
+
         ctx.fillStyle = 'white';
         ctx.fillText(world.score, 4, 12);
     });
@@ -170,6 +219,8 @@ function initializeWorld(world, display)
 {
     // Initialize new world
     world.score = 0;
+    world.time = 0;
+    world.firstPlace = true;
 
     let centerX = 0;
     let centerY = 0;
