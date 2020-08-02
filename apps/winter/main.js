@@ -1,10 +1,12 @@
+import { IntersectionHelper, IntersectionWorld } from './lib.js';
+
 import { KeyMapBuilder, createKeyState } from './InputHelper.js';
-import * as Intersection from './IntersectionHelper.js';
-import { createIntersectionWorld } from './IntersectionWorld.js';
 
 function main()
 {
     const display = document.querySelector('display-port');
+    const ctx = display.canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
     
     // This is what the user sees and can edit.
     const keyMap = KeyMapBuilder()
@@ -47,7 +49,6 @@ function main()
     };
 
     display.addEventListener('frame', e => {
-        const ctx = e.detail.context;
         const dt = e.detail.deltaTime / 60;
 
         if (world.poll) world.poll();
@@ -79,7 +80,7 @@ function main()
             player
         ];
 
-        let physics = createIntersectionWorld();
+        let physics = IntersectionWorld.createIntersectionWorld();
         physics.dynamics.push(player.masks.aabb);
         physics.masks.push(...[
             player.masks.ground,
@@ -87,12 +88,12 @@ function main()
             player.masks.aabbHit,
         ]);
         physics.statics.push(...[
-            Intersection.createRect(50, 0, 150, 16),
-            Intersection.createRect(20, 30, 30, 110),
-            Intersection.createRect(0, 0, 10, display.height),
-            Intersection.createRect(0, 0, display.width, 10),
-            Intersection.createRect(display.width - 10, 0, display.width, display.height),
-            Intersection.createRect(0, display.height - 10, display.width, display.height),
+            IntersectionHelper.createRect(50, 0, 150, 16),
+            IntersectionHelper.createRect(20, 30, 30, 110),
+            IntersectionHelper.createRect(0, 0, 10, display.height),
+            IntersectionHelper.createRect(0, 0, display.width, 10),
+            IntersectionHelper.createRect(display.width - 10, 0, display.width, display.height),
+            IntersectionHelper.createRect(0, display.height - 10, display.width, display.height),
         ]);
         world.physics = physics;
     }

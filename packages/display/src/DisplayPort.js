@@ -76,9 +76,11 @@ const TEMPLATE_KEY = Symbol('template');
 const STYLE_KEY = Symbol('style');
 
 /**
- * @version 1.2.0
+ * @version 1.2.2
  * @description
  * # Changelog
+ * ## 1.2.2
+ * - Removed 'contexttype'
  * ## 1.2.1
  * - Added 'contexttype' for getContext()
  * ## 1.2.0
@@ -130,7 +132,6 @@ export class DisplayPort extends HTMLElement
             'width',
             'height',
             'disabled',
-            'contexttype',
             // Event handlers...
             'onframe',
             /*
@@ -154,7 +155,6 @@ export class DisplayPort extends HTMLElement
         this.shadowRoot.appendChild(this.constructor[STYLE_KEY].cloneNode(true));
 
         this._canvasElement = this.shadowRoot.querySelector('canvas');
-        this._canvasContext = null;
 
         this._titleElement = this.shadowRoot.querySelector('#title');
         this._fpsElement = this.shadowRoot.querySelector('#fps');
@@ -181,7 +181,6 @@ export class DisplayPort extends HTMLElement
     connectedCallback()
     {
         if (!this.hasAttribute('mode')) this.mode = DEFAULT_MODE;
-        if (!this.hasAttribute('contexttype')) this.contexttype = '2d';
         
         // Allows this element to be focusable
         if (!this.hasAttribute('tabindex')) this.setAttribute('tabindex', 0);
@@ -206,10 +205,6 @@ export class DisplayPort extends HTMLElement
                 break;
             case 'height':
                 this._height = value;
-                break;
-            case 'contexttype':
-                this._canvasContext = this._canvasElement.getContext(value);
-                this._canvasContext.imageSmoothingEnabled = false;
                 break;
             case 'disabled':
                 if (value)
@@ -288,7 +283,8 @@ export class DisplayPort extends HTMLElement
                 prevTime: this._prevAnimationFrameTime,
                 deltaTime: deltaTime,
                 canvas: this._canvasElement,
-                context: this._canvasContext,
+                /** @deprecated */
+                get context() { let ctx = this.canvas.getContext('2d'); ctx.imageSmoothingEnabled = false; return ctx; },
             },
             bubbles: false,
             composed: true
@@ -304,20 +300,7 @@ export class DisplayPort extends HTMLElement
     {
         this._animationRequestHandle = requestAnimationFrame(this.update);
     }
-
-    clear(fill = undefined)
-    {
-        if (fill)
-        {
-            this._canvasContext.fillStyle = 'black';
-            this._canvasContext.fillRect(0, 0, this._canvasElement.clientWidth, this._canvasElement.clientHeight);
-        }
-        else
-        {
-            this._canvasContext.clearRect(0, 0, this._canvasElement.clientWidth, this._canvasElement.clientHeight);
-        }
-    }
-
+    
     updateCanvasSize()
     {
         let clientRect = this.shadowRoot.host.getBoundingClientRect();
@@ -368,11 +351,6 @@ export class DisplayPort extends HTMLElement
         }
     }
 
-    /** @deprecated */
-    getCanvas() { return this._canvasElement; }
-    /** @deprecated */
-    getContext() { return this._canvasContext; }
-
     /*
     // NOTE: Already handled by GlobalEventHandlers...
     get onresize() { return this._onresize; }
@@ -400,9 +378,6 @@ export class DisplayPort extends HTMLElement
 
     get mode() { return this.getAttribute('mode'); }
     set mode(value) { this.setAttribute('mode', value); }
-
-    get contexttype() { return this.getAttribute('contexttype'); }
-    set contexttype(value) { this.setAttribute('contexttype', value ); }
 
     get disabled() { return this.hasAttribute('disabled'); }
     set disabled(value) { if (value) this.setAttribute('disabled', ''); else this.removeAttribute('disabled'); }

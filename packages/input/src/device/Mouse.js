@@ -1,5 +1,4 @@
-import { InputDevice } from './InputDevice.js';
-import { createButton, nextButton, pollButton } from './KeyButton.js';
+import { InputDevice, Button, Axis, AggregatedAxis } from './InputDevice.js';
 
 const MOUSE_CONTEXT_KEY = Symbol('mouseEventContext');
 
@@ -82,24 +81,24 @@ export class Mouse extends InputDevice
     {
         super(eventTarget);
 
-        this.x = 0;
-        this.y = 0;
-
-        this.dx = 0;
-        this.dy = 0;
-        this.nextdx = 0;
-        this.nextdy = 0;
-
-        this.left = createButton();
-        this.middle = createButton();
-        this.right = createButton();
-        this.button3 = createButton();
-        this.button4 = createButton();
+        this.x = new Axis();
+        this.y = new Axis();
+        this.dx = new AggregatedAxis();
+        this.dy = new AggregatedAxis();
+        this.Button0 = new Button();
+        this.Button1 = new Button();
+        this.Button2 = new Button();
+        this.Button3 = new Button();
+        this.Button4 = new Button();
 
         this.onMouseEvent = this.onMouseEvent.bind(this);
 
         Mouse.addInputEventListener(eventTarget, this.onMouseEvent);
     }
+
+    get Left() { return this.Button0; }
+    get Middle() { return this.Button1; }
+    get Right() { return this.Button2; }
 
     destroy()
     {
@@ -109,44 +108,44 @@ export class Mouse extends InputDevice
 
     poll()
     {
-        this.dx = this.nextdx;
-        this.dy = this.nextdy;
-        this.nextdx = 0;
-        this.nextdy = 0;
-
-        pollButton(this.left);
-        pollButton(this.middle);
-        pollButton(this.right);
-        pollButton(this.button3);
-        pollButton(this.button4);
+        this.x.poll();
+        this.y.poll();
+        this.dx.poll();
+        this.dy.poll();
+        this.Button0.poll();
+        this.Button1.poll();
+        this.Button2.poll();
+        this.Button3.poll();
+        this.Button4.poll();
 
         return this;
     }
 
     onMouseEvent(e)
     {
-        switch(e.key)
+        let { key, event } = e;
+        switch(key)
         {
             case 0:
-                nextButton(this.left, e.event, e.value);
+                this.Button0.update(event, e.value);
                 break;
             case 1:
-                nextButton(this.middle, e.event, e.value);
+                this.Button1.update(event, e.value);
                 break;
             case 2:
-                nextButton(this.right, e.event, e.value);
+                this.Button2.update(event, e.value);
                 break;
             case 3:
-                nextButton(this.button3, e.event, e.value);
+                this.Button3.update(event, e.value);
                 break;
             case 4:
-                nextButton(this.button4, e.event, e.value);
+                this.Button4.update(event, e.value);
                 break;
             case 'pos':
-                this.x = e.x;
-                this.y = e.y;
-                this.nextdx += e.dx;
-                this.nextdy += e.dy;
+                this.x.update(event, e.x);
+                this.y.update(event, e.y);
+                this.dx.update(event, e.dx);
+                this.dy.update(event, e.dy);
                 
                 // Cannot consume a position event.
                 return;
@@ -169,9 +168,12 @@ function onMouseDown(e)
 
     if (result)
     {
-        e.preventDefault();
-        e.stopPropagation();
-        return false;
+        if (document.activeElement === this.target)
+        {
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+        }
     }
 }
 
@@ -202,10 +204,12 @@ function onMouseMove(e)
     let element = this.target;
     let { clientWidth, clientHeight } = element;
 
+    let rect = this.target.getBoundingClientRect();
+
     let dx = e.movementX / clientWidth;
     let dy = e.movementY / clientHeight;
-    let x = (e.pageX - element.offsetLeft) / clientWidth;
-    let y = (e.pageY - element.offsetTop) / clientHeight;
+    let x = (e.clientX - rect.left) / clientWidth;
+    let y = (e.clientY - rect.top) / clientHeight;
 
     let event = this._posEvent;
     event.x = x;

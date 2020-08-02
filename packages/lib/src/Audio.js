@@ -32,10 +32,10 @@ export class Sound
 
     play()
     {
-        if (!this._data) return;
+        if (!this.buffer) return;
         if (this._source) this.destroy();
 
-        let source = audioContext.createBufferSound();
+        let source = AUDIO_CONTEXT.createBufferSource();
         source.loop = this.loop;
         source.buffer = this.buffer;
         source.addEventListener('ended', this.onAudioSourceEnded);

@@ -1,3 +1,0 @@
-# Input
-
-Handles all input.

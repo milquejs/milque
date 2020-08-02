@@ -1,18 +1,16 @@
 const MAX_FIXED_UPDATES = 250;
 
-export class Application
-{
-    onStart() {}
-    onStop() {}
-
-    onPreUpdate(dt) {}
-    onUpdate(dt) {}
-    onFixedUpdate() {}
-    onPostUpdate(dt) {}
-
-    onPause() {}
-    onResume() {}
-}
+/**
+ * @typedef Application
+ * @property {Function} [start]
+ * @property {Function} [stop]
+ * @property {Function} [preUpdate]
+ * @property {Function} [update]
+ * @property {Function} [fixedUpdate]
+ * @property {Function} [postUpdate]
+ * @property {Function} [pause]
+ * @property {Function} [resume]
+ */
 
 export class ApplicationLoop
 {
@@ -25,6 +23,10 @@ export class ApplicationLoop
         return result;
     }
 
+    /**
+     * @param {Application} app The application object that holds all the executable logic.
+     * @param {Boolean} [controlled = false] Whether the loop should NOT execute and manage itself.
+     */
     constructor(app, controlled = false)
     {
         this.app = app;
@@ -93,14 +95,14 @@ export class ApplicationLoop
         
         if (this.paused) return false;
 
-        this.app.onPreUpdate(deltaTime);
-        this.app.onUpdate(deltaTime);
+        if (this.app.preUpdate) this.app.preUpdate(deltaTime);
+        if (this.app.update) this.app.update(deltaTime);
 
         this.prevAccumulatedTime += deltaTime / 1000;
         if (this.prevAccumulatedTime > MAX_FIXED_UPDATES * this.fixedTimeStep)
         {
             let max = MAX_FIXED_UPDATES * this.fixedTimeStep;
-            let count = (this.prevAccumulatedTime - max) / this.fixedTimeStep;
+            let count = Math.floor((this.prevAccumulatedTime - max) / this.fixedTimeStep);
             this.prevAccumulatedTime = max;
             console.error(`[ApplicationLoop] Too many updates! Skipped ${count} fixed updates.`);
         }
@@ -108,10 +110,10 @@ export class ApplicationLoop
         while(this.prevAccumulatedTime >= this.fixedTimeStep)
         {
             this.prevAccumulatedTime -= this.fixedTimeStep;
-            this.app.onFixedUpdate();
+            if (this.app.fixedUpdate) this.app.fixedUpdate();
         }
 
-        this.app.onPostUpdate(deltaTime);
+        if (this.app.postUpdate) this.app.postUpdate(deltaTime);
     }
 
     /** Starts the game loop. Calls run(), unless recursive is set to false. */
@@ -126,12 +128,14 @@ export class ApplicationLoop
         this.started = true;
         this.prevFrameTime = ApplicationLoop.currentTime();
 
-        this.app.onStart();
+        if (this.app.start) this.app.start();
         
         if (!this.controlled)
         {
             this.onAnimationFrame(this.prevFrameTime);
         }
+
+        return this;
     }
 
     /** Stops the game loop. */
@@ -145,7 +149,7 @@ export class ApplicationLoop
 
         this.started = false;
 
-        this.app.onStop();
+        if (this.app.stop) this.app.stop();
 
         if (!this._controlled)
         {
@@ -155,28 +159,32 @@ export class ApplicationLoop
                 this.animationFrameHandle = null;
             }
         }
+
+        return this;
     }
 
     /** Pauses the game loop. */
     pause()
     {
-        if (this.paused) return;
+        if (this.paused) return this;
 
         this.paused = true;
         
-        this.app.onPause();
+        if (this.app.pause) this.app.pause();
+        return this;
     }
 
     /** Resumes the game loop. */
     resume()
     {
-        if (!this.pause) return;
+        if (!this.pause) return this;
 
         // This is an intentional frame skip (due to pause).
         this.prevFrameTime = ApplicationLoop.currentTime();
 
         this.paused = false;
 
-        this.app.onResume();
+        if (this.app.resume) this.app.resume();
+        return this;
     }
 }

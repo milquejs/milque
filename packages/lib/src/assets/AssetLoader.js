@@ -2,6 +2,7 @@ import { loadImage } from './ImageLoader.js';
 import { loadText } from './TextLoader.js';
 import { loadBytes } from './ByteLoader.js';
 import { loadJSON } from './JSONLoader.js';
+import { loadOBJ } from './OBJLoader.js';
 
 let ASSET_LOADERS = {};
 
@@ -9,6 +10,7 @@ defineAssetLoader('image', loadImage);
 defineAssetLoader('text', loadText);
 defineAssetLoader('json', loadJSON);
 defineAssetLoader('bytes', loadBytes);
+defineAssetLoader('obj', loadOBJ);
 
 export function defineAssetLoader(assetType, assetLoader)
 {

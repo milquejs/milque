@@ -52,11 +52,13 @@ export class PriorityQueue
         return this._heap[TOP_INDEX];
     }
 
+    /** @private */
     _compare(i, j)
     {
         return this._comparator(this._heap[i], this._heap[j]);
     }
 
+    /** @private */
     _swap(i, j)
     {
         let result = this._heap[i];
@@ -64,6 +66,7 @@ export class PriorityQueue
         this._heap[j] = result;
     }
 
+    /** @private */
     _shiftUp()
     {
         let node = this._heap.length - 1;
@@ -75,6 +78,7 @@ export class PriorityQueue
         }
     }
 
+    /** @private */
     _shiftDown()
     {
         const length = this._heap.length;

@@ -1,11 +1,9 @@
-import { Application, ApplicationLoop } from './ApplicationLoop.js'
+import { ApplicationLoop } from './ApplicationLoop.js'
 
-class Game extends Application
+class Game
 {
     constructor(context)
     {
-        super();
-
         this.context = context;
 
         this.display = null;
@@ -20,13 +18,13 @@ class Game extends Application
     }
 
     /** @override */
-    onStart()
+    start()
     {
         this.context.start();
     }
 
     /** @override */
-    onUpdate(dt)
+    update(dt)
     {
         this.context.update(dt);
         this.context.render(this.renderContext);
@@ -49,6 +47,7 @@ export function start(context)
 
     window.addEventListener('DOMContentLoaded', () => {
         let display = document.querySelector('display-port');
+        if (!display) throw new Error('Cannot find display-port in document.');
         game.setDisplay(display);
         gameContext.display = display;
         gameContext.load().then(() => loop.start());
