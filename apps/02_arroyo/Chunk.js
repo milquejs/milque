@@ -78,7 +78,7 @@ export class ChunkManager
     }
 }
 
-class Chunk
+export class Chunk
 {
     constructor(chunkManager, chunkId, chunkCoordX, chunkCoordY, chunkData)
     {

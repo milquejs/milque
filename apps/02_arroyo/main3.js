@@ -1,4 +1,5 @@
 import { CanvasView, Camera2D, MathHelper } from './lib.js';
+import { Chunk, ChunkData, toChunkCoords } from './Chunk.js';
 import { ChunkMap } from './ChunkMap.js';
 import * as Blocks from './Blocks.js';
 import * as Fluids from './Fluids.js';
@@ -16,6 +17,7 @@ import * as ChunkMapRenderer from './ChunkMapRenderer.js';
 document.addEventListener('DOMContentLoaded', main);
 
 const MAX_BLOCK_TICKS = 10;
+const MAX_AUTO_SAVE_TICKS = 100;
 
 async function main()
 {
@@ -40,12 +42,8 @@ async function main()
     const blockSize = 4;
     const world = new ChunkMap();
 
-    let chunkData = localStorage.getItem('chunkData');
-    if (chunkData)
-    {
-        // TODO: Load old world
-    }
-    else
+    let worldData = localStorage.getItem('worldData');
+    if (!worldData || !loadWorld(world, JSON.parse(worldData)))
     {
         // Initialize new world
         let centerX = 0;
@@ -57,6 +55,7 @@ async function main()
     }
 
     let blockTicks = 0;
+    let autoSaveTicks = 0;
 
     const cameraSpeed = 0.1;
     let nextCameraX = -display.width / 2;
@@ -124,6 +123,18 @@ async function main()
             blockTicks -= dt;
         }
 
+        // AutoSave
+        if (autoSaveTicks <= 0)
+        {
+            autoSaveTicks = MAX_AUTO_SAVE_TICKS;
+            let worldData = saveWorld(world, {});
+            localStorage.setItem('worldData', JSON.stringify(worldData));
+        }
+        else
+        {
+            autoSaveTicks -= dt;
+        }
+
         view.begin(ctx, viewMatrix, projectionMatrix);
         {
             ChunkMapRenderer.drawChunkMap(ctx, world, blockSize);
@@ -143,4 +154,60 @@ async function main()
         ctx.fillStyle = 'white';
         ctx.fillText(blockCount, 4, 12);
     });
+}
+
+function loadWorld(world, worldData)
+{
+    if (world.chunkWidth !== worldData.chunkWidth || world.chunkHeight !== worldData.chunkHeight) return null;
+
+    const chunkWidth = world.chunkWidth;
+    const chunkHeight = world.chunkHeight;
+    const length = chunkWidth * chunkHeight;
+    for(let chunkId of Object.keys(worldData.chunks))
+    {
+        const chunkData = worldData.chunks[chunkId];
+        const [chunkCoordX, chunkCoordY] = toChunkCoords(chunkId);
+
+        let data = new ChunkData(world.chunkWidth, world.chunkHeight);
+        for(let i = 0; i < length; ++i)
+        {
+            data.block[i] = chunkData.block[i];
+            data.meta[i] = chunkData.meta[i];
+            data.neighbor[i] = chunkData.neighbor[i];
+        }
+        let chunk = new Chunk(this, chunkId, chunkCoordX, chunkCoordY, data);
+        world.chunks[chunkId] = chunk;
+    }
+
+    return world;
+}
+
+function saveWorld(world, worldData)
+{
+    worldData.chunkWidth = world.chunkWidth;
+    worldData.chunkHeight = world.chunkHeight;
+    
+    let chunks = {};
+    const chunkWidth = world.chunkWidth;
+    const chunkHeight = world.chunkHeight;
+    const length = chunkWidth * chunkHeight;
+    for(let chunk of world.getLoadedChunks())
+    {
+        const chunkId = chunk.chunkId;
+        let data = {
+            block: new Array(length),
+            meta: new Array(length),
+            neighbor: new Array(length),
+        };
+        for(let i = 0; i < length; ++i)
+        {
+            data.block[i] = chunk.data.block[i];
+            data.meta[i] = chunk.data.meta[i];
+            data.neighbor[i] = chunk.data.neighbor[i];
+        }
+        chunks[chunkId] = data;
+    }
+
+    worldData.chunks = chunks;
+    return worldData;
 }
