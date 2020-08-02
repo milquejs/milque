@@ -2,10 +2,10 @@ import { toChunkId } from './Chunk.js';
 
 export class BlockPos
 {
-    constructor(world)
+    constructor(chunkWidth, chunkHeight)
     {
-        // TODO: Should not have access to world
-        this.world = world;
+        this._chunkWidth = chunkWidth;
+        this._chunkHeight = chunkHeight;
         
         this._x = 0;
         this._y = 0;
@@ -36,7 +36,7 @@ export class BlockPos
      */
     clone()
     {
-        return new BlockPos(this.world);
+        return new BlockPos(this._chunkWidth, this._chunkHeight);
     }
 
     set(x, y)
@@ -44,8 +44,8 @@ export class BlockPos
         this._x = x;
         this._y = y;
 
-        const chunkWidth = this.world.chunkWidth;
-        const chunkHeight = this.world.chunkHeight;
+        const chunkWidth = this._chunkWidth;
+        const chunkHeight = this._chunkHeight;
 
         if (x < 0)
         {
@@ -137,7 +137,6 @@ export class BlockPos
         return `BlockPos(${this.x},${this.y})`
         + (details
             ? `:Chunk[${this.chunkId}]@{${this.blockCoordX},${this.blockCoordY}}[${this.index}],`
-            + `${this.world.isWithinBounds(this)}`
             : '');
     }
 }

@@ -187,7 +187,7 @@ function randomizePlacement(state)
 {
     const shapeType = Random.choose(Tetrominoes.ALL);
     const shapeIndex = Math.floor(Random.range(0, shapeType.length));
-    const block = Random.choose(PLACEMENT_BLOCK_IDS);
+    const block = (state.value === 0 || Random.next() < 0.3) ? Random.choose(PLACEMENT_BLOCK_IDS) : state.value;
     state.value = block;
     state.shapeType = shapeType;
     state.shape = shapeType[shapeIndex];

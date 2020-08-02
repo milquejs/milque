@@ -96,6 +96,6 @@ export class ChunkMap extends ChunkManager
 
     at(x, y)
     {
-        return new BlockPos(this).set(x, y);
+        return new BlockPos(this.chunkWidth, this.chunkHeight).set(x, y);
     }
 }

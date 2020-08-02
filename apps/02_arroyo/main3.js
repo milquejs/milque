@@ -44,6 +44,7 @@ async function main()
         score: 0,
         cameraX: 0,
         cameraY: 0,
+        time: 0,
     };
 
     let worldData = localStorage.getItem('worldData');
@@ -71,6 +72,11 @@ async function main()
             world.score = 0;
             world.map.clear();
             initializeWorld(world, display);
+            return;
+        }
+        else
+        {
+            world.time += dt;
         }
 
         // Update camera
