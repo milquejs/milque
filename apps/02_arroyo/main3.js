@@ -29,6 +29,7 @@ async function main()
     const Place = input.getInput('place');
     const Rotate = input.getInput('rotate');
     const Debug = input.getInput('debug');
+    const Reset = input.getInput('reset');
 
     const ctx = display.canvas.getContext('2d');
     ctx.imageSmoothingEnabled = false;
@@ -40,39 +41,44 @@ async function main()
     const camera = new Camera2D();
 
     const blockSize = 4;
-    const world = new ChunkMap();
+    const world = {
+        map: new ChunkMap(),
+        score: 0,
+        cameraX: 0,
+        cameraY: 0,
+    };
 
     let worldData = localStorage.getItem('worldData');
     if (!worldData || !loadWorld(world, JSON.parse(worldData)))
     {
-        // Initialize new world
-        let centerX = 0;
-        let centerY = 0;
-        world.placeBlock(centerX, centerY, Blocks.STONE);
-        world.placeBlock(centerX - 1, centerY, Blocks.STONE);
-        world.placeBlock(centerX, centerY - 1, Blocks.STONE);
-        world.placeBlock(centerX - 1, centerY - 1, Blocks.STONE);
+        initializeWorld(world, display);
     }
 
     let blockTicks = 0;
     let autoSaveTicks = 0;
 
     const cameraSpeed = 0.1;
-    let nextCameraX = -display.width / 2;
-    let nextCameraY = -display.height / 2;
-    camera.moveTo(nextCameraX, nextCameraY);
+    camera.moveTo(world.cameraX, world.cameraY);
 
     let placement = Placement.initialize();
-    let blockCount = 0;
 
     display.addEventListener('frame', e => {
         const dt = e.detail.deltaTime / 1000 * 60;
         ctx.clearRect(0, 0, display.width, display.height);
+        
+        // Reset world
+        if (Reset.value)
+        {
+            localStorage.removeItem('worldData');
+            world.score = 0;
+            world.map.clear();
+            initializeWorld(world, display);
+        }
 
         // Update camera
         camera.moveTo(
-            MathHelper.lerp(camera.x, nextCameraX, dt * cameraSpeed),
-            MathHelper.lerp(camera.y, nextCameraY, dt * cameraSpeed)
+            MathHelper.lerp(camera.x, world.cameraX, dt * cameraSpeed),
+            MathHelper.lerp(camera.y, world.cameraY, dt * cameraSpeed)
         );
 
         let viewMatrix = camera.getViewMatrix();
@@ -83,19 +89,19 @@ async function main()
         const nextPlaceX = Math.floor(cursorX / blockSize);
         const nextPlaceY = Math.floor(cursorY / blockSize);
 
-        function onPlace(placeState, world)
+        function onPlace(placeState, worldMap)
         {
             const [centerX, centerY] = Camera2D.screenToWorld(display.width / 2, display.height / 2, viewMatrix, projectionMatrix);
             const centerCoordX = Math.floor(centerX / blockSize);
             const centerCoordY = Math.floor(centerY / blockSize);
             let dx = Math.floor(Math.sign(placeState.placeX - centerCoordX));
             let dy = Math.floor(Math.sign(placeState.placeY - centerCoordY));
-            nextCameraX += dx * blockSize;
-            nextCameraY += dy * blockSize;
-            blockCount += 1;
+            world.cameraX += dx * blockSize;
+            world.cameraY += dy * blockSize;
+            world.score += 1;
         }
 
-        function onReset(placeState, world)
+        function onReset(placeState, worldMap)
         {
             let [resetPlaceX, resetPlaceY] = Placement.getPlacementSpawnPosition(
                 CursorX.value, CursorY.value, blockSize,
@@ -106,7 +112,7 @@ async function main()
             placeState.placeY = resetPlaceY;
         }
 
-        Placement.update(dt, placement, Place, Rotate, world, nextPlaceX, nextPlaceY, onPlace, onReset);
+        Placement.update(dt, placement, Place, Rotate, world.map, nextPlaceX, nextPlaceY, onPlace, onReset);
 
         // Compute block physics
         if (blockTicks <= 0)
@@ -115,7 +121,7 @@ async function main()
 
             // if (Debug.value)
             {
-                Fluids.updateChunkMap(world);
+                Fluids.updateChunkMap(world.map);
             }
         }
         else
@@ -137,7 +143,7 @@ async function main()
 
         view.begin(ctx, viewMatrix, projectionMatrix);
         {
-            ChunkMapRenderer.drawChunkMap(ctx, world, blockSize);
+            ChunkMapRenderer.drawChunkMap(ctx, world.map, blockSize);
 
             if (placement.placing)
             {
@@ -152,23 +158,43 @@ async function main()
         view.end(ctx);
 
         ctx.fillStyle = 'white';
-        ctx.fillText(blockCount, 4, 12);
+        ctx.fillText(world.score, 4, 12);
     });
+}
+
+function initializeWorld(world, display)
+{
+    // Initialize new world
+    world.score = 0;
+
+    let centerX = 0;
+    let centerY = 0;
+    world.map.placeBlock(centerX, centerY, Blocks.STONE);
+    world.map.placeBlock(centerX - 1, centerY, Blocks.STONE);
+    world.map.placeBlock(centerX, centerY - 1, Blocks.STONE);
+    world.map.placeBlock(centerX - 1, centerY - 1, Blocks.STONE);
+
+    world.cameraX = -display.width / 2;
+    world.cameraY = -display.height / 2;
 }
 
 function loadWorld(world, worldData)
 {
-    if (world.chunkWidth !== worldData.chunkWidth || world.chunkHeight !== worldData.chunkHeight) return null;
+    const chunkWidth = world.map.chunkWidth;
+    const chunkHeight = world.map.chunkHeight;
+    if (chunkWidth !== worldData.chunkWidth || chunkHeight !== worldData.chunkHeight) return null;
 
-    const chunkWidth = world.chunkWidth;
-    const chunkHeight = world.chunkHeight;
+    world.score = worldData.score || 0;
+    world.cameraX = worldData.cameraX || 0;
+    world.cameraY = worldData.cameraY || 0;
+
     const length = chunkWidth * chunkHeight;
     for(let chunkId of Object.keys(worldData.chunks))
     {
         const chunkData = worldData.chunks[chunkId];
         const [chunkCoordX, chunkCoordY] = toChunkCoords(chunkId);
 
-        let data = new ChunkData(world.chunkWidth, world.chunkHeight);
+        let data = new ChunkData(chunkWidth, chunkHeight);
         for(let i = 0; i < length; ++i)
         {
             data.block[i] = chunkData.block[i];
@@ -176,7 +202,7 @@ function loadWorld(world, worldData)
             data.neighbor[i] = chunkData.neighbor[i];
         }
         let chunk = new Chunk(this, chunkId, chunkCoordX, chunkCoordY, data);
-        world.chunks[chunkId] = chunk;
+        world.map.chunks[chunkId] = chunk;
     }
 
     return world;
@@ -184,14 +210,18 @@ function loadWorld(world, worldData)
 
 function saveWorld(world, worldData)
 {
-    worldData.chunkWidth = world.chunkWidth;
-    worldData.chunkHeight = world.chunkHeight;
+    const chunkWidth = world.map.chunkWidth;
+    const chunkHeight = world.map.chunkHeight;
+
+    worldData.score = world.score;
+    worldData.cameraX = world.cameraX;
+    worldData.cameraY = world.cameraY;
+    worldData.chunkWidth = chunkWidth;
+    worldData.chunkHeight = chunkHeight;
     
     let chunks = {};
-    const chunkWidth = world.chunkWidth;
-    const chunkHeight = world.chunkHeight;
     const length = chunkWidth * chunkHeight;
-    for(let chunk of world.getLoadedChunks())
+    for(let chunk of world.map.getLoadedChunks())
     {
         const chunkId = chunk.chunkId;
         let data = {
