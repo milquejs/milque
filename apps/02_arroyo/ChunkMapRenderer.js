@@ -22,6 +22,11 @@ export function drawChunkMap(ctx, chunkMap, blockSize)
     }
 }
 
+export function drawPlacement(ctx, placementState, blockSize)
+{
+    drawChunkMap(ctx, placementState.shapeMap, blockSize);
+}
+
 export function drawChunk(ctx, chunkMap, chunk, blockSize)
 {
     const chunkWidth = chunkMap.chunkWidth;

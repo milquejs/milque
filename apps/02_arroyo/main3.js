@@ -4,7 +4,6 @@ import { ChunkMap } from './ChunkMap.js';
 import * as Blocks from './Blocks.js';
 import * as Fluids from './Fluids.js';
 import * as Placement from './Placement.js';
-import * as BlockMapRenderer from './BlockMapRenderer.js';
 import * as ChunkMapRenderer from './ChunkMapRenderer.js';
 
 // TODO: Move the camera towards the placed block each time.
@@ -34,7 +33,6 @@ async function main()
     const ctx = display.canvas.getContext('2d');
     ctx.imageSmoothingEnabled = false;
 
-    await BlockMapRenderer.load();
     await ChunkMapRenderer.load();
 
     const view = new CanvasView();
@@ -150,7 +148,7 @@ async function main()
                 ctx.fillStyle = Blocks.getBlockColor(placement.value);
                 ctx.translate(placement.placeX * blockSize, placement.placeY * blockSize);
                 {
-                    BlockMapRenderer.drawPlacement(ctx, placement, blockSize);
+                    ChunkMapRenderer.drawPlacement(ctx, placement, blockSize);
                 }
                 ctx.translate(-placement.placeX * blockSize, -placement.placeY * blockSize);
             }
