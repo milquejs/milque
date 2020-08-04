@@ -9,3 +9,11 @@ Regionize?
 - OR Change pitch when placing a block on water.
 
 - Change pitch for every repeated sound.
+
+- A block that every quarter? beat goes to an adjacent valid square.
+
+
+- Be able to undo your previous block.
+- Be able to save a block for later.
+
+- Unlock more blocks in the future.
