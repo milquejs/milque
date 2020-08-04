@@ -13,6 +13,7 @@ export function initialize()
 {
     return {
         placing: false,
+        floating: true,
         shape: null,
         shapeType: null,
         shapeMap: new ChunkMap(0, 0, Tetrominoes.MAX_WIDTH, Tetrominoes.MAX_HEIGHT),
@@ -33,39 +34,54 @@ export function update(dt, state, placeInput, rotateInput, world, cx, cy, onplac
         const nextPlaceX = Math.min(world.bounds.right - shape.w, Math.max(world.bounds.left, cx - Math.floor((shape.w - 1) / 2)));
         const nextPlaceY = Math.min(world.bounds.bottom - shape.h, Math.max(world.bounds.top, cy - Math.floor((shape.h - 1) / 2)));
 
-        const prevPlaceX = state.placeX;
-        if (prevPlaceX < nextPlaceX)
+        if (state.floating)
         {
-            if (!intersectBlock(shape, prevPlaceX + 1, state.placeY, world))
+            const dx = Math.sign(nextPlaceX - state.placeX);
+            const dy = Math.sign(nextPlaceY - state.placeY);
+            if (!intersectBlock(shape, state.placeX + dx, state.placeY + dy, world))
             {
-                state.placeX += 1;
+                state.floating = false;
             }
+            state.placeX += dx;
+            state.placeY += dy;
+            state.valid = false;
         }
-        else if (prevPlaceX > nextPlaceX)
+        else
         {
-            if (!intersectBlock(shape, prevPlaceX - 1, state.placeY, world))
+            const prevPlaceX = state.placeX;
+            if (prevPlaceX < nextPlaceX)
             {
-                state.placeX -= 1;
+                if (!intersectBlock(shape, prevPlaceX + 1, state.placeY, world))
+                {
+                    state.placeX += 1;
+                }
             }
-        }
+            else if (prevPlaceX > nextPlaceX)
+            {
+                if (!intersectBlock(shape, prevPlaceX - 1, state.placeY, world))
+                {
+                    state.placeX -= 1;
+                }
+            }
+    
+            const prevPlaceY = state.placeY;
+            if (prevPlaceY < nextPlaceY)
+            {
+                if (!intersectBlock(shape, state.placeX, prevPlaceY + 1, world))
+                {
+                    state.placeY += 1;
+                }
+            }
+            else if (prevPlaceY > nextPlaceY)
+            {
+                if (!intersectBlock(shape, state.placeX, prevPlaceY - 1, world))
+                {
+                    state.placeY -= 1;
+                }
+            }
 
-        const prevPlaceY = state.placeY;
-        if (prevPlaceY < nextPlaceY)
-        {
-            if (!intersectBlock(shape, state.placeX, prevPlaceY + 1, world))
-            {
-                state.placeY += 1;
-            }
+            state.valid = canPlaceBlockShape(state.value, shape, state.placeX, state.placeY, world);
         }
-        else if (prevPlaceY > nextPlaceY)
-        {
-            if (!intersectBlock(shape, state.placeX, prevPlaceY - 1, world))
-            {
-                state.placeY -= 1;
-            }
-        }
-
-        state.valid = canPlaceBlockShape(state.value, shape, state.placeX, state.placeY, world);
     }
 
     // Try placing and rotating
@@ -91,6 +107,7 @@ export function update(dt, state, placeInput, rotateInput, world, cx, cy, onplac
         {
             randomizePlacement(state);
             state.placing = true;
+            state.floating = true;
             state.valid = false;
 
             onreset(state);
@@ -187,12 +204,40 @@ function randomizePlacement(state)
 {
     const shapeType = Random.choose(Tetrominoes.ALL);
     const shapeIndex = Math.floor(Random.range(0, shapeType.length));
-    const block = (state.value === 0 || Random.next() < 0.3) ? Random.choose(PLACEMENT_BLOCK_IDS) : state.value;
-    state.value = block;
+
+    const currentBlockId = state.value;
+    let flag = false;
+    switch(currentBlockId)
+    {
+        case 0:
+            flag = true;
+            break;
+        case 1: // Water
+            flag = Random.next() < (1 / 6);
+            break;
+        case 3: // Dirt
+            flag = Random.next() < (1 / 10);
+            break;
+        case 4: // Gold
+            flag = Random.next() < (1 / 2);
+            break;
+        case 5: // Grass
+            flag = Random.next() < (1 / 2);
+            break;
+        case 6: // Stone
+            flag = Random.next() < (1 / 10);
+            break;
+        default:
+            flag = Random.next() < (1 / 5);
+            break;
+    }
+
+    const nextBlockId = flag ? Random.choose(PLACEMENT_BLOCK_IDS) : currentBlockId;
+    state.value = nextBlockId;
     state.shapeType = shapeType;
     state.shape = shapeType[shapeIndex];
     state.shapeMap.clear();
-    placeBlockShape(block, state.shape, 0, 0, state.shapeMap);
+    placeBlockShape(nextBlockId, state.shape, 0, 0, state.shapeMap);
 }
 
 export function getPlacementSpawnPosition(

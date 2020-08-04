@@ -1,4 +1,4 @@
-import { vec3, quat, mat4 } from '../../../../node_modules/gl-matrix/esm/index.js';
+import { vec3, quat, mat4 } from '../../../../deps.js';
 
 export const ORIGIN = vec3.fromValues(0, 0, 0);
 export const XAXIS = vec3.fromValues(1, 0, 0);

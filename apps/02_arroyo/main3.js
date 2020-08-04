@@ -1,4 +1,4 @@
-import { CanvasView, Camera2D, MathHelper, Audio } from './lib.js';
+import { CanvasView, Camera2D, MathHelper, Audio, Random, Downloader, Uploader } from './lib.js';
 import { Chunk, ChunkData, toChunkCoords } from './Chunk.js';
 import { ChunkMap } from './ChunkMap.js';
 import * as Blocks from './Blocks.js';
@@ -29,6 +29,7 @@ async function load()
     SOUNDS.dirt = await Audio.loadAudio('../../res/arroyo/dirt.wav');
     SOUNDS.ding = await Audio.loadAudio('../../res/arroyo/ding.wav');
     SOUNDS.waterpop = await Audio.loadAudio('../../res/arroyo/waterpop.wav');
+    SOUNDS.stone = await Audio.loadAudio('../../res/arroyo/stone.wav');
 
     SOUNDS.place = SOUNDS.dirt;
     SOUNDS.reset = SOUNDS.flick;
@@ -48,6 +49,8 @@ async function main()
     const Rotate = input.getInput('rotate');
     const Debug = input.getInput('debug');
     const Reset = input.getInput('reset');
+    const Save = input.getInput('save');
+    const Load = input.getInput('load');
 
     const ctx = display.canvas.getContext('2d');
     ctx.imageSmoothingEnabled = false;
@@ -83,7 +86,6 @@ async function main()
 
     display.addEventListener('frame', e => {
         const dt = e.detail.deltaTime / 1000 * 60;
-        ctx.clearRect(0, 0, display.width, display.height);
         
         // Reset world
         if (Reset.value)
@@ -93,16 +95,50 @@ async function main()
             initializeWorld(world, display);
             return;
         }
+        // Save world
+        else if (Save.value)
+        {
+            let worldData = saveWorld(world, {});
+            Downloader.downloadText('worldData.json', JSON.stringify(worldData));
+        }
+        // Load world
+        else if (Load.value)
+        {
+            Uploader.uploadFile(['.json'], false)
+                .then(fileBlob => fileBlob.text())
+                .then(textData => {
+                    let worldData = JSON.parse(textData);
+                    world.map.clear();
+                    if (!worldData || !loadWorld(world, worldData))
+                    {
+                        initializeWorld(world, display);
+                    }
+                });
+        }
         else
         {
             world.time += dt;
         }
 
         // Update camera
-        camera.moveTo(
-            MathHelper.lerp(camera.x, world.cameraX, dt * cameraSpeed),
-            MathHelper.lerp(camera.y, world.cameraY, dt * cameraSpeed)
-        );
+        {
+            let aspectRatio = display.width / display.height;
+            let cw = aspectRatio <= 1 ? aspectRatio : 1;
+            let ch = aspectRatio <= 1 ? 1 : 1 / aspectRatio;
+            let cx = (CursorX.value - 0.5);
+            let cy = (CursorY.value - 0.5);
+
+            const cameraOffsetAmount = 4;
+            let radian = Math.atan2(cy, cx);
+            let distance = MathHelper.distance2(0, 0, cx, cy);
+            let clampDist = distance < 0.3 ? 0 : distance - 0.3;
+            let cameraOffsetX = Math.cos(radian) * clampDist * blockSize * world.map.chunkWidth * cw * cameraOffsetAmount;
+            let cameraOffsetY = Math.sin(radian) * clampDist * blockSize * world.map.chunkWidth * ch * cameraOffsetAmount;
+            camera.moveTo(
+                MathHelper.lerp(camera.x, world.cameraX + cameraOffsetX, dt * cameraSpeed),
+                MathHelper.lerp(camera.y, world.cameraY + cameraOffsetY, dt * cameraSpeed)
+            );
+        }
 
         let viewMatrix = camera.getViewMatrix();
         let projectionMatrix = camera.getProjectionMatrix();
@@ -114,30 +150,35 @@ async function main()
 
         function onPlace(placeState)
         {
+            // Move towards placement
             const [centerX, centerY] = Camera2D.screenToWorld(display.width / 2, display.height / 2, viewMatrix, projectionMatrix);
             const centerCoordX = Math.floor(centerX / blockSize);
             const centerCoordY = Math.floor(centerY / blockSize);
-            let dx = Math.floor(Math.sign(placeState.placeX - centerCoordX));
-            let dy = Math.floor(Math.sign(placeState.placeY - centerCoordY));
+            let dx = Math.ceil((placeState.placeX - centerCoordX) / 4);
+            let dy = Math.ceil((placeState.placeY - centerCoordY) / 4);
             world.cameraX += dx * blockSize;
             world.cameraY += dy * blockSize;
             world.score += 1;
 
             if (placeState.value === Blocks.DIRT.blockId)
             {
-                SOUNDS.dirt.play();
+                SOUNDS.dirt.play({ pitch: Random.range(-5, 5) });
             }
             else if (placeState.value === Blocks.WATER.blockId)
             {
-                SOUNDS.waterpop.play();
+                SOUNDS.waterpop.play({ pitch: Random.range(-5, 5) });
             }
             else if (placeState.value === Blocks.GOLD.blockId)
             {
-                SOUNDS.ding.play();
+                SOUNDS.ding.play({ gain: 4, pitch: Random.range(-5, 5) });
+            }
+            else if (placeState.value === Blocks.STONE.blockId)
+            {
+                SOUNDS.stone.play({ gain: 1.5, pitch: Random.range(-5, 5) });
             }
             else
             {
-                SOUNDS.place.play();
+                SOUNDS.place.play({ pitch: Random.range(-5, 5) });
             }
 
             if (world.firstPlace)
@@ -156,7 +197,7 @@ async function main()
             );
             placeState.placeX = resetPlaceX;
             placeState.placeY = resetPlaceY;
-            SOUNDS.reset.play();
+            SOUNDS.reset.play({ pitch: Random.range(-5, 5) });
         }
 
         Placement.update(dt, placement, Place, Rotate, world.map, nextPlaceX, nextPlaceY, onPlace, onReset);
@@ -188,6 +229,7 @@ async function main()
             autoSaveTicks -= dt;
         }
 
+        ctx.clearRect(0, 0, display.width, display.height);
         view.begin(ctx, viewMatrix, projectionMatrix);
         {
             ChunkMapRenderer.drawChunkMap(ctx, world.map, blockSize);
@@ -224,10 +266,10 @@ function initializeWorld(world, display)
 
     let centerX = 0;
     let centerY = 0;
-    world.map.placeBlock(centerX, centerY, Blocks.STONE);
-    world.map.placeBlock(centerX - 1, centerY, Blocks.STONE);
-    world.map.placeBlock(centerX, centerY - 1, Blocks.STONE);
-    world.map.placeBlock(centerX - 1, centerY - 1, Blocks.STONE);
+    world.map.placeBlock(centerX, centerY, Blocks.GOLD);
+    world.map.placeBlock(centerX - 1, centerY, Blocks.GOLD);
+    world.map.placeBlock(centerX, centerY - 1, Blocks.GOLD);
+    world.map.placeBlock(centerX - 1, centerY - 1, Blocks.GOLD);
 
     world.cameraX = -display.width / 2;
     world.cameraY = -display.height / 2;

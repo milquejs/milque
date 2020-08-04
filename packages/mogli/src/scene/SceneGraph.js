@@ -1,4 +1,4 @@
-import { mat4 } from '../../../../node_modules/gl-matrix/esm/index.js';
+import { mat4 } from '../../../../deps.js';
 import * as Transform from '../object/Transform.js';
 
 class SceneGraph

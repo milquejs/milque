@@ -1,4 +1,4 @@
-export async function loadImage(filepath, opts = {})
+export async function loadImage(filepath, opts)
 {
     return new Promise((resolve, reject) => {
         let img = new Image();
