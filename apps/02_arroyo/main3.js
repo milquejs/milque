@@ -1,10 +1,15 @@
-import { CanvasView, Camera2D, MathHelper, Audio, Random, Downloader, Uploader } from './lib.js';
-import { Chunk, ChunkData, toChunkCoords } from './Chunk.js';
-import { ChunkMap } from './ChunkMap.js';
-import * as Blocks from './Blocks.js';
-import * as Fluids from './Fluids.js';
+import { CanvasView, Camera2D, MathHelper, Audio, Random, Downloader, Uploader, Eventable } from './lib.js';
+
+import { Chunk, ChunkData, toChunkCoords } from './chunk/Chunk.js';
+import { ChunkMap } from './chunk/ChunkMap.js';
+import * as ChunkMapRenderer from './chunk/ChunkMapRenderer.js';
+
+import * as WorldEvents from './block/WorldEvents.js';
+import * as FluidSystem from './block/fluid/FluidSystem.js';
+import * as PlacementSystem from './block/placement/PlacementSystem.js';
+import * as Blocks from './block/Blocks.js';
+
 import * as Placement from './Placement.js';
-import * as ChunkMapRenderer from './ChunkMapRenderer.js';
 
 // TODO: Move the camera towards the placed block each time.
 // TODO: Regionize the block maps.
@@ -61,6 +66,8 @@ async function main()
     const camera = new Camera2D();
 
     const blockSize = 4;
+
+    // Initialize world
     const world = {
         map: new ChunkMap(),
         score: 0,
@@ -69,6 +76,11 @@ async function main()
         time: 0,
         firstPlace: true,
     };
+    Eventable.assign(world);
+
+    // Initialize systems
+    FluidSystem.initialize(world);
+    PlacementSystem.initialize(world);
 
     let worldData = localStorage.getItem('worldData');
     if (!worldData || !loadWorld(world, JSON.parse(worldData)))
@@ -200,7 +212,7 @@ async function main()
             SOUNDS.reset.play({ pitch: Random.range(-5, 5) });
         }
 
-        Placement.update(dt, placement, Place, Rotate, world.map, nextPlaceX, nextPlaceY, onPlace, onReset);
+        Placement.update(dt, placement, Place, Rotate, world, nextPlaceX, nextPlaceY, onPlace, onReset);
 
         // Compute block physics
         if (blockTicks <= 0)
@@ -209,7 +221,7 @@ async function main()
 
             // if (Debug.value)
             {
-                Fluids.updateChunkMap(world.map);
+                WorldEvents.emitUpdateEvent(world);
             }
         }
         else
@@ -236,7 +248,6 @@ async function main()
 
             if (placement.placing)
             {
-                ctx.fillStyle = Blocks.getBlockColor(placement.value);
                 ctx.translate(placement.placeX * blockSize, placement.placeY * blockSize);
                 {
                     ChunkMapRenderer.drawPlacement(ctx, placement, blockSize);
@@ -263,13 +274,13 @@ function initializeWorld(world, display)
     world.score = 0;
     world.time = 0;
     world.firstPlace = true;
-
-    let centerX = 0;
-    let centerY = 0;
-    world.map.placeBlock(centerX, centerY, Blocks.GOLD);
-    world.map.placeBlock(centerX - 1, centerY, Blocks.GOLD);
-    world.map.placeBlock(centerX, centerY - 1, Blocks.GOLD);
-    world.map.placeBlock(centerX - 1, centerY - 1, Blocks.GOLD);
+    
+    let blockPos = world.map.at(0, 0);
+    let out = blockPos.clone();
+    PlacementSystem.placeBlock(world, blockPos, Blocks.GOLD.blockId);
+    PlacementSystem.placeBlock(world, blockPos.offset(out, -1, 0), Blocks.GOLD.blockId);
+    PlacementSystem.placeBlock(world, blockPos.offset(out, 0, -1), Blocks.GOLD.blockId);
+    PlacementSystem.placeBlock(world, blockPos.offset(out, -1, -1), Blocks.GOLD.blockId);
 
     world.cameraX = -display.width / 2;
     world.cameraY = -display.height / 2;

@@ -1,15 +1,4 @@
-export function toChunkId(chunkCoordX, chunkCoordY)
-{
-    return chunkCoordX + ',' + chunkCoordY;
-}
-
-export function toChunkCoords(chunkId)
-{
-    let separator = chunkId.indexOf(',');
-    let chunkCoordX = Number(chunkId.substring(0, separator));
-    let chunkCoordY = Number(chunkId.substring(separator + 1));
-    return [ chunkCoordX, chunkCoordY ];
-}
+import { Chunk, ChunkData, toChunkId, toChunkCoords } from './Chunk.js';
 
 export class ChunkManager
 {
@@ -75,62 +64,5 @@ export class ChunkManager
             dst.push(chunk);
         }
         return dst;
-    }
-}
-
-export class Chunk
-{
-    constructor(chunkManager, chunkId, chunkCoordX, chunkCoordY, chunkData)
-    {
-        this.chunkManager = chunkManager;
-        this.chunkId = chunkId;
-        this.chunkCoordX = chunkCoordX;
-        this.chunkCoordY = chunkCoordY;
-        this._data = chunkData;
-    }
-
-    get data()
-    {
-        return this._data;
-    }
-}
-
-export class ChunkData
-{
-    constructor(width, height)
-    {
-        const length = width * height;
-        this.block = new Uint8Array(length).fill(0);
-        this.meta = new Uint8Array(length).fill(0);
-        this.neighbor = new Uint8Array(length).fill(0b1111);
-    }
-}
-
-// TODO: Not done yet. Should this be a chunkloader instead?
-export class ChunkDataLoader
-{
-    constructor()
-    {
-        this.chunksLoading = {};
-    }
-
-    async onLoadChunkData(chunkData) {}
-
-    async onUnloadChunkData(chunkData) {}
-
-    createChunkData(width, height)
-    {
-        return new ChunkData(width, height);
-    }
-
-    async loadChunkData(chunk, chunkData)
-    {
-        let loading = this.onLoadChunkData(chunkData);
-        this.chunksLoading[chunk.chunkId] = loading;
-    }
-
-    unloadChunkData(chunk, chunkData)
-    {
-        this.onUnloadChunkData(chunkData);
     }
 }

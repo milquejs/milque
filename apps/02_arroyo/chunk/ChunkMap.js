@@ -1,6 +1,5 @@
 import { BlockPos } from './BlockPos.js';
-import { Block, BlockFluid, BlockAir } from './Block.js';
-import { ChunkManager } from './Chunk.js';
+import { ChunkManager } from './ChunkManager.js';
 
 export class ChunkMap extends ChunkManager
 {
@@ -16,29 +15,6 @@ export class ChunkMap extends ChunkManager
             top,
             bottom,
         };
-    }
-
-    placeBlock(x, y, block)
-    {
-        let pos = this.at(x, y);
-        if (!(block instanceof BlockFluid))
-        {
-            let prevBlockId = this.getBlockId(pos);
-            let prevBlock = Block.getBlock(prevBlockId);
-            prevBlock.onBlockBreak(this, pos);
-        }
-        else
-        {
-            let prevBlockId = this.getBlockId(pos);
-            let prevBlock = Block.getBlock(prevBlockId);
-            if (!(prevBlock instanceof BlockAir))
-            {
-                return this;
-            }
-        }
-        this.setBlockId(pos, block.blockId);
-        block.onBlockPlace(this, pos);
-        return this;
     }
 
     isWithinBounds(blockPos)

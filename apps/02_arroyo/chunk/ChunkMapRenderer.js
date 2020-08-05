@@ -1,4 +1,4 @@
-import * as BlockRenderer from './BlockRenderer.js';
+import * as BlockRenderer from './block/BlockRenderer.js';
 
 export async function load() {}
 
@@ -42,7 +42,9 @@ export function drawChunk(ctx, chunkMap, chunk, blockSize)
             blockPos.set(x + chunkOffsetX, y + chunkOffsetY);
             ctx.translate(x * blockSize, y * blockSize);
             {
-                BlockRenderer.drawBlock(ctx, chunkMap, blockPos, blockSize);
+                BlockRenderer.renderBlock(ctx, { map: chunkMap }, blockPos, blockSize);
+                // ctx.fillStyle = 'white';
+                // ctx.fillText(chunkMap.getBlockNeighbor(blockPos), 0, 0);
             }
             ctx.translate(-x * blockSize, -y * blockSize);
         }
