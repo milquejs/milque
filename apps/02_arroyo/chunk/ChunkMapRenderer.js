@@ -1,4 +1,4 @@
-import * as BlockRenderer from './block/BlockRenderer.js';
+import * as BlockRenderer from '../block/BlockRenderer.js';
 
 export async function load() {}
 

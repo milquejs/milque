@@ -1,12 +1,12 @@
-import { Random, Camera2D } from './lib.js';
+import { Random, Camera2D } from '../lib.js';
 
-import { ChunkMap } from './chunk/ChunkMap.js';
+import { ChunkMap } from '../chunk/ChunkMap.js';
+
+import { BLOCKS } from '../block/BlockRegistry.js';
+import { FLUID_COMPONENT, AIR_COMPONENT, MAX_FLUID_LEVELS } from '../block/fluid/FluidSystem.js';
+import { placeBlock } from '../block/placement/PlacementSystem.js';
 
 import * as Tetrominoes from './Tetrominoes.js';
-
-import { BLOCKS } from './block/BlockRegistry.js';
-import { FLUID_COMPONENT, AIR_COMPONENT, MAX_FLUID_LEVELS } from './block/fluid/FluidSystem.js';
-import { placeBlock } from './block/placement/PlacementSystem.js';
 
 export const RESPAWN_PLACEMENT_TICKS = 30;
 export const PLACEMENT_BLOCK_IDS = [
@@ -237,7 +237,7 @@ function randomizePlacement(state)
             flag = true;
             break;
         case 1: // Water
-            flag = Random.next() < (1 / 6);
+            flag = Random.next() < (1 / 3);
             break;
         case 3: // Dirt
             flag = Random.next() < (1 / 10);

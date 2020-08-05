@@ -1,6 +1,5 @@
 import { CanvasView, Camera2D, MathHelper, Audio, Random, Downloader, Uploader, Eventable } from './lib.js';
 
-import { Chunk, ChunkData, toChunkCoords } from './chunk/Chunk.js';
 import { ChunkMap } from './chunk/ChunkMap.js';
 import * as ChunkMapRenderer from './chunk/ChunkMapRenderer.js';
 
@@ -8,8 +7,11 @@ import * as WorldEvents from './block/WorldEvents.js';
 import * as FluidSystem from './block/fluid/FluidSystem.js';
 import * as PlacementSystem from './block/placement/PlacementSystem.js';
 import * as Blocks from './block/Blocks.js';
+import { renderDayNight } from './block/daynight/DayNightRenderer.js';
 
-import * as Placement from './Placement.js';
+import * as Placement from './tetromino/Placement.js';
+
+import * as WorldLoader from './WorldLoader.js';
 
 // TODO: Move the camera towards the placed block each time.
 // TODO: Regionize the block maps.
@@ -83,7 +85,7 @@ async function main()
     PlacementSystem.initialize(world);
 
     let worldData = localStorage.getItem('worldData');
-    if (!worldData || !loadWorld(world, JSON.parse(worldData)))
+    if (!worldData || !WorldLoader.loadWorld(world, JSON.parse(worldData)))
     {
         initializeWorld(world, display);
     }
@@ -110,7 +112,7 @@ async function main()
         // Save world
         else if (Save.value)
         {
-            let worldData = saveWorld(world, {});
+            let worldData = WorldLoader.saveWorld(world, {});
             Downloader.downloadText('worldData.json', JSON.stringify(worldData));
         }
         // Load world
@@ -121,7 +123,7 @@ async function main()
                 .then(textData => {
                     let worldData = JSON.parse(textData);
                     world.map.clear();
-                    if (!worldData || !loadWorld(world, worldData))
+                    if (!worldData || !WorldLoader.loadWorld(world, worldData))
                     {
                         initializeWorld(world, display);
                     }
@@ -233,7 +235,7 @@ async function main()
         if (autoSaveTicks <= 0)
         {
             autoSaveTicks = MAX_AUTO_SAVE_TICKS;
-            let worldData = saveWorld(world, {});
+            let worldData = WorldLoader.saveWorld(world, {});
             localStorage.setItem('worldData', JSON.stringify(worldData));
         }
         else
@@ -242,6 +244,7 @@ async function main()
         }
 
         ctx.clearRect(0, 0, display.width, display.height);
+        renderDayNight(ctx, display);
         view.begin(ctx, viewMatrix, projectionMatrix);
         {
             ChunkMapRenderer.drawChunkMap(ctx, world.map, blockSize);
@@ -284,68 +287,4 @@ function initializeWorld(world, display)
 
     world.cameraX = -display.width / 2;
     world.cameraY = -display.height / 2;
-}
-
-function loadWorld(world, worldData)
-{
-    const chunkWidth = world.map.chunkWidth;
-    const chunkHeight = world.map.chunkHeight;
-    if (chunkWidth !== worldData.chunkWidth || chunkHeight !== worldData.chunkHeight) return null;
-
-    world.score = worldData.score || 0;
-    world.cameraX = worldData.cameraX || 0;
-    world.cameraY = worldData.cameraY || 0;
-
-    const length = chunkWidth * chunkHeight;
-    for(let chunkId of Object.keys(worldData.chunks))
-    {
-        const chunkData = worldData.chunks[chunkId];
-        const [chunkCoordX, chunkCoordY] = toChunkCoords(chunkId);
-
-        let data = new ChunkData(chunkWidth, chunkHeight);
-        for(let i = 0; i < length; ++i)
-        {
-            data.block[i] = chunkData.block[i];
-            data.meta[i] = chunkData.meta[i];
-            data.neighbor[i] = chunkData.neighbor[i];
-        }
-        let chunk = new Chunk(this, chunkId, chunkCoordX, chunkCoordY, data);
-        world.map.chunks[chunkId] = chunk;
-    }
-
-    return world;
-}
-
-function saveWorld(world, worldData)
-{
-    const chunkWidth = world.map.chunkWidth;
-    const chunkHeight = world.map.chunkHeight;
-
-    worldData.score = world.score;
-    worldData.cameraX = world.cameraX;
-    worldData.cameraY = world.cameraY;
-    worldData.chunkWidth = chunkWidth;
-    worldData.chunkHeight = chunkHeight;
-    
-    let chunks = {};
-    const length = chunkWidth * chunkHeight;
-    for(let chunk of world.map.getLoadedChunks())
-    {
-        const chunkId = chunk.chunkId;
-        let data = {
-            block: new Array(length),
-            meta: new Array(length),
-            neighbor: new Array(length),
-        };
-        for(let i = 0; i < length; ++i)
-        {
-            data.block[i] = chunk.data.block[i];
-            data.meta[i] = chunk.data.meta[i];
-            data.neighbor[i] = chunk.data.neighbor[i];
-        }
-        chunks[chunkId] = data;
-    }
-
-    worldData.chunks = chunks;
-    return worldData;
 }
