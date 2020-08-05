@@ -1,7 +1,8 @@
 import { AssetLoader } from '../lib.js';
 import { BLOCKS } from './BlockRegistry.js';
-import { GOLD, DIRT } from './Blocks.js';
+import { GOLD, DIRT, GRASS } from './Blocks.js';
 import { MAX_FLUID_LEVELS } from './fluid/FluidSystem.js';
+import { MAX_HYDRATE_LEVELS } from './hydrate/HydrateSystem.js';
 
 let assets = {};
 export async function load()
@@ -63,9 +64,16 @@ function renderBlockSolid(ctx, world, blockPos, blockSize, blockId)
     }
     else if (blockId === DIRT.blockId)
     {
+        const blockMeta = worldMap.getBlockMeta(blockPos);
         let osx = blockPos.blockCoordX % 2 === 0;
         let osy = blockPos.blockCoordY % 2 === 0;
-        ctx.fillStyle = `rgba(0, 0, 0, ${osx && osy ? 0.1 : 0})`;
+        ctx.fillStyle = `rgba(0, 0, 0, ${(osx && osy ? 0.1 : 0) + (blockMeta / MAX_HYDRATE_LEVELS) * 0.5})`;
+        ctx.fillRect(0, 0, blockSize, blockSize);
+    }
+    else if (blockId === GRASS.blockId)
+    {
+        let osx = blockPos.blockCoordX % 2 === 0;
+        ctx.fillStyle = `rgba(0, 0, 0, ${osx ? 0.1 : 0})`;
         ctx.fillRect(0, 0, blockSize, blockSize);
     }
 }

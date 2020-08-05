@@ -10,7 +10,7 @@ export function initialize(world)
     // Do nothing.
 }
 
-export function placeBlock(world, blockPos, blockId)
+export function placeBlock(world, blockPos, blockId, blockMeta = 0)
 {
     const prevBlockId = world.map.getBlockId(blockPos);
     const isNextFluid = BLOCKS.hasComponent(FLUID_COMPONENT, blockId);
@@ -33,6 +33,7 @@ export function placeBlock(world, blockPos, blockId)
     }
 
     world.map.setBlockId(blockPos, blockId);
+    world.map.setBlockMeta(blockPos, blockMeta);
 
     if (!isNextFluid)
     {

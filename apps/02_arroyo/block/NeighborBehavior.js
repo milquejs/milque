@@ -1,9 +1,29 @@
+export function hasUpNeighbor(neighbor)
+{
+    return neighbor & 0b0010 != 0;
+}
+
+export function hasDownNeighbor(neighbor)
+{
+    return neighbor & 0b1000 != 0;
+}
+
+export function hasRightNeighbor(neighbor)
+{
+    return neighbor & 0b0001 != 0;
+}
+
+export function hasLeftNeighbor(neighbor)
+{
+    return neighbor & 0b0100 != 0;
+}
+
 export function onBlockPlace(world, blockPos, blockId)
 {
     const worldMap = world.map;
 
     let out = blockPos.clone();
-    let neighbor = 0b000;
+    let neighbor = 0b0000;
     if (worldMap.isWithinBounds(blockPos.right(out))
         && worldMap.getBlockId(out) === blockId)
     {

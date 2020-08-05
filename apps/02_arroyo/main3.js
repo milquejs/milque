@@ -3,11 +3,12 @@ import { CanvasView, Camera2D, MathHelper, Audio, Random, Downloader, Uploader, 
 import { ChunkMap } from './chunk/ChunkMap.js';
 import * as ChunkMapRenderer from './chunk/ChunkMapRenderer.js';
 
+import * as Blocks from './block/Blocks.js';
 import * as WorldEvents from './block/WorldEvents.js';
 import * as FluidSystem from './block/fluid/FluidSystem.js';
 import * as PlacementSystem from './block/placement/PlacementSystem.js';
-import * as Blocks from './block/Blocks.js';
-import { renderDayNight } from './block/daynight/DayNightRenderer.js';
+import * as GrassSystem from './block/grass/GrassSystem.js';
+import * as HydrateSystem from './block/hydrate/HydrateSystem.js';
 
 import * as Placement from './tetromino/Placement.js';
 
@@ -83,6 +84,8 @@ async function main()
     // Initialize systems
     FluidSystem.initialize(world);
     PlacementSystem.initialize(world);
+    GrassSystem.initialize(world);
+    HydrateSystem.initialize(world);
 
     let worldData = localStorage.getItem('worldData');
     if (!worldData || !WorldLoader.loadWorld(world, JSON.parse(worldData)))
@@ -216,6 +219,8 @@ async function main()
 
         Placement.update(dt, placement, Place, Rotate, world, nextPlaceX, nextPlaceY, onPlace, onReset);
 
+        WorldEvents.emitUpdateEvent(world);
+
         // Compute block physics
         if (blockTicks <= 0)
         {
@@ -223,7 +228,28 @@ async function main()
 
             // if (Debug.value)
             {
-                WorldEvents.emitUpdateEvent(world);
+                WorldEvents.emitWorldUpdateEvent(world);
+
+                const chunks = world.map.getLoadedChunks();
+                const chunkWidth = world.map.chunkWidth;
+                const chunkHeight = world.map.chunkHeight;
+                
+                let blockPos = world.map.at(0, 0);
+                for(let chunk of chunks)
+                {
+                    const chunkX = chunk.chunkCoordX * chunkWidth;
+                    const chunkY = chunk.chunkCoordY * chunkHeight;
+                    WorldEvents.emitChunkUpdateEvent(world, chunk);
+                    
+                    for(let y = 0; y < chunkHeight; ++y)
+                    {
+                        for(let x = 0; x < chunkWidth; ++x)
+                        {
+                            blockPos.set(x + chunkX, y + chunkY);
+                            WorldEvents.emitBlockUpdateEvent(world, chunk, blockPos);
+                        }
+                    }
+                }
             }
         }
         else
@@ -244,7 +270,6 @@ async function main()
         }
 
         ctx.clearRect(0, 0, display.width, display.height);
-        renderDayNight(ctx, display);
         view.begin(ctx, viewMatrix, projectionMatrix);
         {
             ChunkMapRenderer.drawChunkMap(ctx, world.map, blockSize);

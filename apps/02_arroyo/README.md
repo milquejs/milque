@@ -24,3 +24,6 @@ Each placed block should advance the music beat.
 # SEAWEED
 - Only grows in full water blocks on top of dirt.
 - When the block should become NOT FULL, it turns into just water.
+
+# Day Night Cycle
+- Maybe have it rotate around the structure?

@@ -1,7 +1,7 @@
 import { Random } from '../../lib.js';
 import { BLOCKS } from '../BlockRegistry.js';
 import { PLACE_EVENT } from '../placement/PlacementEvents.js';
-import { UPDATE_EVENT } from '../WorldEvents.js';
+import { WORLD_UPDATE_EVENT } from '../WorldEvents.js';
 
 export const AIR_COMPONENT = 'air';
 export const FLUID_COMPONENT = 'fluid';
@@ -11,7 +11,7 @@ export const MAX_FLUID_LEVELS = 3;
 export function initialize(world)
 {
     world.on(PLACE_EVENT, onBlockPlace);
-    world.on(UPDATE_EVENT, onWorldUpdate);
+    world.on(WORLD_UPDATE_EVENT, onWorldUpdate);
 }
 
 function onBlockPlace(world, blockPos, blockId)
