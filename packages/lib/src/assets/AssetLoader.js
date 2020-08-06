@@ -87,7 +87,7 @@ export async function loadAssetList(assetList, assetParentPath = '.')
     return result;
 }
 
-export async function loadAsset(assetSrc, assetOpts = undefined, assetParentPath = '.')
+export async function loadAsset(assetSrc, assetOpts = {}, assetParentPath = '.')
 {
     if (assetSrc.indexOf(':') < 0)
     {

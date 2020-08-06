@@ -1,4 +1,4 @@
-import { mat4, vec3, quat } from '../../../../node_modules/gl-matrix/esm/index.js';
+import { mat4, vec3, quat } from '../../../../deps.js';
 import { Camera } from './Camera.js';
 
 export class Camera2D extends Camera

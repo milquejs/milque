@@ -1,4 +1,4 @@
-export async function loadBytes(filepath, opts = {})
+export async function loadBytes(filepath, opts)
 {
     let result = await fetch(filepath);
     let buffer = await result.arrayBuffer();

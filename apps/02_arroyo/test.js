@@ -1,4 +1,4 @@
-import { ChunkMap } from './ChunkMap.js';
+import { ChunkMap } from './chunk/ChunkMap.js';
 
 async function test1()
 {

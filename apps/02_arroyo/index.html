@@ -10,8 +10,7 @@
             body { margin: 0; width: 100%; height: 100%; }
         </style>
 
-        <script type="module" src="../../packages/display/src/index.js"></script>
-        <script type="module" src="../../packages/input/src/index.js"></script>
+        <script type="module" src="./lib.js"></script>
         <script type="module" src="./test.js"></script>
     </head>
     <body>
@@ -33,6 +32,8 @@
             <input-key input="right" key="keyboard:ArrowRight" scale="1"></input-key>
             <!-- Actions -->
             <input-key input="reset" key="keyboard:KeyR" event="down"></input-key>
+            <input-key input="save" key="keyboard:KeyS" event="down"></input-key>
+            <input-key input="load" key="keyboard:KeyL" event="down"></input-key>
             <input-key input="debug" key="keyboard:Space" scale="1"></input-key>
         </input-context>
         

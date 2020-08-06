@@ -1,4 +1,4 @@
-export async function loadOBJ(filepath, opts = {})
+export async function loadOBJ(filepath, opts)
 {
     let result = await fetch(filepath);
     let string = await result.text();

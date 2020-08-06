@@ -1,1 +1,1 @@
-export { Random } from '../../packages/random/src/index.js';
+export * from '../../packages/lib/dist/esm/index.js';

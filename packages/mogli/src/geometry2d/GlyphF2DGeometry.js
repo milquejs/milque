@@ -1,4 +1,4 @@
-import { mat3 } from '../../../../node_modules/gl-matrix/esm/index.js';
+import { mat3 } from '../../../../deps.js';
 import { applyColor2D, applyTransformation2D, joinGeometry2D } from './Geometry2DHelper.js';
 import * as Quad2DGeometry from './Quad2DGeometry.js';
 

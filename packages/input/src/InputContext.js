@@ -4,6 +4,8 @@ import { Keyboard } from './device/Keyboard.js';
 import { Input } from './Input.js';
 import { InputKey } from './InputKey.js';
 
+// TODO: Maybe this should be InputMap.getContext()?
+
 const INNER_HTML = `
 <table>
     <thead>

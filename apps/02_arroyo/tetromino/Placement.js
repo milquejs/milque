@@ -1,18 +1,23 @@
-import { Random, Camera2D } from './lib.js';
-import { ChunkMap } from './ChunkMap.js';
-import { Block, BlockAir, BlockFluid } from './Block.js';
+import { Random, Camera2D } from '../lib.js';
+
+import { ChunkMap } from '../chunk/ChunkMap.js';
+
+import { BLOCKS } from '../block/BlockRegistry.js';
+import { FLUID_COMPONENT, AIR_COMPONENT, MAX_FLUID_LEVELS } from '../block/fluid/FluidSystem.js';
+import { placeBlock } from '../block/placement/PlacementSystem.js';
+
 import * as Tetrominoes from './Tetrominoes.js';
-import * as Blocks from './Blocks.js';
 
 export const RESPAWN_PLACEMENT_TICKS = 30;
 export const PLACEMENT_BLOCK_IDS = [
-    1, 3, 4, 5, 6,
+    1, 3, 4, 6, 7, 8, 9, 10, 11, 12
 ];
 
 export function initialize()
 {
     return {
         placing: false,
+        floating: true,
         shape: null,
         shapeType: null,
         shapeMap: new ChunkMap(0, 0, Tetrominoes.MAX_WIDTH, Tetrominoes.MAX_HEIGHT),
@@ -25,47 +30,64 @@ export function initialize()
 
 export function update(dt, state, placeInput, rotateInput, world, cx, cy, onplace, onreset)
 {
+    const worldMap = world.map;
+
     // Block placement
     if (state.placing)
     {
         const shape = state.shape;
 
-        const nextPlaceX = Math.min(world.bounds.right - shape.w, Math.max(world.bounds.left, cx - Math.floor((shape.w - 1) / 2)));
-        const nextPlaceY = Math.min(world.bounds.bottom - shape.h, Math.max(world.bounds.top, cy - Math.floor((shape.h - 1) / 2)));
+        const nextPlaceX = Math.min(worldMap.bounds.right - shape.w, Math.max(worldMap.bounds.left, cx - Math.floor((shape.w - 1) / 2)));
+        const nextPlaceY = Math.min(worldMap.bounds.bottom - shape.h, Math.max(worldMap.bounds.top, cy - Math.floor((shape.h - 1) / 2)));
 
-        const prevPlaceX = state.placeX;
-        if (prevPlaceX < nextPlaceX)
+        if (state.floating)
         {
-            if (!intersectBlock(shape, prevPlaceX + 1, state.placeY, world))
+            const dx = Math.sign(nextPlaceX - state.placeX);
+            const dy = Math.sign(nextPlaceY - state.placeY);
+            if (!intersectBlock(shape, state.placeX + dx, state.placeY + dy, worldMap))
             {
-                state.placeX += 1;
+                state.floating = false;
             }
+            state.placeX += dx;
+            state.placeY += dy;
+            state.valid = false;
         }
-        else if (prevPlaceX > nextPlaceX)
+        else
         {
-            if (!intersectBlock(shape, prevPlaceX - 1, state.placeY, world))
+            const prevPlaceX = state.placeX;
+            if (prevPlaceX < nextPlaceX)
             {
-                state.placeX -= 1;
+                if (!intersectBlock(shape, prevPlaceX + 1, state.placeY, worldMap))
+                {
+                    state.placeX += 1;
+                }
             }
-        }
+            else if (prevPlaceX > nextPlaceX)
+            {
+                if (!intersectBlock(shape, prevPlaceX - 1, state.placeY, worldMap))
+                {
+                    state.placeX -= 1;
+                }
+            }
+    
+            const prevPlaceY = state.placeY;
+            if (prevPlaceY < nextPlaceY)
+            {
+                if (!intersectBlock(shape, state.placeX, prevPlaceY + 1, worldMap))
+                {
+                    state.placeY += 1;
+                }
+            }
+            else if (prevPlaceY > nextPlaceY)
+            {
+                if (!intersectBlock(shape, state.placeX, prevPlaceY - 1, worldMap))
+                {
+                    state.placeY -= 1;
+                }
+            }
 
-        const prevPlaceY = state.placeY;
-        if (prevPlaceY < nextPlaceY)
-        {
-            if (!intersectBlock(shape, state.placeX, prevPlaceY + 1, world))
-            {
-                state.placeY += 1;
-            }
+            state.valid = canPlaceBlockShape(state.value, shape, state.placeX, state.placeY, worldMap);
         }
-        else if (prevPlaceY > nextPlaceY)
-        {
-            if (!intersectBlock(shape, state.placeX, prevPlaceY - 1, world))
-            {
-                state.placeY -= 1;
-            }
-        }
-
-        state.valid = canPlaceBlockShape(state.value, shape, state.placeX, state.placeY, world);
     }
 
     // Try placing and rotating
@@ -91,6 +113,7 @@ export function update(dt, state, placeInput, rotateInput, world, cx, cy, onplac
         {
             randomizePlacement(state);
             state.placing = true;
+            state.floating = true;
             state.valid = false;
 
             onreset(state);
@@ -102,10 +125,10 @@ export function update(dt, state, placeInput, rotateInput, world, cx, cy, onplac
     }
 }
 
-function intersectBlock(blockShape, blockX, blockY, world)
+function intersectBlock(blockShape, blockX, blockY, worldMap)
 {
     const { w, h, m } = blockShape;
-    let blockPos = world.at(0, 0);
+    let blockPos = worldMap.at(0, 0);
     for(let y = 0; y < h; ++y)
     {
         for(let x = 0; x < w; ++x)
@@ -114,21 +137,20 @@ function intersectBlock(blockShape, blockX, blockY, world)
             if (m[i])
             {
                 blockPos.set(x + blockX, y + blockY);
-                if (!world.isWithinLoaded(blockPos))
+                if (!worldMap.isWithinLoaded(blockPos))
                 {
                     continue;
                 }
 
-                let blockId = world.getBlockId(blockPos);
-                let block = Block.getBlock(blockId);
-                if (block instanceof BlockFluid)
+                let blockId = worldMap.getBlockId(blockPos);
+                if (BLOCKS.hasComponent(FLUID_COMPONENT, blockId))
                 {
-                    if (world.getBlockMeta(blockPos) >= BlockFluid.MAX_FLUID_LEVELS)
+                    if (worldMap.getBlockMeta(blockPos) >= MAX_FLUID_LEVELS)
                     {
                         return true;
                     }
                 }
-                else if (!(block instanceof BlockAir))
+                else if (!BLOCKS.hasComponent(AIR_COMPONENT, blockId))
                 {
                     return true;
                 }
@@ -138,11 +160,11 @@ function intersectBlock(blockShape, blockX, blockY, world)
     return false;
 }
 
-function canPlaceBlockShape(blockValue, blockShape, blockX, blockY, world)
+function canPlaceBlockShape(blockValue, blockShape, blockX, blockY, worldMap)
 {
-    if (Blocks.isBlockFluid(blockValue)) return true;
+    if (BLOCKS.hasComponent(FLUID_COMPONENT, blockValue)) return true;
     
-    let blockPos = world.at(blockX, blockY);
+    let blockPos = worldMap.at(blockX, blockY);
     const { w, h, m } = blockShape;
     for(let y = 0; y < h; ++y)
     {
@@ -152,11 +174,11 @@ function canPlaceBlockShape(blockValue, blockShape, blockX, blockY, world)
             let i = x + y * w;
             if (m[i])
             {
-                if (!world.isWithinLoaded(blockPos))
+                if (!worldMap.isWithinLoaded(blockPos))
                 {
                     continue;
                 }
-                if (world.getBlockNeighbor(blockPos) !== 0b1111)
+                if (worldMap.getBlockNeighbor(blockPos) !== 0b1111)
                 {
                     return true;
                 }
@@ -166,9 +188,10 @@ function canPlaceBlockShape(blockValue, blockShape, blockX, blockY, world)
     return false;
 }
 
-function placeBlockShape(blockValue, blockShape, blockX, blockY, shapeMap)
+function placeBlockShape(blockId, blockShape, blockX, blockY, world)
 {
     const { w, h, m } = blockShape;
+    let blockPos = world.map.at(0, 0);
     for(let y = 0; y < h; ++y)
     {
         for(let x = 0; x < w; ++x)
@@ -176,8 +199,26 @@ function placeBlockShape(blockValue, blockShape, blockX, blockY, shapeMap)
             let i = x + y * w;
             if (m[i])
             {
-                let block = Block.getBlock(blockValue);
-                shapeMap.placeBlock(x + blockX, y + blockY, block);
+                blockPos.set(x + blockX, y + blockY);
+                placeBlock(world, blockPos, blockId);
+            }
+        }
+    }
+}
+
+function setBlockShape(blockId, blockShape, blockX, blockY, shapeMap)
+{
+    const { w, h, m } = blockShape;
+    let blockPos = shapeMap.at(0, 0);
+    for(let y = 0; y < h; ++y)
+    {
+        for(let x = 0; x < w; ++x)
+        {
+            let i = x + y * w;
+            if (m[i])
+            {
+                blockPos.set(x + blockX, y + blockY);
+                shapeMap.setBlockId(blockPos, blockId);
             }
         }
     }
@@ -187,12 +228,37 @@ function randomizePlacement(state)
 {
     const shapeType = Random.choose(Tetrominoes.ALL);
     const shapeIndex = Math.floor(Random.range(0, shapeType.length));
-    const block = (state.value === 0 || Random.next() < 0.3) ? Random.choose(PLACEMENT_BLOCK_IDS) : state.value;
-    state.value = block;
+
+    const currentBlockId = state.value;
+    let flag = false;
+    switch(currentBlockId)
+    {
+        case 0:
+            flag = true;
+            break;
+        case 1: // Water
+            flag = Random.next() < (1 / 4);
+            break;
+        case 3: // Dirt
+            flag = Random.next() < (1 / 8);
+            break;
+        case 4: // Gold
+            flag = Random.next() < (1 / 4);
+            break;
+        case 6: // Stone
+            flag = Random.next() < (1 / 8);
+            break;
+        default:
+            flag = Random.next() < (1 / 6);
+            break;
+    }
+
+    const nextBlockId = flag ? Random.choose(PLACEMENT_BLOCK_IDS) : currentBlockId;
+    state.value = nextBlockId;
     state.shapeType = shapeType;
     state.shape = shapeType[shapeIndex];
     state.shapeMap.clear();
-    placeBlockShape(block, state.shape, 0, 0, state.shapeMap);
+    setBlockShape(nextBlockId, state.shape, 0, 0, state.shapeMap);
 }
 
 export function getPlacementSpawnPosition(

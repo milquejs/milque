@@ -1,4 +1,4 @@
-import { mat4 } from '../../../../node_modules/gl-matrix/esm/index.js';
+import { mat4 } from '../../../../deps.js';
 import { applyTransformation, joinGeometry } from './GeometryHelper.js';
 import * as PlaneGeometry from './PlaneGeometry.js';
 
