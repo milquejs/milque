@@ -1,82 +1,8 @@
 (function (global, factory) {
     typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
     typeof define === 'function' && define.amd ? define(['exports'], factory) :
-    (global = global || self, factory(global.Display = {}));
+    (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.Display = {}));
 }(this, (function (exports) { 'use strict';
-
-    /**
-     * @version 1.1.0
-     * @description
-     * A view is a section of a world that is drawn onto a section of a
-     * display. For every view, there must exist a camera and viewport.
-     * However, there could exist multiple cameras in the same view
-     * (albeit inactive).
-     * 
-     * A viewport is the section of the display that shows the content.
-     * Since viewports generally change with the display, it is calculated
-     * when needed rather than stored. Usually, you only want the full display
-     * as a viewport.
-     * 
-     * A camera is the view in the world space itself. This usually means
-     * it has the view and projection matrix. And because of its existance
-     * within the world, it is often manipulated to change the world view.
-     * 
-     * Another way to look at it is that viewports hold the destination
-     * dimensions of a view, whilst the camera holds the source transformations
-     * that are applied to a view's source canvas (its buffer) dimension.
-     * The size of the view buffer should never change (unless game resolution
-     * and aspect ratio changes).
-     */
-    class View
-    {
-        /**
-         * Creates a view which facilitates rendering from world to screen space.
-         */
-        constructor(width = 640, height = 480)
-        {
-            this._buffer = createViewBuffer(width, height);
-            this._width = width;
-            this._height = height;
-        }
-
-        get canvas() { return this._buffer.canvas; }
-        get context() { return this._buffer.context; }
-
-        get width() { return this._width; }
-        set width(value)
-        {
-            this._width = value;
-            this._canvas.width = value;
-        }
-        get height() { return this._height; }
-        set height(value)
-        {
-            this._height = value;
-            this._canvas.height = value;
-        }
-
-        drawBufferToCanvas(
-            targetCanvasContext,
-            viewPortX = 0,
-            viewPortY = 0,
-            viewPortWidth = targetCanvasContext.canvas.clientWidth,
-            viewPortHeight = targetCanvasContext.canvas.clientHeight)
-        {
-            targetCanvasContext.drawImage(this._buffer.canvas,
-                viewPortX, viewPortY, viewPortWidth, viewPortHeight);
-        }
-    }
-
-    function createViewBuffer(width, height)
-    {
-        let canvasElement = document.createElement('canvas');
-        canvasElement.width = width;
-        canvasElement.height = height;
-        canvasElement.style = 'image-rendering: pixelated';
-        let canvasContext = canvasElement.getContext('2d');
-        canvasContext.imageSmoothingEnabled = false;
-        return { canvas: canvasElement, context: canvasContext };
-    }
 
     const MODE_NOSCALE = 'noscale';
     const MODE_CENTER = 'center';
@@ -88,10 +14,12 @@
     const DEFAULT_HEIGHT = 150;
 
     const INNER_HTML = `
-<label class="hidden" id="title">display-port</label>
-<label class="hidden" id="fps">00</label>
-<label class="hidden" id="dimension">0x0</label>
-<canvas></canvas>`;
+<div>
+    <label class="hidden" id="title">display-port</label>
+    <label class="hidden" id="fps">00</label>
+    <label class="hidden" id="dimension">0x0</label>
+    <canvas></canvas>
+</div>`;
     const INNER_STYLE = `
 :host {
     display: inline-block;
@@ -106,6 +34,7 @@ div {
 canvas {
     background: #000000;
     margin: auto;
+    image-rendering: pixelated;
 }
 label {
     font-family: monospace;
@@ -150,11 +79,14 @@ label {
 }`;
 
     const TEMPLATE_KEY = Symbol('template');
+    const STYLE_KEY = Symbol('style');
 
     /**
-     * @version 1.2.0
+     * @version 1.2.2
      * @description
      * # Changelog
+     * ## 1.2.2
+     * - Removed 'contexttype'
      * ## 1.2.1
      * - Added 'contexttype' for getContext()
      * ## 1.2.0
@@ -186,9 +118,17 @@ label {
         static get [TEMPLATE_KEY]()
         {
             let template = document.createElement('template');
-            template.innerHTML = `<div>${INNER_HTML}<style>${INNER_STYLE}</style></div>`;
+            template.innerHTML = INNER_HTML;
             Object.defineProperty(this, TEMPLATE_KEY, { value: template });
             return template;
+        }
+
+        static get [STYLE_KEY]()
+        {
+            let style = document.createElement('style');
+            style.innerHTML = INNER_STYLE;
+            Object.defineProperty(this, STYLE_KEY, { value: style });
+            return style;
         }
 
         /** @override */
@@ -198,7 +138,6 @@ label {
                 'width',
                 'height',
                 'disabled',
-                'contexttype',
                 // Event handlers...
                 'onframe',
                 /*
@@ -219,9 +158,9 @@ label {
 
             this.attachShadow({ mode: 'open' });
             this.shadowRoot.appendChild(this.constructor[TEMPLATE_KEY].content.cloneNode(true));
+            this.shadowRoot.appendChild(this.constructor[STYLE_KEY].cloneNode(true));
 
             this._canvasElement = this.shadowRoot.querySelector('canvas');
-            this._canvasContext = null;
 
             this._titleElement = this.shadowRoot.querySelector('#title');
             this._fpsElement = this.shadowRoot.querySelector('#fps');
@@ -241,12 +180,16 @@ label {
 
             this.update = this.update.bind(this);
         }
+
+        get canvas() { return this._canvasElement; }
         
         /** @override */
         connectedCallback()
         {
             if (!this.hasAttribute('mode')) this.mode = DEFAULT_MODE;
-            if (!this.hasAttribute('contexttype')) this.contexttype = '2d';
+            
+            // Allows this element to be focusable
+            if (!this.hasAttribute('tabindex')) this.setAttribute('tabindex', 0);
 
             this.updateCanvasSize();
             this.resume();
@@ -268,10 +211,6 @@ label {
                     break;
                 case 'height':
                     this._height = value;
-                    break;
-                case 'contexttype':
-                    this._canvasContext = this._canvasElement.getContext(value);
-                    this._canvasContext.imageSmoothingEnabled = false;
                     break;
                 case 'disabled':
                     if (value)
@@ -312,14 +251,14 @@ label {
             this._animationRequestHandle = requestAnimationFrame(this.update);
 
             this.updateCanvasSize();
-            const delta = now - this._prevAnimationFrameTime;
+            const deltaTime = now - this._prevAnimationFrameTime;
             this._prevAnimationFrameTime = now;
 
             // NOTE: For debugging purposes...
             if (this.debug)
             {
                 // Update FPS...
-                const frames = delta <= 0 ? '--' : String(Math.round(1000 / delta)).padStart(2, '0');
+                const frames = deltaTime <= 0 ? '--' : String(Math.round(1000 / deltaTime)).padStart(2, '0');
                 if (this._fpsElement.innerText !== frames)
                 {
                     this._fpsElement.innerText = frames;
@@ -347,9 +286,11 @@ label {
             this.dispatchEvent(new CustomEvent('frame', {
                 detail: {
                     now,
-                    prev: this._prevAnimationFrameTime,
-                    delta,
-                    context: this._canvasContext
+                    prevTime: this._prevAnimationFrameTime,
+                    deltaTime: deltaTime,
+                    canvas: this._canvasElement,
+                    /** @deprecated */
+                    get context() { let ctx = this.canvas.getContext('2d'); ctx.imageSmoothingEnabled = false; return ctx; },
                 },
                 bubbles: false,
                 composed: true
@@ -365,20 +306,7 @@ label {
         {
             this._animationRequestHandle = requestAnimationFrame(this.update);
         }
-
-        clear(fill = undefined)
-        {
-            if (fill)
-            {
-                this._canvasContext.fillStyle = 'black';
-                this._canvasContext.fillRect(0, 0, this._canvasElement.clientWidth, this._canvasElement.clientHeight);
-            }
-            else
-            {
-                this._canvasContext.clearRect(0, 0, this._canvasElement.clientWidth, this._canvasElement.clientHeight);
-            }
-        }
-
+        
         updateCanvasSize()
         {
             let clientRect = this.shadowRoot.host.getBoundingClientRect();
@@ -420,17 +348,14 @@ label {
             canvasWidth = Math.floor(canvasWidth);
             canvasHeight = Math.floor(canvasHeight);
 
-            if (canvas.width !== canvasWidth || canvas.height !== canvasHeight)
+            if (canvas.clientWidth !== canvasWidth || canvas.clientHeight !== canvasHeight)
             {
-                canvas.width = canvasWidth;
-                canvas.height = canvasHeight;
+                canvas.width = this._width;
+                canvas.height = this._height;
                 canvas.style = `width: ${canvasWidth}px; height: ${canvasHeight}px`;
                 this.dispatchEvent(new CustomEvent('resize', { detail: { width: canvasWidth, height: canvasHeight }, bubbles: false, composed: true }));
             }
         }
-
-        getCanvas() { return this._canvasElement; }
-        getContext() { return this._canvasContext; }
 
         /*
         // NOTE: Already handled by GlobalEventHandlers...
@@ -460,9 +385,6 @@ label {
         get mode() { return this.getAttribute('mode'); }
         set mode(value) { this.setAttribute('mode', value); }
 
-        get contexttype() { return this.getAttribute('contexttype'); }
-        set contexttype(value) { this.setAttribute('contexttype', value ); }
-
         get disabled() { return this.hasAttribute('disabled'); }
         set disabled(value) { if (value) this.setAttribute('disabled', ''); else this.removeAttribute('disabled'); }
 
@@ -473,7 +395,6 @@ label {
     window.customElements.define('display-port', DisplayPort);
 
     exports.DisplayPort = DisplayPort;
-    exports.View = View;
 
     Object.defineProperty(exports, '__esModule', { value: true });
 
