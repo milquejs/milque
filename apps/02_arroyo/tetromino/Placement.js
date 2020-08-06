@@ -10,7 +10,7 @@ import * as Tetrominoes from './Tetrominoes.js';
 
 export const RESPAWN_PLACEMENT_TICKS = 30;
 export const PLACEMENT_BLOCK_IDS = [
-    1, 3, 4, 6,
+    1, 3, 4, 6, 7, 8, 9, 10, 11, 12
 ];
 
 export function initialize()
@@ -237,19 +237,19 @@ function randomizePlacement(state)
             flag = true;
             break;
         case 1: // Water
-            flag = Random.next() < (1 / 3);
+            flag = Random.next() < (1 / 4);
             break;
         case 3: // Dirt
-            flag = Random.next() < (1 / 10);
+            flag = Random.next() < (1 / 8);
             break;
         case 4: // Gold
-            flag = Random.next() < (1 / 2);
+            flag = Random.next() < (1 / 4);
             break;
         case 6: // Stone
-            flag = Random.next() < (1 / 10);
+            flag = Random.next() < (1 / 8);
             break;
         default:
-            flag = Random.next() < (1 / 5);
+            flag = Random.next() < (1 / 6);
             break;
     }
 

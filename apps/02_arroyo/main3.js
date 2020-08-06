@@ -9,6 +9,8 @@ import * as FluidSystem from './block/fluid/FluidSystem.js';
 import * as PlacementSystem from './block/placement/PlacementSystem.js';
 import * as GrassSystem from './block/grass/GrassSystem.js';
 import * as HydrateSystem from './block/hydrate/HydrateSystem.js';
+import * as MaterialSystem from './block/material/MaterialSystem.js';
+import * as FallingSystem from './block/falling/FallingSystem.js';
 
 import * as Placement from './tetromino/Placement.js';
 
@@ -26,20 +28,15 @@ document.addEventListener('DOMContentLoaded', main);
 const MAX_BLOCK_TICKS = 10;
 const MAX_AUTO_SAVE_TICKS = 100;
 const MAX_FADE_IN_TICKS = 300;
+const BLOCK_SIZE = 4;
 
 const SOUNDS = {};
 
-async function load()
+async function load(assets)
 {
     SOUNDS.flick = await Audio.loadAudio('../../res/arroyo/flick.wav');
     SOUNDS.melt = await Audio.loadAudio('../../res/arroyo/melt.mp3');
 
-    SOUNDS.dirt = await Audio.loadAudio('../../res/arroyo/dirt.wav');
-    SOUNDS.ding = await Audio.loadAudio('../../res/arroyo/ding.wav');
-    SOUNDS.waterpop = await Audio.loadAudio('../../res/arroyo/waterpop.wav');
-    SOUNDS.stone = await Audio.loadAudio('../../res/arroyo/stone.wav');
-
-    SOUNDS.place = SOUNDS.dirt;
     SOUNDS.reset = SOUNDS.flick;
     SOUNDS.background = SOUNDS.melt;
 
@@ -63,12 +60,12 @@ async function main()
     const ctx = display.canvas.getContext('2d');
     ctx.imageSmoothingEnabled = false;
 
-    await load();
+    const assets = {};
+    await load(assets);
+    await MaterialSystem.load(assets);
 
     const view = new CanvasView();
     const camera = new Camera2D();
-
-    const blockSize = 4;
 
     // Initialize world
     const world = {
@@ -86,6 +83,8 @@ async function main()
     PlacementSystem.initialize(world);
     GrassSystem.initialize(world);
     HydrateSystem.initialize(world);
+    MaterialSystem.initialize(world);
+    FallingSystem.initialize(world);
 
     let worldData = localStorage.getItem('worldData');
     if (!worldData || !WorldLoader.loadWorld(world, JSON.parse(worldData)))
@@ -149,8 +148,8 @@ async function main()
             let radian = Math.atan2(cy, cx);
             let distance = MathHelper.distance2(0, 0, cx, cy);
             let clampDist = distance < 0.3 ? 0 : distance - 0.3;
-            let cameraOffsetX = Math.cos(radian) * clampDist * blockSize * world.map.chunkWidth * cw * cameraOffsetAmount;
-            let cameraOffsetY = Math.sin(radian) * clampDist * blockSize * world.map.chunkWidth * ch * cameraOffsetAmount;
+            let cameraOffsetX = Math.cos(radian) * clampDist * BLOCK_SIZE * world.map.chunkWidth * cw * cameraOffsetAmount;
+            let cameraOffsetY = Math.sin(radian) * clampDist * BLOCK_SIZE * world.map.chunkWidth * ch * cameraOffsetAmount;
             camera.moveTo(
                 MathHelper.lerp(camera.x, world.cameraX + cameraOffsetX, dt * cameraSpeed),
                 MathHelper.lerp(camera.y, world.cameraY + cameraOffsetY, dt * cameraSpeed)
@@ -162,41 +161,22 @@ async function main()
 
         // Cursor worldPos
         const [cursorX, cursorY] = Camera2D.screenToWorld(CursorX.value * display.width, CursorY.value * display.height, viewMatrix, projectionMatrix);
-        const nextPlaceX = Math.floor(cursorX / blockSize);
-        const nextPlaceY = Math.floor(cursorY / blockSize);
+        const nextPlaceX = Math.floor(cursorX / BLOCK_SIZE);
+        const nextPlaceY = Math.floor(cursorY / BLOCK_SIZE);
 
         function onPlace(placeState)
         {
             // Move towards placement
             const [centerX, centerY] = Camera2D.screenToWorld(display.width / 2, display.height / 2, viewMatrix, projectionMatrix);
-            const centerCoordX = Math.floor(centerX / blockSize);
-            const centerCoordY = Math.floor(centerY / blockSize);
+            const centerCoordX = Math.floor(centerX / BLOCK_SIZE);
+            const centerCoordY = Math.floor(centerY / BLOCK_SIZE);
             let dx = Math.ceil((placeState.placeX - centerCoordX) / 4);
             let dy = Math.ceil((placeState.placeY - centerCoordY) / 4);
-            world.cameraX += dx * blockSize;
-            world.cameraY += dy * blockSize;
+            world.cameraX += dx * BLOCK_SIZE;
+            world.cameraY += dy * BLOCK_SIZE;
             world.score += 1;
 
-            if (placeState.value === Blocks.DIRT.blockId)
-            {
-                SOUNDS.dirt.play({ pitch: Random.range(-5, 5) });
-            }
-            else if (placeState.value === Blocks.WATER.blockId)
-            {
-                SOUNDS.waterpop.play({ pitch: Random.range(-5, 5) });
-            }
-            else if (placeState.value === Blocks.GOLD.blockId)
-            {
-                SOUNDS.ding.play({ gain: 4, pitch: Random.range(-5, 5) });
-            }
-            else if (placeState.value === Blocks.STONE.blockId)
-            {
-                SOUNDS.stone.play({ gain: 1.5, pitch: Random.range(-5, 5) });
-            }
-            else
-            {
-                SOUNDS.place.play({ pitch: Random.range(-5, 5) });
-            }
+            MaterialSystem.playPlaceSound(placeState.value);
 
             if (world.firstPlace)
             {
@@ -208,7 +188,7 @@ async function main()
         function onReset(placeState)
         {
             let [resetPlaceX, resetPlaceY] = Placement.getPlacementSpawnPosition(
-                CursorX.value, CursorY.value, blockSize,
+                CursorX.value, CursorY.value, BLOCK_SIZE,
                 display.width, display.height,
                 viewMatrix, projectionMatrix
             );
@@ -272,15 +252,15 @@ async function main()
         ctx.clearRect(0, 0, display.width, display.height);
         view.begin(ctx, viewMatrix, projectionMatrix);
         {
-            ChunkMapRenderer.drawChunkMap(ctx, world.map, blockSize);
+            ChunkMapRenderer.drawChunkMap(ctx, world.map, BLOCK_SIZE);
 
             if (placement.placing)
             {
-                ctx.translate(placement.placeX * blockSize, placement.placeY * blockSize);
+                ctx.translate(placement.placeX * BLOCK_SIZE, placement.placeY * BLOCK_SIZE);
                 {
-                    ChunkMapRenderer.drawPlacement(ctx, placement, blockSize);
+                    ChunkMapRenderer.drawPlacement(ctx, placement, BLOCK_SIZE);
                 }
-                ctx.translate(-placement.placeX * blockSize, -placement.placeY * blockSize);
+                ctx.translate(-placement.placeX * BLOCK_SIZE, -placement.placeY * BLOCK_SIZE);
             }
         }
         view.end(ctx);

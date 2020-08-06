@@ -5,7 +5,7 @@ import { FLUID_COMPONENT } from '../fluid/FluidSystem.js';
 import { placeBlock } from '../placement/PlacementSystem.js';
 
 export const HYDRATABLE_COMPONENT = 'hydratable';
-export const MAX_HYDRATE_LEVELS = 3;
+export const MAX_HYDRATE_LEVELS = 1;
 
 const AIR_BLOCK_ID = 0;
 

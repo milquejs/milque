@@ -18,17 +18,12 @@ function onBlockUpdate(world, chunk, blockPos)
     let blockId = worldMap.getBlockId(blockPos);
     if (BLOCKS.hasComponent(GRASS_SOIL_COMPONENT, blockId))
     {
-        let blockMeta = worldMap.getBlockMeta(blockPos);
-        // if (blockMeta > 0)
+        let upBlockId = worldMap.getBlockId(blockPos.up());
+        if (BLOCKS.hasComponent(AIR_COMPONENT, upBlockId))
         {
-            let upBlockId = worldMap.getBlockId(blockPos.up());
-            if (BLOCKS.hasComponent(AIR_COMPONENT, upBlockId))
+            if (Random.next() < 0.001)
             {
-                if (Random.next() < 0.001)
-                {
-                    PlacementSystem.placeBlock(world, blockPos, GRASS_BLOCK_ID);
-                    worldMap.setBlockMeta(blockPos, blockMeta - 1);
-                }
+                PlacementSystem.placeBlock(world, blockPos, GRASS_BLOCK_ID);
             }
         }
     }

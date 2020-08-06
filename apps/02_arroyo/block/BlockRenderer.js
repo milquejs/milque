@@ -1,8 +1,9 @@
 import { AssetLoader } from '../lib.js';
 import { BLOCKS } from './BlockRegistry.js';
 import { GOLD, DIRT, GRASS } from './Blocks.js';
-import { MAX_FLUID_LEVELS } from './fluid/FluidSystem.js';
-import { MAX_HYDRATE_LEVELS } from './hydrate/HydrateSystem.js';
+import { MAX_FLUID_LEVELS, AIR_COMPONENT } from './fluid/FluidSystem.js';
+
+import * as NeighborBehavior from './NeighborBehavior.js';
 
 let assets = {};
 export async function load()
@@ -64,11 +65,24 @@ function renderBlockSolid(ctx, world, blockPos, blockSize, blockId)
     }
     else if (blockId === DIRT.blockId)
     {
-        const blockMeta = worldMap.getBlockMeta(blockPos);
         let osx = blockPos.blockCoordX % 2 === 0;
         let osy = blockPos.blockCoordY % 2 === 0;
-        ctx.fillStyle = `rgba(0, 0, 0, ${(osx && osy ? 0.1 : 0) + (blockMeta / MAX_HYDRATE_LEVELS) * 0.5})`;
+        ctx.fillStyle = `rgba(0, 0, 0, ${osx && osy ? 0.1 : 0})`;
         ctx.fillRect(0, 0, blockSize, blockSize);
+        
+        const blockNeighbor = worldMap.getBlockNeighbor(blockPos);
+
+        const grassSize = Math.ceil(blockSize / 4);
+        if (!NeighborBehavior.hasUpNeighbor(blockNeighbor))
+        {
+            let upBlockId = worldMap.getBlockId(blockPos.up());
+            if (BLOCKS.hasComponent(AIR_COMPONENT, upBlockId))
+            {
+                ctx.fillStyle = 'limegreen';
+                ctx.fillRect(0, 0, blockSize, grassSize);
+            }
+            blockPos.down();
+        }
     }
     else if (blockId === GRASS.blockId)
     {
