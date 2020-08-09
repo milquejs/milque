@@ -2003,18 +2003,19 @@ const DEFAULT_WIDTH = 300;
 const DEFAULT_HEIGHT = 150;
 
 const INNER_HTML = `
-<div>
+<div class="container">
     <label class="hidden" id="title">display-port</label>
     <label class="hidden" id="fps">00</label>
     <label class="hidden" id="dimension">0x0</label>
     <canvas></canvas>
+    <slot></slot>
 </div>`;
 const INNER_STYLE = `
 :host {
     display: inline-block;
     color: #555555;
 }
-div {
+.container {
     display: flex;
     position: relative;
     width: 100%;
@@ -2045,7 +2046,7 @@ label {
 .hidden {
     display: none;
 }
-:host([debug]) div {
+:host([debug]) .container {
     outline: 6px dashed rgba(0, 0, 0, 0.1);
     outline-offset: -4px;
     background-color: rgba(0, 0, 0, 0.1);
@@ -2065,6 +2066,23 @@ label {
 }
 :host([disabled]) {
     display: none;
+}
+slot {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+
+    pointer-events: none;
+}
+::slotted(*) {
+    pointer-events: auto;
 }`;
 
 const TEMPLATE_KEY = Symbol('template');
@@ -3679,6 +3697,22 @@ class InputContext extends HTMLElement
             let result = new Input(inputName, 'range');
             this._inputs[inputName] = result;
             return result;
+        }
+        else
+        {
+            throw new Error(`Cannot find input with name '${inputName}'.`);
+        }
+    }
+
+    getInputValue(inputName)
+    {
+        if (inputName in this._inputs)
+        {
+            return this._inputs[inputName].value;
+        }
+        else if (!this.strict)
+        {
+            return 0;
         }
         else
         {
