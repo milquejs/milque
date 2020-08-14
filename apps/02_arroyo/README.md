@@ -27,3 +27,6 @@ Each placed block should advance the music beat.
 
 # Day Night Cycle
 - Maybe have it rotate around the structure?
+
+# Expand and Click
+What if you start with a block, and each time you click, it expands 3 times in a direction. Each block can be clicked, and it'll try to expand up to 3 times. Each block is connected to the previous one. So eventually you'll get a sprawling, winding maze. Each radius of blocks change color, as if per layer is a disk.

@@ -1,1 +1,1 @@
-export * as AssetLoader from '../../packages/lib/src/assets/AssetLoader.js';
+export * from '../../packages/lib/dist/esm/index.js';

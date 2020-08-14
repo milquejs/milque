@@ -1,169 +1,56 @@
-import { isUniformSamplerType, getUniformFunction, getUniformSamplerFunction } from './GLTypeInfo.js';
+import { getTypeInfo } from './GLTypeInfo.js';
 
-export function Program(gl)
+export function createArrayBuffer(gl, type, usage, data = [])
 {
-    let program = gl.createProgram();
-    let shaders = [];
-    
+    const { TypedArray } = getTypeInfo(gl, type);
+    let buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+    if (data instanceof TypedArray)
+    {
+        gl.bufferData(gl.ARRAY_BUFFER, data, usage);
+    }
+    else
+    {
+        gl.bufferData(gl.ARRAY_BUFFER, new TypedArray(data), usage);
+    }
     return {
-        shader(type, shaderSource)
-        {
-            let shader = createShader(gl, type, shaderSource);
-            shaders.push(shader);
-            return this;
-        },
-        link()
-        {
-            createShaderProgram(gl, program, shaders);
-            shaders.length = 0;
-            return program;
-        }
+        handle: buffer,
+        type,
+        target: gl.ARRAY_BUFFER,
+        length: data.length,
     };
 }
 
-export function ProgramAttributes(gl, program)
+export function createElementArrayBuffer(gl, type, usage, data = [])
 {
-    let attributes = {};
-    let activeAttributeInfos = getActiveAttributeInfos(gl, program);
-    for(let attributeInfo of activeAttributeInfos)
+    const { TypedArray } = getTypeInfo(gl, type);
+    let buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer);
+    if (data instanceof TypedArray)
     {
-        let attributeName = attributeInfo.name;
-        attributes[attributeName] = createAttribute(gl, program, attributeName);
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, data, usage);
     }
-    return attributes;
-}
-
-export function ProgramUniforms(gl, program)
-{
-    let uniforms = {};
-    let activeUniformInfos = getActiveUniformInfos(gl, program);
-    for(let uniformInfo of activeUniformInfos)
+    else
     {
-        let uniformName = uniformInfo.name;
-        let uniformType = uniformInfo.type;
-        if (isUniformSamplerType(gl, uniformType))
-        {
-            let textureUnit = 0;
-            let location = gl.getUniformLocation(program, uniformName);
-            let uniformSamplerFunction = getUniformSamplerFunction(gl, uniformType, textureUnit);
-            Object.defineProperty(uniforms, uniformName, {
-                set(value) {
-                    uniformSamplerFunction.call(gl, location, value);
-                }
-            });
-            throw new Error('Samplers are not yet supported.');
-        }
-        else
-        {
-            let location = gl.getUniformLocation(program, uniformName);
-            let uniformFunction = getUniformFunction(gl, uniformType);
-            Object.defineProperty(uniforms, uniformName, {
-                set(value) {
-                    uniformFunction.call(gl, location, value);
-                }
-            });
-        }
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new TypedArray(data), usage);
     }
-    return uniforms;
-}
-
-function createShader(gl, type, shaderSource)
-{
-    let shader = gl.createShader(type);
-    gl.shaderSource(shader, shaderSource);
-    gl.compileShader(shader);
-
-    let status = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
-    if (status)
-    {
-        return shader;
-    }
-
-    console.error(gl.getShaderInfoLog(shader));
-    gl.deleteShader(shader);
-}
-
-function createShaderProgram(gl, program, shaders)
-{
-    // Attach to the program.
-    for(let shader of shaders)
-    {
-        gl.attachShader(program, shader);
-    }
-
-    // Link'em!
-    gl.linkProgram(program);
-
-    // Don't forget to clean up the shaders! It's no longer needed.
-    for(let shader of shaders)
-    {
-        gl.detachShader(program, shader);
-        gl.deleteShader(shader);
-    }
-
-    let status = gl.getProgramParameter(program, gl.LINK_STATUS);
-    if (status)
-    {
-        return program;
-    }
-    
-    console.error(gl.getProgramInfoLog(program));
-    gl.deleteProgram(program);
-}
-
-function createAttribute(gl, program, attributeName)
-{
-    let location = gl.getAttribLocation(program, attributeName);
     return {
-        location,
-        useBuffer(target, type, buffer, size, normalize = false, stride = 0, offset = 0)
-        {
-            if (buffer)
-            {
-                switch(target)
-                {
-                    case gl.ARRAY_BUFFER:
-                        gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-                        gl.vertexAttribPointer(location, size, type, normalize, stride, offset);
-                        gl.enableVertexAttribArray(location);
-                        break;
-                    case gl.ELEMENT_ARRAY_BUFFER:
-                        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer);
-                        break;
-                    default:
-                        throw new Error(`GLTarget ${target} not supported.`);
-                }
-            }
-            else
-            {
-                gl.disableVertexAttribArray(attribute.location);
-            }
-        }
+        handle: buffer,
+        type,
+        target: gl.ELEMENT_ARRAY_BUFFER,
+        length: data.length,
     };
 }
 
-function getActiveAttributeInfos(gl, program)
+export function draw(gl, mode, offset, count, elements = null)
 {
-    let result = [];
-    const attributeCount = gl.getProgramParameter(program, gl.ACTIVE_ATTRIBUTES);
-    for(let i = 0; i < attributeCount; ++i)
+    if (elements)
     {
-        let attributeInfo = gl.getActiveAttrib(program, i);
-        if (!attributeInfo) continue;
-        result.push(attributeInfo);
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, elements.handle);
+        gl.drawElements(mode, count, elements.type, offset);
     }
-    return result;
-}
-
-function getActiveUniformInfos(gl, program)
-{
-    let result = [];
-    const uniformCount = gl.getProgramParameter(program, gl.ACTIVE_UNIFORMS);
-    for(let i = 0; i < uniformCount; ++i)
+    else
     {
-        let uniformInfo = gl.getActiveUniform(program, i);
-        if (!uniformInfo) break;
-        result.push(uniformInfo);
+        gl.drawArrays(mode, offset, count);
     }
-    return result;
 }

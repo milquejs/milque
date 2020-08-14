@@ -1,6 +1,6 @@
-import { AssetLoader } from './lib.js';
-import { Program, ProgramUniforms, ProgramAttributes } from './GLHelper.js';
-import * as GLTypeInfo from './GLTypeInfo.js';
+import { AssetLoader, mat4, vec3 } from './lib.js';
+import * as GLHelper from './GLHelper.js';
+import { createProgramInfo } from './ProgramInfo.js';
 
 document.addEventListener('DOMContentLoaded', main);
 
@@ -12,64 +12,50 @@ async function main()
     const gl = display.canvas.getContext('webgl');
     if (!gl) throw new Error('Your browser does not support webgl.');
 
+    gl.enable(gl.DEPTH_TEST);
+
     // 1. Create the program.
     const vertexShaderSource = await AssetLoader.loadAsset('text:main.vert');
     const fragmentShaderSource = await AssetLoader.loadAsset('text:main.frag');
-    const program = Program(gl)
+    const programInfo = createProgramInfo(gl)
         .shader(gl.VERTEX_SHADER, vertexShaderSource)
         .shader(gl.FRAGMENT_SHADER, fragmentShaderSource)
-        .link();
-    const uniforms = ProgramUniforms(gl, program);
-    const attributes = ProgramAttributes(gl, program);
+        .link(gl);
 
     // 2. Prepare the data.
-    const positionBuffer = createArrayBuffer(gl, gl.FLOAT, gl.STATIC_DRAW, [
-        0, 0,
-        0, 0.5,
-        0.5, 0,
-    ]);
+    const cubeGeometryData = await AssetLoader.loadAsset('obj:cube.obj');
+    const positionBuffer = GLHelper.createArrayBuffer(gl, gl.FLOAT, gl.STATIC_DRAW, cubeGeometryData.positions);
+    const texcoordBuffer = GLHelper.createArrayBuffer(gl, gl.FLOAT, gl.STATIC_DRAW, cubeGeometryData.texcoords);
+    const normalBuffer = GLHelper.createArrayBuffer(gl, gl.FLOAT, gl.STATIC_DRAW, cubeGeometryData.normals);
+    const indexBuffer = GLHelper.createElementArrayBuffer(gl, gl.UNSIGNED_SHORT, gl.STATIC_DRAW, cubeGeometryData.indices);
+
+    const projectionMatrix = mat4.perspective(mat4.create(), Math.PI * 40 / 180, gl.canvas.width / gl.canvas.height, 0.1, 1000);
+    const viewMatrix = mat4.fromTranslation(mat4.create(), vec3.fromValues(0, 0, -5));
+    const modelMatrix = mat4.fromRotation(mat4.create(), Math.PI / 2, vec3.fromValues(0, 1, 1))
 
     // Draw it.
     display.addEventListener('frame', e => {
         const dt = (e.detail.deltaTime / 1000) * 60;
 
         gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-        gl.clearColor(0, 0, 0, 0);
-        gl.clear(gl.COLOR_BUFFER_BIT);
+
+        clear(gl);
 
         // 3. Use the program.
-        gl.useProgram(program);
-        {
-            uniforms.u_color = [1, 0, 0.5, 1];
-            attributes.a_position.useBuffer(gl.ARRAY_BUFFER, gl.FLOAT, positionBuffer.handle, 2);
-
-            gl.drawArrays(gl.TRIANGLES, 0, 3);
-        }
+        programInfo.bind(gl)
+            .uniform('u_projection', projectionMatrix)
+            .uniform('u_view', viewMatrix)
+            .uniform('u_model', modelMatrix)
+            .uniform('u_color', [1, 0, 0.5, 1])
+            .attribute('a_position', positionBuffer.handle, 3)
+            .attribute('a_texcoord', texcoordBuffer.handle, 2)
+            .attribute('a_normal', normalBuffer.handle, 3)
+            .draw(gl, 0, indexBuffer.length, indexBuffer);
     });
 }
 
-function createArrayBuffer(gl, type, usage, data = [])
+function clear(gl)
 {
-    const typeInfo = GLTypeInfo.getTypeInfo(gl, type);
-    let buffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new (typeInfo.TypedArray)(data), usage);
-    return {
-        handle: buffer,
-        type,
-        target: gl.ARRAY_BUFFER,
-    };
-}
-
-function createElementArrayBuffer(gl, type, usage, data = [])
-{
-    const typeInfo = GLTypeInfo.getTypeInfo(gl, type);
-    let buffer = gl.createBuffer();
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new (typeInfo.TypedArray)(data), usage);
-    return {
-        handle: buffer,
-        type,
-        target: gl.ELEMENT_ARRAY_BUFFER,
-    };
+    gl.clearColor(0, 0, 0, 0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
 }
