@@ -7,7 +7,7 @@ export function createProgramInfo(gl)
     return new ProgramInfoBuilder(gl);
 }
 
-class ProgramInfoBuilder extends ProgramBuilder
+export class ProgramInfoBuilder extends ProgramBuilder
 {
     /** @override */
     link(gl)
@@ -17,7 +17,7 @@ class ProgramInfoBuilder extends ProgramBuilder
     }
 }
 
-class ProgramInfo
+export class ProgramInfo
 {
     constructor(gl, program)
     {
@@ -38,7 +38,7 @@ class ProgramInfo
     }
 }
 
-class ProgramInfoDrawContext
+export class ProgramInfoDrawContext
 {
     constructor(programInfo)
     {

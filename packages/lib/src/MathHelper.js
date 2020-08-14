@@ -42,3 +42,15 @@ export function lookAt2(radians, target, dt)
     let step = cycle(target - radians, -Math.PI, Math.PI);
     return clamp(radians + step, radians - dt, radians + dt);
 }
+
+const TO_RAD_FACTOR = Math.PI / 180;
+const TO_DEG_FACTOR = 180 / Math.PI;
+export function toRadians(degrees)
+{
+    return degrees * TO_RAD_FACTOR;
+}
+
+export function toDegrees(radians)
+{
+    return radians * TO_DEG_FACTOR;
+}

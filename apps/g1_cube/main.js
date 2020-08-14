@@ -7,7 +7,6 @@ document.addEventListener('DOMContentLoaded', main);
 async function main()
 {
     const display = document.querySelector('display-port');
-    const input = document.querySelector('input-context');
     
     const gl = display.canvas.getContext('webgl');
     if (!gl) throw new Error('Your browser does not support webgl.');
@@ -23,7 +22,7 @@ async function main()
         .link(gl);
 
     // 2. Prepare the data.
-    const cubeGeometryData = await AssetLoader.loadAsset('obj:cube.obj');
+    const cubeGeometryData = await AssetLoader.loadAsset('obj:cube.obj', {}, '../../res/webgl');
     const positionBuffer = GLHelper.createArrayBuffer(gl, gl.FLOAT, gl.STATIC_DRAW, cubeGeometryData.positions);
     const texcoordBuffer = GLHelper.createArrayBuffer(gl, gl.FLOAT, gl.STATIC_DRAW, cubeGeometryData.texcoords);
     const normalBuffer = GLHelper.createArrayBuffer(gl, gl.FLOAT, gl.STATIC_DRAW, cubeGeometryData.normals);
