@@ -67,6 +67,7 @@
 
     function parse(string)
     {
+        console.log('PARSE');
         const vertexList = [];
         const texcoordList = [];
         const normalList = [];
@@ -88,6 +89,7 @@
         // f float float float
         const faceVertexPattern = /f( +[\d|\.|\+|\-|e]+)( [\d|\.|\+|\-|e]+)( [\d|\.|\+|\-|e]+)/g;
 
+        let quad = false;
         let result = null;
         let x, y, z, w;
 
@@ -150,7 +152,6 @@
 
             // Quad face
             if (typeof result[13] !== 'undefined') {
-                console.warn('WebGL does not support quad faces, only triangles.');
                 
                 // Vertex indices
                 w = Number.parseInt(result[14]);
@@ -163,6 +164,8 @@
                 // Normal indices
                 w = Number.parseInt(result[16]);
                 normalIndices.push(w);
+
+                quad = true;
             }
         }
 
@@ -188,7 +191,6 @@
 
             // Quad face
             if (typeof result[13] !== 'undefined') {
-                console.warn('WebGL does not support quad faces, only triangles.');
 
                 // Vertex indices
                 w = Number.parseInt(result[14]);
@@ -198,6 +200,8 @@
                 texcoordIndices.push(0);
                 // Normal indices
                 normalIndices.push(0);
+
+                quad = true;
             }
         }
 
@@ -234,6 +238,10 @@
         const indices = new Uint16Array(size);
         for (let i = 0; i < size; ++i) {
             indices[i] = i;
+        }
+
+        if (quad) {
+            console.warn('WebGL does not support quad faces, only triangles.');
         }
 
         return {

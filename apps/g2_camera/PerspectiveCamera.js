@@ -1,4 +1,5 @@
 import { mat4, MathHelper } from './lib.js';
+import { vec3 } from '../../packages/lib/dist/esm/index.js';
 
 export function createPerspectiveCamera(canvas, fieldOfView = MathHelper.toRadians(40), near = 0.1, far = 1000)
 {
@@ -8,6 +9,20 @@ export function createPerspectiveCamera(canvas, fieldOfView = MathHelper.toRadia
         clippingPlane: {
             near,
             far,
+        },
+        _position: vec3.create(),
+        _up: vec3.create(),
+        get position()
+        {
+            return vec3.set(this._position,
+                this.viewMatrix[12],
+                this.viewMatrix[13],
+                this.viewMatrix[14]);
+        },
+        get up()
+        {
+            return vec3.set(this._up,
+                0, 1, 0);
         },
         projectionMatrix: mat4.create(),
         viewMatrix: mat4.create(),

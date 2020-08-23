@@ -1,4 +1,4 @@
-attribute vec3 a_position;
+attribute vec4 a_position;
 attribute vec2 a_texcoord;
 attribute vec3 a_normal;
 
@@ -12,5 +12,5 @@ void main()
 {
     v_normal = a_normal;
     
-    gl_Position = u_projection * u_view * u_model * vec4(a_position, 1.0);
+    gl_Position = u_projection * u_view * u_model * a_position;
 }
