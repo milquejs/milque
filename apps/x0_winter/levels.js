@@ -4,6 +4,17 @@ const WIDTH = 300;
 const HEIGHT = 150;
 
 export const level1 = {
+    start: { x: 25, y: 25 },
+    exit: { x: 100, y: 25 },
+    statics: [
+        { left: 0, top: 0, right: 10, bottom: HEIGHT },
+        { left: 0, top: 0, right: WIDTH, bottom: 10 },
+        { left: WIDTH - 10, top: 0, right: WIDTH, bottom: HEIGHT },
+        { left: 0, top: HEIGHT - 10, right: WIDTH, bottom: HEIGHT },
+    ],
+};
+
+export const level2 = {
     start: { x: 100, y: 100 },
     exit: { x: 0, y: 0 },
     statics: [

@@ -13,6 +13,7 @@ async function main()
 
     const level = createLevel(level1);
     const player = Player(input, level1.start.x, level1.start.y);
+    const finish = Finish(level1.exit.x, level1.exit.y);
     
     const physics = IntersectionWorld.createIntersectionWorld();
     physics.dynamics.push(player.masks.aabb);
@@ -21,7 +22,7 @@ async function main()
         player.masks.motion,
         player.masks.aabbHit,
     ]);
-    physics.statics.push(...level.statics);
+    physics.statics.push(...level.statics, finish.masks.aabb);
 
     display.addEventListener('frame', e => {
         const dt = e.detail.deltaTime / 60;
@@ -33,11 +34,36 @@ async function main()
         ctx.setTransform(1, 0, 0, -1, 0, 0);
         ctx.translate(0, -display.height);
 
-        BoxRenderer.draw(ctx, [player]);
+        BoxRenderer.draw(ctx, [player, finish]);
 
         physics.update(dt);
         physics.render(ctx);
     });
+}
+
+function Finish(x, y)
+{
+    let finish = {
+        x, y,
+        [BoxRenderer.Info]: {
+            width: 16,
+            height: 16,
+            color: 'red',
+        },
+        masks: {
+            aabb: {
+                get x() { return finish.x; },
+                get y() { return finish.y; },
+                set x(x) { finish.x = x; },
+                set y(y) { finish.y = y; },
+                rx: 8,
+                ry: 8,
+
+                hit: null,
+            },
+        }
+    };
+    return finish;
 }
 
 function Player(input, x = 0, y = 0)
