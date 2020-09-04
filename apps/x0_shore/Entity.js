@@ -89,10 +89,13 @@ export class EntityManager
         
         let entityComponents = this.instances[componentName];
         let componentValues = entityComponents[entityId];
-        entityComponents[entityId] = null;
-
-        const { destroy } = this.factoryMap[componentName];
-        if (destroy) destroy(componentValues, componentName, entityId, this);
+        if (componentValues)
+        {
+            entityComponents[entityId] = null;
+    
+            const { destroy } = this.factoryMap[componentName];
+            if (destroy) destroy(componentValues, componentName, entityId, this);
+        }
         return this;
     }
 
