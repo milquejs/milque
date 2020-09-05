@@ -1,5 +1,7 @@
-import { InputContext, lerp, mat4 } from './lib.js';
+import { InputContext, mat4, IntersectionHelper, IntersectionResolver } from './lib.js';
 import { SceneGraph, SceneNode } from './SceneGraph.js';
+import { CanvasView2D, setDOMMatrix } from './CanvasView2D.js';
+import { EntityManager } from './Entity.js';
 
 document.addEventListener('DOMContentLoaded', main);
 
@@ -16,6 +18,10 @@ const INPUT_MAPPING = {
     sneak: [{key: 'keyboard:ControlLeft', scale: 1}, {key: 'keyboard:ControlRight', scale: 1}],
 };
 
+const ENTITY_COMPONENT_FACTORY_MAP = {
+    transform: props => ({ node: props }),
+};
+
 class SceneTransformNode extends SceneNode
 {
     constructor(sceneGraph, owner, parent, children)
@@ -27,6 +33,17 @@ class SceneTransformNode extends SceneNode
     }
 }
 
+const Transform = {
+    create(props, componentName, entityId, sceneGraph)
+    {
+
+    },
+    destroy()
+    {
+
+    }
+}
+
 export async function main()
 {
     const display = document.querySelector('display-port');
@@ -34,38 +51,36 @@ export async function main()
     document.body.appendChild(input);
 
     const ctx = display.canvas.getContext('2d');
-    display.canvas.style.imageRendering = 'crisp-edges';
+    const view = new CanvasView2D(display);
+    const cameraSpeed = 4;
 
-    const scene = new SceneGraph({ nodeConstructor: SceneTransformNode });
+    const scene = new SceneGraph({
+        nodeConstructor: SceneTransformNode
+    });
+    /*
+    const entityManager = new EntityManager({
+        transform: { create(props, componentName, entityId) { props.scene.add(entityId, props.parent)}, destroy() {} }
+    });
+    */
 
-    const camera = {
-        x: 0,
-        y: 0,
-        speed: 4,
-        lookAt(x, y, dt)
-        {
-            this.x = lerp(this.x, x, dt * this.speed);
-            this.y = lerp(this.y, y, dt * this.speed);
-        }
-    };
-
-    const view = {
-        get x() { return display.width / 2 - camera.x; },
-        get y() { return display.height / 2 - camera.y; },
-    };
-
+    /*
+    const player = entityManager.create({
+        transform: { x: 0, y: 0 },
+        renderable: 'player',
+        motion: { speed: 0.6, friction: 0.25 },
+        playerControlled: true,
+    });
+    */
     const player = {
         x: 0,
         y: 0,
-        speed: 2,
+        motionX: 0,
+        motionY: 0,
+        speed: 0.6,
+        friction: 0.25,
         renderType: 'player',
     };
-    const playerAABB = {
-        x: 0,
-        y: 0,
-        rx: 8,
-        ry: 8,
-    };
+    const playerAABB = IntersectionHelper.createAABB(0, 0, 8, 8);
     scene.add(player);
     scene.add(playerAABB, player);
 
@@ -75,6 +90,10 @@ export async function main()
         createWall(64, 0, 4, 16),
     ];
     walls.forEach(wall => scene.add(wall));
+
+    const dynamics = [playerAABB];
+    const masks = [];
+    const statics = [...walls.map(wall => wall.mask)];
 
     display.addEventListener('frame', e => {
         // Update
@@ -88,12 +107,22 @@ export async function main()
             if (dx || dy)
             {
                 let dr = Math.atan2(dy, dx);
-                player.x += Math.cos(dr) * player.speed;
-                player.y += Math.sin(dr) * player.speed;
+                player.motionX += Math.cos(dr) * player.speed;
+                player.motionY += Math.sin(dr) * player.speed;
             }
 
+            let invFriction = 1 - player.friction;
+            player.motionX *= invFriction;
+            player.motionY *= invFriction;
+
+            player.x += player.motionX;
+            player.y += player.motionY;
+
             // Camera
-            camera.lookAt(player.x, player.y, dt);
+            view.camera.moveTo(player.x, player.y, 0, dt * cameraSpeed);
+
+            // Physics
+            // IntersectionResolver.resolveIntersections(dynamics, statics, dt);
         }
 
         // Render
@@ -128,15 +157,13 @@ export async function main()
 function renderSceneGraph(ctx, sceneGraph, view, renderer)
 {
     let rootNode = sceneGraph.get(null);
-    mat4.fromTranslation(rootNode.localTransformation, [view.x, view.y, 0]);
+    view.getViewProjectionMatrix(rootNode.localTransformation);
     mat4.copy(rootNode.worldTransformation, rootNode.localTransformation);
 
     let domMatrix = new DOMMatrix();
     sceneGraph.forEach((child, node) => {
-        if (!child) return;
-
-        let { localTransformation, worldTransformation } = node;
-        let parentWorldTransformation = node.parent.worldTransformation;
+        let { parent, localTransformation, worldTransformation } = node;
+        let parentWorldTransformation = parent.worldTransformation;
         mat4.fromTranslation(localTransformation, [child.x, child.y, 0]);
         mat4.multiply(worldTransformation, parentWorldTransformation, localTransformation);
         
@@ -144,7 +171,8 @@ function renderSceneGraph(ctx, sceneGraph, view, renderer)
         ctx.setTransform(domMatrix);
 
         renderer(ctx, child, node);
-    });
+    },
+    { skipRoot: true });
 
     ctx.setTransform();
 }
@@ -157,27 +185,34 @@ function createWall(x = 0, y = 0, width = 16, height = 16)
         width,
         height,
         renderType: 'wall',
+        mask: IntersectionHelper.createAABB(x, y, width / 2, height / 2)
     };
 }
 
-function createAABB(owner, opts = {})
+
+class AABBSystem
 {
-    return {
-        owner,
-        x: 0,
-        y: 0,
-        rx: 0,
-        ry: 0,
-    };
+    add(owner, rx, ry)
+    {
+        let aabb = {
+            owner,
+            rx,
+            ry,
+        };
+    }
+
+    remove(owner)
+    {
+        
+    }
 }
 
-function setDOMMatrix(domMatrix, glMatrix)
+function createAABB()
 {
-    domMatrix.a = glMatrix[0];
-    domMatrix.b = glMatrix[1];
-    domMatrix.c = glMatrix[4];
-    domMatrix.d = glMatrix[5];
-    domMatrix.e = glMatrix[12];
-    domMatrix.f = glMatrix[13];
-    return domMatrix;
+
+}
+
+function testAABB()
+{
+
 }

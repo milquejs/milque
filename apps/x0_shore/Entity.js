@@ -31,10 +31,31 @@ export class EntityManager
         this.nextAvailableEntityId = 1;
     }
 
-    create()
+    create(entityTemplate = undefined)
     {
         let entityId = this.nextAvailableEntityId++;
         this.entities.add(entityId);
+        if (entityTemplate)
+        {
+            if (Array.isArray(entityTemplate))
+            {
+                for(let componentName of entityTemplate)
+                {
+                    this.add(componentName, entityId);
+                }
+            }
+            else if (typeof entityTemplate === 'object')
+            {
+                for(let componentName in entityTemplate)
+                {
+                    this.add(componentName, entityId, entityTemplate[componentName]);
+                }
+            }
+            else
+            {
+                throw new Error('Invalid component options.');
+            }
+        }
         return entityId;
     }
 
@@ -70,9 +91,11 @@ export class EntityManager
         }
 
         const { create } = this.factoryMap[componentName];
-        let result = create ? create(props, componentName, entityId, this) : {};
-        this.instances[componentName][entityId] = result;
-        return this;
+        let result = create ? create(props, componentName, entityId, this) : (props || {});
+        if (result)
+        {
+            this.instances[componentName][entityId] = result;
+        }
     }
 
     remove(componentName, entityId)
@@ -96,7 +119,6 @@ export class EntityManager
             const { destroy } = this.factoryMap[componentName];
             if (destroy) destroy(componentValues, componentName, entityId, this);
         }
-        return this;
     }
 
     get(componentName, entityId)

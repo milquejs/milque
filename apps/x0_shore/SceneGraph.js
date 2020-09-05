@@ -24,14 +24,16 @@ export class SceneGraph
      * 
      * @param {Object} [opts] Any additional options.
      * @param {typeof SceneNode} [opts.nodeConstructor] The scene node constructor that make up the graph.
+     * @param {Object} [opts.root] The root owner, otherwise it is an empty object.
      */
     constructor(opts = {})
     {
         this.nodeConstructor = opts.nodeConstructor || SceneNode;
         this.nodes = new Map();
         
-        this.root = new (this.nodeConstructor)(this, null, null, []);
-        this.nodes.set(null, this.root);
+        const rootOwner = opts.root || {};
+        this.root = new (this.nodeConstructor)(this, rootOwner, null, []);
+        this.nodes.set(rootOwner, this.root);
     }
 
     /**
@@ -62,6 +64,10 @@ export class SceneGraph
                 return childNode;
             }
         }
+        else if (parent === null)
+        {
+            this.add(child, this.root.owner);
+        }
         else
         {
             throw new Error(`No node in scene graph exists for parent.`);
@@ -72,8 +78,9 @@ export class SceneGraph
      * Removes an object from the scene graph, along with all
      * of its descendents.
      * 
-     * @param {Object} child The child object to remove.
-     * @returns {SceneNode} The scene node that represents the removed object.
+     * @param {Object} child The child object to remove. If null, will clear
+     * the entire graph.
+     * @returns {Boolean} Whether any objects were removed from the scene.
      */
     remove(child)
     {
@@ -85,11 +92,16 @@ export class SceneGraph
             this.nodeConstructor.walk(childNode, 0, descendent => {
                 this.nodes.delete(descendent);
             });
-            return childNode;
+            return true;
+        }
+        else if (child === null)
+        {
+            this.clear();
+            return true;
         }
         else
         {
-            return null;
+            return false;
         }
     }
 
@@ -142,7 +154,7 @@ export class SceneGraph
                     this.nodes.set(child, childNode);
                 }
 
-                // And reattacj target parent to new child.
+                // And reattach target parent to new child.
                 attach(targetParent, childNode);
             }
             
@@ -151,6 +163,12 @@ export class SceneGraph
             {
                 targetChild.parent = targetParent;
             }
+
+            return child;
+        }
+        else if (target === null)
+        {
+            return this.replace(this.root.owner, child);
         }
         else
         {
@@ -164,19 +182,27 @@ export class SceneGraph
         this.nodes.clear();
 
         // Reset the graph.
-        this.root = new (this.nodeConstructor)(this, null, null, []);
-        this.nodes.set(null, this.root);
+        const rootOwner = {};
+        this.root = new (this.nodeConstructor)(this, rootOwner, null, []);
+        this.nodes.set(rootOwner, this.root);
     }
 
     /**
      * Gets the scene node for the given object.
      * 
-     * @param {Object} child The object to retreive the node for.
+     * @param {Object} owner The object to retreive the node for.
      * @returns {SceneNode} The scene node that represents the object.
      */
     get(child)
     {
-        return this.nodes.get(child);
+        if (child === null)
+        {
+            return this.root;
+        }
+        else
+        {
+            return this.nodes.get(child);
+        }
     }
 
     /**
@@ -185,10 +211,23 @@ export class SceneGraph
      * 
      * @param {WalkCallback} callback The function called for each node
      * in the graph, in ordered traversal from parent to child.
+     * @param {Object} [opts] Any additional options.
+     * @param {Boolean} [opts.skipRoot] Whether to skip traversing the root
+     * and start from its children instead.
      */
-    forEach(callback)
+    forEach(callback, opts = {})
     {
-        this.nodeConstructor.walk(this.root, 0, callback);
+        if (opts.skipRoot)
+        {
+            for(let childNode of this.root.children)
+            {
+                this.nodeConstructor.walk(childNode, 1, callback);
+            }
+        }
+        else
+        {
+            this.nodeConstructor.walk(this.root, 0, callback);
+        }
     }
 }
 
