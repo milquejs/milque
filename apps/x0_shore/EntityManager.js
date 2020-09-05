@@ -1,7 +1,8 @@
 export class EntityManager
 {
-    constructor(componentFactoryMap)
+    constructor(opts = {})
     {
+        const { componentFactoryMap = {}, strictMode = false } = opts;
         let factoryMap = {};
         let instances = {};
         for(let componentName in componentFactoryMap)
@@ -29,6 +30,7 @@ export class EntityManager
         this.instances = instances;
         this.entities = new Set();
         this.nextAvailableEntityId = 1;
+        this.strictMode = strictMode;
     }
 
     create(entityTemplate = undefined)
@@ -65,14 +67,26 @@ export class EntityManager
         {
             this.remove(componentName, entityId);
         }
-        this.entities[entityId] = null;
+        this.entities.delete(entityId);
     }
 
     add(componentName, entityId, props = undefined)
     {
         if (!(componentName in this.factoryMap))
         {
-            throw new Error(`Missing component factory for '${componentName}'.`);
+            if (this.strictMode)
+            {
+                throw new Error(`Missing component factory for '${componentName}'.`);
+            }
+            else
+            {
+                this.factoryMap[componentName] = {
+                    owner: {},
+                    create: null,
+                    destroy: null,
+                };
+                this.instances[componentName] = {};
+            }
         }
 
         if (!(componentName in this.instances))
@@ -80,9 +94,9 @@ export class EntityManager
             throw new Error(`Missing component instance mapping for '${componentName}'.`);
         }
 
-        if (!(entityId in this.entities))
+        if (!this.entities.has(entityId))
         {
-            throw new Error(`Missing entity for '${componentName}'.`);
+            throw new Error(`Entity '${entityId}' does not exist.`);
         }
 
         if (this.instances[componentName][entityId])
@@ -91,7 +105,11 @@ export class EntityManager
         }
 
         const { create } = this.factoryMap[componentName];
-        let result = create ? create(props, componentName, entityId, this) : (props || {});
+        let result = create
+            ? create(props, componentName, entityId, this)
+            : (props
+                ? {...props}
+                : {});
         if (result)
         {
             this.instances[componentName][entityId] = result;
@@ -102,7 +120,14 @@ export class EntityManager
     {
         if (!(componentName in this.factoryMap))
         {
-            throw new Error(`Missing component factory for '${componentName}'.`);
+            if (this.strictMode)
+            {
+                throw new Error(`Missing component factory for '${componentName}'.`);
+            }
+            else
+            {
+                return;
+            }
         }
 
         if (!(componentName in this.instances))
@@ -131,12 +156,24 @@ export class EntityManager
         const entityComponents = this.instances[componentName];
         return entityComponents[entityId] || null;
     }
+    
+    has(componentName, entityId)
+    {
+        return componentName in this.instances && Boolean(this.instances[componentName][entityId]);
+    }
 
     clear(componentName)
     {
         if (!(componentName in this.factoryMap))
         {
-            throw new Error(`Missing component factory for '${componentName}'.`);
+            if (this.strictMode)
+            {
+                throw new Error(`Missing component factory for '${componentName}'.`);
+            }
+            else
+            {
+                return;
+            }
         }
 
         if (!(componentName in this.instances))
@@ -159,7 +196,7 @@ export class EntityManager
         this.instances[componentName] = {};
     }
 
-    getEntities()
+    getEntityIds()
     {
         return this.entities;
     }
@@ -181,7 +218,7 @@ export class EntityManager
         return Object.keys(this.factoryMap);
     }
 
-    getComponentEntities(componentName)
+    getComponentEntityIds(componentName)
     {
         if (componentName in this.instances)
         {

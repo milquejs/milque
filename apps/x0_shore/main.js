@@ -1,7 +1,7 @@
 import { InputContext, mat4, IntersectionHelper, IntersectionResolver } from './lib.js';
 import { SceneGraph, SceneNode } from './SceneGraph.js';
 import { CanvasView2D, setDOMMatrix } from './CanvasView2D.js';
-import { EntityManager } from './Entity.js';
+import { EntityManager } from './EntityManager.js';
 
 document.addEventListener('DOMContentLoaded', main);
 
@@ -18,15 +18,23 @@ const INPUT_MAPPING = {
     sneak: [{key: 'keyboard:ControlLeft', scale: 1}, {key: 'keyboard:ControlRight', scale: 1}],
 };
 
-const ENTITY_COMPONENT_FACTORY_MAP = {
-    transform: props => ({ node: props }),
-};
-
 class SceneTransformNode extends SceneNode
 {
     constructor(sceneGraph, owner, parent, children)
     {
         super(sceneGraph, owner, parent, children);
+
+        this.x = 0;
+        this.y = 0;
+        this.z = 0;
+
+        this.pitch = 0;
+        this.yaw = 0;
+        this.roll = 0;
+
+        this.scaleX = 1;
+        this.scaleY = 1;
+        this.scaleZ = 1;
 
         this.worldTransformation = mat4.create();
         this.localTransformation = mat4.create();
@@ -34,15 +42,55 @@ class SceneTransformNode extends SceneNode
 }
 
 const Transform = {
-    create(props, componentName, entityId, sceneGraph)
+    create(props, componentName, entityId, entityManager)
     {
-
+        const { sceneGraph, parent = undefined, x = 0, y = 0, z = 0} = props;
+        if (!sceneGraph) throw new Error(`Component instantiation is missing required prop 'sceneGraph'.`);
+        let node = sceneGraph.add(entityId, parent);
+        node.x = x;
+        node.y = y;
+        node.z = z;
+        return node;
     },
-    destroy()
+    destroy(component, componentName, entityId, entityManager)
     {
-
+        component.sceneGraph.remove(entityId);
     }
-}
+};
+
+const Renderable = {
+    create(props)
+    {
+        const { renderType, ...otherProps } = props;
+        if (!renderType) throw new Error(`Component instantiation is missing required prop 'renderType'.`);
+        return {
+            renderType,
+            ...otherProps,
+        };
+    }
+};
+
+const Motion = {
+    create(props)
+    {
+        return {
+            motionX: 0,
+            motionY: 0,
+            speed: 0.6,
+            friction: 0.25,
+            ...props
+        };
+    }
+};
+
+const PlayerControlled = {};
+
+const ENTITY_COMPONENT_FACTORY_MAP = {
+    Transform,
+    Renderable,
+    Motion,
+    PlayerControlled,
+};
 
 export async function main()
 {
@@ -57,37 +105,32 @@ export async function main()
     const scene = new SceneGraph({
         nodeConstructor: SceneTransformNode
     });
-    /*
     const entityManager = new EntityManager({
-        transform: { create(props, componentName, entityId) { props.scene.add(entityId, props.parent)}, destroy() {} }
+        componentFactoryMap: ENTITY_COMPONENT_FACTORY_MAP,
     });
-    */
 
-    /*
     const player = entityManager.create({
-        transform: { x: 0, y: 0 },
-        renderable: 'player',
-        motion: { speed: 0.6, friction: 0.25 },
-        playerControlled: true,
+        Transform: { sceneGraph: scene },
+        Renderable: { renderType: 'player' },
+        Motion: {},
+        PlayerControlled: true,
     });
-    */
-    const player = {
-        x: 0,
-        y: 0,
-        motionX: 0,
-        motionY: 0,
-        speed: 0.6,
-        friction: 0.25,
-        renderType: 'player',
-    };
     const playerAABB = IntersectionHelper.createAABB(0, 0, 8, 8);
-    scene.add(player);
     scene.add(playerAABB, player);
 
     const walls = [
-        createWall(0, 0, 4, 64),
-        createWall(0, 0, 64, 4),
-        createWall(64, 0, 4, 16),
+        entityManager.create({
+            Transform: { sceneGraph: scene, x: 0, y: 0 },
+            Renderable: { renderType: 'wall', width: 4, height: 64 },
+        }),
+        entityManager.create({
+            Transform: { sceneGraph: scene, x: 0, y: 0 },
+            Renderable: { renderType: 'wall', width: 64, height: 4 },
+        }),
+        entityManager.create({
+            Transform: { sceneGraph: scene, x: 64, y: 0 },
+            Renderable: { renderType: 'wall', width: 4, height: 16 },
+        }),
     ];
     walls.forEach(wall => scene.add(wall));
 
@@ -102,24 +145,38 @@ export async function main()
             input.poll();
 
             // Player
-            let dx = input.getInputValue('moveRight') - input.getInputValue('moveLeft');
-            let dy = input.getInputValue('moveDown') - input.getInputValue('moveUp');
-            if (dx || dy)
+            for(let entityId of entityManager.getComponentEntityIds('Motion'))
             {
-                let dr = Math.atan2(dy, dx);
-                player.motionX += Math.cos(dr) * player.speed;
-                player.motionY += Math.sin(dr) * player.speed;
+                let motion = entityManager.get('Motion', entityId);
+
+                if (entityManager.has('PlayerControlled', entityId))
+                {
+                    let dx = input.getInputValue('moveRight') - input.getInputValue('moveLeft');
+                    let dy = input.getInputValue('moveDown') - input.getInputValue('moveUp');
+                    if (dx || dy)
+                    {
+                        let dr = Math.atan2(dy, dx);
+                        motion.motionX += Math.cos(dr) * motion.speed;
+                        motion.motionY += Math.sin(dr) * motion.speed;
+                    }
+                }
+
+                let invFriction = 1 - motion.friction;
+                motion.motionX *= invFriction;
+                motion.motionY *= invFriction;
+
+                if (entityManager.has('Transform', entityId))
+                {
+                    let transform = entityManager.get('Transform', entityId);
+                    transform.x += motion.motionX;
+                    transform.y += motion.motionY;
+                }
             }
-
-            let invFriction = 1 - player.friction;
-            player.motionX *= invFriction;
-            player.motionY *= invFriction;
-
-            player.x += player.motionX;
-            player.y += player.motionY;
-
+            
             // Camera
-            view.camera.moveTo(player.x, player.y, 0, dt * cameraSpeed);
+            let controlledEntity = entityManager.getComponentEntityIds('PlayerControlled')[0];
+            let controlledTransform = entityManager.get('Transform', controlledEntity);
+            view.camera.moveTo(controlledTransform.x, controlledTransform.y, 0, dt * cameraSpeed);
 
             // Physics
             // IntersectionResolver.resolveIntersections(dynamics, statics, dt);
@@ -129,42 +186,56 @@ export async function main()
         {
             ctx.clearRect(0, 0, display.width, display.height);
 
-            renderSceneGraph(ctx, scene, view, (ctx, child, node) => {
-                if ('renderType' in child)
-                {
-                    switch(child.renderType)
+            renderSceneGraph(ctx, scene, view,
+                (node) => {
+                    return node;
+                },
+                (ctx, child, node) => {
+                    if (entityManager.has('Renderable', child))
                     {
-                        case 'player':
-                            ctx.fillStyle = 'blue';
-                            ctx.fillRect(-8, -8, 16, 16);
-                            break;
-                        case 'wall':
-                            ctx.fillStyle = 'white';
-                            ctx.fillRect(0, 0, child.width, child.height);
-                            break;
+                        const renderable = entityManager.get('Renderable', child);
+                        switch(renderable.renderType)
+                        {
+                            case 'player':
+                                ctx.fillStyle = 'blue';
+                                ctx.fillRect(-8, -8, 16, 16);
+                                break;
+                            case 'wall':
+                                ctx.fillStyle = 'white';
+                                ctx.fillRect(0, 0, renderable.width, renderable.height);
+                                break;
+                        }
                     }
-                }
-                else
-                {
-                    ctx.fillStyle = 'red';
-                    ctx.fillRect(-1, -1, 2, 2);
-                }
-            });
+                    else
+                    {
+                        ctx.fillStyle = 'red';
+                        ctx.fillRect(-1, -1, 2, 2);
+                    }
+                });
         }
     });
 }
 
-function renderSceneGraph(ctx, sceneGraph, view, renderer)
+function renderSceneGraph(ctx, sceneGraph, view, transformCallback, renderer)
 {
     let rootNode = sceneGraph.get(null);
-    view.getViewProjectionMatrix(rootNode.localTransformation);
-    mat4.copy(rootNode.worldTransformation, rootNode.localTransformation);
+    let {
+        localTransformation: rootLocalTransformation,
+        worldTransformation: rootWorldTransformation
+    } = transformCallback(rootNode);
+    view.getViewProjectionMatrix(rootLocalTransformation);
+    mat4.copy(rootWorldTransformation, rootLocalTransformation);
 
     let domMatrix = new DOMMatrix();
     sceneGraph.forEach((child, node) => {
-        let { parent, localTransformation, worldTransformation } = node;
-        let parentWorldTransformation = parent.worldTransformation;
-        mat4.fromTranslation(localTransformation, [child.x, child.y, 0]);
+        let { parent } = node;
+        let parentTransform = transformCallback(parent);
+        let childTransform = transformCallback(node);
+
+        let { localTransformation, worldTransformation } = childTransform;
+        const { worldTransformation: parentWorldTransformation } = parentTransform;
+
+        mat4.fromTranslation(localTransformation, [childTransform.x, childTransform.y, childTransform.z]);
         mat4.multiply(worldTransformation, parentWorldTransformation, localTransformation);
         
         setDOMMatrix(domMatrix, worldTransformation);
@@ -176,19 +247,6 @@ function renderSceneGraph(ctx, sceneGraph, view, renderer)
 
     ctx.setTransform();
 }
-
-function createWall(x = 0, y = 0, width = 16, height = 16)
-{
-    return {
-        x,
-        y,
-        width,
-        height,
-        renderType: 'wall',
-        mask: IntersectionHelper.createAABB(x, y, width / 2, height / 2)
-    };
-}
-
 
 class AABBSystem
 {

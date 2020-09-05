@@ -66,7 +66,7 @@ export class SceneGraph
         }
         else if (parent === null)
         {
-            this.add(child, this.root.owner);
+            return this.add(child, this.root.owner);
         }
         else
         {

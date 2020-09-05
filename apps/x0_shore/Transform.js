@@ -1,43 +1,37 @@
 import { mat4 } from './lib.js';
 
-import { SceneNode } from './SceneGraph.js';
-
-export class Transform extends SceneNode
+export class Transform
 {
-    constructor(sceneGraph, owner, parent, children)
+    constructor(x = 0, y = 0, z = 0)
     {
-        super(sceneGraph, owner, parent, children);
-
         this.worldTransformation = mat4.create();
-        this.localTransformation = mat4.create();
+        this.localTransformation = mat4.fromTranslation(mat4.create(), [x, y, z]);
     }
 
-    get x() { return this.worldTTransformation[12]; }
-    set x(value)
-    {
-        this.worldTransformation[12] += value;
-        this.localTransformation[12] += value;
-    }
+    get x() { return; }
+    set x(value) {}
 
-    get y() { return this.worldTransformation[13]; }
-    set y(value)
-    {
-        this.worldTransformation[13] += value;
-        this.localTransformation[13] += value;
-    }
+    get y() { return; }
+    set y(value) {}
 
-    get z() { return this.worldTransformation[14]; }
-    set z(value)
-    {
+    get z() { return; }
+    set z(value) {}
 
-        this.worldTransformation[14] += value;
-        this.localTransformation[14] += value;
-    }
-}
+    get pitch() { return; }
+    set pitch(value) {}
 
-export function create(props)
-{
-    const { scene } = props;
-    scene.add()
-    return 
+    get yaw() { return; }
+    set yaw(value) {}
+
+    get roll() { return; }
+    set roll(value) {}
+
+    get scaleX() { return; }
+    set scaleX(value) {}
+
+    get scaleY() { return; }
+    set scaleY(value) {}
+
+    get scaleZ() { return; }
+    set scaleZ(value) {}
 }
