@@ -1,4 +1,4 @@
-import { mat4 } from './lib.js';
+import { mat4 } from 'gl-matrix';
 
 export class Transform
 {

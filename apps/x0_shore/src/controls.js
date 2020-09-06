@@ -1,4 +1,4 @@
-import { InputContext } from './lib.js';
+import { InputContext } from 'milque';
 
 const INPUT_MAPPING = {
     moveUp: [{ key: 'keyboard:ArrowUp', scale: 1 }, { key: 'keyboard:KeyW', scale: 1 }],

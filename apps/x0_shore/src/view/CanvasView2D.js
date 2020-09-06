@@ -1,4 +1,4 @@
-import { mat4 } from './lib.js';
+import { mat4 } from 'gl-matrix';
 import { Camera2D } from './Camera2D.js';
 
 export class CanvasView2D
@@ -51,7 +51,7 @@ export class CanvasView2D
             [displayWidth / 2, displayHeight / 2, 0],
             [displayWidth, displayHeight, 0]);
         */
-       // HACK: This shouldn't be here. This should really be in the view matrix.
+        // HACK: This shouldn't be here. This should really be in the view matrix.
         const canvasMatrix = mat4.fromTranslation(
             out,
             [displayWidth / 2, displayHeight / 2, 0]);

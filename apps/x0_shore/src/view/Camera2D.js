@@ -1,4 +1,5 @@
-import { mat4, vec3, quat, clamp } from './lib.js';
+import { mat4, vec3, quat } from 'gl-matrix';
+import { clamp } from 'milque';
 
 export class Camera2D
 {

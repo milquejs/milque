@@ -1,7 +1,9 @@
-import { InputContext, mat4, IntersectionHelper, IntersectionResolver } from './lib.js';
-import { SceneGraph, SceneNode } from './SceneGraph.js';
-import { CanvasView2D, setDOMMatrix } from './CanvasView2D.js';
-import { EntityManager } from './EntityManager.js';
+import { InputContext, IntersectionHelper, IntersectionResolver } from 'milque';
+import { mat4 } from 'gl-matrix';
+
+import { CanvasView2D, setDOMMatrix } from '@app/view/CanvasView2D.js';
+import { SceneGraph, SceneNode } from '@app/scene/SceneGraph.js';
+import { EntityManager } from '@app/entity/EntityManager.js';
 
 document.addEventListener('DOMContentLoaded', main);
 
@@ -92,7 +94,7 @@ const ENTITY_COMPONENT_FACTORY_MAP = {
     PlayerControlled,
 };
 
-export async function main()
+async function main()
 {
     const display = document.querySelector('display-port');
     const input = new InputContext(INPUT_MAPPING);
