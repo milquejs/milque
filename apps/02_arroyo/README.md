@@ -1,3 +1,6 @@
+# Arroyo
+A calm game, unlike tetris.
+
 # Instead of controls, move the camera towards activity
 - When placed, if it is not the center, move 1 tiles towards it.
 

@@ -1,4 +1,4 @@
-import { mat4 } from '../../../../deps.js';
+import { mat4 } from 'gl-matrix';
 import * as Transform from '../object/Transform.js';
 
 class SceneGraph

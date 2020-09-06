@@ -1,0 +1,19 @@
+{
+  "name": "@milque/next",
+  "version": "0.0.1",
+  "description": "The next module for Milque",
+  "module": "dist/esm/index.js",
+  "main": "dist/index.js",
+  "author": "Andrew Kuo",
+  "license": "MIT",
+  "keywords": [
+    "milque",
+    "next"
+  ],
+  "scripts": {
+    "build": "rollup --config"
+  },
+  "devDependencies": {
+    "rollup": "^2.26.10"
+  }
+}

@@ -1,14 +1,18 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
     <head>
+        <meta charset="utf-8">
         <title>Milque.js Demo - Room</title>
-        <script src="../../mogli/node_modules/gl-matrix/gl-matrix.js"></script>
-        <script src="../../milque-core/build/milque.js"></script>
-        <script src="../../mogli/build/mogli.js"></script>
-        <script src="./lib.js"></script>
+
+        <style>
+            html { width: 100vw; height: 100vh; }
+            body { margin: 0; width: 100%; height: 100%; }
+        </style>
+
+        <script type="module" src="./lib.js"></script>
     </head>
     <body>
-        <canvas id="display1" width="640" height="480"></canvas>
+        <display-port mode="fit" id="main" debug></display-port>
 
         <script type="module" src="Room.js"></script>
     </body>

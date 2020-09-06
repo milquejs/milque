@@ -1,26 +1,38 @@
+import path from 'path';
+
 import * as packageJson from './package.json';
 
-const MODULE_NAME = 'View';
-const BROWSER_GLOBALS = {};
+const MODULE_DIR = path.dirname(packageJson.module);
+const MODULE_NAME = 'Milque.Util';
+const MAIN_PATH = packageJson.main;
 
-const EXTERNALS = Object.keys(BROWSER_GLOBALS);
-const MODULE_PATH = packageJson.module;
-const BROWSER_PATH = packageJson.browser;
-
-export default {
-    input: 'src/index.js',
-    external: EXTERNALS,
-    output: [
-        {
-            file: MODULE_PATH,
-            format: 'esm'
-        },
-        {
-            file: BROWSER_PATH,
+export default [
+    {
+        input: 'src/index.js',
+        output: {
+            file: MAIN_PATH,
             format: 'umd',
             name: MODULE_NAME,
-            exports: 'named',
-            globals: BROWSER_GLOBALS,
+            globals: {
+                'gl-matrix': 'glMatrix'
+            }
         },
-    ]
-};
+        external: [
+            'gl-matrix'
+        ]
+    },
+    {
+        input: [
+            'src/index.js',
+            'src/view/index.js',
+            'src/camera/index.js',
+        ],
+        output: {
+            dir: MODULE_DIR,
+            format: 'esm',
+        },
+        external: [
+            'gl-matrix',
+        ]
+    }
+];

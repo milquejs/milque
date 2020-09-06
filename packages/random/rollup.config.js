@@ -1,26 +1,29 @@
+import path from 'path';
 import * as packageJson from './package.json';
 
-const MODULE_NAME = 'Random';
-const BROWSER_GLOBALS = {};
+const MODULE_DIR = path.dirname(packageJson.module);
+const MODULE_NAME = 'Milque.Random';
+const MAIN_PATH = packageJson.main;
 
-const EXTERNALS = Object.keys(BROWSER_GLOBALS);
-const MODULE_PATH = packageJson.module;
-const BROWSER_PATH = packageJson.browser;
-
-export default {
-    input: 'src/index.js',
-    external: EXTERNALS,
-    output: [
-        {
-            file: MODULE_PATH,
-            format: 'esm'
-        },
-        {
-            file: BROWSER_PATH,
+export default [
+    {
+        input: 'src/index.js',
+        output: {
+            file: MAIN_PATH,
             format: 'umd',
             name: MODULE_NAME,
-            exports: 'named',
-            globals: BROWSER_GLOBALS,
-        },
-    ]
-};
+        }
+    },
+    {
+        input: [
+            'src/index.js',
+            'src/Random.js',
+            'src/generators/RandomGenerator.js',
+            'src/generators/SimpleRandomGenerator.js'
+        ],
+        output: {
+            dir: MODULE_DIR,
+            format: 'esm',
+        }
+    }
+];

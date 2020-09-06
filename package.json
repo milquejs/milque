@@ -6,8 +6,5 @@
   ],
   "scripts": {
     "build": "yarn workspaces run build"
-  },
-  "dependencies": {
-    "gl-matrix": "^3.3.0"
   }
 }

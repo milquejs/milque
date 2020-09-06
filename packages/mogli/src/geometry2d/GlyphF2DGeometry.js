@@ -1,4 +1,4 @@
-import { mat3 } from '../../../../deps.js';
+import { mat3 } from 'gl-matrix';
 import { applyColor2D, applyTransformation2D, joinGeometry2D } from './Geometry2DHelper.js';
 import * as Quad2DGeometry from './Quad2DGeometry.js';
 
