@@ -2,16 +2,16 @@ const MAX_DEPTH_LEVEL = 100;
 
 /**
  * @callback WalkCallback Called for each node, before traversing its children.
- * @param {Object} object The current object.
- * @param {SceneNode} node The representative node for the current object.
+ * @param {Object} child The current object.
+ * @param {SceneNode} childNode The representative node for the current object.
  * @returns {WalkBackCallback|Boolean} If false, the walk will skip
  * the current node's children. If a function, it will be called after
  * traversing down all of its children.
  * 
  * @callback WalkBackCallback Called if returned by {@link WalkCallback}, after
  * traversing the current node's children.
- * @param {Object} object The current object.
- * @param {SceneNode} node The representative node for the current object.
+ * @param {Object} child The current object.
+ * @param {SceneNode} childNode The representative node for the current object.
  */
 
 /**
@@ -24,16 +24,13 @@ export class SceneGraph
      * 
      * @param {Object} [opts] Any additional options.
      * @param {typeof SceneNode} [opts.nodeConstructor] The scene node constructor that make up the graph.
-     * @param {Object} [opts.root] The root owner, otherwise it is an empty object.
      */
     constructor(opts = {})
     {
         this.nodeConstructor = opts.nodeConstructor || SceneNode;
         this.nodes = new Map();
-        
-        const rootOwner = opts.root || {};
-        this.root = new (this.nodeConstructor)(this, rootOwner, null, []);
-        this.nodes.set(rootOwner, this.root);
+
+        this.rootNodes = [];
     }
 
     /**
@@ -46,27 +43,24 @@ export class SceneGraph
      */
     add(child, parent = null)
     {
-        if (this.nodes.has(parent))
+        if (child === null) throw new Error(`Cannot add null as child to scene graph.`);
+        if (parent === null || this.nodes.has(parent))
         {
-            let parentNode = this.nodes.get(parent);
+            let parentNode = parent === null ? null : this.nodes.get(parent);
             if (this.nodes.has(child))
             {
                 let childNode = this.nodes.get(child);
-                detach(childNode.parent, childNode);
-                attach(parentNode, childNode);
+                detach(childNode.parentNode, childNode, this);
+                attach(parentNode, childNode, this);
                 return childNode;
             }
             else
             {
                 let childNode = new (this.nodeConstructor)(this, child, null, []);
                 this.nodes.set(child, childNode);
-                attach(parentNode, childNode);
+                attach(parentNode, childNode, this);
                 return childNode;
             }
-        }
-        else if (parent === null)
-        {
-            return this.add(child, this.root.owner);
         }
         else
         {
@@ -84,19 +78,19 @@ export class SceneGraph
      */
     remove(child)
     {
-        if (this.nodes.has(child))
+        if (child === null)
+        {
+            this.clear();
+            return true;
+        }
+        else if (this.nodes.has(child))
         {
             let childNode = this.nodes.get(child);
-            let parentNode = childNode.parent;
-            detach(parentNode, childNode);
+            let parentNode = childNode.parentNode;
+            detach(parentNode, childNode, this);
             this.nodeConstructor.walk(childNode, 0, descendent => {
                 this.nodes.delete(descendent);
             });
-            return true;
-        }
-        else if (child === null)
-        {
-            this.clear();
             return true;
         }
         else
@@ -109,30 +103,39 @@ export class SceneGraph
      * Replaces the target object with the new child object in the graph,
      * inheriting its parent and children.
      * 
-     * @param {Object} target The target object to replace. If null,
-     * it will replace the root node.
+     * @param {Object} target The target object to replace. Cannot be null.
      * @param {Object} child The object to replace with. If null,
      * it will remove the target and the target's parent will adopt
      * its grandchildren.
      */
     replace(target, child)
     {
+        if (target === null) throw new Error('Cannot replace null for child in scene graph.');
         if (this.nodes.has(target))
         {
             let targetNode = this.nodes.get(target);
-            let targetParent = targetNode.parent;
-            let targetChildren = [...targetNode.children];
+            let targetParent = targetNode.parentNode;
+            let targetChildren = [...targetNode.childNodes];
 
             // Remove target node from the graph
-            detach(targetParent, targetNode);
+            detach(targetParent, targetNode, this);
 
             // Begin grafting the grandchildren by first removing...
-            targetNode.children.length = 0;
+            targetNode.childNodes.length = 0;
 
             if (child === null)
             {
                 // Reattach all grandchildren to target parent.
-                targetParent.children.push(...targetChildren);
+                if (targetParent === null)
+                {
+                    // As root children.
+                    this.rootNodes.push(...targetChildren);
+                }
+                else
+                {
+                    // As regular children.
+                    targetParent.childNodes.push(...targetChildren);
+                }
             }
             else
             {
@@ -143,10 +146,10 @@ export class SceneGraph
                     childNode = this.nodes.get(child);
 
                     // Remove child node from prev parent
-                    detach(childNode.parent, childNode);
+                    detach(childNode.parentNode, childNode, this);
 
                     // ...and graft them back.
-                    childNode.children.push(...targetChildren);
+                    childNode.childNodes.push(...targetChildren);
                 }
                 else
                 {
@@ -155,13 +158,13 @@ export class SceneGraph
                 }
 
                 // And reattach target parent to new child.
-                attach(targetParent, childNode);
+                attach(targetParent, childNode, this);
             }
             
             // ...and graft them back.
             for(let targetChild of targetChildren)
             {
-                targetChild.parent = targetParent;
+                targetChild.parentNode = targetParent;
             }
 
             return child;
@@ -180,68 +183,93 @@ export class SceneGraph
     clear()
     {
         this.nodes.clear();
-
-        // Reset the graph.
-        const rootOwner = {};
-        this.root = new (this.nodeConstructor)(this, rootOwner, null, []);
-        this.nodes.set(rootOwner, this.root);
+        this.rootNodes.length = 0;
     }
 
     /**
      * Gets the scene node for the given object.
      * 
-     * @param {Object} owner The object to retrieve the node for.
+     * @param {Object} child The object to retrieve the node for.
      * @returns {SceneNode} The scene node that represents the object.
      */
     get(child)
     {
-        if (child === null)
-        {
-            return this.root;
-        }
-        else
-        {
-            return this.nodes.get(child);
-        }
+        return this.nodes.get(child);
     }
 
     /**
-     * Walks through every node in the graph starting from the root and
-     * down to its children.
+     * Walks through every child node in the graph for the given
+     * object's associated node.
      * 
      * @param {WalkCallback} callback The function called for each node
      * in the graph, in ordered traversal from parent to child.
-     * @param {Object} [opts] Any additional options.
-     * @param {Boolean} [opts.skipRoot] Whether to skip traversing the root
-     * and start from its children instead.
+     * @param {Object} [opts={}] Any additional options.
+     * @param {Boolean} [opts.childrenOnly=true] Whether to skip traversing
+     * the first node, usually the root, and start from its children instead.
      */
-    forEach(callback, opts = {})
+    walk(from, callback, opts = {})
     {
-        if (opts.skipRoot)
+        const { childrenOnly = true } = opts;
+        if (from === null)
         {
-            for(let childNode of this.root.children)
+            for(let childNode of this.rootNodes)
             {
-                this.nodeConstructor.walk(childNode, 1, callback);
+                this.nodeConstructor.walk(childNode, 0, callback);
             }
         }
         else
         {
-            this.nodeConstructor.walk(this.root, 0, callback);
+            const fromNode = this.get(from);
+            if (!fromNode)
+            {
+                if (childrenOnly)
+                {
+                    for(let childNode of fromNode.childNodes)
+                    {
+                        this.nodeConstructor.walk(childNode, 0, callback);
+                    }
+                }
+                else
+                {
+                    this.nodeConstructor.walk(fromNode, 0, callback);
+                }
+            }
+            else
+            {
+                throw new Error(`No node in scene graph exists for walk start.`);
+            }
         }
     }
 }
 
-function attach(parentNode, childNode)
+function attach(parentNode, childNode, sceneGraph)
 {
-    parentNode.children.push(childNode);
-    childNode.parent = parentNode;
+    if (parentNode === null)
+    {
+        sceneGraph.rootNodes.push(childNode);
+        childNode.parentNode = null;
+    }
+    else
+    {
+        parentNode.childNodes.push(childNode);
+        childNode.parentNode = parentNode;
+    }
 }
 
-function detach(parentNode, childNode)
+function detach(parentNode, childNode, sceneGraph)
 {
-    let index = parentNode.children.indexOf(childNode);
-    parentNode.children.splice(index, 1);
-    childNode.parent = null;
+    if (parentNode === null)
+    {
+        let index = sceneGraph.rootNodes.indexOf(childNode);
+        sceneGraph.rootNodes.splice(index, 1);
+        childNode.parentNode = undefined;
+    }
+    else
+    {
+        let index = parentNode.childNodes.indexOf(childNode);
+        parentNode.childNodes.splice(index, 1);
+        childNode.parentNode = undefined;
+    }
 }
 
 /**
@@ -264,7 +292,7 @@ export class SceneNode
         let result = callback(parentNode.owner, parentNode);
         if (result === false) return;
 
-        for(let childNode of parentNode.children)
+        for(let childNode of parentNode.childNodes)
         {
             this.walk(childNode, level + 1, callback);
         }
@@ -284,15 +312,15 @@ export class SceneNode
      * 
      * @param {SceneGraph} sceneGraph The scene graph this node belongs to.
      * @param {Object} owner The owner object.
-     * @param {SceneNode} parent The parent node.
-     * @param {Array<SceneNode>} children The list of child nodes.
+     * @param {SceneNode} parentNode The parent node.
+     * @param {Array<SceneNode>} childNodes The list of child nodes.
      */
-    constructor(sceneGraph, owner, parent, children)
+    constructor(sceneGraph, owner, parentNode, childNodes)
     {
         this.sceneGraph = sceneGraph;
         this.owner = owner;
 
-        this.parent = parent;
-        this.children = children;
+        this.parentNode = parentNode;
+        this.childNodes = childNodes;
     }
 }

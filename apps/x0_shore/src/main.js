@@ -1,11 +1,11 @@
 import { InputContext } from 'milque';
-import { mat4 } from 'gl-matrix';
+import { mat4, quat, vec3 } from 'gl-matrix';
 
 import { CanvasView2D, setDOMMatrix } from '@app/view/CanvasView2D.js';
-import { SceneGraph, SceneNode } from '@app/scene/SceneGraph.js';
+import { SceneGraph } from '@app/scene/SceneGraph.js';
 import { EntityManager } from '@app/entity/EntityManager.js';
 import inputmap from '@app/assets/inputmap.json';
-import { AxisAlignedBoundingBoxGraph } from './aabb/AABB';
+import { AxisAlignedBoundingBoxGraph } from '@app/aabb/AABB.js';
 
 document.addEventListener('DOMContentLoaded', main);
 
@@ -13,39 +13,21 @@ document.addEventListener('DOMContentLoaded', main);
 // NOTE: https://keycode.info/
 const INPUT_MAPPING = inputmap;
 
-class SceneTransformNode extends SceneNode
-{
-    constructor(sceneGraph, owner, parent, children)
-    {
-        super(sceneGraph, owner, parent, children);
-
-        this.x = 0;
-        this.y = 0;
-        this.z = 0;
-
-        this.pitch = 0;
-        this.yaw = 0;
-        this.roll = 0;
-
-        this.scaleX = 1;
-        this.scaleY = 1;
-        this.scaleZ = 1;
-
-        this.worldTransformation = mat4.create();
-        this.localTransformation = mat4.create();
-    }
-}
-
 const Transform = {
     create(props, entityId)
     {
-        const { sceneGraph, parent = undefined, x = 0, y = 0, z = 0} = props;
+        const { sceneGraph, parentId = undefined, x = 0, y = 0, z = 0} = props;
         if (!sceneGraph) throw new Error(`Component instantiation is missing required prop 'sceneGraph'.`);
-        let node = sceneGraph.add(entityId, parent);
-        node.x = x;
-        node.y = y;
-        node.z = z;
-        return node;
+        sceneGraph.add(entityId, parentId);
+        let result = {
+            sceneGraph,
+            worldTransformation: mat4.create(),
+            localTransformation: mat4.create(),
+            x, y, z,
+            pitch: 0, yaw: 0, roll: 0,
+            scaleX: 1, scaleY: 1, scaleZ: 1,
+        };
+        return result;
     },
     destroy(component, entityId)
     {
@@ -123,9 +105,7 @@ async function main()
     const view = new CanvasView2D(display);
     const cameraSpeed = 4;
 
-    const scene = new SceneGraph({
-        nodeConstructor: SceneTransformNode
-    });
+    const scene = new SceneGraph();
     const aabbs = new AxisAlignedBoundingBoxGraph();
     const entityManager = new EntityManager({
         componentFactoryMap: ENTITY_COMPONENT_FACTORY_MAP,
@@ -169,7 +149,6 @@ async function main()
             Collidable: { aabbGraph: aabbs, masks: { main: { x: 64, y: 8, rx: 2, ry: 8 } } }
         }),
     ];
-    walls.forEach(wall => scene.add(wall));
 
     display.addEventListener('frame', e => {
         // Update
@@ -236,96 +215,114 @@ async function main()
         {
             ctx.clearRect(0, 0, display.width, display.height);
 
-            // Render scene
-            renderSceneGraph(ctx, scene, view,
-                (node) => {
-                    return node;
-                },
-                (ctx, child, node) => {
-                    if (entityManager.has('Renderable', child))
-                    {
-                        const renderable = entityManager.get('Renderable', child);
-                        switch(renderable.renderType)
+            renderView(ctx, view,
+                function renderScene(ctx)
+                {
+                    // Render scene objects...
+                    renderSceneGraph(ctx, scene, entityManager,
+                        function renderNode(ctx, owner)
                         {
-                            case 'player':
-                                ctx.fillStyle = 'blue';
-                                ctx.fillRect(-8, -8, 16, 16);
-                                break;
-                            case 'wall':
-                                ctx.fillStyle = 'white';
-                                let halfWidth = renderable.width / 2;
-                                let halfHeight = renderable.height / 2;
-                                ctx.fillRect(-halfWidth, -halfHeight, renderable.width, renderable.height);
-                                break;
-                        }
-                    }
-                    else
-                    {
-                        ctx.fillStyle = 'red';
-                        ctx.fillRect(-1, -1, 2, 2);
-                    }
+                            if (entityManager.has('Renderable', owner))
+                            {
+                                const renderable = entityManager.get('Renderable', owner);
+                                switch(renderable.renderType)
+                                {
+                                    case 'player':
+                                        ctx.fillStyle = 'blue';
+                                        ctx.fillRect(-8, -8, 16, 16);
+                                        break;
+                                    case 'wall':
+                                        ctx.fillStyle = 'white';
+                                        let halfWidth = renderable.width / 2;
+                                        let halfHeight = renderable.height / 2;
+                                        ctx.fillRect(-halfWidth, -halfHeight, renderable.width, renderable.height);
+                                        break;
+                                }
+                            }
+                            else
+                            {
+                                ctx.fillStyle = 'red';
+                                ctx.fillRect(-1, -1, 2, 2);
+                            }
+                        });
+                    
+                    // Render collision masks...
+                    renderAxisAlignedBoundingBoxGraph(ctx, aabbs, entityManager);
                 });
-
-            // Render aabbs
-            let domMatrix = new DOMMatrix();
-            let rootNode = scene.get(null);
-            setDOMMatrix(domMatrix, rootNode.worldTransformation);
-            ctx.setTransform(domMatrix);
-
-            for (let entityId of entityManager.getComponentEntityIds('Collidable'))
-            {
-                let collidable = entityManager.get('Collidable', entityId);
-                if (collidable.collided)
-                {
-                    ctx.strokeStyle = 'red';
-                }
-                else
-                {
-                    ctx.strokeStyle = 'limegreen';
-                }
-                for(let maskName in collidable.masks)
-                {
-                    let mask = collidable.aabbGraph.get(entityId, maskName);
-                    if (mask)
-                    {
-                        let box = mask.box;
-                        ctx.strokeRect(box.x - box.rx, box.y - box.ry, box.rx * 2, box.ry * 2);
-                    }
-                }
-            }
-            ctx.setTransform();
         }
     });
 }
 
-function renderSceneGraph(ctx, sceneGraph, view, transformCallback, renderer)
+function renderView(ctx, view, renderCallback)
 {
-    let rootNode = sceneGraph.get(null);
-    let {
-        localTransformation: rootLocalTransformation,
-        worldTransformation: rootWorldTransformation
-    } = transformCallback(rootNode);
-    view.getViewProjectionMatrix(rootLocalTransformation);
-    mat4.copy(rootWorldTransformation, rootLocalTransformation);
-
+    let viewProjectionMatrix = view.getViewProjectionMatrix(mat4.create());
     let domMatrix = new DOMMatrix();
-    sceneGraph.forEach((child, node) => {
-        let { parent } = node;
-        let parentTransform = transformCallback(parent);
-        let childTransform = transformCallback(node);
+    setDOMMatrix(domMatrix, viewProjectionMatrix);
+    let prevMatrix = ctx.getTransform();
+    ctx.setTransform(domMatrix);
+    {
+        renderCallback(ctx);
+    }
+    ctx.setTransform(prevMatrix);
+}
 
-        let { localTransformation, worldTransformation } = childTransform;
-        const { worldTransformation: parentWorldTransformation } = parentTransform;
+function renderSceneGraph(ctx, sceneGraph, entityManager, renderCallback)
+{
+    let q = quat.create();
+    let v = vec3.create();
+    let s = vec3.create();
+    let domMatrix = new DOMMatrix();
+    sceneGraph.walk(null, (child, childNode) => {
+        let transform = entityManager.get('Transform', child);
+        let { localTransformation, worldTransformation } = transform;
+        quat.fromEuler(q, transform.pitch, transform.yaw, transform.roll);
+        vec3.set(v, transform.x, transform.y, transform.z);
+        vec3.set(s, transform.scaleX, transform.scaleY, transform.scaleZ);
+        mat4.fromRotationTranslationScale(localTransformation, q, v, s);
 
-        mat4.fromTranslation(localTransformation, [childTransform.x, childTransform.y, childTransform.z]);
-        mat4.multiply(worldTransformation, parentWorldTransformation, localTransformation);
-        
+        if (childNode.parentNode)
+        {
+            let parent = childNode.parentNode.owner;
+            let { worldTransformation: parentWorldTransformation } = entityManager.get('Transform', parent);
+            mat4.multiply(worldTransformation, parentWorldTransformation, localTransformation);
+        }
+        else
+        {
+            mat4.copy(worldTransformation, localTransformation);
+        }
+
         setDOMMatrix(domMatrix, worldTransformation);
-        ctx.setTransform(domMatrix);
 
-        renderer(ctx, child, node);
-    },
-    { skipRoot: true });
+        let prevMatrix = ctx.getTransform();
+        ctx.transform(domMatrix.a, domMatrix.b, domMatrix.c, domMatrix.d, domMatrix.e, domMatrix.f);
+        {
+            renderCallback(ctx, child, childNode);
+        }
+        ctx.setTransform(prevMatrix);
+    });
+}
 
-    ctx.setTransform();
+function renderAxisAlignedBoundingBoxGraph(ctx, aabbGraph, entityManager)
+{
+    for (let entityId of entityManager.getComponentEntityIds('Collidable'))
+    {
+        let collidable = entityManager.get('Collidable', entityId);
+        if (collidable.collided)
+        {
+            ctx.strokeStyle = 'red';
+        }
+        else
+        {
+            ctx.strokeStyle = 'limegreen';
+        }
+        for(let maskName in collidable.masks)
+        {
+            let mask = aabbGraph.get(entityId, maskName);
+            if (mask)
+            {
+                let box = mask.box;
+                ctx.strokeRect(box.x - box.rx, box.y - box.ry, box.rx * 2, box.ry * 2);
+            }
+        }
+    }
 }

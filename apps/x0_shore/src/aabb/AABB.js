@@ -27,9 +27,13 @@ export class AxisAlignedBoundingBoxGraph
      * Constructs an empty graph.
      * 
      * @param {Object} [opts={}] Any additional options.
+     * @param {typeof AxisAlignedBoundingBox} [opts.boxConstructor=AxisAlignedBoundingBox]
+     * The axis-aligned bounding box constructor that make up the graph.
      */
     constructor(opts = {})
     {
+        this.boxConstructor = opts.boxConstructor || AxisAlignedBoundingBox;
+
         this.masks = new Map();
         this.boxes = new Set();
 
@@ -72,7 +76,7 @@ export class AxisAlignedBoundingBoxGraph
             const rx = (maskValues[2] / 2) || 0;
             const ry = (maskValues[3] / 2) || 0;
 
-            let box = new AxisAlignedBoundingBox(this, owner, x, y, rx, ry);
+            let box = new (this.boxConstructor)(this, owner, x, y, rx, ry);
             this.boxes.add(box);
 
             mask.box = box;
@@ -92,7 +96,7 @@ export class AxisAlignedBoundingBoxGraph
                 if (!ry) ry = (owner.height / 2) || 0;
             }
             
-            let box = new AxisAlignedBoundingBox(this, owner, x, y, rx, ry);
+            let box = new (this.boxConstructor)(this, owner, x, y, rx, ry);
             this.boxes.add(box);
 
             mask.box = box;
@@ -105,7 +109,7 @@ export class AxisAlignedBoundingBoxGraph
         }
         else if (typeof maskValues === 'function')
         {
-            let box = new AxisAlignedBoundingBox(this, owner, 0, 0, 0, 0);
+            let box = new (this.boxConstructor)(this, owner, 0, 0, 0, 0);
             this.boxes.add(box);
             
             mask.box = box;
