@@ -1,5 +1,20 @@
+
+/**
+ * @typedef {String} EntityId
+ */
+
+/**
+ * Handles all entity and component mappings.
+ */
 export class EntityManager
 {
+    /**
+     * Constructs an empty entity manager with the given factories.
+     * 
+     * @param {Object} [opts={}] Any additional options.
+     * @param {Object} [opts.componentFactoryMap={}] An object map of each component to its factory.
+     * @param {Boolean} [opts.strictMode=false] Whether to enable error checking (and throwing).
+     */
     constructor(opts = {})
     {
         const { componentFactoryMap = {}, strictMode = false } = opts;
@@ -35,7 +50,7 @@ export class EntityManager
 
     create(entityTemplate = undefined)
     {
-        let entityId = this.nextAvailableEntityId++;
+        let entityId = String(this.nextAvailableEntityId++);
         this.entities.add(entityId);
         if (entityTemplate)
         {
@@ -106,7 +121,7 @@ export class EntityManager
 
         const { create } = this.factoryMap[componentName];
         let result = create
-            ? create(props, componentName, entityId, this)
+            ? create(props, entityId, this)
             : (props
                 ? {...props}
                 : {});
@@ -142,10 +157,18 @@ export class EntityManager
             entityComponents[entityId] = null;
     
             const { destroy } = this.factoryMap[componentName];
-            if (destroy) destroy(componentValues, componentName, entityId, this);
+            if (destroy) destroy(componentValues, entityId, this);
         }
     }
 
+    /**
+     * Finds the component for the given entity.
+     * 
+     * @param {String} componentName The name of the target component.
+     * @param {EntityId} entityId The id of the entity to look in.
+     * @returns {Object} The component found. If it does not exist, null
+     * is returned instead.
+     */
     get(componentName, entityId)
     {
         if (!(componentName in this.instances))
@@ -157,6 +180,13 @@ export class EntityManager
         return entityComponents[entityId] || null;
     }
     
+    /**
+     * Checks whether the entity has the component.
+     * 
+     * @param {String} componentName The name of the target component.
+     * @param {EntityId} entityId The id of the entity to look in.
+     * @returns {Boolean} Whether the component exists for the entity.
+     */
     has(componentName, entityId)
     {
         return componentName in this.instances && Boolean(this.instances[componentName][entityId]);
@@ -196,6 +226,11 @@ export class EntityManager
         this.instances[componentName] = {};
     }
 
+    /**
+     * Gets all the entity ids.
+     * 
+     * @returns {Set<EntityId>} The set of entity ids.
+     */
     getEntityIds()
     {
         return this.entities;

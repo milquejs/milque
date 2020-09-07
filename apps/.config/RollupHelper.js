@@ -3,6 +3,7 @@ import path from 'path';
 
 import nodeResolve from '@rollup/plugin-node-resolve';
 import alias from '@rollup/plugin-alias';
+import json from '@rollup/plugin-json';
 import copy from 'rollup-plugin-copy';
 import serve from 'rollup-plugin-serve';
 import livereload from 'rollup-plugin-livereload';
@@ -65,6 +66,7 @@ export function common(opts)
                     { find: PROJECT_ROOT_ALIAS, replacement: SOURCE_ROOT_PATH },
                 ],
             }),
+            json(),
             copy({
                 targets: EXTERNAL_ASSETS.map(opt => ({dest: outputDir, ...opt})),
             }),

@@ -3110,6 +3110,124 @@ output {
         return Math.min(max, Math.max(min, value));
     }
 
+    class Camera2D
+    {
+        constructor(left = -1, right = 1, top = -1, bottom = 1, near = 0, far = 1)
+        {
+            this.position = create$2();
+            this.rotation = create$4();
+            this.scale = fromValues(1, 1, 1);
+
+            this.clippingPlane = {
+                left, right, top, bottom, near, far,
+            };
+        }
+
+        get x() { return this.position[0]; }
+        set x(value) { this.position[0] = value; }
+        get y() { return this.position[1]; }
+        set y(value) { this.position[1] = value; }
+        get z() { return this.position[2]; }
+        set z(value) { this.position[2] = value; }
+        
+        moveTo(x, y, z = 0, dt = 1)
+        {
+            let nextPosition = fromValues(x, y, z);
+            lerp(this.position, this.position, nextPosition, clamp$1(dt, 0, 1));
+            return this;
+        }
+
+        /** @override */
+        getViewMatrix(out)
+        {
+            let viewX = -Math.round(this.x);
+            let viewY = -Math.round(this.y);
+            let viewZ = this.z === 0 ? 1 : 1 / this.z;
+            let invPosition = fromValues(viewX, viewY, 0);
+            let invScale = fromValues(this.scale[0] * viewZ, this.scale[1] * viewZ, 1);
+            fromRotationTranslationScale(out, this.rotation, invPosition, invScale);
+            return out;
+        }
+
+        /** @override */
+        getProjectionMatrix(out)
+        {
+            let { left, right, top, bottom, near, far } = this.clippingPlane;
+            ortho(out, left, right, top, bottom, near, far);
+            return out;
+        }
+    }
+
+    class CanvasView2D
+    {
+        constructor(display, camera = new Camera2D())
+        {
+            this.display = display;
+            this.camera = camera;
+
+            this.viewTransformDOMMatrix = new DOMMatrix();
+        }
+        
+        transformScreenToWorld(screenX, screenY)
+        {
+            let matrix = create$1();
+            this.getViewProjectionMatrix(matrix);
+            invert(matrix, matrix);
+            let result = vec3.fromValues(screenX, screenY, 0);
+            vec3.transformMat4(result, result, matrix);
+            return result;
+        }
+        
+        transformCanvas(ctx)
+        {
+            let domMatrix = this.viewTransformDOMMatrix;
+            let matrix = create$1();
+            this.getViewProjectionMatrix(matrix);
+            setDOMMatrix(domMatrix, matrix);
+
+            const { a, b, c, d, e, f } = domMatrix;
+            ctx.transform(a, b, c, d, e, f);
+        }
+
+        getViewProjectionMatrix(out)
+        {
+            const displayWidth = this.display.width;
+            const displayHeight = this.display.height;
+
+            let matrix = create$1();
+            const projectionMatrix = this.camera.getProjectionMatrix(matrix);
+            const viewMatrix = this.camera.getViewMatrix(out);
+            multiply(matrix, viewMatrix, projectionMatrix);
+            // HACK: This is the correct canvas matrix, but since we simply restore the
+            // the aspect ratio by effectively undoing the scaling, we can skip this step
+            // all together to achieve the same effect (albeit incorrect).
+            /*
+            const canvasMatrix = mat4.fromRotationTranslationScale(
+                out,
+                [0, 0, 0, 1],
+                [displayWidth / 2, displayHeight / 2, 0],
+                [displayWidth, displayHeight, 0]);
+            */
+            // HACK: This shouldn't be here. This should really be in the view matrix.
+            const canvasMatrix = fromTranslation(
+                out,
+                [displayWidth / 2, displayHeight / 2, 0]);
+            multiply(out, canvasMatrix, matrix);
+            return out;
+        }
+    }
+
+    function setDOMMatrix(domMatrix, glMatrix)
+    {
+        domMatrix.a = glMatrix[0];
+        domMatrix.b = glMatrix[1];
+        domMatrix.c = glMatrix[4];
+        domMatrix.d = glMatrix[5];
+        domMatrix.e = glMatrix[12];
+        domMatrix.f = glMatrix[13];
+        return domMatrix;
+    }
+
     const MAX_DEPTH_LEVEL = 100;
 
     /**
@@ -3409,124 +3527,6 @@ output {
         }
     }
 
-    class Camera2D
-    {
-        constructor(left = -1, right = 1, top = -1, bottom = 1, near = 0, far = 1)
-        {
-            this.position = create$2();
-            this.rotation = create$4();
-            this.scale = fromValues(1, 1, 1);
-
-            this.clippingPlane = {
-                left, right, top, bottom, near, far,
-            };
-        }
-
-        get x() { return this.position[0]; }
-        set x(value) { this.position[0] = value; }
-        get y() { return this.position[1]; }
-        set y(value) { this.position[1] = value; }
-        get z() { return this.position[2]; }
-        set z(value) { this.position[2] = value; }
-        
-        moveTo(x, y, z = 0, dt = 1)
-        {
-            let nextPosition = fromValues(x, y, z);
-            lerp(this.position, this.position, nextPosition, clamp$1(dt, 0, 1));
-            return this;
-        }
-
-        /** @override */
-        getViewMatrix(out)
-        {
-            let viewX = -Math.round(this.x);
-            let viewY = -Math.round(this.y);
-            let viewZ = this.z === 0 ? 1 : 1 / this.z;
-            let invPosition = fromValues(viewX, viewY, 0);
-            let invScale = fromValues(this.scale[0] * viewZ, this.scale[1] * viewZ, 1);
-            fromRotationTranslationScale(out, this.rotation, invPosition, invScale);
-            return out;
-        }
-
-        /** @override */
-        getProjectionMatrix(out)
-        {
-            let { left, right, top, bottom, near, far } = this.clippingPlane;
-            ortho(out, left, right, top, bottom, near, far);
-            return out;
-        }
-    }
-
-    class CanvasView2D
-    {
-        constructor(display, camera = new Camera2D())
-        {
-            this.display = display;
-            this.camera = camera;
-
-            this.viewTransformDOMMatrix = new DOMMatrix();
-        }
-        
-        transformScreenToWorld(screenX, screenY)
-        {
-            let matrix = create$1();
-            this.getViewProjectionMatrix(matrix);
-            invert(matrix, matrix);
-            let result = vec3.fromValues(screenX, screenY, 0);
-            vec3.transformMat4(result, result, matrix);
-            return result;
-        }
-        
-        transformCanvas(ctx)
-        {
-            let domMatrix = this.viewTransformDOMMatrix;
-            let matrix = create$1();
-            this.getViewProjectionMatrix(matrix);
-            setDOMMatrix(domMatrix, matrix);
-
-            const { a, b, c, d, e, f } = domMatrix;
-            ctx.transform(a, b, c, d, e, f);
-        }
-
-        getViewProjectionMatrix(out)
-        {
-            const displayWidth = this.display.width;
-            const displayHeight = this.display.height;
-
-            let matrix = create$1();
-            const projectionMatrix = this.camera.getProjectionMatrix(matrix);
-            const viewMatrix = this.camera.getViewMatrix(out);
-            multiply(matrix, viewMatrix, projectionMatrix);
-            // HACK: This is the correct canvas matrix, but since we simply restore the
-            // the aspect ratio by effectively undoing the scaling, we can skip this step
-            // all together to achieve the same effect (albeit incorrect).
-            /*
-            const canvasMatrix = mat4.fromRotationTranslationScale(
-                out,
-                [0, 0, 0, 1],
-                [displayWidth / 2, displayHeight / 2, 0],
-                [displayWidth, displayHeight, 0]);
-            */
-            // HACK: This shouldn't be here. This should really be in the view matrix.
-            const canvasMatrix = fromTranslation(
-                out,
-                [displayWidth / 2, displayHeight / 2, 0]);
-            multiply(out, canvasMatrix, matrix);
-            return out;
-        }
-    }
-
-    function setDOMMatrix(domMatrix, glMatrix)
-    {
-        domMatrix.a = glMatrix[0];
-        domMatrix.b = glMatrix[1];
-        domMatrix.c = glMatrix[4];
-        domMatrix.d = glMatrix[5];
-        domMatrix.e = glMatrix[12];
-        domMatrix.f = glMatrix[13];
-        return domMatrix;
-    }
-
     class EntityManager
     {
         constructor(opts = {})
@@ -3772,20 +3772,115 @@ output {
         }
     }
 
+    var moveUp = [
+    	{
+    		key: "keyboard:ArrowUp",
+    		scale: 1
+    	},
+    	{
+    		key: "keyboard:KeyW",
+    		scale: 1
+    	}
+    ];
+    var moveDown = [
+    	{
+    		key: "keyboard:ArrowDown",
+    		scale: 1
+    	},
+    	{
+    		key: "keyboard:KeyS",
+    		scale: 1
+    	}
+    ];
+    var moveLeft = [
+    	{
+    		key: "keyboard:ArrowLeft",
+    		scale: 1
+    	},
+    	{
+    		key: "keyboard:KeyA",
+    		scale: 1
+    	}
+    ];
+    var moveRight = [
+    	{
+    		key: "keyboard:ArrowRight",
+    		scale: 1
+    	},
+    	{
+    		key: "keyboard:KeyD",
+    		scale: 1
+    	}
+    ];
+    var mainAction = [
+    	{
+    		key: "keyboard:KeyE",
+    		scale: 1
+    	},
+    	{
+    		key: "keyboard:Space",
+    		scale: 1
+    	}
+    ];
+    var inventory = [
+    	{
+    		key: "keyboard:KeyF",
+    		event: "up"
+    	},
+    	{
+    		key: "keyboard:KeyI",
+    		event: "up"
+    	}
+    ];
+    var sprint = [
+    	{
+    		key: "keyboard:ShiftLeft",
+    		scale: 1
+    	},
+    	{
+    		key: "keyboard:ShiftRight",
+    		scale: 1
+    	}
+    ];
+    var sneak = [
+    	{
+    		key: "keyboard:ControlLeft",
+    		scale: 1
+    	},
+    	{
+    		key: "keyboard:ControlRight",
+    		scale: 1
+    	}
+    ];
+    var inputmap = {
+    	moveUp: moveUp,
+    	moveDown: moveDown,
+    	moveLeft: moveLeft,
+    	moveRight: moveRight,
+    	mainAction: mainAction,
+    	inventory: inventory,
+    	sprint: sprint,
+    	sneak: sneak
+    };
+
+    var inputmap$1 = /*#__PURE__*/Object.freeze({
+        __proto__: null,
+        moveUp: moveUp,
+        moveDown: moveDown,
+        moveLeft: moveLeft,
+        moveRight: moveRight,
+        mainAction: mainAction,
+        inventory: inventory,
+        sprint: sprint,
+        sneak: sneak,
+        'default': inputmap
+    });
+
     document.addEventListener('DOMContentLoaded', main);
 
     // TODO: Should print the key code of any key somewhere, so we know what to use.
     // NOTE: https://keycode.info/
-    const INPUT_MAPPING = {
-        moveUp: [{key: 'keyboard:ArrowUp', scale: 1}, {key: 'keyboard:KeyW', scale: 1}],
-        moveDown: [{key: 'keyboard:ArrowDown', scale: 1}, {key: 'keyboard:KeyS', scale: 1}],
-        moveLeft: [{key: 'keyboard:ArrowLeft', scale: 1}, {key: 'keyboard:KeyA', scale: 1}],
-        moveRight: [{key: 'keyboard:ArrowRight', scale: 1}, {key: 'keyboard:KeyD', scale: 1}],
-        mainAction: [{key: 'keyboard:KeyE', scale: 1}, {key: 'keyboard:Space', scale: 1}],
-        inventory: [{key: 'keyboard:KeyF', event: 'up' }, {key: 'keyboard:KeyI', event: 'up'}],
-        sprint: [{key: 'keyboard:ShiftLeft', scale: 1}, {key: 'keyboard:ShiftRight', scale: 1}],
-        sneak: [{key: 'keyboard:ControlLeft', scale: 1}, {key: 'keyboard:ControlRight', scale: 1}],
-    };
+    const INPUT_MAPPING = inputmap$1;
 
     class SceneTransformNode extends SceneNode
     {

@@ -190,7 +190,7 @@ export class SceneGraph
     /**
      * Gets the scene node for the given object.
      * 
-     * @param {Object} owner The object to retreive the node for.
+     * @param {Object} owner The object to retrieve the node for.
      * @returns {SceneNode} The scene node that represents the object.
      */
     get(child)
