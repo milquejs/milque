@@ -1,7 +1,7 @@
 (function (global, factory) {
     typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('gl-matrix')) :
     typeof define === 'function' && define.amd ? define(['exports', 'gl-matrix'], factory) :
-    (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory((global.Milque = global.Milque || {}, global.Milque.Mogli = {}), global.glMatrix));
+    (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.Mogli = {}, global.glMatrix));
 }(this, (function (exports, glMatrix) { 'use strict';
 
     const ORIGIN = glMatrix.vec3.fromValues(0, 0, 0);

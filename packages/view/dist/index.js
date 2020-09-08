@@ -1,7 +1,7 @@
 (function (global, factory) {
     typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('gl-matrix')) :
     typeof define === 'function' && define.amd ? define(['exports', 'gl-matrix'], factory) :
-    (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory((global.Milque = global.Milque || {}, global.Milque.Util = {}), global.glMatrix));
+    (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.View = {}, global.glMatrix));
 }(this, (function (exports, glMatrix) { 'use strict';
 
     class Camera
@@ -17,6 +17,8 @@
     {
         constructor(left = -1, right = 1, top = -1, bottom = 1, near = 0, far = 1)
         {
+            super();
+            
             this.position = glMatrix.vec3.create();
             this.rotation = glMatrix.quat.create();
             this.scale = glMatrix.vec3.fromValues(1, 1, 1);

@@ -1,29 +1,13 @@
-import path from 'path';
+// @ts-nocheck
+import { rollupConfig } from '../.config/RollupHelper.js';
 import * as packageJson from './package.json';
-
-const MODULE_DIR = path.dirname(packageJson.module);
-const MODULE_NAME = 'Milque.Random';
-const MAIN_PATH = packageJson.main;
-
-export default [
+export default args => rollupConfig(
+    args, packageJson,
     {
-        input: 'src/index.js',
-        output: {
-            file: MAIN_PATH,
-            format: 'umd',
-            name: MODULE_NAME,
-        }
-    },
-    {
-        input: [
-            'src/index.js',
+        entries: [
             'src/Random.js',
             'src/generators/RandomGenerator.js',
-            'src/generators/SimpleRandomGenerator.js'
-        ],
-        output: {
-            dir: MODULE_DIR,
-            format: 'esm',
-        }
+            'src/generators/SimpleRandomGenerator.js',
+        ]
     }
-];
+);

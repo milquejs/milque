@@ -1,22 +1,10 @@
-import path from 'path';
+// @ts-nocheck
+import { rollupConfig } from '../.config/RollupHelper.js';
 import * as packageJson from './package.json';
-
-const MODULE_DIR = path.dirname(packageJson.module);
-const MODULE_NAME = 'Milque.Util';
-const MAIN_PATH = packageJson.main;
-
-export default [
+export default args => rollupConfig(
+    args, packageJson,
     {
-        input: 'src/index.js',
-        output: {
-            file: MAIN_PATH,
-            format: 'umd',
-            name: MODULE_NAME,
-        }
-    },
-    {
-        input: [
-            'src/index.js',
+        entries: [
             'src/Discrete.js',
             'src/Downloader.js',
             'src/Eventable.js',
@@ -25,10 +13,6 @@ export default [
             'src/PriorityQueue.js',
             'src/Uploader.js',
             'src/uuidv4.js',
-        ],
-        output: {
-            dir: MODULE_DIR,
-            format: 'esm',
-        }
+        ]
     }
-];
+);

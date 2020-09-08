@@ -1,5 +1,5 @@
 import { mat4 } from 'gl-matrix';
-import { a as Camera2D } from './Camera2D-a3d7cb35.js';
+import { a as Camera2D } from './Camera2D-230cbbad.js';
 
 class CanvasView2D
 {

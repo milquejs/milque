@@ -14,6 +14,8 @@
     "build": "rollup --config"
   },
   "devDependencies": {
-    "rollup": "^2.26.10"
+    "@rollup/plugin-alias": "^3.1.1",
+    "rollup": "^2.26.10",
+    "rollup-plugin-clear": "^2.0.7"
   }
 }

@@ -70,4 +70,4 @@ class SimpleRandomGenerator extends RandomGenerator
     }
 }
 
-export { RandomGenerator as R, SimpleRandomGenerator as S, Random as a };
+export { Random as R, SimpleRandomGenerator as S, RandomGenerator as a };

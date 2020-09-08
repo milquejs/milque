@@ -5,6 +5,8 @@ export class Camera2D extends Camera
 {
     constructor(left = -1, right = 1, top = -1, bottom = 1, near = 0, far = 1)
     {
+        super();
+        
         this.position = vec3.create();
         this.rotation = quat.create();
         this.scale = vec3.fromValues(1, 1, 1);

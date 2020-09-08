@@ -13,6 +13,8 @@ class Camera2D extends Camera
 {
     constructor(left = -1, right = 1, top = -1, bottom = 1, near = 0, far = 1)
     {
+        super();
+        
         this.position = vec3$1.create();
         this.rotation = quat.create();
         this.scale = vec3$1.fromValues(1, 1, 1);
@@ -192,4 +194,4 @@ class Camera3D extends Camera
     }
 }
 
-export { Camera as C, Camera2D as a, CanvasView2D as b, Camera3D as c, setDOMMatrix as s };
+export { Camera as C, Camera2D as a, Camera3D as b, CanvasView2D as c, setDOMMatrix as s };

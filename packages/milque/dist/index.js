@@ -1,7 +1,7 @@
 (function (global, factory) {
     typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
     typeof define === 'function' && define.amd ? define(['exports'], factory) :
-    (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory((global.Milque = global.Milque || {}, global.Milque.Util = {})));
+    (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.Milque = {}));
 }(this, (function (exports) { 'use strict';
 
     const MODE_NOSCALE = 'noscale';
@@ -13157,6 +13157,8 @@ output {
     {
         constructor(left = -1, right = 1, top = -1, bottom = 1, near = 0, far = 1)
         {
+            super();
+            
             this.position = create$5();
             this.rotation = create$7();
             this.scale = fromValues$4(1, 1, 1);

@@ -2,11 +2,13 @@ import path from 'path';
 
 import nodeResolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
+import clear from 'rollup-plugin-clear';
 
 import * as packageJson from './package.json';
 
+const PUBLIC_DIR_PATH = 'dist';
 const MODULE_DIR = path.dirname(packageJson.module);
-const MODULE_NAME = 'Milque.Util';
+const MODULE_NAME = 'Milque';
 const MAIN_PATH = packageJson.main;
 
 export default [
@@ -20,6 +22,9 @@ export default [
         plugins: [
             nodeResolve(),
             commonjs(),
+            clear({
+                targets: [ PUBLIC_DIR_PATH ]
+            })
         ]
     },
     {

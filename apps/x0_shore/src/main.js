@@ -1,11 +1,7 @@
-import { InputContext } from 'milque';
+import { InputContext, SceneGraph, EntityManager, AxisAlignedBoundingBoxGraph, CanvasView2D, setDOMMatrix } from 'milque';
 import { mat4, quat, vec3 } from 'gl-matrix';
 
-import { CanvasView2D, setDOMMatrix } from '@app/view/CanvasView2D.js';
-import { SceneGraph } from '@app/scene/SceneGraph.js';
-import { EntityManager } from '@app/entity/EntityManager.js';
 import inputmap from '@app/assets/inputmap.json';
-import { AxisAlignedBoundingBoxGraph } from '@app/aabb/AABB.js';
 
 document.addEventListener('DOMContentLoaded', main);
 

@@ -1,5 +1,5 @@
 import { mat4, vec3, quat } from 'gl-matrix';
-import { C as Camera } from './Camera2D-a3d7cb35.js';
+import { C as Camera } from './Camera2D-230cbbad.js';
 
 /** @deprecated */
 class Camera3D extends Camera
