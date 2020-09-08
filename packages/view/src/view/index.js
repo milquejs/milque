@@ -1,1 +1,1 @@
-export { CanvasView, setDOMMatrix } from './CanvasView.js';
+export { CanvasView2D, setDOMMatrix } from './CanvasView2D.js';

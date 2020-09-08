@@ -1962,6 +1962,26 @@ output {
         inputKeys.push(inputKey);
     }
 
+    const AUDIO_CONTEXT = new AudioContext();
+    autoUnlock(AUDIO_CONTEXT);
+
+    async function autoUnlock(ctx)
+    {
+        const callback = () => {
+            if (ctx.state === 'suspended') {
+                ctx.resume();
+            }
+        };
+        document.addEventListener('click', callback);
+    }
+
+    // Bresenham's Line Algorithm
+
+    function clamp(value, min, max)
+    {
+        return Math.min(max, Math.max(min, value));
+    }
+
     /**
      * Common utilities
      * @module glMatrix
@@ -2371,6 +2391,22 @@ output {
       return out;
     }
     /**
+     * Set the components of a vec3 to the given values
+     *
+     * @param {vec3} out the receiving vector
+     * @param {Number} x X component
+     * @param {Number} y Y component
+     * @param {Number} z Z component
+     * @returns {vec3} out
+     */
+
+    function set(out, x, y, z) {
+      out[0] = x;
+      out[1] = y;
+      out[2] = z;
+      return out;
+    }
+    /**
      * Normalize a vec3
      *
      * @param {vec3} out the receiving vector
@@ -2735,6 +2771,34 @@ output {
       return out;
     }
     /**
+     * Creates a quaternion from the given euler angle x, y, z.
+     *
+     * @param {quat} out the receiving quaternion
+     * @param {x} Angle to rotate around X axis in degrees.
+     * @param {y} Angle to rotate around Y axis in degrees.
+     * @param {z} Angle to rotate around Z axis in degrees.
+     * @returns {quat} out
+     * @function
+     */
+
+    function fromEuler(out, x, y, z) {
+      var halfToRad = 0.5 * Math.PI / 180.0;
+      x *= halfToRad;
+      y *= halfToRad;
+      z *= halfToRad;
+      var sx = Math.sin(x);
+      var cx = Math.cos(x);
+      var sy = Math.sin(y);
+      var cy = Math.cos(y);
+      var sz = Math.sin(z);
+      var cz = Math.cos(z);
+      out[0] = sx * cy * cz - cx * sy * sz;
+      out[1] = cx * sy * cz + sx * cy * sz;
+      out[2] = cx * cy * sz - sx * sy * cz;
+      out[3] = cx * cy * cz + sx * sy * sz;
+      return out;
+    }
+    /**
      * Normalize a quat
      *
      * @param {quat} out the receiving quaternion
@@ -2834,282 +2898,6 @@ output {
       };
     }();
 
-    const ORIGIN = fromValues(0, 0, 0);
-    const XAXIS = fromValues(1, 0, 0);
-    const YAXIS = fromValues(0, 1, 0);
-    const ZAXIS = fromValues(0, 0, 1);
-
-    // SOURCE: https://noonat.github.io/intersect/#aabb-vs-aabb
-
-    /* Surface contacts are considered intersections, including sweeps. */
-
-    const EPSILON$1 = 1e-8;
-
-    function clamp(value, min, max)
-    {
-        return Math.min(Math.max(value, min), max);
-    }
-
-    function createAABB(x, y, rx, ry)
-    {
-        return {
-            x, y,
-            rx, ry,
-        };
-    }
-
-    function createRect(left, top, right, bottom)
-    {
-        let rx = Math.abs(right - left) / 2;
-        let ry = Math.abs(bottom - top) / 2;
-        return createAABB(Math.min(left, right) + rx, Math.min(top, bottom) + ry, rx, ry);
-    }
-
-    function testAABB(a, b)
-    {
-        if (Math.abs(a.x - b.x) > (a.rx + b.rx)) return false;
-        if (Math.abs(a.y - b.y) > (a.ry + b.ry)) return false;
-        return true;
-    }
-
-    function intersectAABB(out, a, b)
-    {
-        let dx = b.x - a.x;
-        let px = (b.rx + a.rx) - Math.abs(dx);
-        if (px < 0) return null;
-
-        let dy = b.y - a.y;
-        let py = (b.ry + a.ry) - Math.abs(dy);
-        if (py < 0) return null;
-
-        if (px < py)
-        {
-            let sx = Math.sign(dx);
-            out.dx = px * sx;
-            out.dy = 0;
-            out.nx = sx;
-            out.ny = 0;
-            out.x = a.x + (a.rx * sx);
-            out.y = b.y;
-        }
-        else
-        {
-            let sy = Math.sign(dy);
-            out.dx = 0;
-            out.dy = py * sy;
-            out.nx = 0;
-            out.ny = sy;
-            out.x = b.x;
-            out.y = a.y + (a.ry * sy);
-        }
-
-        return out;
-    }
-
-    function intersectPoint(out, a, x, y)
-    {
-        let dx = x - a.x;
-        let px = a.rx - Math.abs(dx);
-        if (px < 0) return null;
-
-        let dy = y - a.y;
-        let py = a.ry - Math.abs(dy);
-        if (py < 0) return null;
-
-        if (px < py)
-        {
-            let sx = Math.sign(dx);
-            out.dx = px * sx;
-            out.dy = 0;
-            out.nx = sx;
-            out.ny = 0;
-            out.x = a.x + (a.rx * sx);
-            out.y = y;
-        }
-        else
-        {
-            let sy = Math.sign(dy);
-            out.dx = 0;
-            out.dy = py * sy;
-            out.nx = 0;
-            out.ny = sy;
-            out.x = x;
-            out.y = a.y + (a.ry * sy);
-        }
-
-        return out;
-    }
-
-    function intersectSegment(out, a, x, y, dx, dy, px = 0, py = 0)
-    {
-        if (Math.abs(dx) < EPSILON$1
-            && Math.abs(dy) < EPSILON$1
-            && px === 0
-            && py === 0)
-        {
-            return intersectPoint(out, a, x, y);
-        }
-        
-        let arx = a.rx;
-        let ary = a.ry;
-        let bpx = px;
-        let bpy = py;
-        let scaleX = 1.0 / (dx || EPSILON$1);
-        let scaleY = 1.0 / (dy || EPSILON$1);
-        let signX = Math.sign(scaleX);
-        let signY = Math.sign(scaleY);
-        let nearTimeX = (a.x - signX * (arx + bpx) - x) * scaleX;
-        let nearTimeY = (a.y - signY * (ary + bpy) - y) * scaleY;
-        let farTimeX = (a.x + signX * (arx + bpx) - x) * scaleX;
-        let farTimeY = (a.y + signY * (ary + bpy) - y) * scaleY;
-        if (nearTimeX > farTimeY || nearTimeY > farTimeX) return null;
-
-        let nearTime = Math.max(nearTimeX, nearTimeY);
-        let farTime = Math.min(farTimeX, farTimeY);
-        if (nearTime > 1 || farTime < 0) return null;
-
-        let time = clamp(nearTime, 0, 1);
-        let hitdx = (1.0 - time) * -dx;
-        let hitdy = (1.0 - time) * -dy;
-        let hitx = x + dx * time;
-        let hity = y + dy * time;
-
-        if (nearTimeX > nearTimeY)
-        {
-            out.time = time;
-            out.nx = -signX;
-            out.ny = 0;
-            out.dx = hitdx;
-            out.dy = hitdy;
-            out.x = hitx;
-            out.y = hity;
-        }
-        else
-        {
-            out.time = time;
-            out.nx = 0;
-            out.ny = -signY;
-            out.dx = hitdx;
-            out.dy = hitdy;
-            out.x = hitx;
-            out.y = hity;
-        }
-
-        return out;
-    }
-
-    function intersectSweepAABB(out, a, b, dx, dy)
-    {
-        return intersectSegment(out, a, b.x, b.y, dx, dy, b.rx, b.ry);
-    }
-
-    function sweepIntoAABB(out, a, b, dx, dy)
-    {
-        if (Math.abs(dx) < EPSILON$1 && Math.abs(dy) < EPSILON$1)
-        {
-            let hit = intersectAABB({}, b, a);
-            if (hit) hit.time = 0;
-
-            out.x = a.x;
-            out.y = a.y;
-            out.time = hit ? 0 : 1;
-            out.hit = hit;
-            return out;
-        }
-
-        let hit = intersectSweepAABB({}, b, a, dx, dy);
-        if (hit)
-        {
-            let time = clamp(hit.time, 0, 1);
-            let length = Math.sqrt(dx * dx + dy * dy);
-
-            let normaldx;
-            let normaldy;
-            if (length)
-            {
-                normaldx = dx / length;
-                normaldy = dy / length;
-            }
-            else
-            {
-                normaldx = 0;
-                normaldy = 0;
-            }
-            hit.x = clamp(hit.x + normaldx * a.rx, b.x - b.rx, b.x + b.rx);
-            hit.y = clamp(hit.y + normaldy * a.ry, b.y - b.ry, b.y + b.ry);
-
-            out.time = time;
-            out.x = a.x + dx * time;
-            out.y = a.y + dy * time;
-            out.hit = hit;
-        }
-        else
-        {
-            out.time = 1;
-            out.x = a.x + dx;
-            out.y = a.y + dy;
-            out.hit = hit;
-        }
-
-        return out;
-    }
-
-    function sweepInto(out, a, staticColliders, dx, dy)
-    {
-        let tmp = {};
-
-        out.time = 1;
-        out.x = a.x + dx;
-        out.y = a.y + dy;
-        out.hit = null;
-
-        for(let i = 0, l = staticColliders.length; i < l; ++i)
-        {
-            let result = sweepIntoAABB(tmp, a, staticColliders[i], dx, dy);
-            if (result.time <= out.time)
-            {
-                out.time = result.time;
-                out.x = result.x;
-                out.y = result.y;
-                out.hit = result.hit;
-            }
-        }
-        return out;
-    }
-
-    var IntersectionHelper = /*#__PURE__*/Object.freeze({
-        __proto__: null,
-        EPSILON: EPSILON$1,
-        clamp: clamp,
-        createAABB: createAABB,
-        createRect: createRect,
-        testAABB: testAABB,
-        intersectAABB: intersectAABB,
-        intersectPoint: intersectPoint,
-        intersectSegment: intersectSegment,
-        sweepInto: sweepInto
-    });
-
-    const AUDIO_CONTEXT = new AudioContext();
-    autoUnlock(AUDIO_CONTEXT);
-
-    async function autoUnlock(ctx)
-    {
-        const callback = () => {
-            if (ctx.state === 'suspended') {
-                ctx.resume();
-            }
-        };
-        document.addEventListener('click', callback);
-    }
-
-    // Bresenham's Line Algorithm
-
-    function clamp$1(value, min, max)
-    {
-        return Math.min(max, Math.max(min, value));
-    }
-
     class Camera2D
     {
         constructor(left = -1, right = 1, top = -1, bottom = 1, near = 0, far = 1)
@@ -3133,7 +2921,7 @@ output {
         moveTo(x, y, z = 0, dt = 1)
         {
             let nextPosition = fromValues(x, y, z);
-            lerp(this.position, this.position, nextPosition, clamp$1(dt, 0, 1));
+            lerp(this.position, this.position, nextPosition, clamp(dt, 0, 1));
             return this;
         }
 
@@ -3232,16 +3020,16 @@ output {
 
     /**
      * @callback WalkCallback Called for each node, before traversing its children.
-     * @param {Object} object The current object.
-     * @param {SceneNode} node The representative node for the current object.
+     * @param {Object} child The current object.
+     * @param {SceneNode} childNode The representative node for the current object.
      * @returns {WalkBackCallback|Boolean} If false, the walk will skip
      * the current node's children. If a function, it will be called after
      * traversing down all of its children.
      * 
      * @callback WalkBackCallback Called if returned by {@link WalkCallback}, after
      * traversing the current node's children.
-     * @param {Object} object The current object.
-     * @param {SceneNode} node The representative node for the current object.
+     * @param {Object} child The current object.
+     * @param {SceneNode} childNode The representative node for the current object.
      */
 
     /**
@@ -3254,16 +3042,13 @@ output {
          * 
          * @param {Object} [opts] Any additional options.
          * @param {typeof SceneNode} [opts.nodeConstructor] The scene node constructor that make up the graph.
-         * @param {Object} [opts.root] The root owner, otherwise it is an empty object.
          */
         constructor(opts = {})
         {
             this.nodeConstructor = opts.nodeConstructor || SceneNode;
             this.nodes = new Map();
-            
-            const rootOwner = opts.root || {};
-            this.root = new (this.nodeConstructor)(this, rootOwner, null, []);
-            this.nodes.set(rootOwner, this.root);
+
+            this.rootNodes = [];
         }
 
         /**
@@ -3276,27 +3061,24 @@ output {
          */
         add(child, parent = null)
         {
-            if (this.nodes.has(parent))
+            if (child === null) throw new Error(`Cannot add null as child to scene graph.`);
+            if (parent === null || this.nodes.has(parent))
             {
-                let parentNode = this.nodes.get(parent);
+                let parentNode = parent === null ? null : this.nodes.get(parent);
                 if (this.nodes.has(child))
                 {
                     let childNode = this.nodes.get(child);
-                    detach(childNode.parent, childNode);
-                    attach(parentNode, childNode);
+                    detach(childNode.parentNode, childNode, this);
+                    attach(parentNode, childNode, this);
                     return childNode;
                 }
                 else
                 {
                     let childNode = new (this.nodeConstructor)(this, child, null, []);
                     this.nodes.set(child, childNode);
-                    attach(parentNode, childNode);
+                    attach(parentNode, childNode, this);
                     return childNode;
                 }
-            }
-            else if (parent === null)
-            {
-                return this.add(child, this.root.owner);
             }
             else
             {
@@ -3314,19 +3096,19 @@ output {
          */
         remove(child)
         {
-            if (this.nodes.has(child))
+            if (child === null)
+            {
+                this.clear();
+                return true;
+            }
+            else if (this.nodes.has(child))
             {
                 let childNode = this.nodes.get(child);
-                let parentNode = childNode.parent;
-                detach(parentNode, childNode);
+                let parentNode = childNode.parentNode;
+                detach(parentNode, childNode, this);
                 this.nodeConstructor.walk(childNode, 0, descendent => {
                     this.nodes.delete(descendent);
                 });
-                return true;
-            }
-            else if (child === null)
-            {
-                this.clear();
                 return true;
             }
             else
@@ -3339,30 +3121,39 @@ output {
          * Replaces the target object with the new child object in the graph,
          * inheriting its parent and children.
          * 
-         * @param {Object} target The target object to replace. If null,
-         * it will replace the root node.
+         * @param {Object} target The target object to replace. Cannot be null.
          * @param {Object} child The object to replace with. If null,
          * it will remove the target and the target's parent will adopt
          * its grandchildren.
          */
         replace(target, child)
         {
+            if (target === null) throw new Error('Cannot replace null for child in scene graph.');
             if (this.nodes.has(target))
             {
                 let targetNode = this.nodes.get(target);
-                let targetParent = targetNode.parent;
-                let targetChildren = [...targetNode.children];
+                let targetParent = targetNode.parentNode;
+                let targetChildren = [...targetNode.childNodes];
 
                 // Remove target node from the graph
-                detach(targetParent, targetNode);
+                detach(targetParent, targetNode, this);
 
                 // Begin grafting the grandchildren by first removing...
-                targetNode.children.length = 0;
+                targetNode.childNodes.length = 0;
 
                 if (child === null)
                 {
                     // Reattach all grandchildren to target parent.
-                    targetParent.children.push(...targetChildren);
+                    if (targetParent === null)
+                    {
+                        // As root children.
+                        this.rootNodes.push(...targetChildren);
+                    }
+                    else
+                    {
+                        // As regular children.
+                        targetParent.childNodes.push(...targetChildren);
+                    }
                 }
                 else
                 {
@@ -3373,10 +3164,10 @@ output {
                         childNode = this.nodes.get(child);
 
                         // Remove child node from prev parent
-                        detach(childNode.parent, childNode);
+                        detach(childNode.parentNode, childNode, this);
 
                         // ...and graft them back.
-                        childNode.children.push(...targetChildren);
+                        childNode.childNodes.push(...targetChildren);
                     }
                     else
                     {
@@ -3385,13 +3176,13 @@ output {
                     }
 
                     // And reattach target parent to new child.
-                    attach(targetParent, childNode);
+                    attach(targetParent, childNode, this);
                 }
                 
                 // ...and graft them back.
                 for(let targetChild of targetChildren)
                 {
-                    targetChild.parent = targetParent;
+                    targetChild.parentNode = targetParent;
                 }
 
                 return child;
@@ -3410,68 +3201,93 @@ output {
         clear()
         {
             this.nodes.clear();
-
-            // Reset the graph.
-            const rootOwner = {};
-            this.root = new (this.nodeConstructor)(this, rootOwner, null, []);
-            this.nodes.set(rootOwner, this.root);
+            this.rootNodes.length = 0;
         }
 
         /**
          * Gets the scene node for the given object.
          * 
-         * @param {Object} owner The object to retreive the node for.
+         * @param {Object} child The object to retrieve the node for.
          * @returns {SceneNode} The scene node that represents the object.
          */
         get(child)
         {
-            if (child === null)
-            {
-                return this.root;
-            }
-            else
-            {
-                return this.nodes.get(child);
-            }
+            return this.nodes.get(child);
         }
 
         /**
-         * Walks through every node in the graph starting from the root and
-         * down to its children.
+         * Walks through every child node in the graph for the given
+         * object's associated node.
          * 
          * @param {WalkCallback} callback The function called for each node
          * in the graph, in ordered traversal from parent to child.
-         * @param {Object} [opts] Any additional options.
-         * @param {Boolean} [opts.skipRoot] Whether to skip traversing the root
-         * and start from its children instead.
+         * @param {Object} [opts={}] Any additional options.
+         * @param {Boolean} [opts.childrenOnly=true] Whether to skip traversing
+         * the first node, usually the root, and start from its children instead.
          */
-        forEach(callback, opts = {})
+        walk(from, callback, opts = {})
         {
-            if (opts.skipRoot)
+            const { childrenOnly = true } = opts;
+            if (from === null)
             {
-                for(let childNode of this.root.children)
+                for(let childNode of this.rootNodes)
                 {
-                    this.nodeConstructor.walk(childNode, 1, callback);
+                    this.nodeConstructor.walk(childNode, 0, callback);
                 }
             }
             else
             {
-                this.nodeConstructor.walk(this.root, 0, callback);
+                const fromNode = this.get(from);
+                if (!fromNode)
+                {
+                    if (childrenOnly)
+                    {
+                        for(let childNode of fromNode.childNodes)
+                        {
+                            this.nodeConstructor.walk(childNode, 0, callback);
+                        }
+                    }
+                    else
+                    {
+                        this.nodeConstructor.walk(fromNode, 0, callback);
+                    }
+                }
+                else
+                {
+                    throw new Error(`No node in scene graph exists for walk start.`);
+                }
             }
         }
     }
 
-    function attach(parentNode, childNode)
+    function attach(parentNode, childNode, sceneGraph)
     {
-        parentNode.children.push(childNode);
-        childNode.parent = parentNode;
+        if (parentNode === null)
+        {
+            sceneGraph.rootNodes.push(childNode);
+            childNode.parentNode = null;
+        }
+        else
+        {
+            parentNode.childNodes.push(childNode);
+            childNode.parentNode = parentNode;
+        }
     }
 
-    function detach(parentNode, childNode)
+    function detach(parentNode, childNode, sceneGraph)
     {
-        let index = parentNode.children.indexOf(childNode);
-        parentNode.children.splice(index, 1);
-        childNode.parent = null;
+        if (parentNode === null)
+        {
+            let index = sceneGraph.rootNodes.indexOf(childNode);
+            sceneGraph.rootNodes.splice(index, 1);
+            childNode.parentNode = undefined;
+        }
+        else
+        {
+            let index = parentNode.childNodes.indexOf(childNode);
+            parentNode.childNodes.splice(index, 1);
+            childNode.parentNode = undefined;
+        }
     }
 
     /**
@@ -3494,7 +3310,7 @@ output {
             let result = callback(parentNode.owner, parentNode);
             if (result === false) return;
 
-            for(let childNode of parentNode.children)
+            for(let childNode of parentNode.childNodes)
             {
                 this.walk(childNode, level + 1, callback);
             }
@@ -3514,21 +3330,35 @@ output {
          * 
          * @param {SceneGraph} sceneGraph The scene graph this node belongs to.
          * @param {Object} owner The owner object.
-         * @param {SceneNode} parent The parent node.
-         * @param {Array<SceneNode>} children The list of child nodes.
+         * @param {SceneNode} parentNode The parent node.
+         * @param {Array<SceneNode>} childNodes The list of child nodes.
          */
-        constructor(sceneGraph, owner, parent, children)
+        constructor(sceneGraph, owner, parentNode, childNodes)
         {
             this.sceneGraph = sceneGraph;
             this.owner = owner;
 
-            this.parent = parent;
-            this.children = children;
+            this.parentNode = parentNode;
+            this.childNodes = childNodes;
         }
     }
 
+    /**
+     * @typedef {String} EntityId
+     */
+
+    /**
+     * Handles all entity and component mappings.
+     */
     class EntityManager
     {
+        /**
+         * Constructs an empty entity manager with the given factories.
+         * 
+         * @param {Object} [opts={}] Any additional options.
+         * @param {Object} [opts.componentFactoryMap={}] An object map of each component to its factory.
+         * @param {Boolean} [opts.strictMode=false] Whether to enable error checking (and throwing).
+         */
         constructor(opts = {})
         {
             const { componentFactoryMap = {}, strictMode = false } = opts;
@@ -3564,7 +3394,7 @@ output {
 
         create(entityTemplate = undefined)
         {
-            let entityId = this.nextAvailableEntityId++;
+            let entityId = String(this.nextAvailableEntityId++);
             this.entities.add(entityId);
             if (entityTemplate)
             {
@@ -3635,7 +3465,7 @@ output {
 
             const { create } = this.factoryMap[componentName];
             let result = create
-                ? create(props, componentName, entityId, this)
+                ? create(props, entityId, this)
                 : (props
                     ? {...props}
                     : {});
@@ -3671,10 +3501,18 @@ output {
                 entityComponents[entityId] = null;
         
                 const { destroy } = this.factoryMap[componentName];
-                if (destroy) destroy(componentValues, componentName, entityId, this);
+                if (destroy) destroy(componentValues, entityId, this);
             }
         }
 
+        /**
+         * Finds the component for the given entity.
+         * 
+         * @param {String} componentName The name of the target component.
+         * @param {EntityId} entityId The id of the entity to look in.
+         * @returns {Object} The component found. If it does not exist, null
+         * is returned instead.
+         */
         get(componentName, entityId)
         {
             if (!(componentName in this.instances))
@@ -3686,6 +3524,13 @@ output {
             return entityComponents[entityId] || null;
         }
         
+        /**
+         * Checks whether the entity has the component.
+         * 
+         * @param {String} componentName The name of the target component.
+         * @param {EntityId} entityId The id of the entity to look in.
+         * @returns {Boolean} Whether the component exists for the entity.
+         */
         has(componentName, entityId)
         {
             return componentName in this.instances && Boolean(this.instances[componentName][entityId]);
@@ -3725,6 +3570,11 @@ output {
             this.instances[componentName] = {};
         }
 
+        /**
+         * Gets all the entity ids.
+         * 
+         * @returns {Set<EntityId>} The set of entity ids.
+         */
         getEntityIds()
         {
             return this.entities;
@@ -3863,60 +3713,575 @@ output {
     	sneak: sneak
     };
 
-    var inputmap$1 = /*#__PURE__*/Object.freeze({
-        __proto__: null,
-        moveUp: moveUp,
-        moveDown: moveDown,
-        moveLeft: moveLeft,
-        moveRight: moveRight,
-        mainAction: mainAction,
-        inventory: inventory,
-        sprint: sprint,
-        sneak: sneak,
-        'default': inputmap
-    });
+    // https://gamedevelopment.tutsplus.com/tutorials/quick-tip-use-quadtrees-to-detect-likely-collisions-in-2d-space--gamedev-374
+
+    /**
+     * @typedef Bounds
+     * @property {Number} x The center x position.
+     * @property {Number} y The center y position.
+     * @property {Number} rx The half width of the bounds.
+     * @property {Number} ry The half height of the bounds.
+     */
+
+    /**
+     * Creates bounds for the given dimensions.
+     * 
+     * @param {Number} x The center x position.
+     * @param {Number} y The center y position.
+     * @param {Number} rx The half width of the bounds.
+     * @param {Number} ry The half height of the bounds.
+     * @returns {Bounds} The newly created bounds.
+     */
+    function createBounds(x, y, rx, ry)
+    {
+        return { x, y, rx, ry };
+    }
+
+    const MAX_OBJECTS = 10;
+    const MAX_LEVELS = 5;
+
+    /**
+     * A quadtree to help your sort boxes by proximity (in quadrants). Usually, this is used
+     * like this:
+     * 1. Clear the tree to be empty.
+     * 2. Add all the boxes. They should be in the shape of {@link Bounds}.
+     * 3. For each target box you want to check for, call {@link retrieve()}.
+     * 4. The previous function should return a list of potentially colliding boxes. This is
+     * where you should use a more precise intersection test to accurately determine if the
+     * result is correct.
+     * 
+     * ```js
+     * // Here is an example
+     * quadTree.clear();
+     * quadTree.insertAll(boxes);
+     * let out = [];
+     * for(let box of boxes)
+     * {
+     *   quadTree.retrieve(box, out);
+     *   for(let other of out)
+     *   {
+     *     // Found a potential collision between box and other.
+     *     // Run your collision detection algorithm for them here.
+     *   }
+     *   out.length = 0;
+     * }
+     * ```
+     */
+    class QuadTree
+    {
+        /**
+         * Constructs an empty quadtree.
+         * 
+         * @param {Number} [level] The root level for this tree.
+         * @param {Bounds} [bounds] The bounds of this tree.
+         */
+        constructor(
+            level = 0,
+            bounds = createBounds(0, 0, Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER))
+        {
+            this.level = level;
+            this.bounds = bounds;
+
+            this.boxes = [];
+            this.nodes = new Array(4);
+        }
+
+        /**
+         * Inserts all the boxes into the tree.
+         * 
+         * @param {Array<Buonds>} boxes A list of boxes.
+         */
+        insertAll(boxes)
+        {
+            for(let box of boxes)
+            {
+                this.insert(box);
+            }
+        }
+
+        /**
+         * Inserts the box into the tree.
+         * 
+         * @param {Bounds} box A box.
+         */
+        insert(box)
+        {
+            let hasNode = this.nodes[0];
+
+            if (hasNode)
+            {
+                let quadIndex = this.findQuadIndex(box);
+                if (quadIndex >= 0)
+                {
+                    this.nodes[quadIndex].insert(box);
+                    return;
+                }
+            }
+
+            this.boxes.push(box);
+
+            if (this.boxes.length > MAX_OBJECTS && this.level < MAX_LEVELS)
+            {
+                if (!hasNode) this.split();
+
+                for(let i = this.boxes.length - 1; i >= 0; --i)
+                {
+                    let otherBox = this.boxes[i];
+                    let quadIndex = this.findQuadIndex(otherBox);
+                    if (quadIndex >= 0)
+                    {
+                        this.boxes.splice(i, 1);
+                        this.nodes[quadIndex].insert(otherBox);
+                    }
+                }
+            }
+        }
+
+        /**
+         * Retrieves all the near boxes for the target.
+         * 
+         * @param {Bounds} box The target box to get all near boxes for.
+         * @param {Array<Bounds>} [out=[]] The list to append results to.
+         * @param {Object} [opts] Any additional options.
+         * @param {Boolean} [opts.includeSelf=false] Whether to include the
+         * target in the result list.
+         * @returns {Array<Bounds>} The appended list of results.
+         */
+        retrieve(box, out = [], opts = {})
+        {
+            const { includeSelf = false } = opts;
+
+            if (this.nodes[0])
+            {
+                let quadIndex = this.findQuadIndex(box);
+                if (quadIndex >= 0)
+                {
+                    this.nodes[quadIndex].retrieve(box, out);
+                }
+            }
+
+            let boxes = this.boxes;
+            if (!includeSelf)
+            {
+                // Append all elements before the index (or none, if not found)...
+                let targetIndex = boxes.indexOf(box);
+                for(let i = 0; i < targetIndex; ++i)
+                {
+                    out.push(boxes[i]);
+                }
+                // Append all elements after the index (or from 0, if not found)...
+                let length = boxes.length;
+                for(let i = targetIndex + 1; i < length; ++i)
+                {
+                    out.push(boxes[i]);
+                }
+            }
+            else
+            {
+                out.push(...boxes);
+            }
+            return out;
+        }
+
+        /**
+         * Removes all boxes form the tree.
+         */
+        clear()
+        {
+            this.boxes.length = 0;
+
+            for(let i = 0; i < this.nodes.length; ++i)
+            {
+                let node = this.nodes[i];
+                if (node)
+                {
+                    node.clear();
+                    this.nodes[i] = null;
+                }
+            }
+        }
+
+        /** @private */
+        split()
+        {
+            let { x, y, rx, ry } = this.bounds;
+            let nextLevel = this.level + 1;
+
+            let ChildConstructor = this.constructor;
+
+            this.nodes[0] = new ChildConstructor(nextLevel, createBounds(x + rx, y, rx, ry));
+            this.nodes[1] = new ChildConstructor(nextLevel, createBounds(x, y, rx, ry));
+            this.nodes[2] = new ChildConstructor(nextLevel, createBounds(x, y + ry, rx, ry));
+            this.nodes[3] = new ChildConstructor(nextLevel, createBounds(x + rx, y + ry, rx, ry));
+        }
+
+        /** @private */
+        findQuadIndex(box)
+        {
+            const { x: bx, y: by, rx: brx, ry: bry } = this.bounds;
+            const midpointX = bx + brx;
+            const midpointY = by + bry;
+
+            const { x, y, rx, ry } = box;
+            const isTop = y < midpointY && y + ry * 2 < midpointY;
+            const isBottom = y > midpointY;
+            const isLeft = x < midpointX && x + rx * 2 < midpointX;
+            const isRight= x > midpointX;
+
+            let index = -1;
+            if (isLeft)
+            {
+                if (isTop)
+                {
+                    index = 1;
+                }
+                else if (isBottom)
+                {
+                    index = 2;
+                }
+            }
+            else if (isRight)
+            {
+                if (isTop)
+                {
+                    index = 0;
+                }
+                else if (isBottom)
+                {
+                    index = 3;
+                }
+            }
+
+            return index;
+        }
+    }
+
+    /**
+     * @typedef {Function} TestFunction
+     * @param {AxisAlignedBoundingBox} a
+     * @param {AxisAlignedBoundingBox} b
+     * @returns {Boolean} Whether or not the passed-in boxes
+     * should be considered as possibly colliding.
+     */
+
+    /**
+     * @typedef CollisionResult
+     * @property {AxisAlignedBoundingBox} box
+     * @property {AxisAlignedBoundingBox} other
+     */
+
+    /**
+     * The property key for masks to keep count of how many are
+     * still available.
+     */
+    const MASK_COUNT = Symbol('maskCount');
+
+    /** An axis-aligned graph for effeciently solving box collisions. */
+    class AxisAlignedBoundingBoxGraph
+    {
+        /**
+         * Constructs an empty graph.
+         * 
+         * @param {Object} [opts={}] Any additional options.
+         * @param {typeof AxisAlignedBoundingBox} [opts.boxConstructor=AxisAlignedBoundingBox]
+         * The axis-aligned bounding box constructor that make up the graph.
+         */
+        constructor(opts = {})
+        {
+            this.boxConstructor = opts.boxConstructor || AxisAlignedBoundingBox;
+
+            this.masks = new Map();
+            this.boxes = new Set();
+
+            // Used for constant lookup when updating dynamic masks.
+            this.dynamics = new Set();
+            // Used for efficiently pruning objects when solving.
+            this.quadtree = new QuadTree();
+        }
+
+        add(owner, maskName, maskValues = {})
+        {
+            let mask = {
+                owner,
+                box: null,
+                get: null,
+            };
+
+            if (!this.masks.has(owner))
+            {
+                this.masks.set(owner, {
+                    [MASK_COUNT]: 1,
+                    [maskName]: mask,
+                });
+            }
+            else if (!(maskName in this.masks.get(owner)))
+            {
+                let ownedMasks = this.masks.get(owner);
+                ownedMasks[maskName] = mask;
+                ownedMasks[MASK_COUNT]++;
+            }
+            else
+            {
+                throw new Error(`Mask ${maskName} already exists for owner.`);
+            }
+
+            if (Array.isArray(maskValues))
+            {
+                const x = maskValues[0] || 0;
+                const y = maskValues[1] || 0;
+                const rx = (maskValues[2] / 2) || 0;
+                const ry = (maskValues[3] / 2) || 0;
+
+                let box = new (this.boxConstructor)(this, owner, x, y, rx, ry);
+                this.boxes.add(box);
+
+                mask.box = box;
+            }
+            else if (typeof maskValues === 'object')
+            {
+                let x = maskValues.x || 0;
+                let y = maskValues.y || 0;
+                let rx = maskValues.rx || (maskValues.width / 2) || 0;
+                let ry = maskValues.ry || (maskValues.height / 2) || 0;
+
+                if (typeof owner === 'object')
+                {
+                    if (!x) x = owner.x || 0;
+                    if (!y) y = owner.y || 0;
+                    if (!rx) rx = (owner.width / 2) || 0;
+                    if (!ry) ry = (owner.height / 2) || 0;
+                }
+                
+                let box = new (this.boxConstructor)(this, owner, x, y, rx, ry);
+                this.boxes.add(box);
+
+                mask.box = box;
+                if ('get' in maskValues)
+                {
+                    mask.get = maskValues.get;
+                    mask.get(box, owner);
+                    this.dynamics.add(mask);
+                }
+            }
+            else if (typeof maskValues === 'function')
+            {
+                let box = new (this.boxConstructor)(this, owner, 0, 0, 0, 0);
+                this.boxes.add(box);
+                
+                mask.box = box;
+                mask.get = maskValues;
+                maskValues.call(mask, box, owner);
+                this.dynamics.add(mask);
+            }
+            else
+            {
+                throw new Error('Invalid mask option type.');
+            }
+        }
+
+        remove(owner, maskName)
+        {
+            if (this.masks.has(owner))
+            {
+                let ownedMasks = this.masks.get(owner);
+                let mask = ownedMasks[maskName];
+                if (mask)
+                {
+                    if (mask.get) this.dynamics.delete(mask);
+                    this.boxes.delete(mask.box);
+                    ownedMasks[maskName] = null;
+
+                    let count = --ownedMasks[MASK_COUNT];
+                    if (count <= 0)
+                    {
+                        this.masks.delete(owner);
+                    }
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        get(owner, maskName)
+        {
+            if (this.masks.has(owner))
+            {
+                return this.masks.get(owner)[maskName];
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        count(owner)
+        {
+            if (this.masks.has(owner))
+            {
+                return this.masks.get(owner)[MASK_COUNT];
+            }
+            else
+            {
+                return 0;
+            }
+        }
+
+        clear()
+        {
+            this.boxes.clear();
+            this.masks.clear();
+            this.dynamics.clear();
+            this.quadtree.clear();
+        }
+
+        /**
+         * Forcibly updates the current graph to match the system for
+         * the given initial options.
+         * 
+         * This is usually called automatically by {@link solve()} to
+         * update the graph to get the current results, but could also
+         * be called manually for more control.
+         */
+        update()
+        {
+            // Update boxes
+            for(let mask of this.dynamics.values())
+            {
+                mask.get(mask.box, mask.owner);
+            }
+        }
+        
+        /**
+         * Solves the current graph for collisions. Usually, you want
+         * to call {@link update()} before this function to ensure the
+         * boxes accurately reflect the current state.
+         * 
+         * @param {Boolean} [forceUpdate=true] Whether to update the
+         * graph before solving it. If false, you must call {@link update()}
+         * yourself to update the graph to the current state.
+         * @param {Object} [opts={}] Any additional options.
+         * @param {TestFunction} [opts.test] The custom tester function
+         * to initially check if 2 objects can be colliding.
+         * @returns {Array<CollisionResult>} The collisions found in the current graph.
+         */
+        solve(forceUpdate = true, out = [], opts = {})
+        {
+            const { test = testAxisAlignedBoundingBox } = opts;
+
+            if (forceUpdate)
+            {
+                this.update();
+            }
+
+            let result = out;
+            let boxes = this.boxes;
+            let quadtree = this.quadtree;
+            quadtree.clear();
+            quadtree.insertAll(boxes);
+
+            let others = [];
+            for(let box of boxes)
+            {
+                quadtree.retrieve(box, others);
+                for(let other of others)
+                {
+                    if (test(box, other))
+                    {
+                        const collision = createCollisionResult(box, other);
+                        result.push(collision);
+                    }
+                }
+                others.length = 0;
+            }
+            return result;
+        }
+    }
+
+    /**
+     * Creates a collision result for the given boxes.
+     * 
+     * @param {AxisAlignedBoundingBox} a
+     * @param {AxisAlignedBoundingBox} b
+     * @returns {CollisionResult} The new collision result.
+     */
+    function createCollisionResult(a, b)
+    {
+        return {
+            box: a,
+            other: b,
+        };
+    }
+
+    class AxisAlignedBoundingBox
+    {
+        constructor(aabbGraph, owner, x, y, rx, ry)
+        {
+            this.aabbGraph = aabbGraph;
+            this.owner = owner;
+            this.x = x;
+            this.y = y;
+            this.rx = rx;
+            this.ry = ry;
+        }
+
+        setPosition(x, y)
+        {
+            this.x = x;
+            this.y = y;
+            return this;
+        }
+
+        setSize(width, height)
+        {
+            this.rx = width / 2;
+            this.ry = height / 2;
+            return this;
+        }
+
+        setHalfSize(rx, ry)
+        {
+            this.rx = rx;
+            this.ry = ry;
+            return this;
+        }
+    }
+
+    function testAxisAlignedBoundingBox(a, b)
+    {
+        return !(Math.abs(a.x - b.x) > (a.rx + b.rx))
+            && !(Math.abs(a.y - b.y) > (a.ry + b.ry));
+    }
 
     document.addEventListener('DOMContentLoaded', main);
 
     // TODO: Should print the key code of any key somewhere, so we know what to use.
     // NOTE: https://keycode.info/
-    const INPUT_MAPPING = inputmap$1;
-
-    class SceneTransformNode extends SceneNode
-    {
-        constructor(sceneGraph, owner, parent, children)
-        {
-            super(sceneGraph, owner, parent, children);
-
-            this.x = 0;
-            this.y = 0;
-            this.z = 0;
-
-            this.pitch = 0;
-            this.yaw = 0;
-            this.roll = 0;
-
-            this.scaleX = 1;
-            this.scaleY = 1;
-            this.scaleZ = 1;
-
-            this.worldTransformation = create$1();
-            this.localTransformation = create$1();
-        }
-    }
+    const INPUT_MAPPING = inputmap;
 
     const Transform = {
-        create(props, componentName, entityId, entityManager)
+        create(props, entityId)
         {
-            const { sceneGraph, parent = undefined, x = 0, y = 0, z = 0} = props;
+            const { sceneGraph, parentId = undefined, x = 0, y = 0, z = 0} = props;
             if (!sceneGraph) throw new Error(`Component instantiation is missing required prop 'sceneGraph'.`);
-            let node = sceneGraph.add(entityId, parent);
-            node.x = x;
-            node.y = y;
-            node.z = z;
-            return node;
+            sceneGraph.add(entityId, parentId);
+            let result = {
+                sceneGraph,
+                worldTransformation: create$1(),
+                localTransformation: create$1(),
+                x, y, z,
+                pitch: 0, yaw: 0, roll: 0,
+                scaleX: 1, scaleY: 1, scaleZ: 1,
+            };
+            return result;
         },
-        destroy(component, componentName, entityId, entityManager)
+        destroy(component, entityId)
         {
             component.sceneGraph.remove(entityId);
         }
@@ -3949,11 +4314,37 @@ output {
 
     const PlayerControlled = {};
 
+    const Collidable = {
+        create(props, entityId)
+        {
+            const { aabbGraph, masks } = props;
+            for(let maskName in masks)
+            {
+                aabbGraph.add(entityId, maskName, masks[maskName]);
+            }
+
+            return {
+                aabbGraph,
+                masks,
+                collided: false,
+            };
+        },
+        destroy(component, entityId)
+        {
+            const { aabbGraph, masks } = component;
+            for(let maskName in masks)
+            {
+                aabbGraph.remove(entityId, maskName);
+            }
+        }
+    };
+
     const ENTITY_COMPONENT_FACTORY_MAP = {
         Transform,
         Renderable,
         Motion,
         PlayerControlled,
+        Collidable,
     };
 
     async function main()
@@ -3966,9 +4357,8 @@ output {
         const view = new CanvasView2D(display);
         const cameraSpeed = 4;
 
-        const scene = new SceneGraph({
-            nodeConstructor: SceneTransformNode
-        });
+        const scene = new SceneGraph();
+        const aabbs = new AxisAlignedBoundingBoxGraph();
         const entityManager = new EntityManager({
             componentFactoryMap: ENTITY_COMPONENT_FACTORY_MAP,
         });
@@ -3978,26 +4368,39 @@ output {
             Renderable: { renderType: 'player' },
             Motion: {},
             PlayerControlled: true,
+            Collidable: {
+                aabbGraph: aabbs,
+                masks: {
+                    main: {
+                        rx: 8, ry: 8,
+                        get(aabb, owner)
+                        {
+                            const transform = entityManager.get('Transform', owner);
+                            aabb.x = transform.x;
+                            aabb.y = transform.y;
+                        }
+                    }
+                }
+            }
         });
-        const playerAABB = IntersectionHelper.createAABB(0, 0, 8, 8);
-        scene.add(playerAABB, player);
 
         const walls = [
             entityManager.create({
-                Transform: { sceneGraph: scene, x: 0, y: 0 },
+                Transform: { sceneGraph: scene, x: -4, y: 32 },
                 Renderable: { renderType: 'wall', width: 4, height: 64 },
+                Collidable: { aabbGraph: aabbs, masks: { main: { x: -4, y: 32, rx: 2, ry: 32 } } }
             }),
             entityManager.create({
-                Transform: { sceneGraph: scene, x: 0, y: 0 },
+                Transform: { sceneGraph: scene, x: 32, y: -4 },
                 Renderable: { renderType: 'wall', width: 64, height: 4 },
+                Collidable: { aabbGraph: aabbs, masks: { main: { x: 32, y: -4, rx: 32, ry: 2 } } }
             }),
             entityManager.create({
-                Transform: { sceneGraph: scene, x: 64, y: 0 },
+                Transform: { sceneGraph: scene, x: 64, y: 8 },
                 Renderable: { renderType: 'wall', width: 4, height: 16 },
+                Collidable: { aabbGraph: aabbs, masks: { main: { x: 64, y: 8, rx: 2, ry: 8 } } }
             }),
         ];
-        walls.forEach(wall => scene.add(wall));
-        const statics = [...walls.map(wall => wall.mask)];
 
         display.addEventListener('frame', e => {
             // Update
@@ -4040,73 +4443,140 @@ output {
                 view.camera.moveTo(controlledTransform.x, controlledTransform.y, 0, dt * cameraSpeed);
 
                 // Physics
-                // IntersectionResolver.resolveIntersections(dynamics, statics, dt);
+                for(let collidable of entityManager.getComponentInstances('Collidable'))
+                {
+                    collidable.collided = false;
+                }
+                let collisions = aabbs.solve();
+                for(let collision of collisions)
+                {
+                    {
+                        let entityId = collision.box.owner;
+                        let collidable = entityManager.get('Collidable', entityId);
+                        collidable.collided = true;
+                    }
+                    {
+                        let entityId = collision.other.owner;
+                        let collidable = entityManager.get('Collidable', entityId);
+                        collidable.collided = true;
+                    }
+                }
             }
 
             // Render
             {
                 ctx.clearRect(0, 0, display.width, display.height);
 
-                renderSceneGraph(ctx, scene, view,
-                    (node) => {
-                        return node;
-                    },
-                    (ctx, child, node) => {
-                        if (entityManager.has('Renderable', child))
-                        {
-                            const renderable = entityManager.get('Renderable', child);
-                            switch(renderable.renderType)
+                renderView(ctx, view,
+                    function renderScene(ctx)
+                    {
+                        // Render scene objects...
+                        renderSceneGraph(ctx, scene, entityManager,
+                            function renderNode(ctx, owner)
                             {
-                                case 'player':
-                                    ctx.fillStyle = 'blue';
-                                    ctx.fillRect(-8, -8, 16, 16);
-                                    break;
-                                case 'wall':
-                                    ctx.fillStyle = 'white';
-                                    ctx.fillRect(0, 0, renderable.width, renderable.height);
-                                    break;
-                            }
-                        }
-                        else
-                        {
-                            ctx.fillStyle = 'red';
-                            ctx.fillRect(-1, -1, 2, 2);
-                        }
+                                if (entityManager.has('Renderable', owner))
+                                {
+                                    const renderable = entityManager.get('Renderable', owner);
+                                    switch(renderable.renderType)
+                                    {
+                                        case 'player':
+                                            ctx.fillStyle = 'blue';
+                                            ctx.fillRect(-8, -8, 16, 16);
+                                            break;
+                                        case 'wall':
+                                            ctx.fillStyle = 'white';
+                                            let halfWidth = renderable.width / 2;
+                                            let halfHeight = renderable.height / 2;
+                                            ctx.fillRect(-halfWidth, -halfHeight, renderable.width, renderable.height);
+                                            break;
+                                    }
+                                }
+                                else
+                                {
+                                    ctx.fillStyle = 'red';
+                                    ctx.fillRect(-1, -1, 2, 2);
+                                }
+                            });
+                        
+                        // Render collision masks...
+                        renderAxisAlignedBoundingBoxGraph(ctx, aabbs, entityManager);
                     });
             }
         });
     }
 
-    function renderSceneGraph(ctx, sceneGraph, view, transformCallback, renderer)
+    function renderView(ctx, view, renderCallback)
     {
-        let rootNode = sceneGraph.get(null);
-        let {
-            localTransformation: rootLocalTransformation,
-            worldTransformation: rootWorldTransformation
-        } = transformCallback(rootNode);
-        view.getViewProjectionMatrix(rootLocalTransformation);
-        copy(rootWorldTransformation, rootLocalTransformation);
-
+        let viewProjectionMatrix = view.getViewProjectionMatrix(create$1());
         let domMatrix = new DOMMatrix();
-        sceneGraph.forEach((child, node) => {
-            let { parent } = node;
-            let parentTransform = transformCallback(parent);
-            let childTransform = transformCallback(node);
+        setDOMMatrix(domMatrix, viewProjectionMatrix);
+        let prevMatrix = ctx.getTransform();
+        ctx.setTransform(domMatrix);
+        {
+            renderCallback(ctx);
+        }
+        ctx.setTransform(prevMatrix);
+    }
 
-            let { localTransformation, worldTransformation } = childTransform;
-            const { worldTransformation: parentWorldTransformation } = parentTransform;
+    function renderSceneGraph(ctx, sceneGraph, entityManager, renderCallback)
+    {
+        let q = create$4();
+        let v = create$2();
+        let s = create$2();
+        let domMatrix = new DOMMatrix();
+        sceneGraph.walk(null, (child, childNode) => {
+            let transform = entityManager.get('Transform', child);
+            let { localTransformation, worldTransformation } = transform;
+            fromEuler(q, transform.pitch, transform.yaw, transform.roll);
+            set(v, transform.x, transform.y, transform.z);
+            set(s, transform.scaleX, transform.scaleY, transform.scaleZ);
+            fromRotationTranslationScale(localTransformation, q, v, s);
 
-            fromTranslation(localTransformation, [childTransform.x, childTransform.y, childTransform.z]);
-            multiply(worldTransformation, parentWorldTransformation, localTransformation);
-            
+            if (childNode.parentNode)
+            {
+                let parent = childNode.parentNode.owner;
+                let { worldTransformation: parentWorldTransformation } = entityManager.get('Transform', parent);
+                multiply(worldTransformation, parentWorldTransformation, localTransformation);
+            }
+            else
+            {
+                copy(worldTransformation, localTransformation);
+            }
+
             setDOMMatrix(domMatrix, worldTransformation);
-            ctx.setTransform(domMatrix);
 
-            renderer(ctx, child, node);
-        },
-        { skipRoot: true });
+            let prevMatrix = ctx.getTransform();
+            ctx.transform(domMatrix.a, domMatrix.b, domMatrix.c, domMatrix.d, domMatrix.e, domMatrix.f);
+            {
+                renderCallback(ctx, child, childNode);
+            }
+            ctx.setTransform(prevMatrix);
+        });
+    }
 
-        ctx.setTransform();
+    function renderAxisAlignedBoundingBoxGraph(ctx, aabbGraph, entityManager)
+    {
+        for (let entityId of entityManager.getComponentEntityIds('Collidable'))
+        {
+            let collidable = entityManager.get('Collidable', entityId);
+            if (collidable.collided)
+            {
+                ctx.strokeStyle = 'red';
+            }
+            else
+            {
+                ctx.strokeStyle = 'limegreen';
+            }
+            for(let maskName in collidable.masks)
+            {
+                let mask = aabbGraph.get(entityId, maskName);
+                if (mask)
+                {
+                    let box = mask.box;
+                    ctx.strokeRect(box.x - box.rx, box.y - box.ry, box.rx * 2, box.ry * 2);
+                }
+            }
+        }
     }
 
 }());

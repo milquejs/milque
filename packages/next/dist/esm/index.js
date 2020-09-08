@@ -1016,158 +1016,6 @@ var IntersectionWorld = /*#__PURE__*/Object.freeze({
     createIntersectionWorld: createIntersectionWorld
 });
 
-// https://gamedevelopment.tutsplus.com/tutorials/quick-tip-use-quadtrees-to-detect-likely-collisions-in-2d-space--gamedev-374
-
-function createBounds(x, y, rx, ry)
-{
-    return { x, y, rx, ry };
-}
-
-const MAX_OBJECTS = 10;
-const MAX_LEVELS = 5;
-
-class QuadTree
-{
-    constructor(level = 0, bounds = createBounds(0, 0, Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER))
-    {
-        this.level = level;
-        this.bounds = bounds;
-
-        this.objects = [];
-        this.nodes = new Array(4);
-    }
-
-    clear()
-    {
-        this.objects.length = 0;
-
-        for(let i = 0; i < this.nodes.length; ++i)
-        {
-            let node = this.nodes[i];
-            if (node)
-            {
-                node.clear();
-                this.nodes[i] = null;
-            }
-        }
-    }
-
-    split()
-    {
-        let { x, y, rx, ry } = this.bounds;
-        let nextLevel = this.level + 1;
-
-        let ChildConstructor = this.constructor;
-
-        this.nodes[0] = new ChildConstructor(nextLevel, createBounds(x + rx, y, rx, ry));
-        this.nodes[1] = new ChildConstructor(nextLevel, createBounds(x, y, rx, ry));
-        this.nodes[2] = new ChildConstructor(nextLevel, createBounds(x, y + ry, rx, ry));
-        this.nodes[3] = new ChildConstructor(nextLevel, createBounds(x + rx, y + ry, rx, ry));
-    }
-
-    findQuadIndex(object)
-    {
-        let { x, y, rx, ry } = this.bounds;
-
-        let index = -1;
-        let midpointX = x + rx;
-        let midpointY = y + ry;
-
-        let isTop = object.y < midpointY && object.y + object.ry * 2 < midpointY;
-        let isBottom = object.y > midpointY;
-
-        let isLeft = object.x < midpointX && object.x + object.rx * 2 < midpointX;
-        let isRight= object.x > midpointX;
-
-        if (isLeft)
-        {
-            if (isTop)
-            {
-                index = 1;
-            }
-            else if (isBottom)
-            {
-                index = 2;
-            }
-        }
-        else if (isRight)
-        {
-            if (isTop)
-            {
-                index = 0;
-            }
-            else if (isBottom)
-            {
-                index = 3;
-            }
-        }
-
-        return index;
-    }
-
-    insertAll(objects)
-    {
-        for(let object of objects)
-        {
-            this.insert(object);
-        }
-    }
-
-    insert(object)
-    {
-        let hasNode = this.nodes[0];
-
-        if (hasNode)
-        {
-            let quadIndex = this.findQuadIndex(object);
-            if (quadIndex >= 0)
-            {
-                this.nodes[quadIndex].insert(object);
-                return;
-            }
-        }
-
-        this.objects.push(object);
-
-        if (this.objects.length > MAX_OBJECTS && this.level < MAX_LEVELS)
-        {
-            if (!hasNode) this.split();
-
-            for(let i = this.objects.length - 1; i >= 0; --i)
-            {
-                let obj = this.objects[i];
-                let quadIndex = this.findQuadIndex(obj);
-                if (quadIndex >= 0)
-                {
-                    this.objects.splice(i, 1);
-                    this.nodes[quadIndex].insert(obj);
-                }
-            }
-        }
-    }
-
-    retreive(out, object)
-    {
-        if (this.nodes[0])
-        {
-            let quadIndex = this.findQuadIndex(object);
-            if (quadIndex >= 0)
-            {
-                this.nodes[quadIndex].retreive(out, object);
-            }
-        }
-
-        out.push(...this.objects);
-        return out;
-    }
-}
-
-var QuadTree$1 = /*#__PURE__*/Object.freeze({
-    __proto__: null,
-    createBounds: createBounds,
-    QuadTree: QuadTree
-});
-
 const AUDIO_CONTEXT = new AudioContext();
 autoUnlock(AUDIO_CONTEXT);
 
@@ -1716,4 +1564,1168 @@ function resolveInfo$1(param, info, target, defaults)
     }
 }
 
-export { ApplicationLoop, AssetLoader, Audio, BoxRenderer, ByteLoader, Game$1 as Game, ImageLoader, IntersectionHelper, IntersectionResolver, IntersectionWorld, JSONLoader, OBJLoader, QuadTree$1 as QuadTree, SpriteRenderer, TextLoader };
+// https://gamedevelopment.tutsplus.com/tutorials/quick-tip-use-quadtrees-to-detect-likely-collisions-in-2d-space--gamedev-374
+
+/**
+ * @typedef Bounds
+ * @property {Number} x The center x position.
+ * @property {Number} y The center y position.
+ * @property {Number} rx The half width of the bounds.
+ * @property {Number} ry The half height of the bounds.
+ */
+
+const MAX_OBJECTS = 10;
+const MAX_LEVELS = 5;
+
+/**
+ * A quadtree to help your sort boxes by proximity (in quadrants). Usually, this is used
+ * like this:
+ * 1. Clear the tree to be empty.
+ * 2. Add all the boxes. They should be in the shape of {@link Bounds}.
+ * 3. For each target box you want to check for, call {@link retrieve()}.
+ * 4. The previous function should return a list of potentially colliding boxes. This is
+ * where you should use a more precise intersection test to accurately determine if the
+ * result is correct.
+ * 
+ * ```js
+ * // Here is an example
+ * quadTree.clear();
+ * quadTree.insertAll(boxes);
+ * let out = [];
+ * for(let box of boxes)
+ * {
+ *   quadTree.retrieve(box, out);
+ *   for(let other of out)
+ *   {
+ *     // Found a potential collision between box and other.
+ *     // Run your collision detection algorithm for them here.
+ *   }
+ *   out.length = 0;
+ * }
+ * ```
+ */
+class QuadTree
+{
+    /**
+     * Creates bounds for the given dimensions.
+     * 
+     * @param {Number} x The center x position.
+     * @param {Number} y The center y position.
+     * @param {Number} rx The half width of the bounds.
+     * @param {Number} ry The half height of the bounds.
+     * @returns {Bounds} The newly created bounds.
+     */
+    static createBounds(x, y, rx, ry)
+    {
+        return { x, y, rx, ry };
+    }
+
+    /**
+     * Constructs an empty quadtree.
+     * 
+     * @param {Number} [level] The root level for this tree.
+     * @param {Bounds} [bounds] The bounds of this tree.
+     */
+    constructor(
+        level = 0,
+        bounds = QuadTree.createBounds(0, 0, Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER))
+    {
+        this.level = level;
+        this.bounds = bounds;
+
+        this.boxes = [];
+        this.nodes = new Array(4);
+    }
+
+    /**
+     * Inserts all the boxes into the tree.
+     * 
+     * @param {Array<Buonds>} boxes A list of boxes.
+     */
+    insertAll(boxes)
+    {
+        for(let box of boxes)
+        {
+            this.insert(box);
+        }
+    }
+
+    /**
+     * Inserts the box into the tree.
+     * 
+     * @param {Bounds} box A box.
+     */
+    insert(box)
+    {
+        let hasNode = this.nodes[0];
+
+        if (hasNode)
+        {
+            let quadIndex = this.findQuadIndex(box);
+            if (quadIndex >= 0)
+            {
+                this.nodes[quadIndex].insert(box);
+                return;
+            }
+        }
+
+        this.boxes.push(box);
+
+        if (this.boxes.length > MAX_OBJECTS && this.level < MAX_LEVELS)
+        {
+            if (!hasNode) this.split();
+
+            for(let i = this.boxes.length - 1; i >= 0; --i)
+            {
+                let otherBox = this.boxes[i];
+                let quadIndex = this.findQuadIndex(otherBox);
+                if (quadIndex >= 0)
+                {
+                    this.boxes.splice(i, 1);
+                    this.nodes[quadIndex].insert(otherBox);
+                }
+            }
+        }
+    }
+
+    /**
+     * Retrieves all the near boxes for the target.
+     * 
+     * @param {Bounds} box The target box to get all near boxes for.
+     * @param {Array<Bounds>} [out=[]] The list to append results to.
+     * @param {Object} [opts] Any additional options.
+     * @param {Boolean} [opts.includeSelf=false] Whether to include the
+     * target in the result list.
+     * @returns {Array<Bounds>} The appended list of results.
+     */
+    retrieve(box, out = [], opts = {})
+    {
+        const { includeSelf = false } = opts;
+
+        if (this.nodes[0])
+        {
+            let quadIndex = this.findQuadIndex(box);
+            if (quadIndex >= 0)
+            {
+                this.nodes[quadIndex].retrieve(box, out);
+            }
+        }
+
+        let boxes = this.boxes;
+        if (!includeSelf)
+        {
+            // Append all elements before the index (or none, if not found)...
+            let targetIndex = boxes.indexOf(box);
+            for(let i = 0; i < targetIndex; ++i)
+            {
+                out.push(boxes[i]);
+            }
+            // Append all elements after the index (or from 0, if not found)...
+            let length = boxes.length;
+            for(let i = targetIndex + 1; i < length; ++i)
+            {
+                out.push(boxes[i]);
+            }
+        }
+        else
+        {
+            out.push(...boxes);
+        }
+        return out;
+    }
+
+    /**
+     * Removes all boxes form the tree.
+     */
+    clear()
+    {
+        this.boxes.length = 0;
+
+        for(let i = 0; i < this.nodes.length; ++i)
+        {
+            let node = this.nodes[i];
+            if (node)
+            {
+                node.clear();
+                this.nodes[i] = null;
+            }
+        }
+    }
+
+    /** @private */
+    split()
+    {
+        let { x, y, rx, ry } = this.bounds;
+        let nextLevel = this.level + 1;
+
+        let ChildConstructor = this.constructor;
+
+        this.nodes[0] = new ChildConstructor(nextLevel, QuadTree.createBounds(x + rx, y, rx, ry));
+        this.nodes[1] = new ChildConstructor(nextLevel, QuadTree.createBounds(x, y, rx, ry));
+        this.nodes[2] = new ChildConstructor(nextLevel, QuadTree.createBounds(x, y + ry, rx, ry));
+        this.nodes[3] = new ChildConstructor(nextLevel, QuadTree.createBounds(x + rx, y + ry, rx, ry));
+    }
+
+    /** @private */
+    findQuadIndex(box)
+    {
+        const { x: bx, y: by, rx: brx, ry: bry } = this.bounds;
+        const midpointX = bx + brx;
+        const midpointY = by + bry;
+
+        const { x, y, rx, ry } = box;
+        const isTop = y < midpointY && y + ry * 2 < midpointY;
+        const isBottom = y > midpointY;
+        const isLeft = x < midpointX && x + rx * 2 < midpointX;
+        const isRight= x > midpointX;
+
+        let index = -1;
+        if (isLeft)
+        {
+            if (isTop)
+            {
+                index = 1;
+            }
+            else if (isBottom)
+            {
+                index = 2;
+            }
+        }
+        else if (isRight)
+        {
+            if (isTop)
+            {
+                index = 0;
+            }
+            else if (isBottom)
+            {
+                index = 3;
+            }
+        }
+
+        return index;
+    }
+}
+
+/**
+ * @typedef {Function} TestFunction
+ * @param {AxisAlignedBoundingBox} a
+ * @param {AxisAlignedBoundingBox} b
+ * @returns {Boolean} Whether or not the passed-in boxes
+ * should be considered as possibly colliding.
+ */
+
+/**
+ * @typedef CollisionResult
+ * @property {AxisAlignedBoundingBox} box
+ * @property {AxisAlignedBoundingBox} other
+ */
+
+/**
+ * The property key for masks to keep count of how many are
+ * still available.
+ */
+const MASK_COUNT = Symbol('maskCount');
+
+/** An axis-aligned graph for effeciently solving box collisions. */
+class AxisAlignedBoundingBoxGraph
+{
+    /**
+     * Constructs an empty graph.
+     * 
+     * @param {Object} [opts={}] Any additional options.
+     * @param {typeof AxisAlignedBoundingBox} [opts.boxConstructor=AxisAlignedBoundingBox]
+     * The axis-aligned bounding box constructor that make up the graph.
+     */
+    constructor(opts = {})
+    {
+        this.boxConstructor = opts.boxConstructor || AxisAlignedBoundingBox;
+
+        this.masks = new Map();
+        this.boxes = new Set();
+
+        // Used for constant lookup when updating dynamic masks.
+        this.dynamics = new Set();
+        // Used for efficiently pruning objects when solving.
+        this.quadtree = new QuadTree();
+    }
+
+    add(owner, maskName, maskValues = {})
+    {
+        let mask = {
+            owner,
+            box: null,
+            get: null,
+        };
+
+        if (!this.masks.has(owner))
+        {
+            this.masks.set(owner, {
+                [MASK_COUNT]: 1,
+                [maskName]: mask,
+            });
+        }
+        else if (!(maskName in this.masks.get(owner)))
+        {
+            let ownedMasks = this.masks.get(owner);
+            ownedMasks[maskName] = mask;
+            ownedMasks[MASK_COUNT]++;
+        }
+        else
+        {
+            throw new Error(`Mask ${maskName} already exists for owner.`);
+        }
+
+        if (Array.isArray(maskValues))
+        {
+            const x = maskValues[0] || 0;
+            const y = maskValues[1] || 0;
+            const rx = (maskValues[2] / 2) || 0;
+            const ry = (maskValues[3] / 2) || 0;
+
+            let box = new (this.boxConstructor)(this, owner, x, y, rx, ry);
+            this.boxes.add(box);
+
+            mask.box = box;
+        }
+        else if (typeof maskValues === 'object')
+        {
+            let x = maskValues.x || 0;
+            let y = maskValues.y || 0;
+            let rx = maskValues.rx || (maskValues.width / 2) || 0;
+            let ry = maskValues.ry || (maskValues.height / 2) || 0;
+
+            if (typeof owner === 'object')
+            {
+                if (!x) x = owner.x || 0;
+                if (!y) y = owner.y || 0;
+                if (!rx) rx = (owner.width / 2) || 0;
+                if (!ry) ry = (owner.height / 2) || 0;
+            }
+            
+            let box = new (this.boxConstructor)(this, owner, x, y, rx, ry);
+            this.boxes.add(box);
+
+            mask.box = box;
+            if ('get' in maskValues)
+            {
+                mask.get = maskValues.get;
+                mask.get(box, owner);
+                this.dynamics.add(mask);
+            }
+        }
+        else if (typeof maskValues === 'function')
+        {
+            let box = new (this.boxConstructor)(this, owner, 0, 0, 0, 0);
+            this.boxes.add(box);
+            
+            mask.box = box;
+            mask.get = maskValues;
+            maskValues.call(mask, box, owner);
+            this.dynamics.add(mask);
+        }
+        else
+        {
+            throw new Error('Invalid mask option type.');
+        }
+    }
+
+    remove(owner, maskName)
+    {
+        if (this.masks.has(owner))
+        {
+            let ownedMasks = this.masks.get(owner);
+            let mask = ownedMasks[maskName];
+            if (mask)
+            {
+                if (mask.get) this.dynamics.delete(mask);
+                this.boxes.delete(mask.box);
+                ownedMasks[maskName] = null;
+
+                let count = --ownedMasks[MASK_COUNT];
+                if (count <= 0)
+                {
+                    this.masks.delete(owner);
+                }
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    get(owner, maskName)
+    {
+        if (this.masks.has(owner))
+        {
+            return this.masks.get(owner)[maskName];
+        }
+        else
+        {
+            return null;
+        }
+    }
+
+    count(owner)
+    {
+        if (this.masks.has(owner))
+        {
+            return this.masks.get(owner)[MASK_COUNT];
+        }
+        else
+        {
+            return 0;
+        }
+    }
+
+    clear()
+    {
+        this.boxes.clear();
+        this.masks.clear();
+        this.dynamics.clear();
+        this.quadtree.clear();
+    }
+
+    /**
+     * Forcibly updates the current graph to match the system for
+     * the given initial options.
+     * 
+     * This is usually called automatically by {@link solve()} to
+     * update the graph to get the current results, but could also
+     * be called manually for more control.
+     */
+    update()
+    {
+        // Update boxes
+        for(let mask of this.dynamics.values())
+        {
+            mask.get(mask.box, mask.owner);
+        }
+    }
+    
+    /**
+     * Solves the current graph for collisions. Usually, you want
+     * to call {@link update()} before this function to ensure the
+     * boxes accurately reflect the current state.
+     * 
+     * @param {Boolean} [forceUpdate=true] Whether to update the
+     * graph before solving it. If false, you must call {@link update()}
+     * yourself to update the graph to the current state.
+     * @param {Object} [opts={}] Any additional options.
+     * @param {TestFunction} [opts.test] The custom tester function
+     * to initially check if 2 objects can be colliding.
+     * @returns {Array<CollisionResult>} The collisions found in the current graph.
+     */
+    solve(forceUpdate = true, out = [], opts = {})
+    {
+        const { test = testAxisAlignedBoundingBox } = opts;
+
+        if (forceUpdate)
+        {
+            this.update();
+        }
+
+        let result = out;
+        let boxes = this.boxes;
+        let quadtree = this.quadtree;
+        quadtree.clear();
+        quadtree.insertAll(boxes);
+
+        let others = [];
+        for(let box of boxes)
+        {
+            quadtree.retrieve(box, others);
+            for(let other of others)
+            {
+                if (test(box, other))
+                {
+                    const collision = createCollisionResult(box, other);
+                    result.push(collision);
+                }
+            }
+            others.length = 0;
+        }
+        return result;
+    }
+}
+
+/**
+ * Creates a collision result for the given boxes.
+ * 
+ * @param {AxisAlignedBoundingBox} a
+ * @param {AxisAlignedBoundingBox} b
+ * @returns {CollisionResult} The new collision result.
+ */
+function createCollisionResult(a, b)
+{
+    return {
+        box: a,
+        other: b,
+    };
+}
+
+/**
+ * A representative bounding box to keep positional and
+ * dimensional metadata for any object in the
+ * {@link AxisAlignedBoundingBoxGraph}.
+ */
+class AxisAlignedBoundingBox
+{
+    constructor(aabbGraph, owner, x, y, rx, ry)
+    {
+        this.aabbGraph = aabbGraph;
+        this.owner = owner;
+        this.x = x;
+        this.y = y;
+        this.rx = rx;
+        this.ry = ry;
+    }
+
+    setPosition(x, y)
+    {
+        this.x = x;
+        this.y = y;
+        return this;
+    }
+
+    setSize(width, height)
+    {
+        this.rx = width / 2;
+        this.ry = height / 2;
+        return this;
+    }
+
+    setHalfSize(rx, ry)
+    {
+        this.rx = rx;
+        this.ry = ry;
+        return this;
+    }
+}
+
+/**
+ * Tests whether either {@link AxisAlignedBoundingBox} intersect one another.
+ * 
+ * @param {AxisAlignedBoundingBox} a A box.
+ * @param {AxisAlignedBoundingBox} b Another box in the same graph.
+ * @returns {Boolean} If either box intersects the other.
+ */
+function testAxisAlignedBoundingBox(a, b)
+{
+    return !(Math.abs(a.x - b.x) > (a.rx + b.rx))
+        && !(Math.abs(a.y - b.y) > (a.ry + b.ry));
+}
+
+/**
+ * @typedef {String} EntityId
+ */
+
+/**
+ * Handles all entity and component mappings.
+ */
+class EntityManager
+{
+    /**
+     * Constructs an empty entity manager with the given factories.
+     * 
+     * @param {Object} [opts={}] Any additional options.
+     * @param {Object} [opts.componentFactoryMap={}] An object map of each component to its factory.
+     * @param {Boolean} [opts.strictMode=false] Whether to enable error checking (and throwing).
+     */
+    constructor(opts = {})
+    {
+        const { componentFactoryMap = {}, strictMode = false } = opts;
+        let factoryMap = {};
+        let instances = {};
+        for(let componentName in componentFactoryMap)
+        {
+            let factoryOption = componentFactoryMap[componentName];
+            let create, destroy;
+            if (typeof factoryOption === 'function')
+            {
+                create = factoryOption;
+                destroy = null;
+            }
+            else if (typeof factoryOption === 'object')
+            {
+                create = factoryOption.create || null;
+                destroy = factoryOption.destroy || null;
+            }
+            else
+            {
+                throw new Error('Unsupported component factory options.');
+            }
+            factoryMap[componentName] = { owner: factoryOption, create, destroy };
+            instances[componentName] = {};
+        }
+        this.factoryMap = factoryMap;
+        this.instances = instances;
+        this.entities = new Set();
+        this.nextAvailableEntityId = 1;
+        this.strictMode = strictMode;
+    }
+
+    create(entityTemplate = undefined)
+    {
+        let entityId = String(this.nextAvailableEntityId++);
+        this.entities.add(entityId);
+        if (entityTemplate)
+        {
+            if (Array.isArray(entityTemplate))
+            {
+                for(let componentName of entityTemplate)
+                {
+                    this.add(componentName, entityId);
+                }
+            }
+            else if (typeof entityTemplate === 'object')
+            {
+                for(let componentName in entityTemplate)
+                {
+                    this.add(componentName, entityId, entityTemplate[componentName]);
+                }
+            }
+            else
+            {
+                throw new Error('Invalid component options.');
+            }
+        }
+        return entityId;
+    }
+
+    destroy(entityId)
+    {
+        for(let componentName in this.instances)
+        {
+            this.remove(componentName, entityId);
+        }
+        this.entities.delete(entityId);
+    }
+
+    add(componentName, entityId, props = undefined)
+    {
+        if (!(componentName in this.factoryMap))
+        {
+            if (this.strictMode)
+            {
+                throw new Error(`Missing component factory for '${componentName}'.`);
+            }
+            else
+            {
+                this.factoryMap[componentName] = {
+                    owner: {},
+                    create: null,
+                    destroy: null,
+                };
+                this.instances[componentName] = {};
+            }
+        }
+
+        if (!(componentName in this.instances))
+        {
+            throw new Error(`Missing component instance mapping for '${componentName}'.`);
+        }
+
+        if (!this.entities.has(entityId))
+        {
+            throw new Error(`Entity '${entityId}' does not exist.`);
+        }
+
+        if (this.instances[componentName][entityId])
+        {
+            throw new Error(`Entity already has component '${componentName}'.`);
+        }
+
+        const { create } = this.factoryMap[componentName];
+        let result = create
+            ? create(props, entityId, this)
+            : (props
+                ? {...props}
+                : {});
+        if (result)
+        {
+            this.instances[componentName][entityId] = result;
+        }
+    }
+
+    remove(componentName, entityId)
+    {
+        if (!(componentName in this.factoryMap))
+        {
+            if (this.strictMode)
+            {
+                throw new Error(`Missing component factory for '${componentName}'.`);
+            }
+            else
+            {
+                return;
+            }
+        }
+
+        if (!(componentName in this.instances))
+        {
+            throw new Error(`Missing component instance mapping for '${componentName}'.`);
+        }
+        
+        let entityComponents = this.instances[componentName];
+        let componentValues = entityComponents[entityId];
+        if (componentValues)
+        {
+            entityComponents[entityId] = null;
+    
+            const { destroy } = this.factoryMap[componentName];
+            if (destroy) destroy(componentValues, entityId, this);
+        }
+    }
+
+    /**
+     * Finds the component for the given entity.
+     * 
+     * @param {String} componentName The name of the target component.
+     * @param {EntityId} entityId The id of the entity to look in.
+     * @returns {Object} The component found. If it does not exist, null
+     * is returned instead.
+     */
+    get(componentName, entityId)
+    {
+        if (!(componentName in this.instances))
+        {
+            throw new Error(`Missing component instance mapping for '${componentName}'.`);
+        }
+        
+        const entityComponents = this.instances[componentName];
+        return entityComponents[entityId] || null;
+    }
+    
+    /**
+     * Checks whether the entity has the component.
+     * 
+     * @param {String} componentName The name of the target component.
+     * @param {EntityId} entityId The id of the entity to look in.
+     * @returns {Boolean} Whether the component exists for the entity.
+     */
+    has(componentName, entityId)
+    {
+        return componentName in this.instances && Boolean(this.instances[componentName][entityId]);
+    }
+
+    clear(componentName)
+    {
+        if (!(componentName in this.factoryMap))
+        {
+            if (this.strictMode)
+            {
+                throw new Error(`Missing component factory for '${componentName}'.`);
+            }
+            else
+            {
+                return;
+            }
+        }
+
+        if (!(componentName in this.instances))
+        {
+            throw new Error(`Missing component instance mapping for '${componentName}'.`);
+        }
+
+        let entityComponents = this.instances[componentName];
+        const { destroy } = this.factoryMap[componentName];
+        if (destroy)
+        {
+            for(let entityId in entityComponents)
+            {
+                let componentValues = entityComponents[entityId];
+                entityComponents[entityId] = null;
+
+                destroy(componentValues, componentName, entityId, this);
+            }
+        }
+        this.instances[componentName] = {};
+    }
+
+    /**
+     * Gets all the entity ids.
+     * 
+     * @returns {Set<EntityId>} The set of entity ids.
+     */
+    getEntityIds()
+    {
+        return this.entities;
+    }
+
+    getComponentFactory(componentName)
+    {
+        if (componentName in this.factoryMap)
+        {
+            return this.factoryMap[componentName].owner;
+        }
+        else
+        {
+            return null;
+        }
+    }
+
+    getComponentNames()
+    {
+        return Object.keys(this.factoryMap);
+    }
+
+    getComponentEntityIds(componentName)
+    {
+        if (componentName in this.instances)
+        {
+            return Object.keys(this.instances[componentName]);
+        }
+        else
+        {
+            return [];
+        }
+    }
+    
+    getComponentInstances(componentName)
+    {
+        if (componentName in this.instances)
+        {
+            return Object.values(this.instances[componentName]);
+        }
+        else
+        {
+            return [];
+        }
+    }
+}
+
+const MAX_DEPTH_LEVEL = 100;
+
+/**
+ * @callback WalkCallback Called for each node, before traversing its children.
+ * @param {Object} child The current object.
+ * @param {SceneNode} childNode The representative node for the current object.
+ * @returns {WalkBackCallback|Boolean} If false, the walk will skip
+ * the current node's children. If a function, it will be called after
+ * traversing down all of its children.
+ * 
+ * @callback WalkBackCallback Called if returned by {@link WalkCallback}, after
+ * traversing the current node's children.
+ * @param {Object} child The current object.
+ * @param {SceneNode} childNode The representative node for the current object.
+ */
+
+/**
+ * A tree-like graph of nodes with n-children.
+ */
+class SceneGraph
+{
+    /**
+     * Constructs an empty scene graph with nodes to be created from the given constructor.
+     * 
+     * @param {Object} [opts] Any additional options.
+     * @param {typeof SceneNode} [opts.nodeConstructor] The scene node constructor that make up the graph.
+     */
+    constructor(opts = {})
+    {
+        this.nodeConstructor = opts.nodeConstructor || SceneNode;
+        this.nodes = new Map();
+
+        this.rootNodes = [];
+    }
+
+    /**
+     * Adds an object to the scene graph.
+     * 
+     * @param {Object} child The child object to add.
+     * @param {Object} [parent=null] The parent object to add the child under. If null,
+     * the child will be inserted under the root node.
+     * @returns {SceneNode} The scene node that represents the added child object.
+     */
+    add(child, parent = null)
+    {
+        if (child === null) throw new Error(`Cannot add null as child to scene graph.`);
+        if (parent === null || this.nodes.has(parent))
+        {
+            let parentNode = parent === null ? null : this.nodes.get(parent);
+            if (this.nodes.has(child))
+            {
+                let childNode = this.nodes.get(child);
+                detach(childNode.parentNode, childNode, this);
+                attach(parentNode, childNode, this);
+                return childNode;
+            }
+            else
+            {
+                let childNode = new (this.nodeConstructor)(this, child, null, []);
+                this.nodes.set(child, childNode);
+                attach(parentNode, childNode, this);
+                return childNode;
+            }
+        }
+        else
+        {
+            throw new Error(`No node in scene graph exists for parent.`);
+        }
+    }
+
+    /**
+     * Removes an object from the scene graph, along with all
+     * of its descendents.
+     * 
+     * @param {Object} child The child object to remove. If null, will clear
+     * the entire graph.
+     * @returns {Boolean} Whether any objects were removed from the scene.
+     */
+    remove(child)
+    {
+        if (child === null)
+        {
+            this.clear();
+            return true;
+        }
+        else if (this.nodes.has(child))
+        {
+            let childNode = this.nodes.get(child);
+            let parentNode = childNode.parentNode;
+            detach(parentNode, childNode, this);
+            this.nodeConstructor.walk(childNode, 0, descendent => {
+                this.nodes.delete(descendent);
+            });
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    /**
+     * Replaces the target object with the new child object in the graph,
+     * inheriting its parent and children.
+     * 
+     * @param {Object} target The target object to replace. Cannot be null.
+     * @param {Object} child The object to replace with. If null,
+     * it will remove the target and the target's parent will adopt
+     * its grandchildren.
+     */
+    replace(target, child)
+    {
+        if (target === null) throw new Error('Cannot replace null for child in scene graph.');
+        if (this.nodes.has(target))
+        {
+            let targetNode = this.nodes.get(target);
+            let targetParent = targetNode.parentNode;
+            let targetChildren = [...targetNode.childNodes];
+
+            // Remove target node from the graph
+            detach(targetParent, targetNode, this);
+
+            // Begin grafting the grandchildren by first removing...
+            targetNode.childNodes.length = 0;
+
+            if (child === null)
+            {
+                // Reattach all grandchildren to target parent.
+                if (targetParent === null)
+                {
+                    // As root children.
+                    this.rootNodes.push(...targetChildren);
+                }
+                else
+                {
+                    // As regular children.
+                    targetParent.childNodes.push(...targetChildren);
+                }
+            }
+            else
+            {
+                // Reattach all grandchildren to new child.
+                let childNode;
+                if (this.nodes.has(child))
+                {
+                    childNode = this.nodes.get(child);
+
+                    // Remove child node from prev parent
+                    detach(childNode.parentNode, childNode, this);
+
+                    // ...and graft them back.
+                    childNode.childNodes.push(...targetChildren);
+                }
+                else
+                {
+                    childNode = new (this.nodeConstructor)(this, child, null, targetChildren);
+                    this.nodes.set(child, childNode);
+                }
+
+                // And reattach target parent to new child.
+                attach(targetParent, childNode, this);
+            }
+            
+            // ...and graft them back.
+            for(let targetChild of targetChildren)
+            {
+                targetChild.parentNode = targetParent;
+            }
+
+            return child;
+        }
+        else if (target === null)
+        {
+            return this.replace(this.root.owner, child);
+        }
+        else
+        {
+            throw new Error('Cannot find target object to replace in scene graph.');
+        }
+    }
+
+    /** Removes all nodes from the graph. */
+    clear()
+    {
+        this.nodes.clear();
+        this.rootNodes.length = 0;
+    }
+
+    /**
+     * Gets the scene node for the given object.
+     * 
+     * @param {Object} child The object to retrieve the node for.
+     * @returns {SceneNode} The scene node that represents the object.
+     */
+    get(child)
+    {
+        return this.nodes.get(child);
+    }
+
+    /**
+     * Walks through every child node in the graph for the given
+     * object's associated node.
+     * 
+     * @param {WalkCallback} callback The function called for each node
+     * in the graph, in ordered traversal from parent to child.
+     * @param {Object} [opts={}] Any additional options.
+     * @param {Boolean} [opts.childrenOnly=true] Whether to skip traversing
+     * the first node, usually the root, and start from its children instead.
+     */
+    walk(from, callback, opts = {})
+    {
+        const { childrenOnly = true } = opts;
+        if (from === null)
+        {
+            for(let childNode of this.rootNodes)
+            {
+                this.nodeConstructor.walk(childNode, 0, callback);
+            }
+        }
+        else
+        {
+            const fromNode = this.get(from);
+            if (!fromNode)
+            {
+                if (childrenOnly)
+                {
+                    for(let childNode of fromNode.childNodes)
+                    {
+                        this.nodeConstructor.walk(childNode, 0, callback);
+                    }
+                }
+                else
+                {
+                    this.nodeConstructor.walk(fromNode, 0, callback);
+                }
+            }
+            else
+            {
+                throw new Error(`No node in scene graph exists for walk start.`);
+            }
+        }
+    }
+}
+
+function attach(parentNode, childNode, sceneGraph)
+{
+    if (parentNode === null)
+    {
+        sceneGraph.rootNodes.push(childNode);
+        childNode.parentNode = null;
+    }
+    else
+    {
+        parentNode.childNodes.push(childNode);
+        childNode.parentNode = parentNode;
+    }
+}
+
+function detach(parentNode, childNode, sceneGraph)
+{
+    if (parentNode === null)
+    {
+        let index = sceneGraph.rootNodes.indexOf(childNode);
+        sceneGraph.rootNodes.splice(index, 1);
+        childNode.parentNode = undefined;
+    }
+    else
+    {
+        let index = parentNode.childNodes.indexOf(childNode);
+        parentNode.childNodes.splice(index, 1);
+        childNode.parentNode = undefined;
+    }
+}
+
+/**
+ * A representative node to keep relational metadata for any object in
+ * the {@link SceneGraph}.
+ */
+class SceneNode
+{
+    /**
+     * Walk down from the parent and through all its descendents.
+     * 
+     * @param {SceneNode} parentNode The parent node to start walking from.
+     * @param {Number} level The current call depth level. This is used to limit the call stack.
+     * @param {WalkCallback} callback The function called on each visited node.
+     */
+    static walk(parentNode, level, callback)
+    {
+        if (level >= MAX_DEPTH_LEVEL) return;
+
+        let result = callback(parentNode.owner, parentNode);
+        if (result === false) return;
+
+        for(let childNode of parentNode.childNodes)
+        {
+            this.walk(childNode, level + 1, callback);
+        }
+
+        if (typeof result === 'function')
+        {
+            result(parentNode.owner, parentNode);
+        }
+    }
+
+    /**
+     * Constructs a scene node with the given parent and children. This assumes
+     * the given parent and children satisfy the correctness constraints of the
+     * graph. In other words, This does not validate nor modify other nodes,
+     * such as its parent or children, to maintain correctness. That must be
+     * handled externally.
+     * 
+     * @param {SceneGraph} sceneGraph The scene graph this node belongs to.
+     * @param {Object} owner The owner object.
+     * @param {SceneNode} parentNode The parent node.
+     * @param {Array<SceneNode>} childNodes The list of child nodes.
+     */
+    constructor(sceneGraph, owner, parentNode, childNodes)
+    {
+        this.sceneGraph = sceneGraph;
+        this.owner = owner;
+
+        this.parentNode = parentNode;
+        this.childNodes = childNodes;
+    }
+}
+
+export { ApplicationLoop, AssetLoader, Audio, AxisAlignedBoundingBox, AxisAlignedBoundingBoxGraph, BoxRenderer, ByteLoader, EntityManager, Game$1 as Game, ImageLoader, IntersectionHelper, IntersectionResolver, IntersectionWorld, JSONLoader, OBJLoader, QuadTree, SceneGraph, SceneNode, SpriteRenderer, TextLoader, testAxisAlignedBoundingBox };

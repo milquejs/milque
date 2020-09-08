@@ -5,3 +5,7 @@ export * as Game from './Game.js';
 export { ApplicationLoop } from './ApplicationLoop.js';
 export { BoxRenderer } from './BoxRenderer.js';
 export { SpriteRenderer } from './SpriteRenderer.js';
+
+export * from './aabb/index.js';
+export * from './entity/index.js';
+export * from './scene/index.js';

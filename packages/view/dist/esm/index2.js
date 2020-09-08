@@ -1,1 +1,3 @@
-export { C as CanvasView, s as setDOMMatrix } from './CanvasView-6595fdb0.js';
+import 'gl-matrix';
+import './Camera2D-a3d7cb35.js';
+export { C as CanvasView2D, s as setDOMMatrix } from './CanvasView2D-a85413c5.js';

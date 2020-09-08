@@ -1962,271 +1962,6 @@ output {
         inputKeys.push(inputKey);
     }
 
-    /**
-     * Common utilities
-     * @module glMatrix
-     */
-    // Configuration Constants
-    var EPSILON = 0.000001;
-    var ARRAY_TYPE = typeof Float32Array !== 'undefined' ? Float32Array : Array;
-    if (!Math.hypot) Math.hypot = function () {
-      var y = 0,
-          i = arguments.length;
-
-      while (i--) {
-        y += arguments[i] * arguments[i];
-      }
-
-      return Math.sqrt(y);
-    };
-
-    /**
-     * 4x4 Matrix<br>Format: column-major, when typed out it looks like row-major<br>The matrices are being post multiplied.
-     * @module mat4
-     */
-
-    /**
-     * Creates a new identity mat4
-     *
-     * @returns {mat4} a new 4x4 matrix
-     */
-
-    function create() {
-      var out = new ARRAY_TYPE(16);
-
-      if (ARRAY_TYPE != Float32Array) {
-        out[1] = 0;
-        out[2] = 0;
-        out[3] = 0;
-        out[4] = 0;
-        out[6] = 0;
-        out[7] = 0;
-        out[8] = 0;
-        out[9] = 0;
-        out[11] = 0;
-        out[12] = 0;
-        out[13] = 0;
-        out[14] = 0;
-      }
-
-      out[0] = 1;
-      out[5] = 1;
-      out[10] = 1;
-      out[15] = 1;
-      return out;
-    }
-    /**
-     * Creates a matrix from a vector translation
-     * This is equivalent to (but much faster than):
-     *
-     *     mat4.identity(dest);
-     *     mat4.translate(dest, dest, vec);
-     *
-     * @param {mat4} out mat4 receiving operation result
-     * @param {ReadonlyVec3} v Translation vector
-     * @returns {mat4} out
-     */
-
-    function fromTranslation(out, v) {
-      out[0] = 1;
-      out[1] = 0;
-      out[2] = 0;
-      out[3] = 0;
-      out[4] = 0;
-      out[5] = 1;
-      out[6] = 0;
-      out[7] = 0;
-      out[8] = 0;
-      out[9] = 0;
-      out[10] = 1;
-      out[11] = 0;
-      out[12] = v[0];
-      out[13] = v[1];
-      out[14] = v[2];
-      out[15] = 1;
-      return out;
-    }
-    /**
-     * Creates a matrix from a given angle around a given axis
-     * This is equivalent to (but much faster than):
-     *
-     *     mat4.identity(dest);
-     *     mat4.rotate(dest, dest, rad, axis);
-     *
-     * @param {mat4} out mat4 receiving operation result
-     * @param {Number} rad the angle to rotate the matrix by
-     * @param {ReadonlyVec3} axis the axis to rotate around
-     * @returns {mat4} out
-     */
-
-    function fromRotation(out, rad, axis) {
-      var x = axis[0],
-          y = axis[1],
-          z = axis[2];
-      var len = Math.hypot(x, y, z);
-      var s, c, t;
-
-      if (len < EPSILON) {
-        return null;
-      }
-
-      len = 1 / len;
-      x *= len;
-      y *= len;
-      z *= len;
-      s = Math.sin(rad);
-      c = Math.cos(rad);
-      t = 1 - c; // Perform rotation-specific matrix multiplication
-
-      out[0] = x * x * t + c;
-      out[1] = y * x * t + z * s;
-      out[2] = z * x * t - y * s;
-      out[3] = 0;
-      out[4] = x * y * t - z * s;
-      out[5] = y * y * t + c;
-      out[6] = z * y * t + x * s;
-      out[7] = 0;
-      out[8] = x * z * t + y * s;
-      out[9] = y * z * t - x * s;
-      out[10] = z * z * t + c;
-      out[11] = 0;
-      out[12] = 0;
-      out[13] = 0;
-      out[14] = 0;
-      out[15] = 1;
-      return out;
-    }
-    /**
-     * Generates a perspective projection matrix with the given bounds.
-     * Passing null/undefined/no value for far will generate infinite projection matrix.
-     *
-     * @param {mat4} out mat4 frustum matrix will be written into
-     * @param {number} fovy Vertical field of view in radians
-     * @param {number} aspect Aspect ratio. typically viewport width/height
-     * @param {number} near Near bound of the frustum
-     * @param {number} far Far bound of the frustum, can be null or Infinity
-     * @returns {mat4} out
-     */
-
-    function perspective(out, fovy, aspect, near, far) {
-      var f = 1.0 / Math.tan(fovy / 2),
-          nf;
-      out[0] = f / aspect;
-      out[1] = 0;
-      out[2] = 0;
-      out[3] = 0;
-      out[4] = 0;
-      out[5] = f;
-      out[6] = 0;
-      out[7] = 0;
-      out[8] = 0;
-      out[9] = 0;
-      out[11] = -1;
-      out[12] = 0;
-      out[13] = 0;
-      out[15] = 0;
-
-      if (far != null && far !== Infinity) {
-        nf = 1 / (near - far);
-        out[10] = (far + near) * nf;
-        out[14] = 2 * far * near * nf;
-      } else {
-        out[10] = -1;
-        out[14] = -2 * near;
-      }
-
-      return out;
-    }
-
-    /**
-     * 3 Dimensional Vector
-     * @module vec3
-     */
-
-    /**
-     * Creates a new, empty vec3
-     *
-     * @returns {vec3} a new 3D vector
-     */
-
-    function create$1() {
-      var out = new ARRAY_TYPE(3);
-
-      if (ARRAY_TYPE != Float32Array) {
-        out[0] = 0;
-        out[1] = 0;
-        out[2] = 0;
-      }
-
-      return out;
-    }
-    /**
-     * Creates a new vec3 initialized with the given values
-     *
-     * @param {Number} x X component
-     * @param {Number} y Y component
-     * @param {Number} z Z component
-     * @returns {vec3} a new 3D vector
-     */
-
-    function fromValues(x, y, z) {
-      var out = new ARRAY_TYPE(3);
-      out[0] = x;
-      out[1] = y;
-      out[2] = z;
-      return out;
-    }
-    /**
-     * Perform some operation over an array of vec3s.
-     *
-     * @param {Array} a the array of vectors to iterate over
-     * @param {Number} stride Number of elements between the start of each vec3. If 0 assumes tightly packed
-     * @param {Number} offset Number of elements to skip at the beginning of the array
-     * @param {Number} count Number of vec3s to iterate over. If 0 iterates over entire array
-     * @param {Function} fn Function to call for each vector in the array
-     * @param {Object} [arg] additional argument to pass to fn
-     * @returns {Array} a
-     * @function
-     */
-
-    var forEach = function () {
-      var vec = create$1();
-      return function (a, stride, offset, count, fn, arg) {
-        var i, l;
-
-        if (!stride) {
-          stride = 3;
-        }
-
-        if (!offset) {
-          offset = 0;
-        }
-
-        if (count) {
-          l = Math.min(count * stride + offset, a.length);
-        } else {
-          l = a.length;
-        }
-
-        for (i = offset; i < l; i += stride) {
-          vec[0] = a[i];
-          vec[1] = a[i + 1];
-          vec[2] = a[i + 2];
-          fn(vec, vec, arg);
-          a[i] = vec[0];
-          a[i + 1] = vec[1];
-          a[i + 2] = vec[2];
-        }
-
-        return a;
-      };
-    }();
-
-    const ORIGIN = fromValues(0, 0, 0);
-    const XAXIS = fromValues(1, 0, 0);
-    const YAXIS = fromValues(0, 1, 0);
-    const ZAXIS = fromValues(0, 0, 1);
-
     async function loadImage(filepath, opts)
     {
         return new Promise((resolve, reject) => {
@@ -2827,6 +2562,266 @@ output {
         };
         document.addEventListener('click', callback);
     }
+
+    /**
+     * Common utilities
+     * @module glMatrix
+     */
+    // Configuration Constants
+    var EPSILON = 0.000001;
+    var ARRAY_TYPE = typeof Float32Array !== 'undefined' ? Float32Array : Array;
+    if (!Math.hypot) Math.hypot = function () {
+      var y = 0,
+          i = arguments.length;
+
+      while (i--) {
+        y += arguments[i] * arguments[i];
+      }
+
+      return Math.sqrt(y);
+    };
+
+    /**
+     * 4x4 Matrix<br>Format: column-major, when typed out it looks like row-major<br>The matrices are being post multiplied.
+     * @module mat4
+     */
+
+    /**
+     * Creates a new identity mat4
+     *
+     * @returns {mat4} a new 4x4 matrix
+     */
+
+    function create() {
+      var out = new ARRAY_TYPE(16);
+
+      if (ARRAY_TYPE != Float32Array) {
+        out[1] = 0;
+        out[2] = 0;
+        out[3] = 0;
+        out[4] = 0;
+        out[6] = 0;
+        out[7] = 0;
+        out[8] = 0;
+        out[9] = 0;
+        out[11] = 0;
+        out[12] = 0;
+        out[13] = 0;
+        out[14] = 0;
+      }
+
+      out[0] = 1;
+      out[5] = 1;
+      out[10] = 1;
+      out[15] = 1;
+      return out;
+    }
+    /**
+     * Creates a matrix from a vector translation
+     * This is equivalent to (but much faster than):
+     *
+     *     mat4.identity(dest);
+     *     mat4.translate(dest, dest, vec);
+     *
+     * @param {mat4} out mat4 receiving operation result
+     * @param {ReadonlyVec3} v Translation vector
+     * @returns {mat4} out
+     */
+
+    function fromTranslation(out, v) {
+      out[0] = 1;
+      out[1] = 0;
+      out[2] = 0;
+      out[3] = 0;
+      out[4] = 0;
+      out[5] = 1;
+      out[6] = 0;
+      out[7] = 0;
+      out[8] = 0;
+      out[9] = 0;
+      out[10] = 1;
+      out[11] = 0;
+      out[12] = v[0];
+      out[13] = v[1];
+      out[14] = v[2];
+      out[15] = 1;
+      return out;
+    }
+    /**
+     * Creates a matrix from a given angle around a given axis
+     * This is equivalent to (but much faster than):
+     *
+     *     mat4.identity(dest);
+     *     mat4.rotate(dest, dest, rad, axis);
+     *
+     * @param {mat4} out mat4 receiving operation result
+     * @param {Number} rad the angle to rotate the matrix by
+     * @param {ReadonlyVec3} axis the axis to rotate around
+     * @returns {mat4} out
+     */
+
+    function fromRotation(out, rad, axis) {
+      var x = axis[0],
+          y = axis[1],
+          z = axis[2];
+      var len = Math.hypot(x, y, z);
+      var s, c, t;
+
+      if (len < EPSILON) {
+        return null;
+      }
+
+      len = 1 / len;
+      x *= len;
+      y *= len;
+      z *= len;
+      s = Math.sin(rad);
+      c = Math.cos(rad);
+      t = 1 - c; // Perform rotation-specific matrix multiplication
+
+      out[0] = x * x * t + c;
+      out[1] = y * x * t + z * s;
+      out[2] = z * x * t - y * s;
+      out[3] = 0;
+      out[4] = x * y * t - z * s;
+      out[5] = y * y * t + c;
+      out[6] = z * y * t + x * s;
+      out[7] = 0;
+      out[8] = x * z * t + y * s;
+      out[9] = y * z * t - x * s;
+      out[10] = z * z * t + c;
+      out[11] = 0;
+      out[12] = 0;
+      out[13] = 0;
+      out[14] = 0;
+      out[15] = 1;
+      return out;
+    }
+    /**
+     * Generates a perspective projection matrix with the given bounds.
+     * Passing null/undefined/no value for far will generate infinite projection matrix.
+     *
+     * @param {mat4} out mat4 frustum matrix will be written into
+     * @param {number} fovy Vertical field of view in radians
+     * @param {number} aspect Aspect ratio. typically viewport width/height
+     * @param {number} near Near bound of the frustum
+     * @param {number} far Far bound of the frustum, can be null or Infinity
+     * @returns {mat4} out
+     */
+
+    function perspective(out, fovy, aspect, near, far) {
+      var f = 1.0 / Math.tan(fovy / 2),
+          nf;
+      out[0] = f / aspect;
+      out[1] = 0;
+      out[2] = 0;
+      out[3] = 0;
+      out[4] = 0;
+      out[5] = f;
+      out[6] = 0;
+      out[7] = 0;
+      out[8] = 0;
+      out[9] = 0;
+      out[11] = -1;
+      out[12] = 0;
+      out[13] = 0;
+      out[15] = 0;
+
+      if (far != null && far !== Infinity) {
+        nf = 1 / (near - far);
+        out[10] = (far + near) * nf;
+        out[14] = 2 * far * near * nf;
+      } else {
+        out[10] = -1;
+        out[14] = -2 * near;
+      }
+
+      return out;
+    }
+
+    /**
+     * 3 Dimensional Vector
+     * @module vec3
+     */
+
+    /**
+     * Creates a new, empty vec3
+     *
+     * @returns {vec3} a new 3D vector
+     */
+
+    function create$1() {
+      var out = new ARRAY_TYPE(3);
+
+      if (ARRAY_TYPE != Float32Array) {
+        out[0] = 0;
+        out[1] = 0;
+        out[2] = 0;
+      }
+
+      return out;
+    }
+    /**
+     * Creates a new vec3 initialized with the given values
+     *
+     * @param {Number} x X component
+     * @param {Number} y Y component
+     * @param {Number} z Z component
+     * @returns {vec3} a new 3D vector
+     */
+
+    function fromValues(x, y, z) {
+      var out = new ARRAY_TYPE(3);
+      out[0] = x;
+      out[1] = y;
+      out[2] = z;
+      return out;
+    }
+    /**
+     * Perform some operation over an array of vec3s.
+     *
+     * @param {Array} a the array of vectors to iterate over
+     * @param {Number} stride Number of elements between the start of each vec3. If 0 assumes tightly packed
+     * @param {Number} offset Number of elements to skip at the beginning of the array
+     * @param {Number} count Number of vec3s to iterate over. If 0 iterates over entire array
+     * @param {Function} fn Function to call for each vector in the array
+     * @param {Object} [arg] additional argument to pass to fn
+     * @returns {Array} a
+     * @function
+     */
+
+    var forEach = function () {
+      var vec = create$1();
+      return function (a, stride, offset, count, fn, arg) {
+        var i, l;
+
+        if (!stride) {
+          stride = 3;
+        }
+
+        if (!offset) {
+          offset = 0;
+        }
+
+        if (count) {
+          l = Math.min(count * stride + offset, a.length);
+        } else {
+          l = a.length;
+        }
+
+        for (i = offset; i < l; i += stride) {
+          vec[0] = a[i];
+          vec[1] = a[i + 1];
+          vec[2] = a[i + 2];
+          fn(vec, vec, arg);
+          a[i] = vec[0];
+          a[i + 1] = vec[1];
+          a[i + 2] = vec[2];
+        }
+
+        return a;
+      };
+    }();
 
     let TYPE_INFO = null;
 

@@ -1,6 +1,7 @@
 import { mat4, vec3, quat } from 'gl-matrix';
 import { Camera } from './Camera.js';
 
+/** @deprecated */
 export class Camera3D extends Camera
 {
     static screenToWorld(screenX, screenY, viewMatrix, projectionMatrix)

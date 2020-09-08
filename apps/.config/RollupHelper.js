@@ -24,9 +24,9 @@ const EXTERNAL_ASSETS = [
     { src: 'src/assets/template.html', rename: 'index.html' },
 ];
 
-export function rollupConfig(packageJson, devMode)
+export function rollupConfig(args, packageJson)
 {
-    return devMode
+    return args.watch
         ? development(packageJson)
         : production(packageJson);
 }

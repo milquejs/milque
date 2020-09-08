@@ -1,2 +1,2 @@
-export * from './view/CanvasView.js';
+export * from './view/index.js';
 export * from './camera/index.js';

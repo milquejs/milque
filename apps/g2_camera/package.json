@@ -1,5 +1,5 @@
 {
-  "name": "camera",
+  "name": "g-camera",
   "version": "1.0.0",
   "description": "A WebGL demo for cameras.",
   "browser": "dist/index.js",
@@ -9,7 +9,7 @@
     "milque"
   ],
   "scripts": {
-    "start": "rollup --config --watch --dev",
+    "start": "rollup --config --watch",
     "build": "rollup --config"
   },
   "dependencies": {

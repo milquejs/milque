@@ -4,42 +4,119 @@
     (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory((global.Milque = global.Milque || {}, global.Milque.Util = {}), global.glMatrix));
 }(this, (function (exports, glMatrix) { 'use strict';
 
-    class CanvasView
+    class Camera
     {
-        constructor()
+        /** @abstract */
+        getViewMatrix(out) {}
+        
+        /** @abstract */
+        getProjectionMatrix(out) {}
+    }
+
+    class Camera2D extends Camera
+    {
+        constructor(left = -1, right = 1, top = -1, bottom = 1, near = 0, far = 1)
         {
-            this.prevTransformMatrix = null;
+            this.position = glMatrix.vec3.create();
+            this.rotation = glMatrix.quat.create();
+            this.scale = glMatrix.vec3.fromValues(1, 1, 1);
 
-            this.domProjectionMatrix = new DOMMatrix();
-            this.domViewMatrix = new DOMMatrix();
-
-            this.ctx = null;
+            this.clippingPlane = {
+                left, right, top, bottom, near, far,
+            };
         }
 
-        begin(ctx, viewMatrix, projectionMatrix)
+        get x() { return this.position[0]; }
+        set x(value) { this.position[0] = value; }
+        get y() { return this.position[1]; }
+        set y(value) { this.position[1] = value; }
+        get z() { return this.position[2]; }
+        set z(value) { this.position[2] = value; }
+        
+        moveTo(x, y, z = 0, dt = 1)
         {
-            if (this.ctx)
-            {
-                throw new Error('View already begun - maybe missing end() call?');
-            }
+            let nextPosition = glMatrix.vec3.fromValues(x, y, z);
+            glMatrix.vec3.lerp(this.position, this.position, nextPosition, Math.max(Math.min(dt, 1), 0));
+            return this;
+        }
 
-            if (viewMatrix) setDOMMatrix(this.domViewMatrix, viewMatrix);
-            if (projectionMatrix) setDOMMatrix(this.domProjectionMatrix, projectionMatrix);
+        /** @override */
+        getViewMatrix(out)
+        {
+            let viewX = -Math.round(this.x);
+            let viewY = -Math.round(this.y);
+            let viewZ = this.z === 0 ? 1 : 1 / this.z;
+            let invPosition = glMatrix.vec3.fromValues(viewX, viewY, 0);
+            let invScale = glMatrix.vec3.fromValues(this.scale[0] * viewZ, this.scale[1] * viewZ, 1);
+            glMatrix.mat4.fromRotationTranslationScale(out, this.rotation, invPosition, invScale);
+            return out;
+        }
 
-            this.prevTransformMatrix = ctx.getTransform();
+        /** @override */
+        getProjectionMatrix(out)
+        {
+            let { left, right, top, bottom, near, far } = this.clippingPlane;
+            glMatrix.mat4.ortho(out, left, right, top, bottom, near, far);
+            return out;
+        }
+    }
 
-            ctx.setTransform(this.domProjectionMatrix);
-            const { a, b, c, d, e, f } = this.domViewMatrix;
+    class CanvasView2D
+    {
+        constructor(display, camera = new Camera2D())
+        {
+            this.display = display;
+            this.camera = camera;
+
+            this.viewTransformDOMMatrix = new DOMMatrix();
+        }
+        
+        transformScreenToWorld(screenX, screenY)
+        {
+            let matrix = glMatrix.mat4.create();
+            this.getViewProjectionMatrix(matrix);
+            glMatrix.mat4.invert(matrix, matrix);
+            let result = vec3.fromValues(screenX, screenY, 0);
+            vec3.transformMat4(result, result, matrix);
+            return result;
+        }
+        
+        transformCanvas(ctx)
+        {
+            let domMatrix = this.viewTransformDOMMatrix;
+            let matrix = glMatrix.mat4.create();
+            this.getViewProjectionMatrix(matrix);
+            setDOMMatrix(domMatrix, matrix);
+
+            const { a, b, c, d, e, f } = domMatrix;
             ctx.transform(a, b, c, d, e, f);
-
-            this.ctx = ctx;
         }
 
-        end(ctx)
+        getViewProjectionMatrix(out)
         {
-            ctx.setTransform(this.prevTransformMatrix);
-            
-            this.ctx = null;
+            const displayWidth = this.display.width;
+            const displayHeight = this.display.height;
+
+            let matrix = glMatrix.mat4.create();
+            const projectionMatrix = this.camera.getProjectionMatrix(matrix);
+            const viewMatrix = this.camera.getViewMatrix(out);
+            glMatrix.mat4.multiply(matrix, viewMatrix, projectionMatrix);
+            // HACK: This is the correct canvas matrix, but since we simply restore the
+            // the aspect ratio by effectively undoing the scaling, we can skip this step
+            // all together to achieve the same effect (albeit incorrect).
+            /*
+            const canvasMatrix = mat4.fromRotationTranslationScale(
+                out,
+                [0, 0, 0, 1],
+                [displayWidth / 2, displayHeight / 2, 0],
+                [displayWidth, displayHeight, 0]);
+            */
+            // HACK: This shouldn't be here. This should really be in the view matrix.
+            const canvasMatrix = glMatrix.mat4.fromTranslation(
+                out,
+                [displayWidth / 2, displayHeight / 2, 0]);
+            glMatrix.mat4.multiply(out, canvasMatrix, matrix);
+            return out;
         }
     }
 
@@ -54,77 +131,7 @@
         return domMatrix;
     }
 
-    class Camera
-    {
-        /** @abstract */
-        getViewMatrix(out) {}
-        
-        /** @abstract */
-        getProjectionMatrix(out) {}
-    }
-
-    class Camera2D extends Camera
-    {
-        static screenToWorld(screenX, screenY, viewMatrix, projectionMatrix)
-        {
-            let mat = glMatrix.mat4.multiply(glMatrix.mat4.create(), projectionMatrix, viewMatrix);
-            glMatrix.mat4.invert(mat, mat);
-            let result = glMatrix.vec3.fromValues(screenX, screenY, 0);
-            glMatrix.vec3.transformMat4(result, result, mat);
-            return result;
-        }
-        
-        constructor(left = -1, right = 1, top = -1, bottom = 1, near = 0, far = 1)
-        {
-            super();
-
-            this.position = glMatrix.vec3.create();
-            this.rotation = glMatrix.quat.create();
-            this.scale = glMatrix.vec3.fromValues(1, 1, 1);
-
-            this.clippingPlane = {
-                left, right, top, bottom, near, far,
-            };
-            
-            this._viewMatrix = glMatrix.mat4.create();
-            this._projectionMatrix = glMatrix.mat4.create();
-        }
-
-        get x() { return this.position[0]; }
-        set x(value) { this.position[0] = value; }
-        get y() { return this.position[1]; }
-        set y(value) { this.position[1] = value; }
-        get z() { return this.position[2]; }
-        set z(value) { this.position[2] = value; }
-
-        /** Moves the camera. This is the only way to change the position. */
-        moveTo(x, y, z = 0, dt = 1)
-        {
-            let nextPosition = glMatrix.vec3.fromValues(x, y, z);
-            glMatrix.vec3.lerp(this.position, this.position, nextPosition, Math.min(1, dt));
-        }
-
-        /** @override */
-        getViewMatrix(out = this._viewMatrix)
-        {
-            let viewX = -Math.round(this.x);
-            let viewY = -Math.round(this.y);
-            let viewZ = this.z === 0 ? 1 : 1 / this.z;
-            let invPosition = glMatrix.vec3.fromValues(viewX, viewY, 0);
-            let invScale = glMatrix.vec3.fromValues(this.scale[0] * viewZ, this.scale[1] * viewZ, 1);
-            glMatrix.mat4.fromRotationTranslationScale(out, this.rotation, invPosition, invScale);
-            return out;
-        }
-
-        /** @override */
-        getProjectionMatrix(out = this._projectionMatrix)
-        {
-            let { left, right, top, bottom, near, far } = this.clippingPlane;
-            glMatrix.mat4.ortho(out, left, right, top, bottom, near, far);
-            return out;
-        }
-    }
-
+    /** @deprecated */
     class Camera3D extends Camera
     {
         static screenToWorld(screenX, screenY, viewMatrix, projectionMatrix)
@@ -192,7 +199,7 @@
     exports.Camera = Camera;
     exports.Camera2D = Camera2D;
     exports.Camera3D = Camera3D;
-    exports.CanvasView = CanvasView;
+    exports.CanvasView2D = CanvasView2D;
     exports.setDOMMatrix = setDOMMatrix;
 
     Object.defineProperty(exports, '__esModule', { value: true });

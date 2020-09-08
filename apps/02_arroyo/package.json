@@ -9,7 +9,7 @@
     "milque"
   ],
   "scripts": {
-    "start": "rollup --config --watch --dev",
+    "start": "rollup --config --watch",
     "build": "rollup --config"
   },
   "dependencies": {
