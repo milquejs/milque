@@ -3846,6 +3846,8 @@ output {
         }
     }
 
+    // TODO: Add custom solvers.
+
     /**
      * @typedef {Function} TestFunction
      * @param {AxisAlignedBoundingBox} a
@@ -4165,6 +4167,8 @@ output {
      * @typedef {String} EntityId
      */
 
+    const DEFAULT_PROPS = {};
+
     /**
      * Handles all entity and component mappings.
      */
@@ -4186,17 +4190,18 @@ output {
             {
                 let factoryOption = componentFactoryMap[componentName];
                 let create, destroy;
-                if (typeof factoryOption === 'function')
+                try
                 {
-                    create = factoryOption;
-                    destroy = null;
+                    create = 'create' in factoryOption
+                        ? factoryOption.create
+                        : (typeof factoryOption === 'function'
+                            ? factoryOption
+                            : null);
+                    destroy = 'destroy' in factoryOption
+                        ? factoryOption.destroy
+                        : null;
                 }
-                else if (typeof factoryOption === 'object')
-                {
-                    create = factoryOption.create || null;
-                    destroy = factoryOption.destroy || null;
-                }
-                else
+                catch(e)
                 {
                     throw new Error('Unsupported component factory options.');
                 }
@@ -4210,32 +4215,29 @@ output {
             this.strictMode = strictMode;
         }
 
-        create(entityTemplate = undefined)
+        create(entityId = undefined)
         {
-            let entityId = String(this.nextAvailableEntityId++);
-            this.entities.add(entityId);
-            if (entityTemplate)
+            if (typeof entityId !== 'undefined')
             {
-                if (Array.isArray(entityTemplate))
+                if (typeof entityId !== 'string')
                 {
-                    for(let componentName of entityTemplate)
-                    {
-                        this.add(componentName, entityId);
-                    }
-                }
-                else if (typeof entityTemplate === 'object')
-                {
-                    for(let componentName in entityTemplate)
-                    {
-                        this.add(componentName, entityId, entityTemplate[componentName]);
-                    }
-                }
-                else
-                {
-                    throw new Error('Invalid component options.');
+                    throw new Error('Invalid type for entity id - must be a string.');
                 }
             }
-            return entityId;
+            else
+            {
+                entityId = String(this.nextAvailableEntityId++);
+            }
+            
+            if (!this.entities.has(entityId))
+            {
+                this.entities.add(entityId);
+                return entityId;
+            }
+            else
+            {
+                throw new Error(`Invalid duplicate entity id '${entityId}' allocated for new entity.`)
+            }
         }
 
         destroy(entityId)
@@ -4283,7 +4285,7 @@ output {
 
             const { create } = this.factoryMap[componentName];
             let result = create
-                ? create(props, entityId, this)
+                ? create(typeof props !== 'undefined' ? props : DEFAULT_PROPS, entityId, this)
                 : (props
                     ? {...props}
                     : {});
@@ -5579,6 +5581,120 @@ output {
     function toDegrees(radians)
     {
         return radians * TO_DEG_FACTOR;
+    }
+
+    /**
+     * Sort an array topologically.
+     * 
+     * @param {Array<object>} nodes List of all nodes (as long as it includes the root node).
+     * @param {Function} dependencyCallback A callback to get the dependencies of a node.
+     * @returns {Array<object>} A sorted array of node objects where the dependent nodes are always listed before the dependees.
+     */
+    function topoSort(nodes, dependencyCallback)
+    {
+        let dependencyEntries = [];
+        for(let node of nodes)
+        {
+            let outs = dependencyCallback(node);
+            if (Array.isArray(outs))
+            {
+                dependencyEntries.push([node, ...outs]);
+            }
+            else if (outs)
+            {
+                throw new Error('Dependency callback must return an array.');
+            }
+        }
+        return computeDependencyList(
+            getNodesFromDependencyEntries(dependencyEntries),
+            getEdgesFromDependencyEntries(dependencyEntries)
+        );
+    }
+
+    function getNodesFromDependencyEntries(dependencyEntries)
+    {
+        let result = new Set();
+        for(let dependencyEntry of dependencyEntries)
+        {
+            for(let value of dependencyEntry)
+            {
+                result.add(value);
+            }
+        }
+        return Array.from(result);
+    }
+
+    function getEdgesFromDependencyEntries(dependencyEntries)
+    {
+        let result = [];
+        for(let dependencyEntry of dependencyEntries)
+        {
+            let source = dependencyEntry[0];
+            for(let i = 1; i < dependencyEntry.length; ++i)
+            {
+                let dependency = dependencyEntry[i];
+                result.push([source, dependency]);
+            }
+        }
+        return result;
+    }
+
+    function computeDependencyList(nodes, edges, dst = [])
+    {
+        // Compute edge outs (more efficient lookup)
+        let edgeOuts = new Map();
+        for(let edge of edges)
+        {
+            if (edge.length > 1)
+            {
+                let source = edge[0];
+                let dest = edge[1];
+                if (!edgeOuts.has(source)) edgeOuts.set(source, new Set());
+                if (!edgeOuts.has(dest)) edgeOuts.set(dest, new Set());
+                edgeOuts.get(source).add(dest);
+            }
+        }
+
+        let context = {
+            edgeMap: edgeOuts,
+            index: nodes.length,
+            visited: new Set(),
+            dst,
+        };
+
+        for(let node of nodes)
+        {
+            visit(context, node, new Set());
+        }
+
+        return dst;
+    }
+
+    function visit(context, node, prev)
+    {
+        if (prev.has(node))
+        {
+            throw new Error(`Found cyclic dependency for '${node.name || node}'.`);
+        }
+        
+        if (context.visited.has(node)) return;
+        context.visited.add(node);
+
+        if (context.edgeMap.has(node))
+        {
+            let outs = context.edgeMap.get(node);
+            if (outs.size > 0)
+            {
+                prev.add(node);
+                for(let out of outs)
+                {
+                    visit(context, out, prev);
+                }
+                prev.delete(node);
+            }
+        }
+
+        context.dst.push(node);
     }
 
     /**
@@ -14886,6 +15002,7 @@ output {
     exports.toDegrees = toDegrees;
     exports.toMsFilter = toMsFilter;
     exports.toRadians = toRadians;
+    exports.topoSort = topoSort;
     exports.uuid = uuid;
     exports.vec2 = vec2;
     exports.vec3 = vec3$1;

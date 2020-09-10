@@ -1,87 +1,39 @@
-import { InputContext, SceneGraph, EntityManager, AxisAlignedBoundingBoxGraph, CanvasView2D, setDOMMatrix } from 'milque';
 import { mat4, quat, vec3 } from 'gl-matrix';
+import {
+    InputContext,
+    SceneGraph,
+    EntityManager,
+    AxisAlignedBoundingBoxGraph,
+    CanvasView2D,
+    setDOMMatrix,
+    AssetLoader
+} from 'milque';
 
-import inputmap from '@app/assets/inputmap.json';
+import { World } from './World.js';
 
-document.addEventListener('DOMContentLoaded', main);
+import { Transform } from './components/Transform.js';
+import { Renderable } from './components/Renderable.js';
+import { Collidable } from './components/Collidable.js';
+import { Motion } from './components/Motion.js';
 
 // TODO: Should print the key code of any key somewhere, so we know what to use.
 // NOTE: https://keycode.info/
-const INPUT_MAPPING = inputmap;
+import INPUT_MAP from '@app/assets/inputmap.json';
+import ASSET_MAP from '@app/assets/assetmap.json';
 
-const Transform = {
-    create(props, entityId)
-    {
-        const { sceneGraph, parentId = undefined, x = 0, y = 0, z = 0} = props;
-        if (!sceneGraph) throw new Error(`Component instantiation is missing required prop 'sceneGraph'.`);
-        sceneGraph.add(entityId, parentId);
-        let result = {
-            sceneGraph,
-            worldTransformation: mat4.create(),
-            localTransformation: mat4.create(),
-            x, y, z,
-            pitch: 0, yaw: 0, roll: 0,
-            scaleX: 1, scaleY: 1, scaleZ: 1,
-        };
-        return result;
-    },
-    destroy(component, entityId)
-    {
-        component.sceneGraph.remove(entityId);
-    }
-};
+import { GameObject } from './entities/GameObject.js';
+import { Player } from './entities/Player.js';
+import { Wall } from './entities/Wall.js';
 
-const Renderable = {
-    create(props)
-    {
-        const { renderType, ...otherProps } = props;
-        if (!renderType) throw new Error(`Component instantiation is missing required prop 'renderType'.`);
-        return {
-            renderType,
-            ...otherProps,
-        };
-    }
-};
+import { MotionSystem } from './systems/MotionSystem.js';
+import { CameraSystem } from './systems/CameraSystem.js';
+import { PhysicsSystem } from './systems/PhysicsSystem.js';
 
-const Motion = {
-    create(props)
-    {
-        return {
-            motionX: 0,
-            motionY: 0,
-            speed: 0.6,
-            friction: 0.25,
-            ...props
-        };
-    }
-};
+import { TextureAtlas, Sprite } from './sprite.js';
+
+document.addEventListener('DOMContentLoaded', main);
 
 const PlayerControlled = {};
-
-const Collidable = {
-    create(props, entityId)
-    {
-        const { aabbGraph, masks } = props;
-        for(let maskName in masks)
-        {
-            aabbGraph.add(entityId, maskName, masks[maskName]);
-        }
-
-        return {
-            aabbGraph,
-            masks,
-            collided: false,
-        };
-    },
-    destroy(component, entityId)
-    {
-        const { aabbGraph, masks } = component;
-        for(let maskName in masks)
-        {
-            aabbGraph.remove(entityId, maskName);
-        }
-    }
-};
 
 const ENTITY_COMPONENT_FACTORY_MAP = {
     Transform,
@@ -89,61 +41,64 @@ const ENTITY_COMPONENT_FACTORY_MAP = {
     Motion,
     PlayerControlled,
     Collidable,
+    GameObject,
 };
 
-async function main()
+async function setup()
 {
     const display = document.querySelector('display-port');
-    const input = new InputContext(INPUT_MAPPING);
+    const input = new InputContext(INPUT_MAP);
     document.body.appendChild(input);
-
-    const ctx = display.canvas.getContext('2d');
     const view = new CanvasView2D(display);
-    const cameraSpeed = 4;
 
-    const scene = new SceneGraph();
-    const aabbs = new AxisAlignedBoundingBoxGraph();
+    const sceneGraph = new SceneGraph();
+    const aabbGraph = new AxisAlignedBoundingBoxGraph();
     const entityManager = new EntityManager({
         componentFactoryMap: ENTITY_COMPONENT_FACTORY_MAP,
     });
+    const assets = await AssetLoader.loadAssetMap(ASSET_MAP);
 
-    const player = entityManager.create({
-        Transform: { sceneGraph: scene },
-        Renderable: { renderType: 'player' },
-        Motion: {},
-        PlayerControlled: true,
-        Collidable: {
-            aabbGraph: aabbs,
-            masks: {
-                main: {
-                    rx: 8, ry: 8,
-                    get(aabb, owner)
-                    {
-                        const transform = entityManager.get('Transform', owner);
-                        aabb.x = transform.x;
-                        aabb.y = transform.y;
-                    }
-                }
-            }
-        }
-    });
+    return {
+        display,
+        input,
+        view,
+        sceneGraph,
+        aabbGraph,
+        entityManager,
+        assets,
+    };
+}
 
+async function main()
+{
+    const world = World.provide(await setup());
+
+    const {
+        entityManager,
+        sceneGraph: scene,
+        aabbGraph: aabbs,
+        input,
+        display,
+        view,
+        assets,
+    } = world;
+    
+    const systems = [
+        new MotionSystem(entityManager, input),
+        new CameraSystem(entityManager, view, 4),
+        new PhysicsSystem(entityManager, aabbs),
+    ];
+
+    const textureAtlas = TextureAtlas.from(assets.player, assets.playerAtlas);
+    const sprite = new Sprite(textureAtlas.getSubTexture('elf_m_run_anim'), 4, 1);
+    const player = new Player();
+    let renderable = player.get('Renderable');
+    renderable.sprite = sprite;
+    renderable.renderType = 'sprite';
     const walls = [
-        entityManager.create({
-            Transform: { sceneGraph: scene, x: -4, y: 32 },
-            Renderable: { renderType: 'wall', width: 4, height: 64 },
-            Collidable: { aabbGraph: aabbs, masks: { main: { x: -4, y: 32, rx: 2, ry: 32 } } }
-        }),
-        entityManager.create({
-            Transform: { sceneGraph: scene, x: 32, y: -4 },
-            Renderable: { renderType: 'wall', width: 64, height: 4 },
-            Collidable: { aabbGraph: aabbs, masks: { main: { x: 32, y: -4, rx: 32, ry: 2 } } }
-        }),
-        entityManager.create({
-            Transform: { sceneGraph: scene, x: 64, y: 8 },
-            Renderable: { renderType: 'wall', width: 4, height: 16 },
-            Collidable: { aabbGraph: aabbs, masks: { main: { x: 64, y: 8, rx: 2, ry: 8 } } }
-        }),
+        new Wall(0, 0, 8, 64),
+        new Wall(0, 0, 64, 8),
+        new Wall(64, 0, 72, 16),
     ];
 
     display.addEventListener('frame', e => {
@@ -152,63 +107,15 @@ async function main()
             const dt = e.detail.deltaTime / 1000;
             input.poll();
 
-            // Player
-            for(let entityId of entityManager.getComponentEntityIds('Motion'))
+            for(let system of systems)
             {
-                let motion = entityManager.get('Motion', entityId);
-
-                if (entityManager.has('PlayerControlled', entityId))
-                {
-                    let dx = input.getInputValue('moveRight') - input.getInputValue('moveLeft');
-                    let dy = input.getInputValue('moveDown') - input.getInputValue('moveUp');
-                    if (dx || dy)
-                    {
-                        let dr = Math.atan2(dy, dx);
-                        motion.motionX += Math.cos(dr) * motion.speed;
-                        motion.motionY += Math.sin(dr) * motion.speed;
-                    }
-                }
-
-                let invFriction = 1 - motion.friction;
-                motion.motionX *= invFriction;
-                motion.motionY *= invFriction;
-
-                if (entityManager.has('Transform', entityId))
-                {
-                    let transform = entityManager.get('Transform', entityId);
-                    transform.x += motion.motionX;
-                    transform.y += motion.motionY;
-                }
-            }
-            
-            // Camera
-            let controlledEntity = entityManager.getComponentEntityIds('PlayerControlled')[0];
-            let controlledTransform = entityManager.get('Transform', controlledEntity);
-            view.camera.moveTo(controlledTransform.x, controlledTransform.y, 0, dt * cameraSpeed);
-
-            // Physics
-            for(let collidable of entityManager.getComponentInstances('Collidable'))
-            {
-                collidable.collided = false;
-            }
-            let collisions = aabbs.solve();
-            for(let collision of collisions)
-            {
-                {
-                    let entityId = collision.box.owner;
-                    let collidable = entityManager.get('Collidable', entityId);
-                    collidable.collided = true;
-                }
-                {
-                    let entityId = collision.other.owner;
-                    let collidable = entityManager.get('Collidable', entityId);
-                    collidable.collided = true;
-                }
+                system.update(dt);
             }
         }
 
         // Render
         {
+            const ctx = e.detail.context;
             ctx.clearRect(0, 0, display.width, display.height);
 
             renderView(ctx, view,
@@ -223,6 +130,35 @@ async function main()
                                 const renderable = entityManager.get('Renderable', owner);
                                 switch(renderable.renderType)
                                 {
+                                    case 'sprite':
+                                        if (entityManager.has('Motion', owner))
+                                        {
+                                            let motion = entityManager.get('Motion', owner);
+                                            if (motion.moving)
+                                            {
+                                                renderable.sprite.next(0.1);
+                                            }
+                                            else
+                                            {
+                                                renderable.sprite.spriteIndex = 0;
+                                            }
+                                            if (motion.facing < 0)
+                                            {
+                                                ctx.scale(-1, 1);
+                                                renderable.sprite.draw(ctx);
+                                                ctx.scale(-1, 1);
+                                            }
+                                            else
+                                            {
+                                                renderable.sprite.draw(ctx);
+                                            }
+                                        }
+                                        else
+                                        {
+                                            renderable.sprite.next(0.3);
+                                            renderable.sprite.draw(ctx);
+                                        }
+                                        break;
                                     case 'player':
                                         ctx.fillStyle = 'blue';
                                         ctx.fillRect(-8, -8, 16, 16);

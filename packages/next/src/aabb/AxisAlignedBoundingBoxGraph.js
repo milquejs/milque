@@ -1,5 +1,7 @@
 import { QuadTree } from './QuadTree.js';
 
+// TODO: Add custom solvers.
+
 /**
  * @typedef {Function} TestFunction
  * @param {AxisAlignedBoundingBox} a
@@ -36,7 +38,7 @@ export class AxisAlignedBoundingBoxGraph
 
         this.masks = new Map();
         this.boxes = new Set();
-
+        
         // Used for constant lookup when updating dynamic masks.
         this.dynamics = new Set();
         // Used for efficiently pruning objects when solving.

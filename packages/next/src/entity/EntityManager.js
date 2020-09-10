@@ -2,6 +2,8 @@
  * @typedef {String} EntityId
  */
 
+const DEFAULT_PROPS = {};
+
 /**
  * Handles all entity and component mappings.
  */
@@ -23,17 +25,18 @@ export class EntityManager
         {
             let factoryOption = componentFactoryMap[componentName];
             let create, destroy;
-            if (typeof factoryOption === 'function')
+            try
             {
-                create = factoryOption;
-                destroy = null;
+                create = 'create' in factoryOption
+                    ? factoryOption.create
+                    : (typeof factoryOption === 'function'
+                        ? factoryOption
+                        : null);
+                destroy = 'destroy' in factoryOption
+                    ? factoryOption.destroy
+                    : null;
             }
-            else if (typeof factoryOption === 'object')
-            {
-                create = factoryOption.create || null;
-                destroy = factoryOption.destroy || null;
-            }
-            else
+            catch(e)
             {
                 throw new Error('Unsupported component factory options.');
             }
@@ -47,32 +50,29 @@ export class EntityManager
         this.strictMode = strictMode;
     }
 
-    create(entityTemplate = undefined)
+    create(entityId = undefined)
     {
-        let entityId = String(this.nextAvailableEntityId++);
-        this.entities.add(entityId);
-        if (entityTemplate)
+        if (typeof entityId !== 'undefined')
         {
-            if (Array.isArray(entityTemplate))
+            if (typeof entityId !== 'string')
             {
-                for(let componentName of entityTemplate)
-                {
-                    this.add(componentName, entityId);
-                }
-            }
-            else if (typeof entityTemplate === 'object')
-            {
-                for(let componentName in entityTemplate)
-                {
-                    this.add(componentName, entityId, entityTemplate[componentName]);
-                }
-            }
-            else
-            {
-                throw new Error('Invalid component options.');
+                throw new Error('Invalid type for entity id - must be a string.');
             }
         }
-        return entityId;
+        else
+        {
+            entityId = String(this.nextAvailableEntityId++);
+        }
+        
+        if (!this.entities.has(entityId))
+        {
+            this.entities.add(entityId);
+            return entityId;
+        }
+        else
+        {
+            throw new Error(`Invalid duplicate entity id '${entityId}' allocated for new entity.`)
+        }
     }
 
     destroy(entityId)
@@ -120,7 +120,7 @@ export class EntityManager
 
         const { create } = this.factoryMap[componentName];
         let result = create
-            ? create(props, entityId, this)
+            ? create(typeof props !== 'undefined' ? props : DEFAULT_PROPS, entityId, this)
             : (props
                 ? {...props}
                 : {});

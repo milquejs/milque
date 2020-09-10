@@ -194,4 +194,4 @@ class Camera3D extends Camera
     }
 }
 
-export { Camera as C, Camera2D as a, Camera3D as b, CanvasView2D as c, setDOMMatrix as s };
+export { Camera as C, Camera2D as a, CanvasView2D as b, Camera3D as c, setDOMMatrix as s };
