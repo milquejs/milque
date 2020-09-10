@@ -93,33 +93,18 @@ export class Sprite
      */
     constructor(texture, cols, rows)
     {
+        if (!texture) throw new Error('Invalid null texture.');
         this.texture = texture;
         this.length = rows * cols;
         this.spriteRows = rows;
         this.spriteCols = cols;
         this.spriteWidth = texture.width / cols;
         this.spriteHeight = texture.height / rows;
-        this.spriteIndex = 0;
-        this._spriteIndexDelta = 0;
-    }
-    
-    next(dt = 1)
-    {
-        this._spriteIndexDelta += dt;
-        const amount = Math.floor(this._spriteIndexDelta);
-        this._spriteIndexDelta -= amount;
-        this.spriteIndex = (this.spriteIndex + amount) % this.length;
     }
 
-    reset()
+    draw(ctx, spriteIndex = 0)
     {
-        this.spriteIndex = 0;
-        this._spriteIndexDelta = 0;
-    }
-
-    draw(ctx)
-    {
-        const { spriteCols, spriteWidth, spriteHeight, spriteIndex } = this;
+        const { spriteCols, spriteWidth, spriteHeight } = this;
         const halfSpriteWidth = spriteWidth / 2;
         const halfSpriteHeight = spriteHeight / 2;
         const textureX = spriteIndex % spriteCols;

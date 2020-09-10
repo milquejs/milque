@@ -15,6 +15,7 @@ import { Transform } from './components/Transform.js';
 import { Renderable } from './components/Renderable.js';
 import { Collidable } from './components/Collidable.js';
 import { Motion } from './components/Motion.js';
+import { AnimatedSprite } from './components/AnimatedSprite.js';
 
 // TODO: Should print the key code of any key somewhere, so we know what to use.
 // NOTE: https://keycode.info/
@@ -29,7 +30,7 @@ import { MotionSystem } from './systems/MotionSystem.js';
 import { CameraSystem } from './systems/CameraSystem.js';
 import { PhysicsSystem } from './systems/PhysicsSystem.js';
 
-import { TextureAtlas, Sprite } from './sprite.js';
+import * as TextureAtlasLoader from './assets/TextureAtlasLoader.js';
 
 document.addEventListener('DOMContentLoaded', main);
 
@@ -42,6 +43,7 @@ const ENTITY_COMPONENT_FACTORY_MAP = {
     PlayerControlled,
     Collidable,
     GameObject,
+    AnimatedSprite,
 };
 
 async function setup()
@@ -56,6 +58,7 @@ async function setup()
     const entityManager = new EntityManager({
         componentFactoryMap: ENTITY_COMPONENT_FACTORY_MAP,
     });
+    AssetLoader.defineAssetLoader('atlas', TextureAtlasLoader.loadTextureAtlas);
     const assets = await AssetLoader.loadAssetMap(ASSET_MAP);
 
     return {
@@ -89,12 +92,7 @@ async function main()
         new PhysicsSystem(entityManager, aabbs),
     ];
 
-    const textureAtlas = TextureAtlas.from(assets.player, assets.playerAtlas);
-    const sprite = new Sprite(textureAtlas.getSubTexture('elf_m_run_anim'), 4, 1);
     const player = new Player();
-    let renderable = player.get('Renderable');
-    renderable.sprite = sprite;
-    renderable.renderType = 'sprite';
     const walls = [
         new Wall(0, 0, 8, 64),
         new Wall(0, 0, 64, 8),
@@ -131,32 +129,42 @@ async function main()
                                 switch(renderable.renderType)
                                 {
                                     case 'sprite':
+                                        let animatedSprite = entityManager.get('AnimatedSprite', owner);
                                         if (entityManager.has('Motion', owner))
                                         {
                                             let motion = entityManager.get('Motion', owner);
                                             if (motion.moving)
                                             {
-                                                renderable.sprite.next(0.1);
+                                                AnimatedSprite.next(animatedSprite, 0.2);
+                                                if (motion.facing < 0)
+                                                {
+                                                    ctx.scale(-1, 1);
+                                                    AnimatedSprite.draw(ctx, animatedSprite);
+                                                    ctx.scale(-1, 1);
+                                                }
+                                                else
+                                                {
+                                                    AnimatedSprite.draw(ctx, animatedSprite);
+                                                }
                                             }
                                             else
                                             {
-                                                renderable.sprite.spriteIndex = 0;
-                                            }
-                                            if (motion.facing < 0)
-                                            {
-                                                ctx.scale(-1, 1);
-                                                renderable.sprite.draw(ctx);
-                                                ctx.scale(-1, 1);
-                                            }
-                                            else
-                                            {
-                                                renderable.sprite.draw(ctx);
+                                                if (motion.facing < 0)
+                                                {
+                                                    ctx.scale(-1, 1);
+                                                    animatedSprite.sprite.draw(ctx, 0);
+                                                    ctx.scale(-1, 1);
+                                                }
+                                                else
+                                                {
+                                                    animatedSprite.sprite.draw(ctx, 0);
+                                                }
                                             }
                                         }
                                         else
                                         {
-                                            renderable.sprite.next(0.3);
-                                            renderable.sprite.draw(ctx);
+                                            AnimatedSprite.next(animatedSprite, 0.2);
+                                            AnimatedSprite.draw(ctx, animatedSprite);
                                         }
                                         break;
                                     case 'player':
@@ -179,7 +187,7 @@ async function main()
                         });
                     
                     // Render collision masks...
-                    renderAxisAlignedBoundingBoxGraph(ctx, aabbs, entityManager);
+                    // renderAxisAlignedBoundingBoxGraph(ctx, aabbs, entityManager);
                 });
         }
     });

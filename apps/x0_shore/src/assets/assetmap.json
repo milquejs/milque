@@ -1,4 +1,3 @@
 {
-    "player": { "src": "image:dungeon/dungeon.png" },
-    "playerAtlas": { "src": "text:dungeon/dungeon.atlas" }
+    "dungeon": { "src": "atlas:dungeon/dungeon.atlas" }
 }
