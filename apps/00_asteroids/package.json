@@ -10,7 +10,8 @@
   ],
   "scripts": {
     "start": "rollup --config --watch",
-    "build": "rollup --config"
+    "build": "rollup --config",
+    "build-all": "node ../../.config/build-all.js asteroids"
   },
   "dependencies": {
     "@milque/display": "^0.0.1",

@@ -1,2 +1,4 @@
 const { build } = require('./util/DependencyBuilder.js');
-build();
+
+const apps = process.argv.slice(2);
+build(apps);

@@ -40,19 +40,37 @@ async function buildWorkspace(workspaceName)
     });
 }
 
-async function build()
+async function build(apps = undefined)
 {
     let workspacesInfo = await getWorkspacesInfo();
     let workspaces = Object.keys(workspacesInfo);
+
+    if (Array.isArray(apps) && apps.length > 0)
+    {
+        workspaces = workspaces.filter(workspaceName => {
+            if (workspaceName === 'milque' || workspaceName.startsWith('@milque')) return true;
+            if (apps.includes(workspaceName)) return true;
+            return false;
+        });
+    }
+    else
+    {
+        apps = workspaces.filter(workspaceName => {
+            if (workspaceName === 'milque' || workspaceName.startsWith('@milque')) return false;
+            return true;
+        });
+    }
 
     let result = topoSort(workspaces, (workspaceName) => {
         return workspacesInfo[workspaceName].workspaceDependencies;
     });
 
+    console.log('Targeted apps:');
+    console.log(apps);
     console.log('Computed depedencies:');
     console.log(result);
-
-    result.reduce((promise, workspaceName) => {
+    
+    await result.reduce((promise, workspaceName) => {
         return promise.then(() => buildWorkspace(workspaceName));
     }, Promise.resolve());
 }
