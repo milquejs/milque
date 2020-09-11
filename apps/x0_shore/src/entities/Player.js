@@ -1,6 +1,5 @@
 import { World } from '../World.js';
 import { GameObject } from './GameObject.js';
-import { Sprite } from '../sprite.js';
 
 World.require('entityManager');
 
@@ -17,7 +16,9 @@ export class Player extends GameObject
         this.add('Renderable', RENDERABLE_OPTIONS);
         this.add('PlayerControlled', true);
         this.add('Collidable', Player.maskProps);
-        this.add('AnimatedSprite', { sprite: new Sprite(assets.dungeon.getSubTexture('elf_m_run_anim'), 4, 1) });
+        this.add('Sprite', {
+            textureStrip: assets.dungeon.getTextureStrip('elf_m_run_anim')
+        });
     }
 }
 Player.maskProps = {

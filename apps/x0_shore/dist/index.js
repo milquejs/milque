@@ -2892,6 +2892,11 @@ output {
       });
   }
 
+  var ImageLoader = /*#__PURE__*/Object.freeze({
+      __proto__: null,
+      loadImage: loadImage
+  });
+
   async function loadText(filepath, opts)
   {
       let result = await fetch(filepath);
@@ -3739,6 +3744,13 @@ output {
    */
 
   /**
+   * @typedef Mask
+   * @property {Object} owner
+   * @property {AxisAlignedBoundingBox} box
+   * @property {Function} get
+   */
+
+  /**
    * The property key for masks to keep count of how many are
    * still available.
    */
@@ -3760,7 +3772,7 @@ output {
 
           this.masks = new Map();
           this.boxes = new Set();
-
+          
           // Used for constant lookup when updating dynamic masks.
           this.dynamics = new Set();
           // Used for efficiently pruning objects when solving.
@@ -3847,6 +3859,10 @@ output {
           }
       }
 
+      /**
+       * @returns {Boolean} Whether the mask for the given name exists and was
+       * removed from the owner.
+       */
       remove(owner, maskName)
       {
           if (this.masks.has(owner))
@@ -3877,6 +3893,7 @@ output {
           }
       }
 
+      /** @returns {Mask} The owned mask for the given name. */
       get(owner, maskName)
       {
           if (this.masks.has(owner))
@@ -3889,6 +3906,7 @@ output {
           }
       }
 
+      /** @returns {Number} The number of masks that belong to the owner. */
       count(owner)
       {
           if (this.masks.has(owner))
@@ -3931,42 +3949,56 @@ output {
        * to call {@link update()} before this function to ensure the
        * boxes accurately reflect the current state.
        * 
-       * @param {Boolean} [forceUpdate=true] Whether to update the
-       * graph before solving it. If false, you must call {@link update()}
-       * yourself to update the graph to the current state.
+       * @param {Array<Object>} [targets=undefined] A list of active target to solve
+       * for. If undefined or null, it will solve collisions using all boxes as
+       * active targets. This can be used to prune box collisions that are not
+       * relevant, or "active".
+       * @param {Array<CollisionResult>} [out=[]] List to append collision results to.
        * @param {Object} [opts={}] Any additional options.
        * @param {TestFunction} [opts.test] The custom tester function
        * to initially check if 2 objects can be colliding.
+       * @param {Boolean} [opts.forceUpdate=true] Whether to update the
+       * graph before solving it. If false, you must call {@link update()}
+       * yourself to update the graph to the current state.
        * @returns {Array<CollisionResult>} The collisions found in the current graph.
        */
-      solve(forceUpdate = true, out = [], opts = {})
+      solve(targets = undefined, out = [], opts = {})
       {
-          const { test = testAxisAlignedBoundingBox } = opts;
+          const { forceUpdate = true, test = testAxisAlignedBoundingBox } = opts;
 
           if (forceUpdate)
           {
               this.update();
           }
 
+          if (typeof targets === 'undefined' || targets === null)
+          {
+              targets = this.masks.keys();
+          }
+
           let result = out;
-          let boxes = this.boxes;
           let quadtree = this.quadtree;
           quadtree.clear();
-          quadtree.insertAll(boxes);
+          quadtree.insertAll(this.boxes);
 
           let others = [];
-          for(let box of boxes)
+          for(let owner of targets)
           {
-              quadtree.retrieve(box, others);
-              for(let other of others)
+              let ownedMasks = Object.values(this.masks.get(owner));
+              for(let mask of ownedMasks)
               {
-                  if (test(box, other))
+                  const { box } = mask;
+                  quadtree.retrieve(box, others);
+                  for(let other of others)
                   {
-                      const collision = createCollisionResult(box, other);
-                      result.push(collision);
+                      if (test(box, other))
+                      {
+                          const collision = createCollisionResult(mask, box, other);
+                          result.push(collision);
+                      }
                   }
+                  others.length = 0;
               }
-              others.length = 0;
           }
           return result;
       }
@@ -3975,13 +4007,15 @@ output {
   /**
    * Creates a collision result for the given boxes.
    * 
-   * @param {AxisAlignedBoundingBox} a
-   * @param {AxisAlignedBoundingBox} b
+   * @param {Mask} mask The target mask that collided.
+   * @param {AxisAlignedBoundingBox} a The mask's box that is in the collision.
+   * @param {AxisAlignedBoundingBox} b The other box that is in the collision.
    * @returns {CollisionResult} The new collision result.
    */
-  function createCollisionResult(a, b)
+  function createCollisionResult(mask, a, b)
   {
       return {
+          mask,
           box: a,
           other: b,
       };
@@ -4944,7 +4978,35 @@ output {
               motionY,
               speed,
               friction,
+              moving: false,
+              facing: 1,
           };
+      }
+  };
+
+  const Sprite = {
+      create(props)
+      {
+          const { textureStrip } = props;
+          if (!textureStrip) throw new Error(`Component instantiation is missing required prop 'textureStrip'.`);
+          return {
+              textureStrip,
+              spriteIndex: 0,
+              dt: 0,
+          };
+      },
+      draw(ctx, sprite)
+      {
+          const spriteWidth = sprite.textureStrip.unitWidth;
+          const spriteHeight = sprite.textureStrip.unitHeight;
+          sprite.textureStrip.unitDraw(ctx, -spriteWidth / 2, -spriteHeight / 2, sprite.spriteIndex);
+      },
+      next(sprite, dt = 1)
+      {
+          sprite.dt += dt;
+          const amount = Math.floor(sprite.dt);
+          sprite.dt -= amount;
+          sprite.spriteIndex = (sprite.spriteIndex + amount) % sprite.textureStrip.length;
       }
   };
 
@@ -5039,15 +5101,11 @@ output {
   	sneak: sneak
   };
 
-  var player = {
-  	src: "image:dungeon/dungeon.png"
-  };
-  var playerAtlas = {
-  	src: "image:dungeon/dungeon.atlas"
+  var dungeon = {
+  	src: "atlas:dungeon/dungeon.atlas"
   };
   var ASSET_MAP = {
-  	player: player,
-  	playerAtlas: playerAtlas
+  	dungeon: dungeon
   };
 
   World.require('entityManager');
@@ -5131,18 +5189,22 @@ output {
 
   World.require('entityManager');
 
-  const RENDERABLE_OPTIONS = { renderType: 'player' };
+  const RENDERABLE_OPTIONS = { renderType: 'sprite' };
   class Player extends GameObject
   {
       constructor()
       {
           super();
           
+          const { assets } = World.getWorld();
           this.add('Transform');
           this.add('Motion');
           this.add('Renderable', RENDERABLE_OPTIONS);
           this.add('PlayerControlled', true);
           this.add('Collidable', Player.maskProps);
+          this.add('Sprite', {
+              textureStrip: assets.dungeon.getTextureStrip('elf_m_run_anim')
+          });
       }
   }
   Player.maskProps = {
@@ -5202,8 +5264,16 @@ output {
                   if (dx || dy)
                   {
                       let dr = Math.atan2(dy, dx);
-                      motion.motionX += Math.cos(dr) * motion.speed;
-                      motion.motionY += Math.sin(dr) * motion.speed;
+                      let cdr = Math.cos(dr);
+                      let sdr = Math.sin(dr);
+                      motion.motionX += cdr * motion.speed;
+                      motion.motionY += sdr * motion.speed;
+                      motion.moving = true;
+                      motion.facing = Math.sign(cdr);
+                  }
+                  else
+                  {
+                      motion.moving = false;
                   }
               }
 
@@ -5292,6 +5362,67 @@ output {
       }
   }
 
+  class TextureAtlas extends Texture
+  {
+      constructor(image)
+      {
+          super(image);
+          this.textures = {};
+      }
+
+      addSubTexture(name, u, v, width, height)
+      {
+          this.textures[name] = new SubTexture(this.source, u, v, width, height);
+          return this;
+      }
+
+      addTextureStrip(name, u, v, unitWidth, unitHeight, cols, rows)
+      {
+          this.textures[name] = new TextureStrip(this.source, u, v, unitWidth, unitHeight, cols, rows);
+          return this;
+      }
+
+      remove(name)
+      {
+          delete this.textures[name];
+          return this;
+      }
+
+      clear()
+      {
+          this.textures = {};
+          return this;
+      }
+
+      /** @returns {SubTexture} The mapped texture for the given name. */
+      getSubTexture(name)
+      {
+          let result = this.textures[name];
+          if (result)
+          {
+              return result;
+          }
+          else
+          {
+              throw new Error(`Textue '${name}' does not exist in texture atlas.`);
+          }
+      }
+
+      /** @returns {TextureStrip} The mapped texture strip for the given name. */
+      getTextureStrip(name)
+      {
+          let result = this.getSubTexture(name);
+          if (result instanceof TextureStrip)
+          {
+              return result;
+          }
+          else
+          {
+              throw new Error(`Texture '${name}' is not a texture strip.`);
+          }
+      }
+  }
+
   class SubTexture extends Texture
   {
       constructor(image, u = 0, v = 0, width = image.width, height = image.height)
@@ -5311,89 +5442,67 @@ output {
       }
   }
 
-  class TextureAtlas extends Texture
+  class TextureStrip extends SubTexture
   {
-      static from(image, atlasMapString)
+      constructor(image, u = 0, v = 0, unitWidth = image.width, unitHeight = image.height, cols = 1, rows = 1)
       {
-          let atlasMap = {};
-          atlasMapString.split('\n').forEach(line =>
-          {
-              line = line.trim();
-              if (line.length <= 0 || line.startsWith('#')) return;
-              let [name, x, y, w, h, count] = line.split(/s+/);
-              x = Number(x);
-              y = Number(y);
-              w = Number(w);
-              h = Number(h);
-              if (typeof count !== 'undefined')
-              {
-                  count = Number(count);
-                  atlasMap[name] = [x, y, count * w, h];
-              }
-              else
-              {
-                  atlasMap[name] = [x, y, w, h];
-              }
-          });
-          return new TextureAtlas(image, atlasMap);
+          super(image, u, v, unitWidth * cols, unitHeight * rows);
+
+          this.u = u;
+          this.v = v;
+          this.length = cols * rows;
+          this.unitWidth = unitWidth;
+          this.unitHeight = unitHeight;
       }
 
-      constructor(image, subTextureMap)
+      unitDraw(ctx, x, y, index)
       {
-          super(image);
-          let subTextures = {};
-          for(let name in subTextureMap)
-          {
-              let [u, v, width, height] = subTextureMap[name];
-              subTextures[name] = new SubTexture(image, u, v, width, height);
-          }
-          this.subTextures = subTextures;
-      }
-
-      getSubTexture(name)
-      {
-          return this.subtextures[name];
+          const { unitWidth: uw, unitHeight: uh, length } = this;
+          index = Math.abs(index % length);
+          let u = (index % uw) * uw;
+          let v = (index / uw) * uh;
+          this.subDraw(ctx, x, y, u, v, uw, uh);
       }
   }
 
-  class Sprite
+  async function loadTextureAtlas(filePath, opts)
   {
-      /**
-       * Constructs a sprite from the given source and dimensions.
-       * 
-       * @param {Texture} texture The source texture.
-       * @param {Number} cols Number of cols of sprite frames in the texture.
-       * @param {Number} rows Number of rows of sprite frames in the texture.
-       */
-      constructor(texture, cols, rows)
-      {
-          this.texture = texture;
-          this.length = rows * cols;
-          this.spriteRows = rows;
-          this.spriteCols = cols;
-          this.spriteWidth = texture.width / cols;
-          this.spriteHeight = texture.height / rows;
-          this.spriteIndex = 0;
-          this._spriteIndexDelta = 0;
-      }
-      
-      next(dt = 1)
-      {
-          this._spriteIndexDelta += dt;
-          const amount = Math.floor(this._spriteIndexDelta);
-          this._spriteIndexDelta -= amount;
-          this.spriteIndex = (this.spriteIndex + amount) % this.length;
-      }
+      let atlasFile = await fetch(filePath);
+      let atlasText = await atlasFile.text();
 
-      draw(ctx, x, y)
+      const sourcePath = filePath.substring(0, filePath.lastIndexOf('.')) + '.png';
+      let sourceImage = await ImageLoader.loadImage(sourcePath);
+      
+      return parseAtlasFromFile(sourceImage, atlasText);
+  }
+
+  function parseAtlasFromFile(sourceImage, atlasText)
+  {
+      let textureAtlas = new TextureAtlas(sourceImage);
+      for(let line of atlasText.split('\n'))
       {
-          const { spriteCols, spriteRows, spriteWidth, spriteHeight, spriteIndex } = this;
-          const halfSpriteWidth = spriteWidth / 2;
-          const halfSpriteHeight = spriteHeight / 2;
-          const textureX = spriteIndex % spriteCols;
-          const textureY = Math.floor(spriteIndex / spriteRows);
-          this.texture.subDraw(ctx, x - halfSpriteWidth, y - halfSpriteHeight, textureX, textureY, spriteWidth, spriteHeight);
+          line = line.trim();
+          if (line.length <= 0) continue;
+          if (line.startsWith('//')) continue;
+          if (line.startsWith('#')) continue;
+
+          let [name, u, v, w, h, cols, rows] = line.split(/\s+/);
+          u = Number(u);
+          v = Number(v);
+          w = Number(w);
+          h = Number(h);
+          if (typeof cols !== 'undefined')
+          {
+              cols = Number(cols);
+              rows = typeof rows !== 'undefined' ? Number(rows) : 1;
+              textureAtlas.addTextureStrip(name, u, v, w, h, cols, rows);
+          }
+          else
+          {
+              textureAtlas.addSubTexture(name, u, v, w, h);
+          }
       }
+      return textureAtlas;
   }
 
   document.addEventListener('DOMContentLoaded', main);
@@ -5407,6 +5516,7 @@ output {
       PlayerControlled,
       Collidable,
       GameObject,
+      Sprite,
   };
 
   async function setup()
@@ -5421,6 +5531,7 @@ output {
       const entityManager = new EntityManager({
           componentFactoryMap: ENTITY_COMPONENT_FACTORY_MAP,
       });
+      AssetLoader.defineAssetLoader('atlas', loadTextureAtlas);
       const assets = await AssetLoader.loadAssetMap(ASSET_MAP);
 
       return {
@@ -5454,12 +5565,7 @@ output {
           new PhysicsSystem(entityManager, aabbs),
       ];
 
-      const textureAtlas = TextureAtlas.from(assets.player, assets.playerAtlas);
-      const sprite = new Sprite(textureAtlas.getSubTexture('elf_m_run_anim'), 4, 1);
       const player = new Player();
-      let renderable = player.get('Renderable');
-      renderable.sprite = sprite;
-      renderable.renderType = 'sprite';
       const walls = [
           new Wall(0, 0, 8, 64),
           new Wall(0, 0, 64, 8),
@@ -5486,10 +5592,6 @@ output {
               renderView(ctx, view,
                   function renderScene(ctx)
                   {
-
-                      // Render stuff...
-                      ctx.drawImage(assets.player, 0, 0, 512, 512);
-
                       // Render scene objects...
                       renderSceneGraph(ctx, scene, entityManager,
                           function renderNode(ctx, owner)
@@ -5500,7 +5602,43 @@ output {
                                   switch(renderable.renderType)
                                   {
                                       case 'sprite':
-                                          renderable.sprite.draw(ctx, 0, 0);
+                                          let sprite = entityManager.get('Sprite', owner);
+                                          if (entityManager.has('Motion', owner))
+                                          {
+                                              let motion = entityManager.get('Motion', owner);
+                                              if (motion.moving)
+                                              {
+                                                  Sprite.next(sprite, 0.2);
+                                                  if (motion.facing < 0)
+                                                  {
+                                                      ctx.scale(-1, 1);
+                                                      Sprite.draw(ctx, sprite);
+                                                      ctx.scale(-1, 1);
+                                                  }
+                                                  else
+                                                  {
+                                                      Sprite.draw(ctx, sprite);
+                                                  }
+                                              }
+                                              else
+                                              {
+                                                  if (motion.facing < 0)
+                                                  {
+                                                      ctx.scale(-1, 1);
+                                                      Sprite.textureStrip.unitDraw(ctx, 0, 0, 0);
+                                                      ctx.scale(-1, 1);
+                                                  }
+                                                  else
+                                                  {
+                                                      Sprite.textureStrip.unitDraw(ctx, 0, 0, 0);
+                                                  }
+                                              }
+                                          }
+                                          else
+                                          {
+                                              Sprite.next(sprite, 0.2);
+                                              Sprite.draw(ctx, sprite);
+                                          }
                                           break;
                                       case 'player':
                                           ctx.fillStyle = 'blue';
@@ -5522,7 +5660,7 @@ output {
                           });
                       
                       // Render collision masks...
-                      renderAxisAlignedBoundingBoxGraph(ctx, aabbs, entityManager);
+                      // renderAxisAlignedBoundingBoxGraph(ctx, aabbs, entityManager);
                   });
           }
       });
@@ -5575,31 +5713,6 @@ output {
           }
           ctx.setTransform(prevMatrix);
       });
-  }
-
-  function renderAxisAlignedBoundingBoxGraph(ctx, aabbGraph, entityManager)
-  {
-      for (let entityId of entityManager.getComponentEntityIds('Collidable'))
-      {
-          let collidable = entityManager.get('Collidable', entityId);
-          if (collidable.collided)
-          {
-              ctx.strokeStyle = 'red';
-          }
-          else
-          {
-              ctx.strokeStyle = 'limegreen';
-          }
-          for(let maskName in collidable.masks)
-          {
-              let mask = aabbGraph.get(entityId, maskName);
-              if (mask)
-              {
-                  let box = mask.box;
-                  ctx.strokeRect(box.x - box.rx, box.y - box.ry, box.rx * 2, box.ry * 2);
-              }
-          }
-      }
   }
 
 }());

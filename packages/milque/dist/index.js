@@ -3863,6 +3863,13 @@ output {
      */
 
     /**
+     * @typedef Mask
+     * @property {Object} owner
+     * @property {AxisAlignedBoundingBox} box
+     * @property {Function} get
+     */
+
+    /**
      * The property key for masks to keep count of how many are
      * still available.
      */
@@ -3884,7 +3891,7 @@ output {
 
             this.masks = new Map();
             this.boxes = new Set();
-
+            
             // Used for constant lookup when updating dynamic masks.
             this.dynamics = new Set();
             // Used for efficiently pruning objects when solving.
@@ -3971,6 +3978,10 @@ output {
             }
         }
 
+        /**
+         * @returns {Boolean} Whether the mask for the given name exists and was
+         * removed from the owner.
+         */
         remove(owner, maskName)
         {
             if (this.masks.has(owner))
@@ -4001,6 +4012,7 @@ output {
             }
         }
 
+        /** @returns {Mask} The owned mask for the given name. */
         get(owner, maskName)
         {
             if (this.masks.has(owner))
@@ -4013,6 +4025,7 @@ output {
             }
         }
 
+        /** @returns {Number} The number of masks that belong to the owner. */
         count(owner)
         {
             if (this.masks.has(owner))
@@ -4055,42 +4068,56 @@ output {
          * to call {@link update()} before this function to ensure the
          * boxes accurately reflect the current state.
          * 
-         * @param {Boolean} [forceUpdate=true] Whether to update the
-         * graph before solving it. If false, you must call {@link update()}
-         * yourself to update the graph to the current state.
+         * @param {Array<Object>} [targets=undefined] A list of active target to solve
+         * for. If undefined or null, it will solve collisions using all boxes as
+         * active targets. This can be used to prune box collisions that are not
+         * relevant, or "active".
+         * @param {Array<CollisionResult>} [out=[]] List to append collision results to.
          * @param {Object} [opts={}] Any additional options.
          * @param {TestFunction} [opts.test] The custom tester function
          * to initially check if 2 objects can be colliding.
+         * @param {Boolean} [opts.forceUpdate=true] Whether to update the
+         * graph before solving it. If false, you must call {@link update()}
+         * yourself to update the graph to the current state.
          * @returns {Array<CollisionResult>} The collisions found in the current graph.
          */
-        solve(forceUpdate = true, out = [], opts = {})
+        solve(targets = undefined, out = [], opts = {})
         {
-            const { test = testAxisAlignedBoundingBox } = opts;
+            const { forceUpdate = true, test = testAxisAlignedBoundingBox } = opts;
 
             if (forceUpdate)
             {
                 this.update();
             }
 
+            if (typeof targets === 'undefined' || targets === null)
+            {
+                targets = this.masks.keys();
+            }
+
             let result = out;
-            let boxes = this.boxes;
             let quadtree = this.quadtree;
             quadtree.clear();
-            quadtree.insertAll(boxes);
+            quadtree.insertAll(this.boxes);
 
             let others = [];
-            for(let box of boxes)
+            for(let owner of targets)
             {
-                quadtree.retrieve(box, others);
-                for(let other of others)
+                let ownedMasks = Object.values(this.masks.get(owner));
+                for(let mask of ownedMasks)
                 {
-                    if (test(box, other))
+                    const { box } = mask;
+                    quadtree.retrieve(box, others);
+                    for(let other of others)
                     {
-                        const collision = createCollisionResult(box, other);
-                        result.push(collision);
+                        if (test(box, other))
+                        {
+                            const collision = createCollisionResult(mask, box, other);
+                            result.push(collision);
+                        }
                     }
+                    others.length = 0;
                 }
-                others.length = 0;
             }
             return result;
         }
@@ -4099,13 +4126,15 @@ output {
     /**
      * Creates a collision result for the given boxes.
      * 
-     * @param {AxisAlignedBoundingBox} a
-     * @param {AxisAlignedBoundingBox} b
+     * @param {Mask} mask The target mask that collided.
+     * @param {AxisAlignedBoundingBox} a The mask's box that is in the collision.
+     * @param {AxisAlignedBoundingBox} b The other box that is in the collision.
      * @returns {CollisionResult} The new collision result.
      */
-    function createCollisionResult(a, b)
+    function createCollisionResult(mask, a, b)
     {
         return {
+            mask,
             box: a,
             other: b,
         };

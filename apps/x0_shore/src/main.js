@@ -15,7 +15,7 @@ import { Transform } from './components/Transform.js';
 import { Renderable } from './components/Renderable.js';
 import { Collidable } from './components/Collidable.js';
 import { Motion } from './components/Motion.js';
-import { AnimatedSprite } from './components/AnimatedSprite.js';
+import { Sprite } from './components/Sprite.js';
 
 // TODO: Should print the key code of any key somewhere, so we know what to use.
 // NOTE: https://keycode.info/
@@ -30,7 +30,7 @@ import { MotionSystem } from './systems/MotionSystem.js';
 import { CameraSystem } from './systems/CameraSystem.js';
 import { PhysicsSystem } from './systems/PhysicsSystem.js';
 
-import * as TextureAtlasLoader from './assets/TextureAtlasLoader.js';
+import * as TextureAtlasLoader from './texture/TextureAtlasLoader.js';
 
 document.addEventListener('DOMContentLoaded', main);
 
@@ -43,7 +43,7 @@ const ENTITY_COMPONENT_FACTORY_MAP = {
     PlayerControlled,
     Collidable,
     GameObject,
-    AnimatedSprite,
+    Sprite,
 };
 
 async function setup()
@@ -129,43 +129,28 @@ async function main()
                                 switch(renderable.renderType)
                                 {
                                     case 'sprite':
-                                        let animatedSprite = entityManager.get('AnimatedSprite', owner);
+                                        let sprite = entityManager.get('Sprite', owner);
+                                        let scaleX = 1;
+                                        let speed = 0;
                                         if (entityManager.has('Motion', owner))
                                         {
                                             let motion = entityManager.get('Motion', owner);
-                                            if (motion.moving)
+                                            speed = motion.moving ? 0.2 : 0;
+                                            scaleX = motion.facing <= 0 ? -1 : 1;
+                                        }
+                                        ctx.scale(scaleX, 1);
+                                        {
+                                            if (speed)
                                             {
-                                                AnimatedSprite.next(animatedSprite, 0.2);
-                                                if (motion.facing < 0)
-                                                {
-                                                    ctx.scale(-1, 1);
-                                                    AnimatedSprite.draw(ctx, animatedSprite);
-                                                    ctx.scale(-1, 1);
-                                                }
-                                                else
-                                                {
-                                                    AnimatedSprite.draw(ctx, animatedSprite);
-                                                }
+                                                Sprite.next(sprite, speed);
+                                                Sprite.draw(ctx, sprite);
                                             }
                                             else
                                             {
-                                                if (motion.facing < 0)
-                                                {
-                                                    ctx.scale(-1, 1);
-                                                    animatedSprite.sprite.draw(ctx, 0);
-                                                    ctx.scale(-1, 1);
-                                                }
-                                                else
-                                                {
-                                                    animatedSprite.sprite.draw(ctx, 0);
-                                                }
+                                                sprite.textureStrip.unitDraw(ctx, -sprite.textureStrip.unitWidth / 2, -sprite.textureStrip.unitHeight / 2, 0);
                                             }
                                         }
-                                        else
-                                        {
-                                            AnimatedSprite.next(animatedSprite, 0.2);
-                                            AnimatedSprite.draw(ctx, animatedSprite);
-                                        }
+                                        ctx.scale(-scaleX, 1);
                                         break;
                                     case 'player':
                                         ctx.fillStyle = 'blue';
