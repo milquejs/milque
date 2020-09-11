@@ -3,10 +3,11 @@ import { setDOMMatrix } from 'milque';
 
 export class RenderSystem
 {
-    constructor(entityManager, sceneGraph, view)
+    constructor(entityManager, sceneGraph, aabbGraph, view)
     {
         this.entityManager = entityManager;
         this.sceneGraph = sceneGraph;
+        this.aabbGraph = aabbGraph;
         this.view = view;
         this.renderers = {};
 
@@ -34,11 +35,11 @@ export class RenderSystem
     renderScene(ctx)
     {
         // Render scene objects...
-        const { entityManager, sceneGraph } = this;
+        const { entityManager, sceneGraph, aabbGraph } = this;
         renderSceneGraph(ctx, sceneGraph, entityManager, this.renderNode);
         
         // Render collision masks...
-        // renderAxisAlignedBoundingBoxGraph(ctx, aabbs, entityManager);
+        renderAxisAlignedBoundingBoxGraph(ctx, aabbGraph, entityManager);
     }
 
     renderNode(ctx, owner)

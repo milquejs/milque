@@ -12,6 +12,7 @@ export class Door extends GameObject
         const { assets } = World.getWorld();
         this.add('Transform', { x, y });
         this.add('Renderable', { renderType: 'sprite' });
-        this.add('Sprite', { textureStrip: assets.dungeon.getSubTexture('doors_all') })
+        this.add('Sprite', { textureStrip: assets.dungeon.getSubTexture('doors_all') });
+        this.add('Collidable', { masks: { main: { x, y: y + 4, rx: 32, ry: 4 }}});
     }
 }

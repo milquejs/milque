@@ -82,7 +82,7 @@ async function main()
     const {
         entityManager,
         sceneGraph,
-        aabbGraph: aabbs,
+        aabbGraph,
         input,
         display,
         view,
@@ -93,12 +93,11 @@ async function main()
     const systems = [
         new MotionSystem(entityManager, input),
         new CameraSystem(entityManager, view, 4),
-        new PhysicsSystem(entityManager, aabbs),
-        renderSystem = new RenderSystem(entityManager, sceneGraph, view),
+        new PhysicsSystem(entityManager, aabbGraph),
+        new RenderSystem(entityManager, sceneGraph, aabbGraph, view)
+            .registerRenderer('sprite', SpriteRenderer)
+            .registerRenderer('wall', WallRenderer),
     ];
-
-    renderSystem.registerRenderer('sprite', SpriteRenderer);
-    renderSystem.registerRenderer('wall', WallRenderer);
 
     const walls = [
         new Wall(0, 0, 8, 64),

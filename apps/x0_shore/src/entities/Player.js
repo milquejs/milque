@@ -30,7 +30,7 @@ Player.maskProps = {
                 const { entityManager } = World.getWorld();
                 const transform = entityManager.get('Transform', owner);
                 aabb.x = transform.x;
-                aabb.y = transform.y;
+                aabb.y = transform.y + 8;
             }
         }
     }

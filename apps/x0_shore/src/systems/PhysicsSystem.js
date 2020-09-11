@@ -14,7 +14,7 @@ export class PhysicsSystem
         {
             collidable.collided = false;
         }
-        let collisions = aabbGraph.solve();
+        let collisions = aabbGraph.solve(entityManager.getComponentEntityIds('Motion'));
         for(let collision of collisions)
         {
             {
