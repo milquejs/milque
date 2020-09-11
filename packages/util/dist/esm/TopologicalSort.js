@@ -11,7 +11,7 @@
  * @param {DependencyCallback} dependencyCallback A callback to get the dependencies of a node.
  * @returns {Array<Object>} A sorted array of node objects where the dependent nodes are always listed before the dependees.
  */
-export function topoSort(nodes, dependencyCallback)
+function topoSort(nodes, dependencyCallback)
 {
     let dependencyEntries = [];
     for(let node of nodes)
@@ -117,3 +117,5 @@ function visit(context, node, prev)
 
     context.dst.push(node);
 }
+
+export { topoSort };

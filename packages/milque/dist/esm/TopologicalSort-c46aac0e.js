@@ -813,11 +813,17 @@ function toDegrees(radians)
 }
 
 /**
+ * @callback DependencyCallback
+ * @param {Object} node The target node to get the dependencies for.
+ * @returns {Array<Object>} A list of all dependencies for the given node.
+ */
+
+/**
  * Sort an array topologically.
  * 
- * @param {Array<object>} nodes List of all nodes (as long as it includes the root node).
- * @param {Function} dependencyCallback A callback to get the dependencies of a node.
- * @returns {Array<object>} A sorted array of node objects where the dependent nodes are always listed before the dependees.
+ * @param {Array<Object>} nodes List of all nodes (as long as it includes the root node).
+ * @param {DependencyCallback} dependencyCallback A callback to get the dependencies of a node.
+ * @returns {Array<Object>} A sorted array of node objects where the dependent nodes are always listed before the dependees.
  */
 function topoSort(nodes, dependencyCallback)
 {
@@ -926,4 +932,4 @@ function visit(context, node, prev)
     context.dst.push(node);
 }
 
-export { Discrete as D, Eventable$1 as E, Logger$1 as L, PriorityQueue$1 as P, Uploader as U, Downloader as a, cycle as b, clamp as c, direction2 as d, distance2 as e, lookAt2 as f, toDegrees as g, toRadians as h, lerp as l, topoSort as t, uuid as u, withinRadius as w };
+export { Discrete as D, Eventable$1 as E, Logger$1 as L, PriorityQueue$1 as P, Uploader as U, Downloader as a, cycle as b, clamp as c, direction2 as d, distance2 as e, lookAt2 as f, toRadians as g, topoSort as h, lerp as l, toDegrees as t, uuid as u, withinRadius as w };

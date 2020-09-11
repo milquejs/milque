@@ -819,11 +819,17 @@
     }
 
     /**
+     * @callback DependencyCallback
+     * @param {Object} node The target node to get the dependencies for.
+     * @returns {Array<Object>} A list of all dependencies for the given node.
+     */
+
+    /**
      * Sort an array topologically.
      * 
-     * @param {Array<object>} nodes List of all nodes (as long as it includes the root node).
-     * @param {Function} dependencyCallback A callback to get the dependencies of a node.
-     * @returns {Array<object>} A sorted array of node objects where the dependent nodes are always listed before the dependees.
+     * @param {Array<Object>} nodes List of all nodes (as long as it includes the root node).
+     * @param {DependencyCallback} dependencyCallback A callback to get the dependencies of a node.
+     * @returns {Array<Object>} A sorted array of node objects where the dependent nodes are always listed before the dependees.
      */
     function topoSort(nodes, dependencyCallback)
     {

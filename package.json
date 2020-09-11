@@ -5,6 +5,6 @@
     "apps/*"
   ],
   "scripts": {
-    "build": "yarn workspaces run build"
+    "build": "node .config/build-all.js"
   }
 }

@@ -17,7 +17,7 @@ export class Player extends GameObject
         this.add('PlayerControlled', true);
         this.add('Collidable', Player.maskProps);
         this.add('Sprite', {
-            textureStrip: assets.dungeon.getTextureStrip('elf_m_run_anim')
+            textureStrip: assets.dungeon.getSubTexture('elf_m_run_anim')
         });
     }
 }

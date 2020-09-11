@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { rollupConfig } from '../.config/RollupHelper.js';
+import { rollupConfig } from '../../.config/rollup/ModuleRollupHelper.js';
 import * as packageJson from './package.json';
 export default args => rollupConfig(
     args, packageJson,
@@ -11,6 +11,7 @@ export default args => rollupConfig(
             'src/Logger.js',
             'src/MathHelper.js',
             'src/PriorityQueue.js',
+            'src/TopologicalSort.js',
             'src/Uploader.js',
             'src/uuidv4.js',
         ]

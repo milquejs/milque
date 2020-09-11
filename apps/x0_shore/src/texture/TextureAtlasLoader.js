@@ -28,16 +28,9 @@ function parseAtlasFromFile(sourceImage, atlasText)
         v = Number(v);
         w = Number(w);
         h = Number(h);
-        if (typeof cols !== 'undefined')
-        {
-            cols = Number(cols);
-            rows = typeof rows !== 'undefined' ? Number(rows) : 1;
-            textureAtlas.addTextureStrip(name, u, v, w, h, cols, rows);
-        }
-        else
-        {
-            textureAtlas.addSubTexture(name, u, v, w, h);
-        }
+        cols = typeof cols !== 'undefined' ? Number(cols) : 1;
+        rows = typeof rows !== 'undefined' ? Number(rows) : 1;
+        textureAtlas.addSubTexture(name, u, v, w, h, cols, rows);
     }
     return textureAtlas;
 }

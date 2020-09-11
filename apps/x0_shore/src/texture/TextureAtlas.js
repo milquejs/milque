@@ -8,15 +8,9 @@ export class TextureAtlas extends Texture
         this.textures = {};
     }
 
-    addSubTexture(name, u, v, width, height)
+    addSubTexture(name, u, v, width, height, cols = 1, rows = 1)
     {
-        this.textures[name] = new SubTexture(this.source, u, v, width, height);
-        return this;
-    }
-
-    addTextureStrip(name, u, v, unitWidth, unitHeight, cols, rows)
-    {
-        this.textures[name] = new TextureStrip(this.source, u, v, unitWidth, unitHeight, cols, rows);
+        this.textures[name] = new SubTexture(this.source, u, v, width, height, cols, rows);
         return this;
     }
 
@@ -45,29 +39,18 @@ export class TextureAtlas extends Texture
             throw new Error(`Textue '${name}' does not exist in texture atlas.`);
         }
     }
-
-    /** @returns {TextureStrip} The mapped texture strip for the given name. */
-    getTextureStrip(name)
-    {
-        let result = this.getSubTexture(name);
-        if (result instanceof TextureStrip)
-        {
-            return result;
-        }
-        else
-        {
-            throw new Error(`Texture '${name}' is not a texture strip.`);
-        }
-    }
 }
 
 export class SubTexture extends Texture
 {
-    constructor(image, u = 0, v = 0, width = image.width, height = image.height)
+    constructor(image, u = 0, v = 0, unitWidth = image.width, unitHeight = image.height, cols = 1, rows = 1)
     {
         super(image);
-        this.width = width;
-        this.height = height;
+        this.length = cols * rows;
+        this.width = unitWidth * cols;
+        this.height = unitHeight * rows;
+        this.unitWidth = unitWidth;
+        this.unitHeight = unitHeight;
 
         this.u = u;
         this.v = v;
@@ -77,20 +60,6 @@ export class SubTexture extends Texture
     subDraw(ctx, x, y, u, v, width, height)
     {
         ctx.drawImage(this.source, this.u + u, this.v + v, width, height, x, y, width, height);
-    }
-}
-
-export class TextureStrip extends SubTexture
-{
-    constructor(image, u = 0, v = 0, unitWidth = image.width, unitHeight = image.height, cols = 1, rows = 1)
-    {
-        super(image, u, v, unitWidth * cols, unitHeight * rows);
-
-        this.u = u;
-        this.v = v;
-        this.length = cols * rows;
-        this.unitWidth = unitWidth;
-        this.unitHeight = unitHeight;
     }
 
     unitDraw(ctx, x, y, index)

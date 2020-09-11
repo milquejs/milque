@@ -2446,6 +2446,13 @@ const MAX_DEPTH_LEVEL = 100;
  * traversing the current node's children.
  * @param {Object} child The current object.
  * @param {SceneNode} childNode The representative node for the current object.
+ * 
+ * @callback WalkChildrenCallback Called for each level of children, before
+ * traversing its children. This is usually used to determine visit order.
+ * @param {Array<SceneNode>} childNodes A mutable list of child nodes to be
+ * visited.
+ * @param {SceneNode} childNode The representative node for the current object.
+ * This is also the parent of these children.
  */
 
 /**
@@ -2522,7 +2529,7 @@ class SceneGraph
             let childNode = this.nodes.get(child);
             let parentNode = childNode.parentNode;
             detach(parentNode, childNode, this);
-            this.nodeConstructor.walk(childNode, 0, descendent => {
+            walkImpl(this, childNode, 0, descendent => {
                 this.nodes.delete(descendent);
             });
             return true;
@@ -2640,15 +2647,19 @@ class SceneGraph
      * @param {Object} [opts={}] Any additional options.
      * @param {Boolean} [opts.childrenOnly=true] Whether to skip traversing
      * the first node, usually the root, and start from its children instead.
+     * @param {Function} [opts.childrenCallback] The function called before
+     * walking through the children. This is usually used to determine the
+     * visiting order.
      */
     walk(from, callback, opts = {})
     {
-        const { childrenOnly = true } = opts;
+        const { childrenOnly = true, childrenCallback } = opts;
         if (from === null)
         {
+            sortChildrenForWalk(this.nodes, this.rootNodes, null, childrenCallback);
             for(let childNode of this.rootNodes)
             {
-                this.nodeConstructor.walk(childNode, 0, callback);
+                walkImpl(this, childNode, 0, callback, childrenCallback);
             }
         }
         else
@@ -2658,14 +2669,15 @@ class SceneGraph
             {
                 if (childrenOnly)
                 {
+                    sortChildrenForWalk(this.nodes, fromNode.childNodes, fromNode, childrenCallback);
                     for(let childNode of fromNode.childNodes)
                     {
-                        this.nodeConstructor.walk(childNode, 0, callback);
+                        walkImpl(this, childNode, 0, callback, childrenCallback);
                     }
                 }
                 else
                 {
-                    this.nodeConstructor.walk(fromNode, 0, callback);
+                    walkImpl(this, fromNode, 0, callback, childrenCallback);
                 }
             }
             else
@@ -2707,36 +2719,55 @@ function detach(parentNode, childNode, sceneGraph)
 }
 
 /**
+ * Walk down from the parent and through all its descendents.
+ * 
+ * @param {SceneNode} parentNode The parent node to start walking from.
+ * @param {Number} level The current call depth level. This is used to limit the call stack.
+ * @param {WalkCallback} nodeCallback The function called on each visited node.
+ * @param {WalkChildrenCallback} [childrenCallback] The function called before
+ * walking through the children. This is usually used to determine the visiting order.
+ */
+function walkImpl(sceneGraph, parentNode, level, nodeCallback, childrenCallback = undefined)
+{
+    if (level >= MAX_DEPTH_LEVEL) return;
+
+    let result = nodeCallback(parentNode.owner, parentNode);
+    if (result === false) return;
+
+    let nextNodes = parentNode.childNodes;
+    if (childrenCallback)
+    {
+        sortChildrenForWalk(sceneGraph.nodes, nextNodes, parentNode, childrenCallback);
+    }
+
+    for(let childNode of nextNodes)
+    {
+        walkImpl(childNode, level + 1, nodeCallback);
+    }
+
+    if (typeof result === 'function')
+    {
+        result(parentNode.owner, parentNode);
+    }
+}
+
+function sortChildrenForWalk(nodeMapping, childNodes, parentNode, childrenCallback)
+{
+    let nextChildren = childNodes.map(node => node.owner);
+    childrenCallback(nextChildren, parentNode);
+    for(let i = 0; i < nextChildren.length; ++i)
+    {
+        childNodes[i] = nodeMapping.get(nextChildren[i]);
+    }
+    childNodes.length = nextChildren.length;
+}
+
+/**
  * A representative node to keep relational metadata for any object in
  * the {@link SceneGraph}.
  */
 class SceneNode
 {
-    /**
-     * Walk down from the parent and through all its descendents.
-     * 
-     * @param {SceneNode} parentNode The parent node to start walking from.
-     * @param {Number} level The current call depth level. This is used to limit the call stack.
-     * @param {WalkCallback} callback The function called on each visited node.
-     */
-    static walk(parentNode, level, callback)
-    {
-        if (level >= MAX_DEPTH_LEVEL) return;
-
-        let result = callback(parentNode.owner, parentNode);
-        if (result === false) return;
-
-        for(let childNode of parentNode.childNodes)
-        {
-            this.walk(childNode, level + 1, callback);
-        }
-
-        if (typeof result === 'function')
-        {
-            result(parentNode.owner, parentNode);
-        }
-    }
-
     /**
      * Constructs a scene node with the given parent and children. This assumes
      * the given parent and children satisfy the correctness constraints of the
