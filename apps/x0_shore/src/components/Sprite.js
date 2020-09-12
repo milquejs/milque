@@ -1,19 +1,22 @@
 export const Sprite = {
     create(props)
     {
-        const { textureStrip } = props;
+        const { textureStrip, offsetX = 0, offsetY = 0 } = props;
         if (!textureStrip) throw new Error(`Component instantiation is missing required prop 'textureStrip'.`);
         return {
             textureStrip,
             spriteIndex: 0,
             dt: 0,
+            offsetX,
+            offsetY,
         };
     },
-    draw(ctx, sprite)
+    draw(ctx, sprite, spriteIndex = sprite.spriteIndex)
     {
         const spriteWidth = sprite.textureStrip.unitWidth;
         const spriteHeight = sprite.textureStrip.unitHeight;
-        sprite.textureStrip.unitDraw(ctx, -spriteWidth / 2, -spriteHeight / 2, sprite.spriteIndex);
+        const { offsetX, offsetY } = sprite;
+        sprite.textureStrip.unitDraw(ctx, -spriteWidth / 2 + offsetX, -spriteHeight / 2 + offsetY, spriteIndex);
     },
     next(sprite, dt = 1)
     {

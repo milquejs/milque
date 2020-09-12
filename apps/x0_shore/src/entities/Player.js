@@ -17,7 +17,8 @@ export class Player extends GameObject
         this.add('PlayerControlled', true);
         this.add('Collidable', Player.maskProps);
         this.add('Sprite', {
-            textureStrip: assets.dungeon.getSubTexture('elf_m_run_anim')
+            textureStrip: assets.dungeon.getSubTexture('elf_m_run_anim'),
+            offsetY: -8,
         });
     }
 }
@@ -30,7 +31,7 @@ Player.maskProps = {
                 const { entityManager } = World.getWorld();
                 const transform = entityManager.get('Transform', owner);
                 aabb.x = transform.x;
-                aabb.y = transform.y + 8;
+                aabb.y = transform.y;
             }
         }
     }

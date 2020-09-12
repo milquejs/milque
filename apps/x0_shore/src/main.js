@@ -35,6 +35,7 @@ import { RenderSystem } from './systems/RenderSystem.js';
 import { SpriteRenderer } from './systems/render/SpriteRenderer.js';
 import { WallRenderer } from './systems/render/WallRenderer.js';
 import { Door } from './entities/Door.js';
+import { createRoom } from './Room.js';
 
 document.addEventListener('DOMContentLoaded', main);
 
@@ -101,13 +102,8 @@ async function main()
             .registerRenderer('wall', WallRenderer),
     ];
 
-    const walls = [
-        new Wall(0, 0, 8, 64),
-        new Wall(0, 0, 64, 8),
-        new Wall(64, 0, 72, 16),
-    ];
-    const door = [
-        new Door(32, 64),
+    const rooms = [
+        createRoom(0, 0, 128, 128),
     ];
     const player = new Player();
 

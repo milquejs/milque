@@ -20,7 +20,7 @@ export function SpriteRenderer(ctx, owner, entityManager)
         }
         else
         {
-            sprite.textureStrip.unitDraw(ctx, -sprite.textureStrip.unitWidth / 2, -sprite.textureStrip.unitHeight / 2, 0);
+            Sprite.draw(ctx, sprite, 0);
         }
     }
     ctx.scale(-scaleX, 1);

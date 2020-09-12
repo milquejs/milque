@@ -1,4 +1,5 @@
 import { GameObject } from './GameObject.js';
+import { World } from '../World.js';
 
 export class Wall extends GameObject
 {
@@ -13,8 +14,12 @@ export class Wall extends GameObject
         const x = left + rx;
         const y = top + ry;
 
+        const { assets } = World.getWorld();
         this.add('Transform', { x, y });
-        this.add('Renderable', { renderType: 'wall', width, height });
+        this.add('Renderable', { renderType: 'sprite' });
+        this.add('Sprite', {
+            textureStrip: assets.dungeon.getSubTexture('wall_mid'),
+        });
         this.add('Collidable', { masks: { main: { x, y, rx, ry } } });
         this.add('Solid', { masks: ['main']});
     }
