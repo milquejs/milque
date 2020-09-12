@@ -18,24 +18,28 @@ export class PhysicsSystem
         for(let collision of collisions)
         {
             {
-                let entityId = collision.box.owner;
+                let entityId = collision.owner;
                 let collidable = entityManager.get('Collidable', entityId);
+                collidable.source = collision.ownerMask;
+                collidable.target = collision.otherMask;
                 collidable.collided = true;
             }
             {
-                let entityId = collision.otherBox.owner;
+                let entityId = collision.other;
                 let collidable = entityManager.get('Collidable', entityId);
+                collidable.source = collision.otherMask;
+                collidable.target = collision.ownerMask;
                 collidable.collided = true;
             }
             {
-                let entityId = collision.mask.owner;
-                let otherId = collision.otherMask.owner;
+                let entityId = collision.owner;
+                let otherId = collision.other;
                 if (entityManager.has('Motion', entityId) && entityManager.has('Transform', entityId))
                 {
                     if (entityManager.has('Solid', otherId))
                     {
                         let solid = entityManager.get('Solid', otherId);
-                        if (solid.masks.includes(collision.otherBox.maskName))
+                        if (solid.masks.length <= 0 || solid.masks.includes(collision.otherMask.name))
                         {
                             let motion = entityManager.get('Motion', entityId);
                             let transform = entityManager.get('Transform', entityId);

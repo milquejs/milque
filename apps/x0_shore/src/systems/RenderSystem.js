@@ -127,21 +127,17 @@ function renderAxisAlignedBoundingBoxGraph(ctx, aabbGraph, entityManager)
     for (let entityId of entityManager.getComponentEntityIds('Collidable'))
     {
         let collidable = entityManager.get('Collidable', entityId);
-        if (collidable.collided)
-        {
-            ctx.strokeStyle = 'red';
-        }
-        else
-        {
-            ctx.strokeStyle = 'limegreen';
-        }
         for(let maskName in collidable.masks)
         {
             let mask = aabbGraph.get(entityId, maskName);
             if (mask)
             {
-                let box = mask.box;
-                ctx.strokeRect(box.x - box.rx, box.y - box.ry, box.rx * 2, box.ry * 2);
+                if (collidable.collided && collidable.source === mask)
+                {
+                    let box = mask.box;
+                    ctx.strokeStyle = 'red';
+                    ctx.strokeRect(box.x - box.rx, box.y - box.ry, box.rx * 2, box.ry * 2);
+                }
             }
         }
     }

@@ -13,6 +13,8 @@ export const Collidable = {
         }
         return {
             masks,
+            source: null,
+            target: null,
             collided: false,
         };
     },

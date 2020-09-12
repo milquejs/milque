@@ -2844,9 +2844,20 @@ output {
     /**
      * @typedef Mask
      * @property {Object} owner
+     * @property {String} name
      * @property {AxisAlignedBoundingBox} box
      * @property {Function} get
      */
+
+    function createMask(owner, name, box, get)
+    {
+        return {
+            owner,
+            name,
+            box,
+            get,
+        }
+    }
 
     /**
      * The property key for masks to keep count of how many are
@@ -2875,11 +2886,7 @@ output {
 
         add(owner, maskName, maskValues = {})
         {
-            let mask = {
-                owner,
-                box: null,
-                get: null,
-            };
+            let mask = createMask(owner, maskName, null, null);
 
             if (!this.masks.has(owner))
             {
@@ -2905,7 +2912,7 @@ output {
                 const y = maskValues[1] || 0;
                 const rx = (maskValues[2] / 2) || 0;
                 const ry = (maskValues[3] / 2) || 0;
-                let box = new AxisAlignedBoundingBox(this, owner, maskName, x, y, rx, ry);
+                let box = new AxisAlignedBoundingBox(this, mask, x, y, rx, ry);
                 this.boxes.add(box);
                 mask.box = box;
             }
@@ -2922,7 +2929,7 @@ output {
                     if (!rx) rx = (owner.width / 2) || 0;
                     if (!ry) ry = (owner.height / 2) || 0;
                 }
-                let box = new AxisAlignedBoundingBox(this, owner, maskName, x, y, rx, ry);
+                let box = new AxisAlignedBoundingBox(this, mask, x, y, rx, ry);
                 this.boxes.add(box);
                 mask.box = box;
                 if ('get' in maskValues)
@@ -2937,7 +2944,7 @@ output {
             }
             else if (typeof maskValues === 'function')
             {
-                let box = new AxisAlignedBoundingBox(this, owner, maskName, 0, 0, 0, 0);
+                let box = new AxisAlignedBoundingBox(this, mask, 0, 0, 0, 0);
                 this.boxes.add(box);
                 mask.box = box;
                 mask.get = maskValues;
@@ -3093,10 +3100,10 @@ output {
                         if (hit)
                         {
                             result.push({
-                                mask,
-                                otherMask: this.masks.get(other.owner)[other.maskName],
-                                box,
-                                otherBox: other,
+                                owner,
+                                other: other.mask.owner,
+                                ownerMask: mask,
+                                otherMask: other.mask,
                                 hit,
                                 dx,
                                 dy,
@@ -3117,11 +3124,10 @@ output {
      */
     class AxisAlignedBoundingBox
     {
-        constructor(aabbGraph, owner, maskName, x, y, rx, ry)
+        constructor(aabbGraph, mask, x, y, rx, ry)
         {
             this.aabbGraph = aabbGraph;
-            this.owner = owner;
-            this.maskName = maskName;
+            this.mask = mask;
             this.x = x;
             this.y = y;
             this.rx = rx;
@@ -5009,19 +5015,22 @@ output {
     const Sprite = {
         create(props)
         {
-            const { textureStrip } = props;
+            const { textureStrip, offsetX = 0, offsetY = 0 } = props;
             if (!textureStrip) throw new Error(`Component instantiation is missing required prop 'textureStrip'.`);
             return {
                 textureStrip,
                 spriteIndex: 0,
                 dt: 0,
+                offsetX,
+                offsetY,
             };
         },
-        draw(ctx, sprite)
+        draw(ctx, sprite, spriteIndex = sprite.spriteIndex)
         {
             const spriteWidth = sprite.textureStrip.unitWidth;
             const spriteHeight = sprite.textureStrip.unitHeight;
-            sprite.textureStrip.unitDraw(ctx, -spriteWidth / 2, -spriteHeight / 2, sprite.spriteIndex);
+            const { offsetX, offsetY } = sprite;
+            sprite.textureStrip.unitDraw(ctx, -spriteWidth / 2 + offsetX, -spriteHeight / 2 + offsetY, spriteIndex);
         },
         next(sprite, dt = 1)
         {
@@ -5236,20 +5245,21 @@ output {
             this.add('PlayerControlled', true);
             this.add('Collidable', Player.maskProps);
             this.add('Sprite', {
-                textureStrip: assets.dungeon.getSubTexture('elf_m_run_anim')
+                textureStrip: assets.dungeon.getSubTexture('elf_m_run_anim'),
+                offsetY: -8,
             });
         }
     }
     Player.maskProps = {
         masks: {
             main: {
-                rx: 8, ry: 8,
+                rx: 6, ry: 6,
                 get(aabb, owner)
                 {
                     const { entityManager } = World.getWorld();
                     const transform = entityManager.get('Transform', owner);
                     aabb.x = transform.x;
-                    aabb.y = transform.y + 8;
+                    aabb.y = transform.y;
                 }
             }
         }
@@ -5268,8 +5278,12 @@ output {
             const x = left + rx;
             const y = top + ry;
 
+            const { assets } = World.getWorld();
             this.add('Transform', { x, y });
-            this.add('Renderable', { renderType: 'wall', width, height });
+            this.add('Renderable', { renderType: 'sprite' });
+            this.add('Sprite', {
+                textureStrip: assets.dungeon.getSubTexture('wall_mid'),
+            });
             this.add('Collidable', { masks: { main: { x, y, rx, ry } } });
             this.add('Solid', { masks: ['main']});
         }
@@ -5363,24 +5377,24 @@ output {
             for(let collision of collisions)
             {
                 {
-                    let entityId = collision.box.owner;
+                    let entityId = collision.owner;
                     let collidable = entityManager.get('Collidable', entityId);
                     collidable.collided = true;
                 }
                 {
-                    let entityId = collision.otherBox.owner;
+                    let entityId = collision.other;
                     let collidable = entityManager.get('Collidable', entityId);
                     collidable.collided = true;
                 }
                 {
-                    let entityId = collision.mask.owner;
-                    let otherId = collision.otherMask.owner;
+                    let entityId = collision.owner;
+                    let otherId = collision.other;
                     if (entityManager.has('Motion', entityId) && entityManager.has('Transform', entityId))
                     {
                         if (entityManager.has('Solid', otherId))
                         {
                             let solid = entityManager.get('Solid', otherId);
-                            if (solid.masks.includes(collision.otherBox.maskName))
+                            if (solid.masks.includes(collision.otherMask.name))
                             {
                                 let motion = entityManager.get('Motion', entityId);
                                 let transform = entityManager.get('Transform', entityId);
@@ -5565,7 +5579,7 @@ output {
             renderSceneGraph(ctx, sceneGraph, entityManager, this.renderNode);
             
             // Render collision masks...
-            // renderAxisAlignedBoundingBoxGraph(ctx, aabbGraph, entityManager);
+            renderAxisAlignedBoundingBoxGraph(ctx, aabbGraph, entityManager);
         }
 
         renderNode(ctx, owner)
@@ -5648,22 +5662,50 @@ output {
             });
     }
 
+    function renderAxisAlignedBoundingBoxGraph(ctx, aabbGraph, entityManager)
+    {
+        for (let entityId of entityManager.getComponentEntityIds('Collidable'))
+        {
+            let collidable = entityManager.get('Collidable', entityId);
+            if (collidable.collided)
+            {
+                ctx.strokeStyle = 'red';
+            }
+            else
+            {
+                ctx.strokeStyle = 'limegreen';
+            }
+            for(let maskName in collidable.masks)
+            {
+                let mask = aabbGraph.get(entityId, maskName);
+                if (mask)
+                {
+                    let box = mask.box;
+                    ctx.strokeRect(box.x - box.rx, box.y - box.ry, box.rx * 2, box.ry * 2);
+                }
+            }
+        }
+    }
+
     const Sprite$1 = {
         create(props)
         {
-            const { textureStrip } = props;
+            const { textureStrip, offsetX = 0, offsetY = 0 } = props;
             if (!textureStrip) throw new Error(`Component instantiation is missing required prop 'textureStrip'.`);
             return {
                 textureStrip,
                 spriteIndex: 0,
                 dt: 0,
+                offsetX,
+                offsetY,
             };
         },
-        draw(ctx, sprite)
+        draw(ctx, sprite, spriteIndex = sprite.spriteIndex)
         {
             const spriteWidth = sprite.textureStrip.unitWidth;
             const spriteHeight = sprite.textureStrip.unitHeight;
-            sprite.textureStrip.unitDraw(ctx, -spriteWidth / 2, -spriteHeight / 2, sprite.spriteIndex);
+            const { offsetX, offsetY } = sprite;
+            sprite.textureStrip.unitDraw(ctx, -spriteWidth / 2 + offsetX, -spriteHeight / 2 + offsetY, spriteIndex);
         },
         next(sprite, dt = 1)
         {
@@ -5694,7 +5736,7 @@ output {
             }
             else
             {
-                sprite.textureStrip.unitDraw(ctx, -sprite.textureStrip.unitWidth / 2, -sprite.textureStrip.unitHeight / 2, 0);
+                Sprite$1.draw(ctx, sprite, 0);
             }
         }
         ctx.scale(-scaleX, 1);
@@ -5727,6 +5769,32 @@ output {
             }});
             this.add('Solid', { masks: ['main'] });
         }
+    }
+
+    function createRoom(x, y, width, height)
+    {
+        const { entityManager } = World.getWorld();
+        const halfWidth = width / 2;
+        const halfHeight = height / 2;
+        const wallDepth = 4;
+        const halfDoorWidth = 32;
+        const walls = [
+            // Top
+            new Wall(x - halfWidth, y - halfHeight, x + halfWidth, y - halfHeight + wallDepth),
+            // Left
+            new Wall(x - halfWidth, y - halfHeight, x - halfWidth + wallDepth, y + halfHeight),
+            // Right
+            new Wall(x + halfWidth - wallDepth, y - halfHeight, x + halfWidth, y + halfHeight),
+            // BottomLeft
+            new Wall(x - halfWidth, y + halfHeight - wallDepth, x - halfDoorWidth, y + halfHeight),
+            // BottomRight
+            new Wall(x + halfDoorWidth, y + halfHeight - wallDepth, x + halfWidth, y + halfHeight),
+        ];
+        const door = new Door(x, y + halfHeight);
+        return {
+            walls,
+            door,
+        };
     }
 
     document.addEventListener('DOMContentLoaded', main);
@@ -5792,13 +5860,8 @@ output {
                 .registerRenderer('wall', WallRenderer),
         ];
 
-        const walls = [
-            new Wall(0, 0, 8, 64),
-            new Wall(0, 0, 64, 8),
-            new Wall(64, 0, 72, 16),
-        ];
-        const door = [
-            new Door(32, 64),
+        const rooms = [
+            createRoom(0, 0, 128, 128),
         ];
         const player = new Player();
 

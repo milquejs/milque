@@ -1840,9 +1840,20 @@ function intersectAxisAlignedBoundingBox(a, b)
 /**
  * @typedef Mask
  * @property {Object} owner
+ * @property {String} name
  * @property {AxisAlignedBoundingBox} box
  * @property {Function} get
  */
+
+function createMask(owner, name, box, get)
+{
+    return {
+        owner,
+        name,
+        box,
+        get,
+    }
+}
 
 /**
  * The property key for masks to keep count of how many are
@@ -1871,11 +1882,7 @@ class AxisAlignedBoundingBoxGraph
 
     add(owner, maskName, maskValues = {})
     {
-        let mask = {
-            owner,
-            box: null,
-            get: null,
-        };
+        let mask = createMask(owner, maskName, null, null);
 
         if (!this.masks.has(owner))
         {
@@ -1901,7 +1908,7 @@ class AxisAlignedBoundingBoxGraph
             const y = maskValues[1] || 0;
             const rx = (maskValues[2] / 2) || 0;
             const ry = (maskValues[3] / 2) || 0;
-            let box = new AxisAlignedBoundingBox(this, owner, maskName, x, y, rx, ry);
+            let box = new AxisAlignedBoundingBox(this, mask, x, y, rx, ry);
             this.boxes.add(box);
             mask.box = box;
         }
@@ -1918,7 +1925,7 @@ class AxisAlignedBoundingBoxGraph
                 if (!rx) rx = (owner.width / 2) || 0;
                 if (!ry) ry = (owner.height / 2) || 0;
             }
-            let box = new AxisAlignedBoundingBox(this, owner, maskName, x, y, rx, ry);
+            let box = new AxisAlignedBoundingBox(this, mask, x, y, rx, ry);
             this.boxes.add(box);
             mask.box = box;
             if ('get' in maskValues)
@@ -1933,7 +1940,7 @@ class AxisAlignedBoundingBoxGraph
         }
         else if (typeof maskValues === 'function')
         {
-            let box = new AxisAlignedBoundingBox(this, owner, maskName, 0, 0, 0, 0);
+            let box = new AxisAlignedBoundingBox(this, mask, 0, 0, 0, 0);
             this.boxes.add(box);
             mask.box = box;
             mask.get = maskValues;
@@ -2089,10 +2096,10 @@ class AxisAlignedBoundingBoxGraph
                     if (hit)
                     {
                         result.push({
-                            mask,
-                            otherMask: this.masks.get(other.owner)[other.maskName],
-                            box,
-                            otherBox: other,
+                            owner,
+                            other: other.mask.owner,
+                            ownerMask: mask,
+                            otherMask: other.mask,
                             hit,
                             dx,
                             dy,
@@ -2113,11 +2120,10 @@ class AxisAlignedBoundingBoxGraph
  */
 class AxisAlignedBoundingBox
 {
-    constructor(aabbGraph, owner, maskName, x, y, rx, ry)
+    constructor(aabbGraph, mask, x, y, rx, ry)
     {
         this.aabbGraph = aabbGraph;
-        this.owner = owner;
-        this.maskName = maskName;
+        this.mask = mask;
         this.x = x;
         this.y = y;
         this.rx = rx;

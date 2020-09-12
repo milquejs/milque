@@ -8,7 +8,7 @@ export function createRoom(x, y, width, height)
     const halfWidth = width / 2;
     const halfHeight = height / 2;
     const wallDepth = 4;
-    const halfDoorWidth = 32;
+    const halfDoorWidth = 16;
     const walls = [
         // Top
         new Wall(x - halfWidth, y - halfHeight, x + halfWidth, y - halfHeight + wallDepth),

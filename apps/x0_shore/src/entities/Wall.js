@@ -16,10 +16,8 @@ export class Wall extends GameObject
 
         const { assets } = World.getWorld();
         this.add('Transform', { x, y });
-        this.add('Renderable', { renderType: 'sprite' });
-        this.add('Sprite', {
-            textureStrip: assets.dungeon.getSubTexture('wall_mid'),
-        });
+        this.add('Renderable', { renderType: 'wall' });
+        this.add('RenderWallInfo', { rx, ry });
         this.add('Collidable', { masks: { main: { x, y, rx, ry } } });
         this.add('Solid', { masks: ['main']});
     }

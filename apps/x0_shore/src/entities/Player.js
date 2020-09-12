@@ -1,5 +1,6 @@
 import { World } from '../World.js';
 import { GameObject } from './GameObject.js';
+import { Openable } from '../components/Openable.js';
 
 World.require('entityManager');
 
@@ -20,6 +21,46 @@ export class Player extends GameObject
             textureStrip: assets.dungeon.getSubTexture('elf_m_run_anim'),
             offsetY: -8,
         });
+    }
+
+    onUpdate(dt)
+    {
+        const { input } = World.getWorld();
+        const motion = this.get('Motion');
+        let dx = input.getInputValue('moveRight') - input.getInputValue('moveLeft');
+        let dy = input.getInputValue('moveDown') - input.getInputValue('moveUp');
+        if (dx || dy)
+        {
+            let dr = Math.atan2(dy, dx);
+            let cdr = Math.cos(dr);
+            let sdr = Math.sin(dr);
+            motion.motionX += cdr * motion.speed;
+            motion.motionY += sdr * motion.speed;
+            motion.moving = true;
+            motion.facing = Math.sign(cdr);
+        }
+        else
+        {
+            motion.moving = false;
+        }
+        let action = input.getInputValue('mainAction');
+        if (action)
+        {
+            const collidable = this.get('Collidable');
+            if (collidable.collided)
+            {
+                const otherId = collidable.target.owner;
+                if (this.entityManager.has('Openable', otherId))
+                {
+                    let openable = this.entityManager.get('Openable', otherId);
+                    if (!openable.open)
+                    {
+                        openable.open = true;   
+                        this.entityManager.remove('Solid', otherId);
+                    }
+                }
+            }
+        }
     }
 }
 Player.maskProps = {

@@ -15,6 +15,7 @@ import { Collidable } from './components/Collidable.js';
 import { Motion } from './components/Motion.js';
 import { Sprite } from './components/Sprite.js';
 import { Solid } from './components/Solid.js';
+import { Openable } from './components/Openable.js';
 
 // TODO: Should print the key code of any key somewhere, so we know what to use.
 // NOTE: https://keycode.info/
@@ -23,18 +24,17 @@ import ASSET_MAP from '@app/assets/assetmap.json';
 
 import { GameObject } from './entities/GameObject.js';
 import { Player } from './entities/Player.js';
-import { Wall } from './entities/Wall.js';
 
 import { MotionSystem } from './systems/MotionSystem.js';
 import { CameraSystem } from './systems/CameraSystem.js';
 import { PhysicsSystem } from './systems/PhysicsSystem.js';
+import { GameObjectSystem } from './systems/GameObjectSystem.js';
 
 import * as TextureAtlasLoader from './texture/TextureAtlasLoader.js';
 import { RenderSystem } from './systems/RenderSystem.js';
 
 import { SpriteRenderer } from './systems/render/SpriteRenderer.js';
-import { WallRenderer } from './systems/render/WallRenderer.js';
-import { Door } from './entities/Door.js';
+import { WallRenderer, RenderWallInfo } from './systems/render/WallRenderer.js';
 import { createRoom } from './Room.js';
 
 document.addEventListener('DOMContentLoaded', main);
@@ -50,6 +50,8 @@ const ENTITY_COMPONENT_FACTORY_MAP = {
     GameObject,
     Sprite,
     Solid,
+    Openable,
+    RenderWallInfo,
 };
 
 async function setup()
@@ -92,14 +94,14 @@ async function main()
         assets,
     } = world;
     
-    let renderSystem;
     const systems = [
-        new MotionSystem(entityManager, input),
+        new MotionSystem(entityManager),
         new CameraSystem(entityManager, view, 4),
         new PhysicsSystem(entityManager, aabbGraph),
         new RenderSystem(entityManager, sceneGraph, aabbGraph, view)
             .registerRenderer('sprite', SpriteRenderer)
             .registerRenderer('wall', WallRenderer),
+        new GameObjectSystem(entityManager),
     ];
 
     const rooms = [
