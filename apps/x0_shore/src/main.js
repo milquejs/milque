@@ -14,6 +14,7 @@ import { Renderable } from './components/Renderable.js';
 import { Collidable } from './components/Collidable.js';
 import { Motion } from './components/Motion.js';
 import { Sprite } from './components/Sprite.js';
+import { Solid } from './components/Solid.js';
 
 // TODO: Should print the key code of any key somewhere, so we know what to use.
 // NOTE: https://keycode.info/
@@ -47,6 +48,7 @@ const ENTITY_COMPONENT_FACTORY_MAP = {
     Collidable,
     GameObject,
     Sprite,
+    Solid,
 };
 
 async function setup()

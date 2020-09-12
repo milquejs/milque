@@ -1813,21 +1813,35 @@
         }
     }
 
-    // TODO: Add custom solvers.
+    function createHitResult(x, y, dx, dy, nx, ny, time)
+    {
+        return {
+            x, y,
+            dx, dy,
+            nx, ny,
+            time,
+        };
+    }
 
-    /**
-     * @typedef {Function} TestFunction
-     * @param {AxisAlignedBoundingBox} a
-     * @param {AxisAlignedBoundingBox} b
-     * @returns {Boolean} Whether or not the passed-in boxes
-     * should be considered as possibly colliding.
-     */
-
-    /**
-     * @typedef CollisionResult
-     * @property {AxisAlignedBoundingBox} box
-     * @property {AxisAlignedBoundingBox} other
-     */
+    function intersectAxisAlignedBoundingBox(a, b)
+    {
+        let dx = b.x - a.x;
+        let px = (b.rx + a.rx) - Math.abs(dx);
+        if (px < 0) return null;
+        let dy = b.y - a.y;
+        let py = (b.ry + a.ry) - Math.abs(dy);
+        if (py < 0) return null;
+        if (px < py)
+        {
+            let sx = Math.sign(dx);
+            return createHitResult(a.x + (a.rx * sx), b.y, px * sx, 0, sx, 0, 0);
+        }
+        else
+        {
+            let sy = Math.sign(dy);
+            return createHitResult(b.x, a.y + (a.ry * sy), 0, py * sy, 0, sy, 0);
+        }
+    }
 
     /**
      * @typedef Mask
@@ -1849,18 +1863,14 @@
          * Constructs an empty graph.
          * 
          * @param {Object} [opts={}] Any additional options.
-         * @param {typeof AxisAlignedBoundingBox} [opts.boxConstructor=AxisAlignedBoundingBox]
-         * The axis-aligned bounding box constructor that make up the graph.
          */
         constructor(opts = {})
         {
-            this.boxConstructor = opts.boxConstructor || AxisAlignedBoundingBox;
-
             this.masks = new Map();
             this.boxes = new Set();
             
-            // Used for constant lookup when updating dynamic masks.
-            this.dynamics = new Set();
+            // Used to store dynamic mask data and provide constant lookup.
+            this.dynamics = new Map();
             // Used for efficiently pruning objects when solving.
             this.quadtree = new QuadTree();
         }
@@ -1897,10 +1907,8 @@
                 const y = maskValues[1] || 0;
                 const rx = (maskValues[2] / 2) || 0;
                 const ry = (maskValues[3] / 2) || 0;
-
-                let box = new (this.boxConstructor)(this, owner, x, y, rx, ry);
+                let box = new AxisAlignedBoundingBox(this, owner, maskName, x, y, rx, ry);
                 this.boxes.add(box);
-
                 mask.box = box;
             }
             else if (typeof maskValues === 'object')
@@ -1909,7 +1917,6 @@
                 let y = maskValues.y || 0;
                 let rx = maskValues.rx || (maskValues.width / 2) || 0;
                 let ry = maskValues.ry || (maskValues.height / 2) || 0;
-
                 if (typeof owner === 'object')
                 {
                     if (!x) x = owner.x || 0;
@@ -1917,27 +1924,30 @@
                     if (!rx) rx = (owner.width / 2) || 0;
                     if (!ry) ry = (owner.height / 2) || 0;
                 }
-                
-                let box = new (this.boxConstructor)(this, owner, x, y, rx, ry);
+                let box = new AxisAlignedBoundingBox(this, owner, maskName, x, y, rx, ry);
                 this.boxes.add(box);
-
                 mask.box = box;
                 if ('get' in maskValues)
                 {
                     mask.get = maskValues.get;
                     mask.get(box, owner);
-                    this.dynamics.add(mask);
+                    this.dynamics.set(mask, {
+                        halfdx: 0,
+                        halfdy: 0,
+                    });
                 }
             }
             else if (typeof maskValues === 'function')
             {
-                let box = new (this.boxConstructor)(this, owner, 0, 0, 0, 0);
+                let box = new AxisAlignedBoundingBox(this, owner, maskName, 0, 0, 0, 0);
                 this.boxes.add(box);
-                
                 mask.box = box;
                 mask.get = maskValues;
-                maskValues.call(mask, box, owner);
-                this.dynamics.add(mask);
+                mask.get(box, owner);
+                this.dynamics.set(mask, {
+                    halfdx: 0,
+                    halfdy: 0,
+                });
             }
             else
             {
@@ -2012,60 +2022,56 @@
             this.dynamics.clear();
             this.quadtree.clear();
         }
-
-        /**
-         * Forcibly updates the current graph to match the system for
-         * the given initial options.
-         * 
-         * This is usually called automatically by {@link solve()} to
-         * update the graph to get the current results, but could also
-         * be called manually for more control.
-         */
-        update()
-        {
-            // Update boxes
-            for(let mask of this.dynamics.values())
-            {
-                mask.get(mask.box, mask.owner);
-            }
-        }
         
         /**
-         * Solves the current graph for collisions. Usually, you want
-         * to call {@link update()} before this function to ensure the
-         * boxes accurately reflect the current state.
+         * Solves the current graph for collisions.
          * 
          * @param {Array<Object>} [targets=undefined] A list of active target to solve
          * for. If undefined or null, it will solve collisions using all boxes as
          * active targets. This can be used to prune box collisions that are not
          * relevant, or "active".
-         * @param {Array<CollisionResult>} [out=[]] List to append collision results to.
-         * @param {Object} [opts={}] Any additional options.
-         * @param {TestFunction} [opts.test] The custom tester function
-         * to initially check if 2 objects can be colliding.
-         * @param {Boolean} [opts.forceUpdate=true] Whether to update the
-         * graph before solving it. If false, you must call {@link update()}
-         * yourself to update the graph to the current state.
          * @returns {Array<CollisionResult>} The collisions found in the current graph.
          */
-        solve(targets = undefined, out = [], opts = {})
+        solve(targets = undefined)
         {
-            const { forceUpdate = true, test = testAxisAlignedBoundingBox } = opts;
-
-            if (forceUpdate)
+            // Update dynamic boxes to include motions
+            for(let mask of this.dynamics.keys())
             {
-                this.update();
+                let { box, owner } = mask; 
+                let x0 = box.x;
+                let y0 = box.y;
+                mask.get(box, owner);
+                let dynamics = this.dynamics.get(mask);
+                let halfMotionX = (box.x - x0) / 2;
+                let halfMotionY = (box.y - y0) / 2;
+                dynamics.halfMotionX = halfMotionX;
+                dynamics.halfMotionY = halfMotionY;
+                box.x -= halfMotionX;
+                box.y -= halfMotionY;
+                box.rx += Math.abs(halfMotionX);
+                box.ry += Math.abs(halfMotionY);
             }
-
+            
             if (typeof targets === 'undefined' || targets === null)
             {
                 targets = this.masks.keys();
             }
 
-            let result = out;
+            let result = [];
             let quadtree = this.quadtree;
             quadtree.clear();
             quadtree.insertAll(this.boxes);
+
+            // Revert dynamic boxes back to their original dimensions
+            for(let mask of this.dynamics.keys())
+            {
+                const { box } = mask;
+                const { halfMotionX, halfMotionY } = this.dynamics.get(mask);
+                box.x += halfMotionX;
+                box.y += halfMotionY;
+                box.rx -= Math.abs(halfMotionX);
+                box.ry -= Math.abs(halfMotionY);
+            }
 
             let others = [];
             for(let owner of targets)
@@ -2075,12 +2081,28 @@
                 {
                     const { box } = mask;
                     quadtree.retrieve(box, others);
+                    let dx = 0;
+                    let dy = 0;
+                    if (this.dynamics.has(mask))
+                    {
+                        const { halfMotionX, halfMotionY } = this.dynamics.get(mask);
+                        dx = halfMotionX * 2;
+                        dy = halfMotionY * 2;
+                    }
                     for(let other of others)
                     {
-                        if (test(box, other))
+                        let hit = intersectAxisAlignedBoundingBox(box, other);
+                        if (hit)
                         {
-                            const collision = createCollisionResult(mask, box, other);
-                            result.push(collision);
+                            result.push({
+                                mask,
+                                otherMask: this.masks.get(other.owner)[other.maskName],
+                                box,
+                                otherBox: other,
+                                hit,
+                                dx,
+                                dy,
+                            });
                         }
                     }
                     others.length = 0;
@@ -2091,33 +2113,17 @@
     }
 
     /**
-     * Creates a collision result for the given boxes.
-     * 
-     * @param {Mask} mask The target mask that collided.
-     * @param {AxisAlignedBoundingBox} a The mask's box that is in the collision.
-     * @param {AxisAlignedBoundingBox} b The other box that is in the collision.
-     * @returns {CollisionResult} The new collision result.
-     */
-    function createCollisionResult(mask, a, b)
-    {
-        return {
-            mask,
-            box: a,
-            other: b,
-        };
-    }
-
-    /**
      * A representative bounding box to keep positional and
      * dimensional metadata for any object in the
      * {@link AxisAlignedBoundingBoxGraph}.
      */
     class AxisAlignedBoundingBox
     {
-        constructor(aabbGraph, owner, x, y, rx, ry)
+        constructor(aabbGraph, owner, maskName, x, y, rx, ry)
         {
             this.aabbGraph = aabbGraph;
             this.owner = owner;
+            this.maskName = maskName;
             this.x = x;
             this.y = y;
             this.rx = rx;
@@ -2133,9 +2139,7 @@
 
         setSize(width, height)
         {
-            this.rx = width / 2;
-            this.ry = height / 2;
-            return this;
+            return this.setHalfSize(width / 2, height / 2);
         }
 
         setHalfSize(rx, ry)

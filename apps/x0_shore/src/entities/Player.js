@@ -24,7 +24,7 @@ export class Player extends GameObject
 Player.maskProps = {
     masks: {
         main: {
-            rx: 8, ry: 8,
+            rx: 6, ry: 6,
             get(aabb, owner)
             {
                 const { entityManager } = World.getWorld();

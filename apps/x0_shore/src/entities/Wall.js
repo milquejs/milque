@@ -16,5 +16,6 @@ export class Wall extends GameObject
         this.add('Transform', { x, y });
         this.add('Renderable', { renderType: 'wall', width, height });
         this.add('Collidable', { masks: { main: { x, y, rx, ry } } });
+        this.add('Solid', { masks: ['main']});
     }
 }

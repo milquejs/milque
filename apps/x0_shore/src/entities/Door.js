@@ -13,6 +13,10 @@ export class Door extends GameObject
         this.add('Transform', { x, y });
         this.add('Renderable', { renderType: 'sprite' });
         this.add('Sprite', { textureStrip: assets.dungeon.getSubTexture('doors_all') });
-        this.add('Collidable', { masks: { main: { x, y: y + 4, rx: 32, ry: 4 }}});
+        this.add('Collidable', { masks: {
+            main: { x, y: y + 4, rx: 32, ry: 4 },
+            activate: { x, y, rx: 16, ry: 16 },
+        }});
+        this.add('Solid', { masks: ['main'] });
     }
 }

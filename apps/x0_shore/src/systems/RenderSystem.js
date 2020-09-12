@@ -39,7 +39,7 @@ export class RenderSystem
         renderSceneGraph(ctx, sceneGraph, entityManager, this.renderNode);
         
         // Render collision masks...
-        renderAxisAlignedBoundingBoxGraph(ctx, aabbGraph, entityManager);
+        // renderAxisAlignedBoundingBoxGraph(ctx, aabbGraph, entityManager);
     }
 
     renderNode(ctx, owner)
