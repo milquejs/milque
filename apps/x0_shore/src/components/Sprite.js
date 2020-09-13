@@ -1,10 +1,9 @@
 export const Sprite = {
     create(props)
     {
-        const { textureStrip, offsetX = 0, offsetY = 0 } = props;
-        if (!textureStrip) throw new Error(`Component instantiation is missing required prop 'textureStrip'.`);
+        const { subTexture, offsetX = 0, offsetY = 0 } = props;
         return {
-            textureStrip,
+            subTexture,
             spriteIndex: 0,
             dt: 0,
             offsetX,
@@ -13,16 +12,23 @@ export const Sprite = {
     },
     draw(ctx, sprite, spriteIndex = sprite.spriteIndex)
     {
-        const spriteWidth = sprite.textureStrip.unitWidth;
-        const spriteHeight = sprite.textureStrip.unitHeight;
+        const { subTexture } = sprite;
+        const spriteWidth = subTexture.unitWidth;
+        const spriteHeight = subTexture.unitHeight;
         const { offsetX, offsetY } = sprite;
-        sprite.textureStrip.unitDraw(ctx, -spriteWidth / 2 + offsetX, -spriteHeight / 2 + offsetY, spriteIndex);
+        subTexture.unitDraw(ctx, -spriteWidth / 2 + offsetX, -spriteHeight / 2 + offsetY, spriteIndex);
     },
     next(sprite, dt = 1)
     {
         sprite.dt += dt;
         const amount = Math.floor(sprite.dt);
         sprite.dt -= amount;
-        sprite.spriteIndex = (sprite.spriteIndex + amount) % sprite.textureStrip.length;
+        sprite.spriteIndex = (sprite.spriteIndex + amount) % sprite.subTexture.length;
+    },
+    change(sprite, subTexture)
+    {
+        sprite.subTexture = subTexture;
+        sprite.spriteIndex = 0;
+        sprite.dt = 0;
     }
 };

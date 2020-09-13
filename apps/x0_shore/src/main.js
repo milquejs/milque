@@ -24,6 +24,7 @@ import ASSET_MAP from '@app/assets/assetmap.json';
 
 import { GameObject } from './entities/GameObject.js';
 import { Player } from './entities/Player.js';
+import { Lever } from './entities/Lever.js';
 
 import { MotionSystem } from './systems/MotionSystem.js';
 import { CameraSystem } from './systems/CameraSystem.js';
@@ -35,6 +36,7 @@ import { RenderSystem } from './systems/RenderSystem.js';
 
 import { SpriteRenderer } from './systems/render/SpriteRenderer.js';
 import { WallRenderer, RenderWallInfo } from './systems/render/WallRenderer.js';
+import { NullRenderer } from './systems/render/NullRenderer.js';
 import { createRoom } from './Room.js';
 
 document.addEventListener('DOMContentLoaded', main);
@@ -100,7 +102,8 @@ async function main()
         new PhysicsSystem(entityManager, aabbGraph),
         new RenderSystem(entityManager, sceneGraph, aabbGraph, view)
             .registerRenderer('sprite', SpriteRenderer)
-            .registerRenderer('wall', WallRenderer),
+            .registerRenderer('wall', WallRenderer)
+            .registerRenderer('null', NullRenderer),
         new GameObjectSystem(entityManager),
     ];
 
@@ -108,6 +111,7 @@ async function main()
         createRoom(0, 0, 128, 128),
     ];
     const player = new Player();
+    const lever = new Lever();
 
     display.addEventListener('frame', e => {
         // Update

@@ -47,7 +47,7 @@ export class RenderSystem
         const { entityManager } = this;
         if (entityManager.has('Renderable', owner))
         {
-            const { renderType } = entityManager.get('Renderable', owner);
+            const { renderType = 'null' } = entityManager.get('Renderable', owner);
             if (renderType in this.renderers)
             {
                 this.renderers[renderType](ctx, owner, entityManager);

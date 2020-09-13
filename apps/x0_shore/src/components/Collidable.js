@@ -3,7 +3,7 @@ import { World } from '../World.js';
 World.require('aabbGraph');
 
 export const Collidable = {
-    create(props, entityId)
+    create(props, entityId, entityManager)
     {
         const { aabbGraph } = World.getWorld();
         const { masks } = props;

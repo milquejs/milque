@@ -1,5 +1,4 @@
 import { GameObject } from './GameObject.js';
-import { World } from '../World.js';
 
 export class Wall extends GameObject
 {
@@ -14,7 +13,6 @@ export class Wall extends GameObject
         const x = left + rx;
         const y = top + ry;
 
-        const { assets } = World.getWorld();
         this.add('Transform', { x, y });
         this.add('Renderable', { renderType: 'wall' });
         this.add('RenderWallInfo', { rx, ry });

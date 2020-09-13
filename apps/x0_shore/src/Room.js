@@ -4,7 +4,6 @@ import { Door } from './entities/Door.js';
 
 export function createRoom(x, y, width, height)
 {
-    const { entityManager } = World.getWorld();
     const halfWidth = width / 2;
     const halfHeight = height / 2;
     const wallDepth = 4;

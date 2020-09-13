@@ -39,7 +39,7 @@ export class PhysicsSystem
                     if (entityManager.has('Solid', otherId))
                     {
                         let solid = entityManager.get('Solid', otherId);
-                        if (solid.masks.length <= 0 || solid.masks.includes(collision.otherMask.name))
+                        if (!solid.masks || solid.masks.length <= 0 || solid.masks.includes(collision.otherMask.name))
                         {
                             let motion = entityManager.get('Motion', entityId);
                             let transform = entityManager.get('Transform', entityId);

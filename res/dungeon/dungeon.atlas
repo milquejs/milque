@@ -71,9 +71,9 @@ hole 96 144 16 16
 doors_all 16 221 64 35
 doors_frame_left 16 224 16 32
 doors_frame_top 32 221 32 3
-doors_frame_righ 63 224 16 32
+doors_frame_right 63 224 16 32
 doors_leaf_closed 32 224 32 32
-doors_leaf_open 80 224 32 32
+doors_leaf_opened 80 224 32 32
 
 chest_empty_open_anim 304 288 16 16 3
 chest_full_open_anim 304 304 16 16 3

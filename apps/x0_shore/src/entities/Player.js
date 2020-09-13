@@ -1,6 +1,7 @@
 import { World } from '../World.js';
 import { GameObject } from './GameObject.js';
 import { Openable } from '../components/Openable.js';
+import { Sprite } from '../components/Sprite.js';
 
 World.require('entityManager');
 
@@ -16,16 +17,16 @@ export class Player extends GameObject
         this.add('Motion');
         this.add('Renderable', RENDERABLE_OPTIONS);
         this.add('PlayerControlled', true);
-        this.add('Collidable', Player.maskProps);
+        this.add('Collidable', Player);
         this.add('Sprite', {
-            textureStrip: assets.dungeon.getSubTexture('elf_m_run_anim'),
+            subTexture: assets.dungeon.getSubTexture('elf_m_run_anim'),
             offsetY: -8,
         });
     }
 
     onUpdate(dt)
     {
-        const { input } = World.getWorld();
+        const { assets, input } = World.getWorld();
         const motion = this.get('Motion');
         let dx = input.getInputValue('moveRight') - input.getInputValue('moveLeft');
         let dy = input.getInputValue('moveDown') - input.getInputValue('moveUp');
@@ -57,23 +58,28 @@ export class Player extends GameObject
                     {
                         openable.open = true;   
                         this.entityManager.remove('Solid', otherId);
+                        Sprite.change(this.entityManager.get('Sprite', otherId), assets.dungeon.getSubTexture('doors_leaf_opened'));
+                    }
+                    else
+                    {
+                        openable.open = false;
+                        this.entityManager.add('Solid', otherId);
+                        Sprite.change(this.entityManager.get('Sprite', otherId), assets.dungeon.getSubTexture('doors_leaf_closed'));
                     }
                 }
             }
         }
     }
 }
-Player.maskProps = {
-    masks: {
-        main: {
-            rx: 6, ry: 6,
-            get(aabb, owner)
-            {
-                const { entityManager } = World.getWorld();
-                const transform = entityManager.get('Transform', owner);
-                aabb.x = transform.x;
-                aabb.y = transform.y;
-            }
+Player.masks = {
+    main: {
+        rx: 6, ry: 6,
+        get(aabb, owner)
+        {
+            const { entityManager } = World.getWorld();
+            const transform = entityManager.get('Transform', owner);
+            aabb.x = transform.x;
+            aabb.y = transform.y;
         }
     }
 };

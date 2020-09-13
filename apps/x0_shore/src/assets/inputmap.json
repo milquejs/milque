@@ -16,8 +16,8 @@
         {"key": "keyboard:KeyD", "scale": 1}
     ],
     "mainAction": [
-        {"key": "keyboard:KeyE", "scale": 1},
-        {"key": "keyboard:Space", "scale": 1}
+        {"key": "keyboard:KeyE", "event": "down"},
+        {"key": "keyboard:Space", "event": "down"}
     ],
     "inventory": [
         {"key": "keyboard:KeyF", "event": "up" },
