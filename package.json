@@ -2,7 +2,8 @@
   "private": true,
   "workspaces": [
     "packages/*",
-    "apps/*"
+    "apps/*",
+    "editors/*"
   ],
   "scripts": {
     "build": "node .config/build-all.js"
