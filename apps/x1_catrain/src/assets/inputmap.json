@@ -1,0 +1,5 @@
+{
+    "cursorX": {"key": "mouse:pos.x", "scale": 1},
+    "cursorY": {"key": "mouse:pos.y", "scale": 1},
+    "cursorPick": {"key": "mouse:0", "event": "down"}
+}

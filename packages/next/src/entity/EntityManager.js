@@ -1,3 +1,31 @@
+
+/**
+ * TODO: Change to use ref instead of names.
+ * Use REFERENCES as keys, instead of strings.
+ * - This way, we can enforce depedencies throught import.
+ * - The benefits of strings is the loose coupling, but
+ * this only allow us to add additional functionality,
+ * which, if components are optimized which they should be,
+ * then it can be easily done by create a Position2 instead.
+ */
+
+/**
+ * TODO: Enforce 1 component only.
+ * There should only always be 1 component per entity, that way
+ * when you implement Transform, you only have to worry about 1
+ * of them. Not ALL components should be able to support multiple
+ * per entity.
+ * 
+ * BUT, some do. So we need a way to allow for MultiComponents,
+ * which are arrays of components, identified by some index/id.
+ */
+
+/**
+ * TODO: Components should init from template.
+ * Delay any architectural decisions as late as possible. So let's
+ * not dictate how to setup a component.
+ */
+
 /**
  * @typedef {String} EntityId
  */
