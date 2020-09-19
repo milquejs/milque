@@ -1,0 +1,18 @@
+{
+    "MoveUp": [
+        "Keyboard:ArrowUp",
+        "Keyboard:KeyW"
+    ],
+    "MoveDown": [
+        "Keyboard:ArrowDown",
+        "Keyboard:KeyS"
+    ],
+    "MoveLeft": [
+        "Keyboard:ArrowLeft",
+        "Keyboard:KeyA"
+    ],
+    "MoveRight": [
+        "Keyboard:ArrowRight",
+        "Keyboard:KeyD"
+    ]
+}
