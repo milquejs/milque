@@ -17,7 +17,8 @@ export class InputContext
         /** @type {import('./source/InputSource.js').InputSource} */
         this.inputSource = null;
 
-        this.disabled = disabled;
+        /** @private */
+        this._disabled = disabled;
         /** @private */
         this._ignoreInput = disabled;
 
@@ -31,6 +32,9 @@ export class InputContext
         /** @private */
         this.onSourcePoll = this.onSourcePoll.bind(this);
     }
+
+    get disabled() { return this._disabled; }
+    set disabled(value) { this.toggle(!value); }
 
     /**
      * @param {Object} inputMap The input to adapter options object map.
@@ -69,7 +73,7 @@ export class InputContext
     {
         // Make sure this context is disabled before changing it...
         const prevDisabled = this.disabled;
-        this.disabled = true;
+        this.toggle(false);
 
         // Prepare previous state...
         const prevInputSource = this.inputSource;
@@ -150,7 +154,7 @@ export class InputContext
         }
 
         // Make sure this context returns to its previous expected state...
-        this.disabled = prevDisabled;
+        this.toggle(prevDisabled);
     }
 
     /**
