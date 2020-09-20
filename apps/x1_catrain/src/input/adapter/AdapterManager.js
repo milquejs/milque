@@ -42,18 +42,10 @@ export class AdapterManager
         };
     }
 
-    /**
-     * @param {import('./Sources.js').InputSource} inputSource 
-     */
-    constructor(inputSource)
+    constructor()
     {
-        let adapterMap = { [WILDCARD_DEVICE_MATCHER]: createKeyCodeMap() };
-        for(let deviceName in inputSource.devices)
-        {
-            adapterMap[deviceName] = createKeyCodeMap();
-        }
         /** @private */
-        this.adapters = adapterMap;
+        this.adapters = { [WILDCARD_DEVICE_MATCHER]: createKeyCodeMap() };
     }
     
     /**
@@ -64,21 +56,24 @@ export class AdapterManager
         for(let adapter of adapters)
         {
             const { deviceName, keyCode } = adapter;
-            if (deviceName in this.adapters)
+            let adapterMap;
+            if (!(deviceName in this.adapters))
             {
-                let adapterMap = this.adapters[deviceName];
-                if (keyCode in adapterMap)
-                {
-                    adapterMap[keyCode].push(adapter);
-                }
-                else
-                {
-                    adapterMap[keyCode] = [adapter];
-                }
+                adapterMap = createKeyCodeMap();
+                this.adapters[deviceName] = adapterMap;
             }
             else
             {
-                throw new Error(`Missing device '${deviceName}' for input adapters.`);
+                adapterMap = this.adapters[deviceName];
+            }
+
+            if (keyCode in adapterMap)
+            {
+                adapterMap[keyCode].push(adapter);
+            }
+            else
+            {
+                adapterMap[keyCode] = [adapter];
             }
         }
     }
@@ -175,9 +170,12 @@ export class AdapterManager
     findAdapters(deviceName, keyCode)
     {
         let result = [];
-        let adapterMap = this.adapters[deviceName];
-        if (keyCode in adapterMap) result.push(...adapterMap[keyCode]);
-        result.push(...adapterMap[WILDCARD_KEY_MATCHER]);
+        if (deviceName in this.adapters)
+        {
+            let adapterMap = this.adapters[deviceName];
+            if (keyCode in adapterMap) result.push(...adapterMap[keyCode]);
+            result.push(...adapterMap[WILDCARD_KEY_MATCHER]);
+        }
         let wildMap = this.adapters[WILDCARD_DEVICE_MATCHER];
         if (keyCode in wildMap) result.push(...wildMap[keyCode]);
         result.push(...wildMap[WILDCARD_KEY_MATCHER]);

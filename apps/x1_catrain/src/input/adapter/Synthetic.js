@@ -93,3 +93,8 @@ export function parseKeyString(keyString)
         throw new Error(`Invalid key string - missing device separator '${KEY_STRING_DEVICE_SEPARATOR}'.`);
     }
 }
+
+export function stringifyDeviceKeyCodePair(deviceName, keyCode)
+{
+    return `${deviceName}${KEY_STRING_DEVICE_SEPARATOR}${keyCode}`;
+}

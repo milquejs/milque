@@ -1,5 +1,4 @@
-import { CanvasView2D, setDOMMatrix } from 'milque';
-import { mat4 } from 'gl-matrix';
+import { CanvasView2D } from 'milque';
 
 import { World } from './World.js';
 
@@ -18,7 +17,9 @@ async function main()
     const display = document.querySelector('display-port');
     const ctx = display.canvas.getContext('2d');
     const inputSource = InputSource.from(display);
-    const input = new InputContext(inputSource, INPUT_MAP);
+    const input = new InputContext()
+        .setInputMap(INPUT_MAP)
+        .attach(inputSource);
     const view = new CanvasView2D(display);
 
     const entityManager = new EntityManager();
