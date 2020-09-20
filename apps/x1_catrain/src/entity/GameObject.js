@@ -1,5 +1,3 @@
-import { Eventable } from 'milque';
-
 const ENTITY_CACHE = Symbol('entityCache');
 
 /**

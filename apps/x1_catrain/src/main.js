@@ -1,4 +1,4 @@
-import { CanvasView2D } from 'milque';
+import { AxisAlignedBoundingBoxGraph, CanvasView2D } from 'milque';
 
 import { World } from './World.js';
 
@@ -9,6 +9,10 @@ import INPUT_MAP from './assets/input.json';
 import { EntityManager } from './entity/EntityManager.js';
 import { Renderable } from './entity/Renderable.js';
 import { GameObject } from './entity/GameObject.js';
+
+import { Collidable } from './systems/Collidable.js';
+import { CollisionMask } from './systems/CollisionMask.js';
+import { CollisionSystem } from './systems/CollisionSystem.js';
 
 window.addEventListener('DOMContentLoaded', main);
 
@@ -22,7 +26,17 @@ async function main()
         .attach(inputSource);
     const view = new CanvasView2D(display);
 
-    const entityManager = new EntityManager();
+    const entityManager = new EntityManager({
+        strictMode: true,
+        components: [
+            GameObject,
+            'Player',
+            Renderable,
+            Collidable,
+            CollisionMask,
+        ]});
+    
+    const aabbGraph = new AxisAlignedBoundingBoxGraph();
 
     const player = new GameObject(
         entityManager,
@@ -34,19 +48,40 @@ async function main()
         .on('create', entity => {
             entity.get(Renderable).renderType = 'box';
         });
-
+    
     const world = World.provide({
         display,
         input,
         entityManager,
         view,
         player,
+        aabbGraph,
     });
+
+    const systems = {
+        physics: new CollisionSystem(entityManager, aabbGraph),
+    };
 
     display.addEventListener('frame', ({ detail: { deltaTime } }) => {
         const dt = deltaTime / 1000;
         inputSource.poll();
+
+        for(let system of Object.values(systems))
+        {
+            if ('update' in system)
+            {
+                system.update(dt);
+            }
+        }
         updateWorld(dt, world);
+
+        for(let system of Object.values(systems))
+        {
+            if ('render' in system)
+            {
+                system.render(ctx);
+            }
+        }
         renderWorld(ctx, world);
     });
 }
