@@ -73,7 +73,7 @@ export class InputContext
     {
         // Make sure this context is disabled before changing it...
         const prevDisabled = this.disabled;
-        this.toggle(false);
+        this.disabled = true;
 
         // Prepare previous state...
         const prevInputSource = this.inputSource;
@@ -154,7 +154,7 @@ export class InputContext
         }
 
         // Make sure this context returns to its previous expected state...
-        this.toggle(prevDisabled);
+        this.disabled = prevDisabled;
     }
 
     /**
@@ -203,11 +203,11 @@ export class InputContext
      * disabled if false. If undefined, it will toggle the current value.
      * @returns {InputContext} Self for method chaining.
      */
-    toggle(force = this.disabled)
+    toggle(force = this._disabled)
     {
         if (force)
         {
-            if (this.inputSource === null)
+            if (!this.inputSource)
             {
                 throw new Error('Input source must be set before enabling input context.');
             }
@@ -217,7 +217,7 @@ export class InputContext
                 console.warn('No inputs found for enabled input context - did you forget to setInputMap()?');
             }
         }
-        this.disabled = !force;
+        this._disabled = !force;
         return this;
     }
 

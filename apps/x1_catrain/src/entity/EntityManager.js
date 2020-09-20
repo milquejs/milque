@@ -107,6 +107,16 @@ export class EntityManager
     {
         if (this.strictMode)
         {
+            if (!componentType)
+            {
+                throw new Error(`Cannot add null or undefined component type ${getName(componentType)}`);
+            }
+
+            if (typeof componentType !== 'string' && !('name' in componentType))
+            {
+                throw new Error(`Unnamed component types are not supported - ${JSON.stringify(componentType)}`);
+            }
+
             if (!this.components.has(componentType))
             {
                 if (typeof componentType === 'string')
@@ -117,6 +127,11 @@ export class EntityManager
                 {
                     throw new Error(`Missing component factory for ${getName(componentType)}.`);
                 }
+            }
+
+            if (typeof entityId !== 'string')
+            {
+                throw new Error(`Invalid entity id type; expected string but found ${typeof entityId} instead.`);
             }
 
             if (entityId in this.components.get(componentType).instances)
