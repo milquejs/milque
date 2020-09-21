@@ -89,17 +89,17 @@ export class EntityManager
      */
     constructor(opts = {})
     {
-        const { components: [], componentFactoryCallback = createComponentFactory, strictMode = false } = opts;
-
+        const { components = [], componentFactoryCallback = createComponentFactory, strictMode = false } = opts;
+        
         this.components = new Map();
         this.entities = new Set();
         this.factoryCallback = componentFactoryCallback;
         this.strictMode = strictMode;
         this.nextAvailableEntityId = 1;
 
-        for(let component of components)
+        for(let componentType of components)
         {
-            this.register(component, createComponentFactory(this, component));
+            this.register(componentType, createComponentFactory(this, componentType));
         }
     }
 

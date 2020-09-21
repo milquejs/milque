@@ -57,9 +57,9 @@ export class MultiObjectComponentFactory extends ObjectComponentFactory
     values()
     {
         let result = [];
-        for(let entityId in instances)
+        for(let entityId in this.instances)
         {
-            let componentList = instances[entityId];
+            let componentList = this.instances[entityId];
             if (componentList)
             {
                 result.push(...componentList);

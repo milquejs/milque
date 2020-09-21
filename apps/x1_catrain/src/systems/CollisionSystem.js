@@ -16,16 +16,10 @@ export class CollisionSystem
         for(let entityId of entityManager.getComponentEntityIds(CollisionMask))
         {
             const collisionMask = entityManager.get(CollisionMask, entityId);
-            if (!collisionMask.init)
+            let mask = aabbGraph.get(entityId, collisionMask.name);
+            if (!mask)
             {
                 aabbGraph.add(entityId, collisionMask.name, collisionMask);
-                collisionMask.init = true;
-            }
-
-            if (entityManager.has(IsDead, entityId))
-            {
-                aabbGraph.remove(entityId, collisionMask.name);
-                entityManager.remove(CollisionMask, entityId);
             }
         }
 
@@ -33,10 +27,21 @@ export class CollisionSystem
         {
             collidable.collision = null;
         }
+
         let collisions = aabbGraph.solve(entityManager.getComponentEntityIds(Collidable));
         for(let collision of collisions)
         {
+            let entityId = collision.owner;
+            let otherId = collision.other;
+
+            let collidable = entityManager.get(Collidable, entityId);
             collidable.collision = collision;
+
+            if (entityManager.has(Collidable, otherId))
+            {
+                let otherCollidable = entityManager.get(Collidable, otherId);
+                otherCollidable.collision = collision;
+            }
             /*
             {
                 let entityId = collision.owner;
@@ -65,6 +70,17 @@ export class CollisionSystem
                 }
             }
             */
+        }
+    }
+
+    render(ctx)
+    {
+        const { entityManager } = this;
+        for(let collisionMask of entityManager.getComponentInstances(CollisionMask))
+        {
+            const { x, y, rx, ry } = collisionMask;
+            ctx.strokeStyle = 'limegreen';
+            ctx.strokeRect(x - rx, y - ry, rx * 2, ry * 2);
         }
     }
 }
