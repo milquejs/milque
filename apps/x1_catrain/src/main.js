@@ -11,6 +11,7 @@ import { GameObject } from './entity/GameObject.js';
 import { CollisionSystem } from './systems/CollisionSystem.js';
 import { CollisionMask } from './systems/CollisionMask.js';
 import { Collidable } from './systems/Collidable.js';
+import { Transform } from './systems/Transform.js';
 
 window.addEventListener('DOMContentLoaded', main);
 
@@ -27,9 +28,11 @@ async function main()
     const entityManager = new EntityManager({
         components: [
             'Player',
+            'Wall',
             Collidable,
             CollisionMask,
             GameObject,
+            Transform,
         ],
         strictMode: true,
     });
@@ -40,10 +43,10 @@ async function main()
     };
 
     const player = new GameObject(
-        entityManager,
-        ['Player', CollisionMask],
-        { x: 0, y: 0 })
-        .on('create', entity => {});
+        entityManager, ['Player', CollisionMask, Transform, Collidable]);
+
+    const wall = new GameObject(
+        entityManager, ['Wall', CollisionMask, Transform]);
     
     const world = World.provide({
         display,
@@ -71,9 +74,10 @@ function updateWorld(dt, world)
     const moveSpeed = 50;
     let dx = input.getInputValue('MoveRight') - input.getInputValue('MoveLeft');
     let dy = input.getInputValue('MoveDown') - input.getInputValue('MoveUp');
-    player.x += dx * dt * moveSpeed;
-    player.y += dy * dt * moveSpeed;
-    view.camera.moveTo(player.x, player.y, 0, dt);
+    let transform = player.get(Transform);
+    transform.x += dx * dt * moveSpeed;
+    transform.y += dy * dt * moveSpeed;
+    view.camera.moveTo(transform.x, transform.y, 0, dt);
 
     const { systems } = world;
     for(let system of Object.values(systems))
@@ -100,8 +104,9 @@ function renderWorld(ctx, world)
         }
 
         const { player } = world;
+        let transform = player.get(Transform);
         ctx.fillStyle = 'red';
-        ctx.fillRect(player.x, player.y, 16, 16);
+        ctx.fillRect(transform.x - 8, transform.y - 8, 16, 16);
     }
     ctx.setTransform();
 }

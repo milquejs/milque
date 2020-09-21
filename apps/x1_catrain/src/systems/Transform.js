@@ -1,6 +1,6 @@
 export function Transform(props)
 {
-    const { x, y } = props;
+    const { x = 0, y = 0 } = props;
     return {
         x, y,
     };

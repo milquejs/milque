@@ -1,5 +1,6 @@
 import { Collidable } from './Collidable.js';
 import { CollisionMask } from './CollisionMask.js';
+import { Transform } from './Transform.js';
 
 export class CollisionSystem
 {
@@ -16,10 +17,18 @@ export class CollisionSystem
         for(let entityId of entityManager.getComponentEntityIds(CollisionMask))
         {
             const collisionMask = entityManager.get(CollisionMask, entityId);
-            let mask = aabbGraph.get(entityId, collisionMask.name);
+            const collisionName = collisionMask.name;
+            let mask = aabbGraph.get(entityId, collisionName);
             if (!mask)
             {
-                aabbGraph.add(entityId, collisionMask.name, collisionMask);
+                aabbGraph.add(entityId, collisionName, collisionMask);
+                mask = aabbGraph.get(entityId, collisionName);
+            }
+
+            if (entityManager.has(Transform, entityId))
+            {
+                let transform = entityManager.get(Transform, entityId);
+                mask.box.setPosition(transform.x, transform.y, 0);
             }
         }
 
@@ -75,11 +84,21 @@ export class CollisionSystem
 
     render(ctx)
     {
-        const { entityManager } = this;
-        for(let collisionMask of entityManager.getComponentInstances(CollisionMask))
+        const { entityManager, aabbGraph } = this;
+        for(let entityId of entityManager.getComponentEntityIds(CollisionMask))
         {
-            const { x, y, rx, ry } = collisionMask;
+            const collisionName = entityManager.get(CollisionMask, entityId).name;
+            const mask = aabbGraph.get(entityId, collisionName);
+            const { x, y, rx, ry } = mask.box;
             ctx.strokeStyle = 'limegreen';
+            if (entityManager.has(Collidable, entityId))
+            {
+                let collidable = entityManager.get(Collidable, entityId);
+                if (collidable.collision)
+                {
+                    ctx.strokeStyle = 'red';
+                }
+            }
             ctx.strokeRect(x - rx, y - ry, rx * 2, ry * 2);
         }
     }
