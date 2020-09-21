@@ -1,25 +1,11 @@
+import { createComponentFactory } from './factory/ComponentFactoryRegistry.js';
 
 /**
  * @typedef {String} EntityId
  * @typedef {String|Function|Object} ComponentType
  */
 
-/**
- * @typedef {Function} FactoryCreateFunction
- * @param {String} entityId
- * @param {EntityManager} entityManager
- * @returns {Object} A new component.
- * 
- * @typedef {Function} FactoryDestroyFunction
- * @param {Object} component The component to be destroyed.
- * @param {String} entityId
- * @param {EntityManager} entityManager
- * 
- * @typedef ComponentFactory
- * @property {ComponentType} type
- * @property {FactoryCreateFunction|null} create
- * @property {FactoryDestroyFunction|null} destroy
- */
+const DEFAULT_PROPS = {};
 
 /**
  * Handles all entity and component mappings.
@@ -97,23 +83,30 @@ export class EntityManager
      * 
      * @param {Object} [opts] Any additional options.
      * @param {Object} [opts.components={}] An object map of each component to its factory.
+     * @param {ComponentFactoryCallback} [opts.componentFactoryCallback] A callback function to create
+     * component factories given the type.
      * @param {Boolean} [opts.strictMode=false] Whether to enable error checking (and throwing).
      */
     constructor(opts = {})
     {
-        const { components = [], strictMode = false } = opts;
+        const { components: [], componentFactoryCallback = createComponentFactory, strictMode = false } = opts;
 
-        let factories = new Map();
-        for(let componentType of components)
-        {
-            let componentFactory = getFactory(componentType);
-            factories.set(componentType, componentFactory);
-        }
-        this.components = factories;
+        this.components = new Map();
         this.entities = new Set();
+        this.factoryCallback = componentFactoryCallback;
         this.strictMode = strictMode;
-
         this.nextAvailableEntityId = 1;
+
+        for(let component of components)
+        {
+            this.register(component, createComponentFactory(this, component));
+        }
+    }
+
+    register(componentType, componentFactory)
+    {
+        this.components.set(componentType, componentFactory);
+        return this;
     }
 
     /**
@@ -141,22 +134,6 @@ export class EntityManager
         this.entities.delete(entityId);
     }
 
-    /** @private */
-    _resolveComponentFactory(componentType)
-    {
-        let factory;
-        if (!this.components.has(componentType))
-        {
-            factory = getFactory(componentType);
-            this.components.set(componentType, factory);
-        }
-        else
-        {
-            factory = this.components.get(componentType);
-        }
-        return factory;
-    }
-
     /**
      * Creates an instance of the given component type from its factory
      * and adds the instance as the associated component for the type and
@@ -172,15 +149,16 @@ export class EntityManager
      * 
      * @param {ComponentType} componentType The component type to add an instance of.
      * @param {EntityId} entityId The entity id to add the component to.
+     * @param {Object} props An object map of properties to pass to the factory create function.
      * @returns {Object} The component instance.
      */
-    add(componentType, entityId)
+    add(componentType, entityId, props = undefined)
     {
         if (this.strictMode)
         {
             if (!componentType)
             {
-                throw new Error(`Cannot add null or undefined component type ${getName(componentType)}`);
+                throw new Error(`Cannot add null or undefined component type ${getComponentTypeName(componentType)}`);
             }
 
             if (typeof componentType !== 'string' && !('name' in componentType))
@@ -192,11 +170,11 @@ export class EntityManager
             {
                 if (typeof componentType === 'string')
                 {
-                    throw new Error(`Found unregistered tag component ${getName(componentType)}.`);
+                    throw new Error(`Found unregistered tag component ${getComponentTypeName(componentType)}.`);
                 }
                 else
                 {
-                    throw new Error(`Missing component factory for ${getName(componentType)}.`);
+                    throw new Error(`Missing component factory for ${getComponentTypeName(componentType)}.`);
                 }
             }
 
@@ -209,33 +187,10 @@ export class EntityManager
             {
                 throw new Error(`Entity '${entityId}' does not exist.`);
             }
-
-            if (!this.components.get(componentType).multiple && this.components.get(componentType).instances[entityId])
-            {
-                throw new Error(`Cannot add duplicate non-multiple component - entity already has component ${getName(componentType)}.`);
-            }
         }
 
-        let factory = this._resolveComponentFactory(componentType);
-        let { multiple, instances } = factory;
-
-        let component = factory.create(entityId, this);
-        if (multiple)
-        {
-            let componentList = instances[entityId];
-            if (componentList)
-            {
-                componentList.push(component);
-            }
-            else
-            {
-                instances[entityId] = [component];
-            }
-        }
-        else
-        {
-            instances[entityId] = component;
-        }
+        let factory = this.getComponentFactory(componentType);
+        let component = factory.add(entityId, props || DEFAULT_PROPS);
         return component;
     }
 
@@ -256,30 +211,15 @@ export class EntityManager
         {
             if (!this.components.has(componentType))
             {
-                throw new Error(`Missing component factory for ${getName(componentType)}.`);
+                throw new Error(`Missing component factory for ${getComponentTypeName(componentType)}.`);
             }
         }
 
         let factory = this.components.get(componentType);
-        let { instances, multiple } = factory;
-
-        let component = instances[entityId];
+        let component = factory.get(entityId);
         if (component)
         {
-            if (multiple)
-            {
-                let componentList = component;
-                component = componentList.shift();
-                if (componentList.length <= 0)
-                {
-                    instances[entityId] = null;
-                }
-            }
-            else
-            {
-                instances[entityId] = null;
-            }
-            factory.destroy(component, entityId, this);
+            factory.delete(entityId);
             return true;
         }
         return false;
@@ -303,103 +243,12 @@ export class EntityManager
         {
             if (!this.components.has(componentType))
             {
-                throw new Error(`Missing component factory for ${getName(componentType)}.`);
+                throw new Error(`Missing component factory for ${getComponentTypeName(componentType)}.`);
             }
         }
 
         let factory = this.components.get(componentType);
-        let { multiple, instances } = factory;
-
-        if (multiple)
-        {
-            return instances[entityId][0];
-        }
-        else
-        {
-            return instances[entityId];
-        }
-    }
-
-    addMultiple(componentType, entityId, addCount = 1)
-    {
-        let factory = this._resolveComponentFactory(componentType);
-        let { multiple, instances } = factory;
-
-        if (multiple)
-        {
-            if (addCount <= 0)
-            {
-                throw new Error('Must add a positive amount of instances for non-singular component.');
-            }
-
-            let componentList = instances[entityId];
-            if (!componentList)
-            {
-                componentList = [];
-                instances[entityId] = componentList;
-            }
-
-            let result = [];
-            for(; addCount > 0; --addCount)
-            {
-                let component = factory.create(entityId, this);
-                result.push(component);
-                componentList.push(component);
-            }
-            return result;
-        }
-        else
-        {
-            throw new Error(`Cannot add multiple for non-multiple component type ${getName(componentType)}.`);
-        }
-    }
-
-    removeMultiple(componentType, entityId, startIndex = 0, removeCount = undefined)
-    {
-        let factory = this.components.get(componentType);
-        let { multiple, instances } = factory;
-
-        if (multiple)
-        {
-            let componentList = instances[entityId];
-            let result = componentList.splice(startIndex, removeCount);
-            if (componentList.length <= 0)
-            {
-                instances[entityId] = null;
-            }
-            for(let component of result)
-            {
-                factory.destroy(component, entityId, this);
-            }
-            return result.length > 0;
-        }
-        else
-        {
-            throw new Error(`Cannot remove multiple for non-multiple component type ${getName(componentType)}.`);
-        }
-    }
-
-    getMultiple(componentType, entityId, startIndex = 0, getCount = undefined)
-    {
-        let factory = this.components.get(componentType);
-        let { multiple, instances } = factory;
-
-        if (multiple)
-        {
-            let list = instances[entityId];
-            if (getCount)
-            {
-                return list.slice(startIndex, startIndex + getCount);
-            }
-            else
-            {
-                return list.slice(startIndex);
-            }
-        }
-        else
-        {
-            throw new Error(`Cannot get multiple for non-multiple component type ${getName(componentType)}.`);
-        }
+        return factory.get(entityId);
     }
     
     /**
@@ -411,7 +260,8 @@ export class EntityManager
      */
     has(componentType, entityId)
     {
-        return this.components.has(componentType) && Boolean(this.components.get(componentType).instances[entityId]);
+        let factory = this.components.get(componentType);
+        return factory && Boolean(factory.get(entityId));
     }
 
     clear(componentType = undefined)
@@ -420,7 +270,7 @@ export class EntityManager
         {
             if (!this.components.has(componentType))
             {
-                throw new Error(`Missing component factory for ${getName(componentType)}.`);
+                throw new Error(`Missing component factory for ${getComponentTypeName(componentType)}.`);
             }
         }
 
@@ -434,36 +284,7 @@ export class EntityManager
         else
         {
             let factory = this.components.get(componentType);
-            let { multiple, instances } = factory;
-    
-            if (multiple)
-            {
-                for(let entityId in instances)
-                {
-                    let componentList = instances[entityId];
-                    if (componentList)
-                    {
-                        instances[entityId] = null;
-                        for(let component of componentList)
-                        {
-                            factory.destroy(component, entityId, this);
-                        }
-                    }
-                }
-            }
-            else
-            {
-                for(let entityId in instances)
-                {
-                    let component = instances[entityId];
-                    if (component)
-                    {
-                        instances[entityId] = null;
-                        factory.destroy(component, entityId, this);
-                    }
-                }
-            }
-            factory.instances = {};
+            factory.clear();
         }
     }
 
@@ -477,9 +298,23 @@ export class EntityManager
         return this.entities;
     }
 
+    /**
+     * @param {ComponentType} componentType
+     * @returns {ComponentFactory} The component factory for the given component type.
+     */
     getComponentFactory(componentType)
     {
-        return this.components.get(componentType);
+        let factory;
+        if (!this.components.has(componentType))
+        {
+            factory = this.factoryCallback(this, componentType);
+            this.components.set(componentType, factory);
+        }
+        else
+        {
+            factory = this.components.get(componentType);
+        }
+        return factory;
     }
 
     getComponentTypes()
@@ -499,116 +334,44 @@ export class EntityManager
         {
             if (!this.components.has(componentType))
             {
-                throw new Error(`Missing component factory for ${getName(componentType)}.`);
+                throw new Error(`Missing component factory for ${getComponentTypeName(componentType)}.`);
             }
         }
-        
-        return Object.keys(this.components.get(componentType).instances);
+
+        let factory = this.components.get(componentType);
+        return factory.keys();
     }
     
     /**
      * Gets all the current instances of the given component type.
      * 
      * @param {ComponentType} componentType The component type to get instances for.
-     * @param {Boolean} [flatten=true] Whether to flatten the instance list for non-singular component
-     * types. In other words, if the component type is non-singular and this is false, then it will
-     * return a list of instance lists. This is generally faster if you know you are working with a
-     * non-singular component. By default, this is true for backwards compatibility.
-     * @returns {Array<Object>|Array<Array<Object>>} The list of all instances, or instance lists, for
+     * @returns {Array<Object>} The list of all instances, or instance lists, for
      * the component type.
      */
-    getComponentInstances(componentType, flatten = true)
+    getComponentInstances(componentType)
     {
         if (this.strictMode)
         {
             if (!this.components.has(componentType))
             {
-                throw new Error(`Missing component factory for ${getName(componentType)}.`);
+                throw new Error(`Missing component factory for ${getComponentTypeName(componentType)}.`);
             }
         }
 
         let factory = this.components.get(componentType);
-        let { multiple, instances } = factory;
-
-        if (multiple && flatten)
-        {
-            let result = [];
-            for(let entityId in instances)
-            {
-                let componentList = instances[entityId];
-                if (componentList)
-                {
-                    result.push(...componentList);
-                }
-            }
-            return result;
-        }
-        else
-        {
-            return Object.values(instances);
-        }
+        return factory.values();
     }
 }
 
-const DefaultComponent = {
-    create() { return {}; },
-    destroy() {},
-};
-const TagComponent = {
-    create() { return true; },
-    destroy() {},
-};
-
-function getName(componentType)
+function getComponentTypeName(componentType)
 {
-    if (typeof componentType === 'string')
+    switch(typeof componentType)
     {
-        return `'${componentType}'`;
-    }
-    else
-    {
-        return componentType.name || componentType;
-    }
-}
-
-/**
- * @param {ComponentType} componentType The component type to create the factory for.
- * @returns {ComponentFactory} The associated component factory.
- */
-function getFactory(componentType)
-{
-    if (typeof componentType === 'string')
-    {
-        return {
-            type: componentType,
-            multiple: false,
-            create: TagComponent.create,
-            destroy: TagComponent.destroy,
-            instances: {},
-        };
-    }
-    else
-    {
-        try
-        {
-            let multiple = 'multiple' in componentType ? Boolean(componentType.multiple) : false;
-            return {
-                type: componentType,
-                multiple,
-                create: 'create' in componentType
-                    ? componentType.create
-                    : (typeof componentType === 'function'
-                        ? componentType
-                        : DefaultComponent.create),
-                destroy: 'destroy' in componentType
-                    ? componentType.destroy
-                    : DefaultComponent.destroy,
-                instances: {},
-            };
-        }
-        catch(e)
-        {
-            throw new Error('Unsupported component factory options.');
-        }
+        case 'string': return `'${componentType}'`;
+        case 'object':
+        case 'function':
+            return componentType.name || componentType;
+        default: return componentType;
     }
 }

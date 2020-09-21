@@ -7,40 +7,25 @@ export class CollisionSystem
     {
         this.entityManager = entityManager;
         this.aabbGraph = aabbGraph;
-
-        entityManager.addComponentListener(Transform, 'create', component => {
-            
-        });
-        entityManager.addComponentListener(Transform, 'destroy', component => {
-
-        });
-    }
-
-    onComponentCreate(component)
-    {
-        this.aabbGraph.add(component, component);
-    }
-
-    onComponentDestroy(component)
-    {
-
     }
 
     update(dt)
     {
         const { entityManager, aabbGraph } = this;
 
-        for(let collisionMask of entityManager.getComponentInstances(CollisionMask))
+        for(let entityId of entityManager.getComponentEntityIds(CollisionMask))
         {
+            const collisionMask = entityManager.get(CollisionMask, entityId);
             if (!collisionMask.init)
             {
-                aabbGraph.
+                aabbGraph.add(entityId, collisionMask.name, collisionMask);
                 collisionMask.init = true;
             }
 
-            if (collisionMask.dead)
+            if (entityManager.has(IsDead, entityId))
             {
-                collisionMask.dead = false;
+                aabbGraph.remove(entityId, collisionMask.name);
+                entityManager.remove(CollisionMask, entityId);
             }
         }
 

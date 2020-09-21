@@ -7,14 +7,30 @@ import { InputContext } from './input/InputContext.js';
 import INPUT_MAP from './assets/input.json';
 
 import { EntityManager } from './entity/EntityManager.js';
-import { Renderable } from './entity/Renderable.js';
 import { GameObject } from './entity/GameObject.js';
 
-import { Collidable } from './systems/Collidable.js';
-import { CollisionMask } from './systems/CollisionMask.js';
-import { CollisionSystem } from './systems/CollisionSystem.js';
-
 window.addEventListener('DOMContentLoaded', main);
+
+const Transform = {
+    name: 'Transform',
+    create({ x = 0, y = 0})
+    {
+        return {
+            x, y
+        };
+    }
+};
+
+const Mask = {
+    name: 'Mask',
+    multiple: true,
+    create({ x = 0, y = 0, rx = 0, ry = 0 })
+    {
+        return {
+            x, y, rx, ry
+        };
+    },
+};
 
 async function main()
 {
@@ -25,42 +41,34 @@ async function main()
         .setInputMap(INPUT_MAP)
         .attach(inputSource);
     const view = new CanvasView2D(display);
-
     const entityManager = new EntityManager({
-        strictMode: true,
         components: [
-            GameObject,
             'Player',
-            Renderable,
-            Collidable,
-            CollisionMask,
-        ]});
-    
+            Transform,
+            Mask,
+            GameObject,
+        ],
+        strictMode: true,
+    });
+
     const aabbGraph = new AxisAlignedBoundingBoxGraph();
 
     const player = new GameObject(
         entityManager,
-        ['Player', Renderable],
-        {
-            x: 0,
-            y: 0,
-        })
-        .on('create', entity => {
-            entity.get(Renderable).renderType = 'box';
-        });
+        ['Player', Transform, Mask, Mask],
+        { x: 0, y: 0 })
+        .on('create', entity => entity.get(Transform).x = 10);
     
     const world = World.provide({
         display,
         input,
-        entityManager,
         view,
+        entityManager,
         player,
         aabbGraph,
     });
 
-    const systems = {
-        physics: new CollisionSystem(entityManager, aabbGraph),
-    };
+    const systems = {};
 
     display.addEventListener('frame', ({ detail: { deltaTime } }) => {
         const dt = deltaTime / 1000;

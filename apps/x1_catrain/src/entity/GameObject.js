@@ -1,33 +1,9 @@
-const ENTITY_CACHE = Symbol('entityCache');
-
-/**
- * Gets a cache object, unique to each entity manager, to store
- * temporary entityId to GameObject instances for instantiation.
- * @returns {Object} An object map of entityId to GameObject.
- */
-function getEntityCache(entityManager)
-{
-    if (ENTITY_CACHE in entityManager)
-    {
-        return entityManager[ENTITY_CACHE];
-    }
-    else
-    {
-        return entityManager[ENTITY_CACHE] = {};
-    }
-}
-
 export class GameObject
 {
-    static create(entityId, entityManager)
+    static create(props, entityId, entityManager)
     {
-        let cache = getEntityCache(entityManager);
-        let instance = cache[entityId];
-        if (instance)
-        {
-            delete cache[entityId];
-        }
-        else
+        let instance = props;
+        if (!(instance instanceof GameObject))
         {
             instance = new GameObject(entityManager);
         }
@@ -69,13 +45,7 @@ export class GameObject
         Object.assign(this, props);
 
         // Setup entity
-        let cache = getEntityCache(entityManager);
-        if (cache[entityId])
-        {
-            throw new Error(`Cannot instantiate GameObject with already in-use entity id '${entityId}'.`);
-        }
-        cache[entityId] = this;
-        entityManager.add(GameObject, entityId);
+        entityManager.add(GameObject, entityId, this);
     }
 
     onCreate()

@@ -1,6 +1,6 @@
-export function Renderable()
+export function Renderable(props)
 {
     return {
-        renderType: null
+        renderType: props
     };
 }

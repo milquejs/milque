@@ -1,31 +1,30 @@
+
+function createGameObject(props)
+{
+    const { x = 3, y = 0, z = 0 } = props;
+    return {
+        x: Math.pow(x, 2),
+        y: y + Math.pow(x, 3),
+        z: z + Math.pow(x, 4),
+    };
+}
+
 function main()
 {
-    console.log('Test object props');
+    console.log('Test object create function');
     const testOpt = {
         test()
         {
             let result = [];
-            for(let i = 100; i >= 0; --i)
+            for(let i = 100000; i >= 0; --i)
             {
-                let obj = {
-                    a: 100 * 100,
-                    b: 'WOOT',
-                    c: function()
-                    {
-                        console.log('WOOT');
-                        return obj;
-                    }
-                };
-                /*
-                obj.a = 100 * 100;
-                obj.b = 'WOOT';
-                obj.c = function()
-                {
-                    console.log('WOOT');
-                    return obj;
-                }
-                */
+                let obj = createGameObject({ x: 10, y: 10 });
+                //let obj = new GameObject({ x: 10, y: 10 });
                 result.push(obj);
+            }
+            for(let r of result)
+            {
+                r.x += 1;
             }
         }
     };
@@ -90,29 +89,12 @@ main();
 
 /*
 
-add() many for multiple
+Test object create function
 Running test Test#1...
-...Completed: 0s+4668602215ns | 12857 steps | 0.363ms per step
+...Completed: 0s+4932732625ns | 17907 steps | 0.275ms per step
 Running test Test#2...
-...Completed: 0s+4691959877ns | 13882 steps | 0.338ms per step
+...Completed: 0s+4960628512ns | 24563 steps | 0.202ms per step
 Running test Test#3...
-...Completed: 0s+4721777659ns | 12526 steps | 0.377ms per step
-
-addMultiple() many for multiple
-Running test Test#1...
-...Completed: 0s+4762876741ns | 6731 steps | 0.708ms per step
-Running test Test#2...
-...Completed: 0s+4787396907ns | 6044 steps | 0.792ms per step
-Running test Test#3...
-...Completed: 0s+4808808272ns | 5822 steps | 0.826ms per step
-
-addMultiple() one for multiple
-Running test Test#1...
-...Completed: 0s+4528860027ns | 22411 steps | 0.202ms per step
-Running test Test#2...
-...Completed: 0s+4542964278ns | 14536 steps | 0.313ms per step
-Running test Test#3...
-...Completed: 0s+4553499582ns | 16656 steps | 0.273ms per step
-andrew@Andrews-MacBook-Pro milque % 
+...Completed: 0s+4974253895ns | 25514 steps | 0.195ms per step
 
 */
