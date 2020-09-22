@@ -105,7 +105,11 @@ export class EntityManager
     {
         if (!componentFactory)
         {
-            componentFactory = resolve(componentType);
+            // NOTE: Only auto resolve if it doesn't exist (or it wasn't handled by the registry).
+            if (!this.components.get(componentType))
+            {
+                componentFactory = resolve(componentType);
+            }
         }
         this.components.set(componentType, componentFactory);
         return this;
