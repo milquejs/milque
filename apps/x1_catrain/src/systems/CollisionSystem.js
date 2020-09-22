@@ -1,6 +1,7 @@
 import { Collidable } from './Collidable.js';
 import { CollisionMask } from './CollisionMask.js';
 import { Transform } from './Transform.js';
+import { Motion } from './Motion.js';
 
 export class CollisionSystem
 {
@@ -51,34 +52,30 @@ export class CollisionSystem
                 let otherCollidable = entityManager.get(Collidable, otherId);
                 otherCollidable.collision = collision;
             }
-            /*
+
+            if (entityManager.has(Motion, entityId) && entityManager.has(Transform, entityId))
             {
-                let entityId = collision.owner;
-                let otherId = collision.other;
-                if (entityManager.has('Motion', entityId) && entityManager.has('Transform', entityId))
+                let otherCollisionMask = entityManager.get(CollisionMask, otherId);
+                if (otherCollisionMask.solid)
                 {
-                    if (entityManager.has('Solid', otherId))
+                    
+                }
+                if (!solid.masks || solid.masks.length <= 0 || solid.masks.includes(collision.otherMask.name))
+                {
+                    let motion = entityManager.get('Motion', entityId);
+                    let transform = entityManager.get('Transform', entityId);
+                    transform.x -= collision.hit.dx;
+                    transform.y -= collision.hit.dy;
+                    if (collision.hit.nx && Math.sign(collision.hit.nx) === Math.sign(motion.motionX))
                     {
-                        let solid = entityManager.get('Solid', otherId);
-                        if (!solid.masks || solid.masks.length <= 0 || solid.masks.includes(collision.otherMask.name))
-                        {
-                            let motion = entityManager.get('Motion', entityId);
-                            let transform = entityManager.get('Transform', entityId);
-                            transform.x -= collision.hit.dx;
-                            transform.y -= collision.hit.dy;
-                            if (collision.hit.nx && Math.sign(collision.hit.nx) === Math.sign(motion.motionX))
-                            {
-                                motion.motionX = 0;
-                            }
-                            if (collision.hit.ny && Math.sign(collision.hit.ny) === Math.sign(motion.motionY))
-                            {
-                                motion.motionY = 0;
-                            }
-                        }
+                        motion.motionX = 0;
+                    }
+                    if (collision.hit.ny && Math.sign(collision.hit.ny) === Math.sign(motion.motionY))
+                    {
+                        motion.motionY = 0;
                     }
                 }
             }
-            */
         }
     }
 

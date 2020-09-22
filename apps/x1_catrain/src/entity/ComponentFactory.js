@@ -1,20 +1,15 @@
+/** @interface */
 export class ComponentFactory
 {
     constructor(componentType)
     {
         this.componentType = componentType;
     }
-
-    /** @abstract */
-    get(entityId) {}
-    /** @abstract */
-    add(entityId, props) {}
-    /** @abstract */
+    
+    get(entityId) { return null; }
+    add(entityId, props) { return {}; }
     delete(entityId) {}
-    /** @abstract */
     keys() { return []; }
-    /** @abstract */
     values() { return []; }
-    /** @abstract */
     clear() {}
 }

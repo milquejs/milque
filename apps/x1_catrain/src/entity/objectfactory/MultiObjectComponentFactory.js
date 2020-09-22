@@ -5,7 +5,7 @@ export class MultiObjectComponentFactory extends ObjectComponentFactory
     /** @override */
     add(entityId, props)
     {
-        let component = this.create(props, entityId, this.entityManager);
+        let component = this.create(props, entityId);
         let componentList = this.instances[entityId];
         if (componentList)
         {
@@ -46,7 +46,7 @@ export class MultiObjectComponentFactory extends ObjectComponentFactory
                 instances[entityId] = null;
                 for(let component of componentList)
                 {
-                    this.destroy(component, entityId, this.entityManager);
+                    this.destroy(component, entityId);
                 }
             }
         }
@@ -107,6 +107,11 @@ export class MultiObjectComponentFactory extends ObjectComponentFactory
             this.destroy(component, entityId, this);
         }
         return result.length > 0;
+    }
+
+    getOne(entityId, index = 0)
+    {
+        return this.instances[entityId][index];
     }
 
     getAll(entityId, startIndex = 0, getCount = undefined)

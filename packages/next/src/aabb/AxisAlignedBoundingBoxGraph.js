@@ -35,7 +35,9 @@ export class AxisAlignedBoundingBoxGraph
      */
     constructor(opts = {})
     {
+        /** @type {Map<*, Record<String, Mask>>} */
         this.masks = new Map();
+        /** @type {Set<AxisAlignedBoundingBox>} */
         this.boxes = new Set();
         
         // Used to store dynamic mask data and provide constant lookup.

@@ -2,16 +2,10 @@ import { ComponentFactory } from '../ComponentFactory.js';
 
 export class TagComponentFactory extends ComponentFactory
 {
-    static fromString(entityManager, tagName)
-    {
-        return new TagComponentFactory(entityManager, tagName);
-    }
-
-    constructor(entityManager, componentType)
+    constructor(componentType)
     {
         super(componentType);
-
-        this.entityManager = entityManager;
+        
         this.instances = new Set();
     }
 

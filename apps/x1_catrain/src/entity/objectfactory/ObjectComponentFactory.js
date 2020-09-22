@@ -2,7 +2,7 @@ import { ComponentFactory } from '../ComponentFactory.js';
 
 export class ObjectComponentFactory extends ComponentFactory
 {
-    static from(entityManager, componentFunction)
+    static from(componentFunction)
     {
         const createCallback = 'create' in componentFunction
             ? componentFunction.create
@@ -12,14 +12,12 @@ export class ObjectComponentFactory extends ComponentFactory
         const destroyCallback = 'destroy' in componentFunction
             ? componentFunction.destroy
             : undefined;
-        return new (this)(entityManager, componentFunction, createCallback, destroyCallback);
+        return new (this)(componentFunction, createCallback, destroyCallback);
     }
 
-    constructor(entityManager, componentType, createCallback = undefined, destroyCallback = undefined)
+    constructor(componentType, createCallback = undefined, destroyCallback = undefined)
     {
         super(componentType);
-        
-        this.entityManager = entityManager;
 
         if (createCallback)
         {
@@ -36,9 +34,9 @@ export class ObjectComponentFactory extends ComponentFactory
     }
 
     /** @abstract */
-    create(props, entityId, entityManager) { return { ...props }; }
+    create(props, entityId) { return { ...props }; }
     /** @abstract */
-    destroy(component, entityId, entityManager) {}
+    destroy(component, entityId) {}
 
     /** @override */
     get(entityId) { return this.instances[entityId]; }
@@ -48,7 +46,7 @@ export class ObjectComponentFactory extends ComponentFactory
         let prevInstance = this.instances[entityId];
         if (!prevInstance)
         {
-            let nextInstance = this.create(props, entityId, this.entityManager);
+            let nextInstance = this.create(props, entityId);
             this.instances[entityId] = nextInstance;
             return nextInstance;
         }
@@ -62,7 +60,7 @@ export class ObjectComponentFactory extends ComponentFactory
     {
         const prevInstance = this.instances[entityId];
         this.instances[entityId] = null;
-        this.destroy(prevInstance, entityId, this.entityManager);
+        this.destroy(prevInstance, entityId);
     }
     /** @override */
     keys() { return Object.keys(this.instances); }
@@ -78,7 +76,7 @@ export class ObjectComponentFactory extends ComponentFactory
             if (component)
             {
                 instances[entityId] = null;
-                this.destroy(component, entityId, this.entityManager);
+                this.destroy(component, entityId);
             }
         }
         this.instances = {};

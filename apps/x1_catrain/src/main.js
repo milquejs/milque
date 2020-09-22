@@ -8,10 +8,14 @@ import INPUT_MAP from './assets/input.json';
 
 import { EntityManager } from './entity/EntityManager.js';
 import { GameObject } from './entity/GameObject.js';
+
+import { Transform } from './systems/Transform.js';
+
 import { CollisionSystem } from './systems/CollisionSystem.js';
 import { CollisionMask } from './systems/CollisionMask.js';
 import { Collidable } from './systems/Collidable.js';
-import { Transform } from './systems/Transform.js';
+import { CollisionMaskFactory } from './systems/CollisionMaskFactory.js';
+import { Motion } from './systems/Motion.js';
 
 window.addEventListener('DOMContentLoaded', main);
 
@@ -25,18 +29,16 @@ async function main()
         .attach(inputSource);
     const view = new CanvasView2D(display);
 
-    const entityManager = new EntityManager({
-        components: [
-            'Player',
-            'Wall',
-            Collidable,
-            CollisionMask,
-            GameObject,
-            Transform,
-        ],
-        strictMode: true,
-    });
     const aabbGraph = new AxisAlignedBoundingBoxGraph();
+
+    const entityManager = new EntityManager({ strictMode: true })
+        .register('Player')
+        .register('Wall')
+        .register(Collidable)
+        .register(GameObject)
+        .register(Transform)
+        .register(Motion)
+        .register(CollisionMask, new CollisionMaskFactory(CollisionMask, aabbGraph));
 
     const systems = {
         collision: new CollisionSystem(entityManager, aabbGraph),

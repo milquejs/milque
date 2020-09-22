@@ -1,4 +1,4 @@
-import { createComponentFactory } from './factory/ComponentFactoryRegistry.js';
+import { AutoComponentRegistry } from './AutoComponentRegistry.js';
 
 /**
  * @typedef {String} EntityId
@@ -79,33 +79,41 @@ const DEFAULT_PROPS = {};
 export class EntityManager
 {
     /**
-     * Constructs an empty entity manager with the given factories.
+     * Constructs an empty entity manager with the given component registry.
      * 
      * @param {Object} [opts] Any additional options.
-     * @param {Object} [opts.components={}] An object map of each component to its factory.
-     * @param {ComponentFactoryCallback} [opts.componentFactoryCallback] A callback function to create
-     * component factories given the type.
-     * @param {Boolean} [opts.strictMode=false] Whether to enable error checking (and throwing).
+     * @param {Map<any, import('./ComponentFactory.js').ComponentFactory>} [opts.componentRegistry]
+     * The component to factory mapping to use. If undefined, it will use an empty map for strict mode.
+     * Otherwise, it will use an AutoComponentRegistry.
+     * @param {Boolean} [opts.strictMode=false] Whether to enable error checking
+     * (and throwing).
      */
     constructor(opts = {})
     {
-        const { components = [], componentFactoryCallback = createComponentFactory, strictMode = false } = opts;
+        const {
+            componentRegistry = undefined,
+            strictMode = false
+        } = opts;
         
-        this.components = new Map();
+        this.components = componentRegistry || (strictMode ? new Map() : new AutoComponentRegistry());
         this.entities = new Set();
-        this.factoryCallback = componentFactoryCallback;
         this.strictMode = strictMode;
         this.nextAvailableEntityId = 1;
-
-        for(let componentType of components)
-        {
-            this.register(componentType, createComponentFactory(this, componentType));
-        }
     }
 
-    register(componentType, componentFactory)
+    register(componentType, componentFactory = undefined)
     {
+        if (!componentFactory)
+        {
+            componentFactory = AutoComponentRegistry.resolveComponentFactory(componentType);
+        }
         this.components.set(componentType, componentFactory);
+        return this;
+    }
+
+    unregister(componentType)
+    {
+        this.components.delete(componentType);
         return this;
     }
 
@@ -189,7 +197,7 @@ export class EntityManager
             }
         }
 
-        let factory = this.getComponentFactory(componentType);
+        let factory = this.components.get(componentType);
         let component = factory.add(entityId, props || DEFAULT_PROPS);
         return component;
     }
@@ -300,21 +308,11 @@ export class EntityManager
 
     /**
      * @param {ComponentType} componentType
-     * @returns {ComponentFactory} The component factory for the given component type.
+     * @returns {import('./factory/ComponentFactory.js').ComponentFactory} The component factory for the given component type.
      */
     getComponentFactory(componentType)
     {
-        let factory;
-        if (!this.components.has(componentType))
-        {
-            factory = this.factoryCallback(this, componentType);
-            this.components.set(componentType, factory);
-        }
-        else
-        {
-            factory = this.components.get(componentType);
-        }
-        return factory;
+        return this.components.get(componentType);
     }
 
     getComponentTypes()
@@ -364,6 +362,10 @@ export class EntityManager
     }
 }
 
+/**
+ * @param {*} componentType The component type.
+ * @returns {String} The name of the component type.
+ */
 function getComponentTypeName(componentType)
 {
     switch(typeof componentType)
