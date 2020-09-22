@@ -1,4 +1,4 @@
-import { AutoComponentRegistry } from './AutoComponentRegistry.js';
+import { AutoFactoryResolverMap, resolve } from './AutoFactoryResolver.js';
 
 /**
  * @typedef {String} EntityId
@@ -84,7 +84,7 @@ export class EntityManager
      * @param {Object} [opts] Any additional options.
      * @param {Map<any, import('./ComponentFactory.js').ComponentFactory>} [opts.componentRegistry]
      * The component to factory mapping to use. If undefined, it will use an empty map for strict mode.
-     * Otherwise, it will use an AutoComponentRegistry.
+     * If not in strict mode, it will try to resolve the factory for the given type the best it can.
      * @param {Boolean} [opts.strictMode=false] Whether to enable error checking
      * (and throwing).
      */
@@ -95,7 +95,7 @@ export class EntityManager
             strictMode = false
         } = opts;
         
-        this.components = componentRegistry || (strictMode ? new Map() : new AutoComponentRegistry());
+        this.components = componentRegistry || (strictMode ? new Map() : new AutoFactoryResolverMap());
         this.entities = new Set();
         this.strictMode = strictMode;
         this.nextAvailableEntityId = 1;
@@ -105,7 +105,7 @@ export class EntityManager
     {
         if (!componentFactory)
         {
-            componentFactory = AutoComponentRegistry.resolveComponentFactory(componentType);
+            componentFactory = resolve(componentType);
         }
         this.components.set(componentType, componentFactory);
         return this;

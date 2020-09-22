@@ -1,33 +1,13 @@
 import { ComponentFactory } from '../ComponentFactory.js';
 
-export class ObjectComponentFactory extends ComponentFactory
+export class CustomComponentFactory extends ComponentFactory
 {
-    static from(componentFunction)
-    {
-        const createCallback = 'create' in componentFunction
-            ? componentFunction.create
-            : (typeof componentFunction === 'function'
-                ? componentFunction
-                : undefined);
-        const destroyCallback = 'destroy' in componentFunction
-            ? componentFunction.destroy
-            : undefined;
-        return new (this)(componentFunction, createCallback, destroyCallback);
-    }
-
     constructor(componentType, createCallback = undefined, destroyCallback = undefined)
     {
         super(componentType);
 
-        if (createCallback)
-        {
-            this.create = createCallback;
-        }
-
-        if (destroyCallback)
-        {
-            this.destroy = destroyCallback;
-        }
+        if (createCallback) this.create = createCallback;
+        if (destroyCallback) this.destroy = destroyCallback;
 
         /** @private */
         this.instances = {};
@@ -37,7 +17,7 @@ export class ObjectComponentFactory extends ComponentFactory
     create(props, entityId) { return { ...props }; }
     /** @abstract */
     destroy(component, entityId) {}
-
+    
     /** @override */
     get(entityId) { return this.instances[entityId]; }
     /** @override */
@@ -59,8 +39,13 @@ export class ObjectComponentFactory extends ComponentFactory
     delete(entityId)
     {
         const prevInstance = this.instances[entityId];
-        this.instances[entityId] = null;
-        this.destroy(prevInstance, entityId);
+        if (prevInstance)
+        {
+            this.instances[entityId] = null;
+            this.destroy(prevInstance, entityId);
+            return true;
+        }
+        return false;
     }
     /** @override */
     keys() { return Object.keys(this.instances); }

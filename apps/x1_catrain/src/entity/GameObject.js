@@ -1,17 +1,17 @@
 export class GameObject
 {
-    static create(props, entityId, entityManager)
+    static create(props, entityId)
     {
         let instance = props;
         if (!(instance instanceof GameObject))
         {
-            instance = new GameObject(entityManager);
+            throw new Error('GameObject cannot be created without new.');
         }
         instance.onCreate();
         return instance;
     }
 
-    static destroy(component, entityId, entityManager)
+    static destroy(component, entityId)
     {
         component.onDestroy();
     }
