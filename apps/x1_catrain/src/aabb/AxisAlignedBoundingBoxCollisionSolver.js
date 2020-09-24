@@ -77,23 +77,27 @@ export function solveCollisions(boxes, targets = boxes, opts = {})
             dy = 0;
         }
 
+        /*
         if (dx || dy)
         {
             let sweep = sweepInto(target, dx, dy, others);
             if (sweep.time < 1)
             {
-                result.push(createCollisionResult(target, other, sweep.hit));
+                sweep.hit.dx *= -1;
+                sweep.hit.dy *= -1;
+                sweep.hit.nx *= -1;
+                sweep.hit.ny *= -1;
+                result.push(createCollisionResult(target, sweep.other, sweep.hit));
             }
         }
-        else
+        */
+       
+        for(let other of others)
         {
-            for(let other of others)
+            let hit = intersectAxisAlignedBoundingBox(target, other);
+            if (hit)
             {
-                let hit = intersectAxisAlignedBoundingBox(target, other);
-                if (hit)
-                {
-                    result.push(createCollisionResult(target, other, hit));
-                }
+                result.push(createCollisionResult(target, other, hit));
             }
         }
         others.length = 0;

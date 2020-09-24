@@ -24,6 +24,7 @@ const EPSILON = 1e-8;
  * @property {Number} x
  * @property {Number} y
  * @property {Number} time
+ * @property {AxisAlignedBoundingBox} other
  * @property {HitResult} hit
  */
 
@@ -221,6 +222,7 @@ export function sweepInto(a, dx, dy, others)
             temp.x = a.x;
             temp.y = a.y;
             temp.time = hit ? 0 : 1;
+            temp.other = b;
             temp.hit = hit;
         }
         else
@@ -247,6 +249,7 @@ export function sweepInto(a, dx, dy, others)
                 temp.x = a.x + dx * time;
                 temp.y = a.y + dy * time;
                 temp.time = time;
+                temp.other = b;
                 temp.hit = hit;
             }
             else
@@ -254,6 +257,7 @@ export function sweepInto(a, dx, dy, others)
                 temp.x = a.x + dx;
                 temp.y = a.y + dy;
                 temp.time = 1;
+                temp.other = null;
                 temp.hit = null;
             }
         }
@@ -263,6 +267,7 @@ export function sweepInto(a, dx, dy, others)
             result.time = temp.time;
             result.x = temp.x;
             result.y = temp.y;
+            result.other = temp.other;
             result.hit = temp.hit;
         }
     }

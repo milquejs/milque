@@ -14,6 +14,7 @@ import { Transform } from './systems/Transform.js';
 import { CollisionSystem } from './systems/CollisionSystem.js';
 import { CollisionMask } from './systems/CollisionMask.js';
 import { Collidable } from './systems/Collidable.js';
+import { MotionSystem } from './systems/MotionSystem.js';
 import { Motion } from './systems/Motion.js';
 
 window.addEventListener('DOMContentLoaded', main);
@@ -39,10 +40,11 @@ async function main()
 
     const systems = {
         collision: new CollisionSystem(entityManager),
+        motion: new MotionSystem(entityManager),
     };
 
     const player = new GameObject(
-        entityManager, ['Player', CollisionMask, Transform, Collidable]);
+        entityManager, ['Player', CollisionMask, Transform, Motion, Collidable]);
 
     const wall = new GameObject(
         entityManager, ['Wall', CollisionMask, Transform]);
@@ -69,12 +71,15 @@ function updateWorld(dt, world)
 {
     const { input, player, view } = world;
     
-    const moveSpeed = 50;
+    const moveSpeed = 1;
     let dx = input.getInputValue('MoveRight') - input.getInputValue('MoveLeft');
     let dy = input.getInputValue('MoveDown') - input.getInputValue('MoveUp');
+
+    let motion = player.get(Motion);
+    motion.motionX += dx * moveSpeed;
+    motion.motionY += dy * moveSpeed;
+    
     let transform = player.get(Transform);
-    transform.x += dx * dt * moveSpeed;
-    transform.y += dy * dt * moveSpeed;
     view.camera.moveTo(transform.x, transform.y, 0, dt);
 
     const { systems } = world;

@@ -70,13 +70,13 @@ export class CollisionSystem
                 {
                     let motion = entityManager.get(Motion, targetId);
                     let transform = entityManager.get(Transform, targetId);
-                    transform.x -= collision.hit.dx;
-                    transform.y -= collision.hit.dy;
-                    if (collision.hit.nx && Math.sign(collision.hit.nx) === Math.sign(motion.motionX))
+                    transform.x -= hit.dx;
+                    transform.y -= hit.dy;
+                    if (hit.nx && Math.sign(hit.nx) === Math.sign(motion.motionX))
                     {
                         motion.motionX = 0;
                     }
-                    if (collision.hit.ny && Math.sign(collision.hit.ny) === Math.sign(motion.motionY))
+                    if (hit.ny && Math.sign(hit.ny) === Math.sign(motion.motionY))
                     {
                         motion.motionY = 0;
                     }
