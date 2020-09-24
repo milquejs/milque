@@ -3,67 +3,73 @@ import { CollisionMask } from './CollisionMask.js';
 import { Transform } from './Transform.js';
 import { Motion } from './Motion.js';
 
+import { solveCollisions } from '../aabb/AxisAlignedBoundingBoxCollisionSolver.js';
+
 export class CollisionSystem
 {
-    constructor(entityManager, aabbGraph)
+    constructor(entityManager)
     {
         this.entityManager = entityManager;
-        this.aabbGraph = aabbGraph;
     }
 
     update(dt)
     {
-        const { entityManager, aabbGraph } = this;
+        const { entityManager } = this;
+
+        let boxes = new Map();
+        let targets = new Map();
 
         for(let entityId of entityManager.getComponentEntityIds(CollisionMask))
         {
             const collisionMask = entityManager.get(CollisionMask, entityId);
-            const collisionName = collisionMask.name;
-            let mask = aabbGraph.get(entityId, collisionName);
-            if (!mask)
+            if (collisionMask.shapeType === 'aabb')
             {
-                aabbGraph.add(entityId, collisionName, collisionMask);
-                mask = aabbGraph.get(entityId, collisionName);
-            }
-
-            if (entityManager.has(Transform, entityId))
-            {
-                let transform = entityManager.get(Transform, entityId);
-                mask.box.setPosition(transform.x, transform.y, 0);
+                let shape = collisionMask.shape;
+                if (entityManager.has(Transform, entityId))
+                {
+                    let transform = entityManager.get(Transform, entityId);
+                    shape.x = transform.x + collisionMask.offsetX;
+                    shape.y = transform.y + collisionMask.offsetY;
+                }
+                if (entityManager.has(Motion, entityId))
+                {
+                    let motion = entityManager.get(Motion, entityId);
+                    shape.dx = motion.motionX;
+                    shape.dy = motion.motionY;
+                }
+                if (entityManager.has(Collidable, entityId))
+                {
+                    let collidable = entityManager.get(Collidable, entityId);
+                    collidable.collision = null;
+                    targets.set(shape, entityId);
+                }
+                boxes.set(shape, entityId);
             }
         }
 
-        for(let collidable of entityManager.getComponentInstances(Collidable))
-        {
-            collidable.collision = null;
-        }
-
-        let collisions = aabbGraph.solve(entityManager.getComponentEntityIds(Collidable));
+        let collisions = solveCollisions(boxes.keys(), targets.keys());
         for(let collision of collisions)
         {
-            let entityId = collision.owner;
-            let otherId = collision.other;
+            let { target, other, hit } = collision;
+            let targetId = boxes.get(target);
+            let otherId = boxes.get(other);
 
-            let collidable = entityManager.get(Collidable, entityId);
+            let collidable = entityManager.get(Collidable, targetId);
             collidable.collision = collision;
-
+            
             if (entityManager.has(Collidable, otherId))
             {
                 let otherCollidable = entityManager.get(Collidable, otherId);
                 otherCollidable.collision = collision;
             }
 
-            if (entityManager.has(Motion, entityId) && entityManager.has(Transform, entityId))
+            if (entityManager.has(Motion, targetId) && entityManager.has(Transform, targetId))
             {
                 let otherCollisionMask = entityManager.get(CollisionMask, otherId);
                 if (otherCollisionMask.solid)
                 {
-                    
-                }
-                if (!solid.masks || solid.masks.length <= 0 || solid.masks.includes(collision.otherMask.name))
-                {
-                    let motion = entityManager.get('Motion', entityId);
-                    let transform = entityManager.get('Transform', entityId);
+                    let motion = entityManager.get(Motion, targetId);
+                    let transform = entityManager.get(Transform, targetId);
                     transform.x -= collision.hit.dx;
                     transform.y -= collision.hit.dy;
                     if (collision.hit.nx && Math.sign(collision.hit.nx) === Math.sign(motion.motionX))
@@ -81,22 +87,24 @@ export class CollisionSystem
 
     render(ctx)
     {
-        const { entityManager, aabbGraph } = this;
+        const { entityManager } = this;
         for(let entityId of entityManager.getComponentEntityIds(CollisionMask))
         {
-            const collisionName = entityManager.get(CollisionMask, entityId).name;
-            const mask = aabbGraph.get(entityId, collisionName);
-            const { x, y, rx, ry } = mask.box;
-            ctx.strokeStyle = 'limegreen';
-            if (entityManager.has(Collidable, entityId))
+            const collisionMask = entityManager.get(CollisionMask, entityId);
+            if (collisionMask.shapeType === 'aabb')
             {
-                let collidable = entityManager.get(Collidable, entityId);
-                if (collidable.collision)
+                const { x, y, rx, ry } = collisionMask.shape;
+                ctx.strokeStyle = 'limegreen';
+                if (entityManager.has(Collidable, entityId))
                 {
-                    ctx.strokeStyle = 'red';
+                    let collidable = entityManager.get(Collidable, entityId);
+                    if (collidable.collision)
+                    {
+                        ctx.strokeStyle = 'red';
+                    }
                 }
+                ctx.strokeRect(x - rx, y - ry, rx * 2, ry * 2);
             }
-            ctx.strokeRect(x - rx, y - ry, rx * 2, ry * 2);
         }
     }
 }

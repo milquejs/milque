@@ -14,7 +14,6 @@ import { Transform } from './systems/Transform.js';
 import { CollisionSystem } from './systems/CollisionSystem.js';
 import { CollisionMask } from './systems/CollisionMask.js';
 import { Collidable } from './systems/Collidable.js';
-import { CollisionMaskFactory } from './systems/CollisionMaskFactory.js';
 import { Motion } from './systems/Motion.js';
 
 window.addEventListener('DOMContentLoaded', main);
@@ -29,8 +28,6 @@ async function main()
         .attach(inputSource);
     const view = new CanvasView2D(display);
 
-    const aabbGraph = new AxisAlignedBoundingBoxGraph();
-
     const entityManager = new EntityManager({ strictMode: true })
         .register('Player')
         .register('Wall')
@@ -38,10 +35,10 @@ async function main()
         .register(GameObject)
         .register(Transform)
         .register(Motion)
-        .register(CollisionMask, new CollisionMaskFactory(CollisionMask, aabbGraph));
+        .register(CollisionMask);
 
     const systems = {
-        collision: new CollisionSystem(entityManager, aabbGraph),
+        collision: new CollisionSystem(entityManager),
     };
 
     const player = new GameObject(
@@ -57,7 +54,6 @@ async function main()
         entityManager,
         player,
         systems,
-        aabbGraph,
     });
 
     display.addEventListener('frame', ({ detail: { deltaTime } }) => {

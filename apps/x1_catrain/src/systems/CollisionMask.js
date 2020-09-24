@@ -1,9 +1,22 @@
+import { createAxisAlignedBoundingBox } from '../aabb/AxisAlignedBoundingBoxIntersectionSolver.js';
+
 export function CollisionMask(props)
 {
-    const { name = 'main', x = 0, y = 0, rx = 8, ry = 8, solid = true } = props;
+    const {
+        name = 'main',
+        offsetX = 0,
+        offsetY = 0,
+        shapeType = 'aabb',
+        shape = createAxisAlignedBoundingBox(0, 0, 16, 16),
+        solid = true
+    } = props;
+    
     return {
         name,
-        box: null,
+        offsetX,
+        offsetY,
+        shapeType,
+        shape,
         solid,
     };
 }
