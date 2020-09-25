@@ -16,9 +16,10 @@ import { CollisionMask } from './systems/CollisionMask.js';
 import { Collidable } from './systems/Collidable.js';
 import { MotionSystem } from './systems/MotionSystem.js';
 import { Motion } from './systems/Motion.js';
+import { GameObjectSystem } from './systems/GameObjectSystem.js';
 
 import { createWall } from './Wall.js';
-import { createPlayer } from './Player.js';
+import { Player } from './Player.js';
 
 window.addEventListener('DOMContentLoaded', main);
 
@@ -44,16 +45,13 @@ async function main()
     const systems = {
         motion: new MotionSystem(entityManager),
         collision: new CollisionSystem(entityManager),
+        gameObject: new GameObjectSystem(entityManager),
     };
 
-    const player = new GameObject(
-        entityManager, ['Player', CollisionMask, Transform, Motion, Collidable]);
-    player.get(Transform).y -= 100;
-
+    const player = new Player(entityManager, input, view);
     createWall(entityManager, -100, 0, 100, 8);
     createWall(entityManager, -100, 8, -100 + 16, 100);
     createWall(entityManager, 100 - 16, 8, 100, 100);
-    createPlayer(entityManager);
 
     const world = World.provide({
         display,
@@ -75,19 +73,6 @@ async function main()
 
 function updateWorld(dt, world)
 {
-    const { input, player, view } = world;
-    
-    const moveSpeed = 1;
-    let dx = input.getInputValue('MoveRight') - input.getInputValue('MoveLeft');
-    let dy = input.getInputValue('MoveDown') - input.getInputValue('MoveUp');
-
-    let motion = player.get(Motion);
-    motion.motionX += dx * moveSpeed;
-    motion.motionY += dy * moveSpeed;
-    
-    let transform = player.get(Transform);
-    view.camera.moveTo(transform.x, transform.y, 0, dt);
-
     const { systems } = world;
     for(let system of Object.values(systems))
     {
@@ -111,11 +96,6 @@ function renderWorld(ctx, world)
                 system.render(ctx);
             }
         }
-
-        const { player } = world;
-        let transform = player.get(Transform);
-        ctx.fillStyle = 'red';
-        ctx.fillRect(transform.x - 8, transform.y - 8, 16, 16);
     }
     ctx.setTransform();
 }
