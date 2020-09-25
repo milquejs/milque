@@ -1,4 +1,4 @@
-import { GameObject } from './entity/GameObject.js';
+import { EntityBuilder } from './entity/EntityBuilder.js';
 import { CollisionMask } from './systems/CollisionMask.js';
 import { Transform } from './systems/Transform.js';
 
@@ -9,19 +9,21 @@ export function createWall(entityManager, left, top, right, bottom)
     const x = left + rx;
     const y = top + ry;
 
-    let gameObject = new GameObject(entityManager);
+    const entityId = EntityBuilder.bindEntity(entityManager, entityManager.create());
+    {
+        let transform = EntityBuilder.addComponent(Transform);
+        transform.x = x;
+        transform.y = y;
     
-    let transform = gameObject.add(Transform);
-    transform.x = x;
-    transform.y = y;
-
-    let collisionMask = gameObject.add(CollisionMask);
-    collisionMask.solid = true;
-    collisionMask.shapeType = 'aabb';
-    collisionMask.shape = {
-        x, y,
-        rx, ry,
-    };
-
-    return gameObject;
+        let collisionMask = EntityBuilder.addComponent(CollisionMask);
+        collisionMask.solid = true;
+        collisionMask.shapeType = 'aabb';
+        collisionMask.shape = {
+            x, y,
+            rx, ry,
+        };
+    }
+    EntityBuilder.bindEntity(null, null);
+    
+    return entityId;
 }

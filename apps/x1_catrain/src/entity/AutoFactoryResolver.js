@@ -7,56 +7,16 @@ export function resolve(componentType)
 {
     switch(typeof componentType)
     {
-        case 'string': return new TagComponentFactory(componentType);
+        case 'string': return createComponentFactoryFromOptions(componentType, true, undefined, undefined, undefined, undefined);
         case 'function':
             {
-                let create = 'create' in componentType ? componentType.create : componentType;
-                let destroy = 'destroy' in componentType ? componentType.destroy : undefined;
-                if (componentType.multiple)
-                {
-                    return new CustomMultiComponentFactory(componentType, create, destroy);
-                }
-                else
-                {
-                    return new CustomComponentFactory(componentType, create, destroy);
-                }
+                const { tag, template, create = componentType, destroy, multiple } = componentType;
+                return createComponentFactoryFromOptions(componentType, tag, template, create, destroy, multiple);
             }
         case 'object':
             {
-                const { template, create, destroy, multiple } = componentType;
-                if (template)
-                {
-                    if (create || destroy)
-                    {
-                        throw new Error(`Invalid component factory option object for ${componentType} - `
-                            + 'Cannot override create() or destroy() for template component.');
-                    }
-    
-                    if (multiple)
-                    {
-                        return new TemplateMultiComponentFactory(componentType, template);
-                    }
-                    else
-                    {
-                        return new TemplateComponentFactory(componentType, template);
-                    }
-                }
-                else if (create)
-                {
-                    if (multiple)
-                    {
-                        return new CustomMultiComponentFactory(componentType, create, destroy);
-                    }
-                    else
-                    {
-                        return new CustomComponentFactory(componentType, create, destroy);
-                    }
-                }
-                else
-                {
-                    throw new Error(`Invalid component factory option object for ${componentType} - `
-                        + 'Must define template object or create().');
-                }
+                const { tag, template, create, destroy, multiple } = componentType;
+                return createComponentFactoryFromOptions(componentType, tag, template, create, destroy, multiple);
             }
         default:
             throw new Error(`Unsupported component factory option type for ${componentType}`);
@@ -103,5 +63,70 @@ export class AutoFactoryResolverMap extends Map
         {
             return result;
         }
+    }
+}
+
+function createComponentFactoryFromOptions(componentType, tag, template, create, destroy, multiple)
+{
+    if (tag)
+    {
+        if (template)
+        {
+            throw new Error(`Invalid component factory options for ${componentType} - `
+                + 'Cannot set template object for tag component.');
+        }
+
+        if (create || destroy)
+        {
+            throw new Error(`Invalid component factory options for ${componentType} - `
+                + 'Cannot override create() or destroy() for tag component.');
+        }
+
+        if (multiple)
+        {
+            throw new Error(`Invalid component factory options for ${componentType} - `
+                + 'Cannot enable \'multiple\' for tag component.');
+        }
+
+        return new TagComponentFactory(componentType);
+    }
+    else if (template)
+    {
+        if (tag)
+        {
+            throw new Error(`Invalid component factory options for ${componentType} - `
+                + 'Cannot enable \'tag\' for template component.');
+        }
+
+        if (create || destroy)
+        {
+            throw new Error(`Invalid component factory options for ${componentType} - `
+                + 'Cannot override create() or destroy() for template component.');
+        }
+
+        if (multiple)
+        {
+            return new TemplateMultiComponentFactory(componentType, template);
+        }
+        else
+        {
+            return new TemplateComponentFactory(componentType, template);
+        }
+    }
+    else if (create)
+    {
+        if (multiple)
+        {
+            return new CustomMultiComponentFactory(componentType, create, destroy);
+        }
+        else
+        {
+            return new CustomComponentFactory(componentType, create, destroy);
+        }
+    }
+    else
+    {
+        throw new Error(`Invalid component factory options for ${componentType} - `
+            + 'Must define either tag boolean, template object, or create().');
     }
 }
