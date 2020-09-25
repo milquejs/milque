@@ -103,15 +103,20 @@ export class EntityManager
 
     register(componentType, componentFactory = undefined)
     {
-        if (!componentFactory)
+        // NOTE: Only auto resolve if it doesn't exist (or it wasn't handled by the registry).
+        if (!componentFactory && !this.components.get(componentType))
         {
-            // NOTE: Only auto resolve if it doesn't exist (or it wasn't handled by the registry).
-            if (!this.components.get(componentType))
-            {
-                componentFactory = resolve(componentType);
-            }
+            componentFactory = resolve(componentType);
         }
-        this.components.set(componentType, componentFactory);
+
+        if (!this.components.has(componentType))
+        {
+            this.components.set(componentType, componentFactory);
+        }
+        else
+        {
+            throw new Error(`Component type ${getComponentTypeName(componentType)} already registered.`);
+        }
         return this;
     }
 

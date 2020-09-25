@@ -1,6 +1,6 @@
 import { createAxisAlignedBoundingBox } from '../aabb/AxisAlignedBoundingBoxIntersectionSolver.js';
 
-export function CollisionMask(props)
+export function CollisionMask(props, entityId)
 {
     const {
         name = 'main',

@@ -1,4 +1,4 @@
-import { AxisAlignedBoundingBoxGraph, CanvasView2D } from 'milque';
+import { CanvasView2D } from 'milque';
 
 import { World } from './World.js';
 
@@ -16,6 +16,9 @@ import { CollisionMask } from './systems/CollisionMask.js';
 import { Collidable } from './systems/Collidable.js';
 import { MotionSystem } from './systems/MotionSystem.js';
 import { Motion } from './systems/Motion.js';
+
+import { createWall } from './Wall.js';
+import { createPlayer } from './Player.js';
 
 window.addEventListener('DOMContentLoaded', main);
 
@@ -39,16 +42,19 @@ async function main()
         .register(CollisionMask);
 
     const systems = {
-        collision: new CollisionSystem(entityManager),
         motion: new MotionSystem(entityManager),
+        collision: new CollisionSystem(entityManager),
     };
 
     const player = new GameObject(
         entityManager, ['Player', CollisionMask, Transform, Motion, Collidable]);
+    player.get(Transform).y -= 100;
 
-    const wall = new GameObject(
-        entityManager, ['Wall', CollisionMask, Transform]);
-    
+    createWall(entityManager, -100, 0, 100, 8);
+    createWall(entityManager, -100, 8, -100 + 16, 100);
+    createWall(entityManager, 100 - 16, 8, 100, 100);
+    createPlayer(entityManager);
+
     const world = World.provide({
         display,
         input,

@@ -6,35 +6,36 @@ import { QuadTree } from './QuadTree.js';
  * @property {import('./AxisAlignedBoundingBoxIntersectionSolver.js').AxisAlignedBoundingBox} target 
  * @property {import('./AxisAlignedBoundingBoxIntersectionSolver.js').AxisAlignedBoundingBox} other 
  * @property {import('./AxisAlignedBoundingBoxIntersectionSolver.js').HitResult} hit 
+ * @property {import('./AxisAlignedBoundingBoxIntersectionSolver.js').SweepResult} [sweep=null]
  */
 
 /**
- * @typedef MotionValues
- * @property {Number} dx
- * @property {Number} dy
+ * @typedef {Array<Number>} SweepVector
  * 
- * @callback MotionCallback
+ * @callback SweepVectorCallback
  * @param {import('./AxisAlignedBoundingBoxIntersectionSolver.js').AxisAlignedBoundingBox} box
- * @returns {MotionValues}
+ * @returns {SweepVector}
  */
 
 /**
  * @param {import('./AxisAlignedBoundingBoxIntersectionSolver.js').AxisAlignedBoundingBox} target 
  * @param {import('./AxisAlignedBoundingBoxIntersectionSolver.js').AxisAlignedBoundingBox} other 
  * @param {import('./AxisAlignedBoundingBoxIntersectionSolver.js').HitResult} hit 
+ * @param {import('./AxisAlignedBoundingBoxIntersectionSolver.js').SweepResult} sweep 
  * @returns {CollisionResult}
  */
-function createCollisionResult(target, other, hit)
+function createCollisionResult(target, other, hit, sweep)
 {
     return {
         target,
         other,
         hit,
+        sweep,
     };
 }
 
-/** @type {MotionCallback} */
-function defaultMotionCallback(box) { return box; }
+/** @type {SweepVectorCallback} */
+function defaultSweepVectorCallback(box) { return box; }
 
 /**
  * Solves the current graph for collisions.
@@ -43,61 +44,47 @@ function defaultMotionCallback(box) { return box; }
  * @param {Array<Object>} [targets=boxes] A list of active target to solve
  * for. If undefined, it will solve collisions using all boxes as active targets.
  * This can be used to prune box collisions that are not relevant, or "active".
+ * @param {Object} [opts] Any additional options.
  * @param {QuadTree} [opts.quadTree] The quad tree to use for partitioning.
- * @param {MotionCallback} [opts.motionCallback] The callback to get the motion values for a target box.
+ * @param {SweepVectorCallback} [opts.sweepVectorCallback] The callback to get the sweep vector for a target box.
  * @returns {Array<CollisionResult>} The collisions found in the current graph.
  */
 export function solveCollisions(boxes, targets = boxes, opts = {})
 {
     const {
         quadTree = new QuadTree(),
-        motionCallback = defaultMotionCallback
+        sweepVectorCallback = defaultSweepVectorCallback
     } = opts;
 
-    let result = [];
     quadTree.clear();
     quadTree.insertAll(boxes);
-
-    let dx;
-    let dy;
+    
+    let result = [];
     let others = [];
     for(let target of targets)
     {
         quadTree.retrieve(target, others);
 
-        let motionValues = motionCallback(target);
-        if (motionValues)
+        let sweepVector = sweepVectorCallback(target);
+        if (sweepVector)
         {
-            dx = motionValues.dx || 0;
-            dy = motionValues.dy || 0;
+            let dx = sweepVector[0] || 0;
+            let dy = sweepVector[1] || 0;
+            let sweep = sweepInto(target, dx, dy, others);
+            if (sweep.hit)
+            {
+                result.push(createCollisionResult(target, sweep.other, sweep.hit, sweep));
+            }
         }
         else
         {
-            dx = 0;
-            dy = 0;
-        }
-
-        /*
-        if (dx || dy)
-        {
-            let sweep = sweepInto(target, dx, dy, others);
-            if (sweep.time < 1)
+            for(let other of others)
             {
-                sweep.hit.dx *= -1;
-                sweep.hit.dy *= -1;
-                sweep.hit.nx *= -1;
-                sweep.hit.ny *= -1;
-                result.push(createCollisionResult(target, sweep.other, sweep.hit));
-            }
-        }
-        */
-       
-        for(let other of others)
-        {
-            let hit = intersectAxisAlignedBoundingBox(target, other);
-            if (hit)
-            {
-                result.push(createCollisionResult(target, other, hit));
+                let hit = intersectAxisAlignedBoundingBox(target, other);
+                if (hit)
+                {
+                    result.push(createCollisionResult(target, other, hit, null));
+                }
             }
         }
         others.length = 0;

@@ -31,38 +31,50 @@ export class CollisionSystem
                     shape.x = transform.x + collisionMask.offsetX;
                     shape.y = transform.y + collisionMask.offsetY;
                 }
-                if (entityManager.has(Motion, entityId))
-                {
-                    let motion = entityManager.get(Motion, entityId);
-                    shape.dx = motion.motionX;
-                    shape.dy = motion.motionY;
-                }
                 if (entityManager.has(Collidable, entityId))
                 {
                     let collidable = entityManager.get(Collidable, entityId);
-                    collidable.collision = null;
+                    collidable.collisions.length = 0;
                     targets.set(shape, entityId);
                 }
                 boxes.set(shape, entityId);
             }
         }
 
-        let collisions = solveCollisions(boxes.keys(), targets.keys());
+        let collisions = solveCollisions(boxes.keys(), targets.keys(), {
+            // Use sweep for any entity with motion...
+            sweepVectorCallback(box)
+            {
+                let entityId = boxes.get(box);
+                if (entityManager.has(Motion, entityId))
+                {
+                    let motion = entityManager.get(Motion, entityId);
+                    return [motion.motionX, motion.motionY];
+                }
+                else
+                {
+                    return null;
+                }
+            }
+        });
+
         for(let collision of collisions)
         {
             let { target, other, hit } = collision;
             let targetId = boxes.get(target);
             let otherId = boxes.get(other);
 
+            // Update Collidable collisions...
             let collidable = entityManager.get(Collidable, targetId);
-            collidable.collision = collision;
+            collidable.collisions.push(collision);
             
             if (entityManager.has(Collidable, otherId))
             {
                 let otherCollidable = entityManager.get(Collidable, otherId);
-                otherCollidable.collision = collision;
+                otherCollidable.collisions.push(collision);
             }
 
+            // Resolve Motion for collisions...
             if (entityManager.has(Motion, targetId) && entityManager.has(Transform, targetId))
             {
                 let otherCollisionMask = entityManager.get(CollisionMask, otherId);
@@ -70,16 +82,11 @@ export class CollisionSystem
                 {
                     let motion = entityManager.get(Motion, targetId);
                     let transform = entityManager.get(Transform, targetId);
-                    transform.x -= hit.dx;
-                    transform.y -= hit.dy;
-                    if (hit.nx && Math.sign(hit.nx) === Math.sign(motion.motionX))
-                    {
-                        motion.motionX = 0;
-                    }
-                    if (hit.ny && Math.sign(hit.ny) === Math.sign(motion.motionY))
-                    {
-                        motion.motionY = 0;
-                    }
+                    // Every entity that has Motion will be using sweep test.
+                    transform.x = collision.sweep.x;
+                    transform.y = collision.sweep.y;
+                    motion.motionX = collision.sweep.dx;
+                    motion.motionY = collision.sweep.dy;
                 }
             }
         }
@@ -98,7 +105,7 @@ export class CollisionSystem
                 if (entityManager.has(Collidable, entityId))
                 {
                     let collidable = entityManager.get(Collidable, entityId);
-                    if (collidable.collision)
+                    if (collidable.collisions.length > 0)
                     {
                         ctx.strokeStyle = 'red';
                     }
