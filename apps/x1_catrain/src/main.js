@@ -1,7 +1,5 @@
 import { CanvasView2D } from 'milque';
 
-import { World } from './World.js';
-
 import { InputSource } from './input/source/InputSource.js';
 import { InputContext } from './input/InputContext.js';
 import INPUT_MAP from './assets/input.json';
@@ -9,19 +7,12 @@ import INPUT_MAP from './assets/input.json';
 import { EntityManager } from './entity/EntityManager.js';
 import { GameObject } from './entity/GameObject.js';
 
-import { Transform } from './systems/Transform.js';
-
-import { CollisionSystem } from './systems/CollisionSystem.js';
-import { CollisionMask } from './systems/CollisionMask.js';
-import { Collidable } from './systems/Collidable.js';
-import { MotionSystem } from './systems/MotionSystem.js';
-import { Motion } from './systems/Motion.js';
-import { GameObjectSystem } from './systems/GameObjectSystem.js';
-
-import { createWall } from './Wall.js';
-import { Player } from './Player.js';
-
 window.addEventListener('DOMContentLoaded', main);
+
+function initializeSystems()
+{
+    return {};
+}
 
 async function main()
 {
@@ -32,49 +23,28 @@ async function main()
         .setInputMap(INPUT_MAP)
         .attach(inputSource);
     const view = new CanvasView2D(display);
-
-    const entityManager = new EntityManager({ strictMode: true })
-        .register('Player')
-        .register('Wall')
-        .register(Collidable)
-        .register(GameObject)
-        .register(Transform)
-        .register(Motion)
-        .register(CollisionMask);
-
-    const systems = {
-        motion: new MotionSystem(entityManager),
-        collision: new CollisionSystem(entityManager),
-        gameObject: new GameObjectSystem(entityManager),
-    };
-
-    const player = new Player(entityManager, input, view);
-    createWall(entityManager, -100, 0, 100, 8);
-    createWall(entityManager, -100, 8, -100 + 16, 100);
-    createWall(entityManager, 100 - 16, 8, 100, 100);
-
-    const world = World.provide({
+    const entityManager = new EntityManager({ strictMode: true });
+    const world = {
+        ctx,
         display,
         input,
+        inputSource,
         view,
         entityManager,
-        player,
-        systems,
-        tileMap,
-    });
+    };
+    const systems = initializeSystems(world);
 
     display.addEventListener('frame', ({ detail: { deltaTime } }) => {
         const dt = deltaTime / 1000;
         inputSource.poll();
 
-        updateWorld(dt, world);
-        renderWorld(ctx, world);
+        updateSystems(dt, systems);
+        renderSystems(ctx, view, systems);
     });
 }
 
-function updateWorld(dt, world)
+function updateSystems(dt, systems)
 {
-    const { systems } = world;
     for(let system of Object.values(systems))
     {
         if ('update' in system)
@@ -84,9 +54,8 @@ function updateWorld(dt, world)
     }
 }
 
-function renderWorld(ctx, world)
+function renderSystems(ctx, view, systems)
 {
-    const { systems, view } = world;
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
     view.transformCanvas(ctx);
     {
