@@ -1,4 +1,6 @@
-class Dispenser extends GameObject
+import { GameObject } from './entity/GameObject.js';
+
+export class Dispenser extends GameObject
 {
     constructor(entityManager)
     {

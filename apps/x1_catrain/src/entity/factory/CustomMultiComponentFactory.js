@@ -6,7 +6,7 @@ import {
     addOneImpl,
     deleteImpl,
     flattenInstances,
-    getAllImpl,
+    sliceImpl,
     removeImpl,
     resolvePropsOrCallback
 } from './MultiComponentFactoryHelper.js';
@@ -35,6 +35,9 @@ export class CustomMultiComponentFactory extends CustomComponentFactory
 
     /** @override */
     get(entityId) { return this.instances[entityId][0]; }
+
+    /** @override */
+    getAll(entityId) { return this.instances[entityId]; }
 
     /** @override */
     clear()
@@ -93,12 +96,12 @@ export class CustomMultiComponentFactory extends CustomComponentFactory
         return this.removeAll(entityId, index, 1);
     }
 
-    getAll(entityId, startIndex = 0, getCount = undefined)
+    slice(entityId, startIndex = 0, getCount = undefined)
     {
-        return getAllImpl(this.instances, entityId, startIndex, getCount);
+        return sliceImpl(this.instances, entityId, startIndex, getCount);
     }
 
-    getOne(entityId, index = 0)
+    at(entityId, index = 0)
     {
         return this.instances[entityId][index];
     }

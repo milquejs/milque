@@ -95,6 +95,7 @@ export class EntityManager
             strictMode = false
         } = opts;
         
+        /** @type {Map<EntityId, import('./ComponentFactory.js').ComponentFactory>} */
         this.components = componentRegistry || (strictMode ? new Map() : new AutoFactoryResolverMap());
         this.entities = new Set();
         this.strictMode = strictMode;
@@ -103,26 +104,24 @@ export class EntityManager
 
     register(componentType, componentFactory = undefined)
     {
-        // NOTE: Only auto resolve if it doesn't exist (or it wasn't handled by the registry).
-        if (!componentFactory && !this.components.get(componentType))
-        {
-            componentFactory = resolve(componentType);
-        }
-
         if (!this.components.has(componentType))
         {
+            // NOTE: Only auto resolve if it doesn't exist (or it wasn't handled by the registry).
+            if (!componentFactory && !this.components.get(componentType))
+            {
+                componentFactory = resolve(componentType);
+            }
             this.components.set(componentType, componentFactory);
-        }
-        else
-        {
-            throw new Error(`Component type ${getComponentTypeName(componentType)} already registered.`);
         }
         return this;
     }
 
     unregister(componentType)
     {
-        this.components.delete(componentType);
+        if (this.components.has(componentType))
+        {
+            this.components.delete(componentType);
+        }
         return this;
     }
 
@@ -266,6 +265,32 @@ export class EntityManager
 
         let factory = this.components.get(componentType);
         return factory.get(entityId);
+    }
+
+    /**
+     * Finds all the components for the given entity. Assumes the component
+     * type exists for the entity.
+     * 
+     * If the component is non-multiple, it will return an array of the only
+     * associated instance.
+     * 
+     * @param {ComponentType} componentType The target component type.
+     * @param {EntityId} entityId The id of the entity to look in.
+     * @returns {Object} The component found. If it does not exist, null
+     * is returned instead.
+     */
+    getAll(componentType, entityId)
+    {
+        if (this.strictMode)
+        {
+            if (!this.components.has(componentType))
+            {
+                throw new Error(`Missing component factory for ${getComponentTypeName(componentType)}.`);
+            }
+        }
+
+        let factory = this.components.get(componentType);
+        return factory.getAll(entityId);
     }
     
     /**

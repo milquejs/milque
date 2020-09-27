@@ -60,6 +60,7 @@ async function main()
         entityManager,
         player,
         systems,
+        tileMap,
     });
 
     display.addEventListener('frame', ({ detail: { deltaTime } }) => {

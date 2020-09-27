@@ -113,7 +113,7 @@ export function removeImpl(instances, entityId, startIndex, removeCount)
     return result;
 }
 
-export function getAllImpl(instances, entityId, startIndex, getCount)
+export function sliceImpl(instances, entityId, startIndex, getCount)
 {
     let list = instances[entityId];
     if (getCount)

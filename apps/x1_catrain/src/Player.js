@@ -18,10 +18,6 @@ export class Player extends GameObject
         let collisionMask = this.add(CollisionMask);
         collisionMask.shape.rx = 8;
         collisionMask.shape.ry = 8;
-        let actionMask = this.add(CollisionMask);
-        actionMask.name = 'action';
-        actionMask.solid = false;
-        actionMask.trigger = true;
         let transform = this.add(Transform);
         transform.y -= 100;
         this.add(Motion);
