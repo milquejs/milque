@@ -9,6 +9,7 @@ export class CollisionSystem
 {
     constructor(entityManager)
     {
+        /** @type {import('../entity/EntityManager.js').EntityManager} */
         this.entityManager = entityManager;
     }
 
@@ -17,27 +18,31 @@ export class CollisionSystem
         const { entityManager } = this;
 
         let boxes = new Map();
+        let masks = new Map();
         let targets = new Map();
 
-        for(let entityId of entityManager.getComponentEntityIds(CollisionMask))
+        for(let [entityId, collisionMasks] of entityManager.getComponentFactory(CollisionMask).entries())
         {
-            const collisionMask = entityManager.get(CollisionMask, entityId);
-            if (collisionMask.shapeType === 'aabb')
+            for(let collisionMask of collisionMasks)
             {
-                let shape = collisionMask.shape;
-                if (entityManager.has(Transform, entityId))
+                if (collisionMask.shapeType === 'aabb')
                 {
-                    let transform = entityManager.get(Transform, entityId);
-                    shape.x = transform.x + collisionMask.offsetX;
-                    shape.y = transform.y + collisionMask.offsetY;
+                    let shape = collisionMask.shape;
+                    if (entityManager.has(Transform, entityId))
+                    {
+                        let transform = entityManager.get(Transform, entityId);
+                        shape.x = transform.x + collisionMask.offsetX;
+                        shape.y = transform.y + collisionMask.offsetY;
+                    }
+                    if (entityManager.has(Collidable, entityId))
+                    {
+                        let collidable = entityManager.get(Collidable, entityId);
+                        collidable.collisions.length = 0;
+                        targets.set(shape, entityId);
+                    }
+                    boxes.set(shape, entityId);
+                    masks.set(shape, collisionMask);
                 }
-                if (entityManager.has(Collidable, entityId))
-                {
-                    let collidable = entityManager.get(Collidable, entityId);
-                    collidable.collisions.length = 0;
-                    targets.set(shape, entityId);
-                }
-                boxes.set(shape, entityId);
             }
         }
 
@@ -55,38 +60,41 @@ export class CollisionSystem
                 {
                     return null;
                 }
+            },
+            filter(target, other)
+            {
+                let targetId = boxes.get(target);
+                let otherId = boxes.get(other);
+                return targetId !== otherId;
             }
         });
 
         for(let collision of collisions)
         {
-            let { target, other, hit } = collision;
+            let { target, other } = collision;
             let targetId = boxes.get(target);
-            let otherId = boxes.get(other);
+            let collisionMask = masks.get(target);
+            let otherCollisionMask = masks.get(other);
 
             // Update Collidable collisions...
             let collidable = entityManager.get(Collidable, targetId);
             collidable.collisions.push(collision);
-            
-            if (entityManager.has(Collidable, otherId))
-            {
-                let otherCollidable = entityManager.get(Collidable, otherId);
-                otherCollidable.collisions.push(collision);
-            }
 
             // Resolve Motion for collisions...
-            if (entityManager.has(Motion, targetId) && entityManager.has(Transform, targetId))
+            if (!collisionMask.trigger)
             {
-                let otherCollisionMask = entityManager.get(CollisionMask, otherId);
-                if (otherCollisionMask.solid)
+                if (entityManager.has(Motion, targetId) && entityManager.has(Transform, targetId))
                 {
-                    let motion = entityManager.get(Motion, targetId);
-                    let transform = entityManager.get(Transform, targetId);
-                    // Every entity that has Motion will be using sweep test.
-                    transform.x = collision.sweep.x;
-                    transform.y = collision.sweep.y;
-                    motion.motionX = collision.sweep.dx;
-                    motion.motionY = collision.sweep.dy;
+                    if (otherCollisionMask.solid)
+                    {
+                        let motion = entityManager.get(Motion, targetId);
+                        let transform = entityManager.get(Transform, targetId);
+                        // Every entity that has Motion will be using sweep test.
+                        transform.x = collision.sweep.x;
+                        transform.y = collision.sweep.y;
+                        motion.motionX = collision.sweep.dx;
+                        motion.motionY = collision.sweep.dy;
+                    }
                 }
             }
         }
@@ -95,22 +103,25 @@ export class CollisionSystem
     render(ctx)
     {
         const { entityManager } = this;
-        for(let entityId of entityManager.getComponentEntityIds(CollisionMask))
+        for(let [entityId, collisionMasks] of entityManager.getComponentFactory(CollisionMask).entries())
         {
-            const collisionMask = entityManager.get(CollisionMask, entityId);
-            if (collisionMask.shapeType === 'aabb')
+            for(let collisionMask of collisionMasks)
             {
-                const { x, y, rx, ry } = collisionMask.shape;
-                ctx.strokeStyle = 'limegreen';
-                if (entityManager.has(Collidable, entityId))
+                const { shapeType, shape } = collisionMask;
+                if (shapeType === 'aabb')
                 {
-                    let collidable = entityManager.get(Collidable, entityId);
-                    if (collidable.collisions.length > 0)
+                    const { x, y, rx, ry } = shape;
+                    ctx.strokeStyle = 'limegreen';
+                    if (entityManager.has(Collidable, entityId))
                     {
-                        ctx.strokeStyle = 'red';
+                        let collidable = entityManager.get(Collidable, entityId);
+                        if (collidable.collisions.length > 0)
+                        {
+                            ctx.strokeStyle = 'red';
+                        }
                     }
+                    ctx.strokeRect(x - rx, y - ry, rx * 2, ry * 2);
                 }
-                ctx.strokeRect(x - rx, y - ry, rx * 2, ry * 2);
             }
         }
     }

@@ -57,11 +57,6 @@ export class CustomMultiComponentFactory extends CustomComponentFactory
 
     /** @override */
     values() { return flattenInstances([], this.instances); }
-    
-    entries()
-    {
-        return Object.entries(this.instances);
-    }
 
     addAll(entityId, addCount = 1, propsOrCallback = undefined)
     {

@@ -46,5 +46,7 @@ export class TemplateComponentFactory extends ComponentFactory
     /** @override */
     values() { return Object.values(this.instances); }
     /** @override */
+    entries() { return Object.entries(this.instances); }
+    /** @override */
     clear() { this.instances = {}; }
 }

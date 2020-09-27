@@ -8,7 +8,8 @@ export function CollisionMask(props, entityId)
         offsetY = 0,
         shapeType = 'aabb',
         shape = createAxisAlignedBoundingBox(0, 0, 16, 16),
-        solid = true
+        solid = true,
+        trigger = false,
     } = props;
     
     return {
@@ -18,6 +19,7 @@ export function CollisionMask(props, entityId)
         shapeType,
         shape,
         solid,
+        trigger,
     };
 }
 CollisionMask.multiple = true;

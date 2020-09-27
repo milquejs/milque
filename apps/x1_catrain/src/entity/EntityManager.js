@@ -317,7 +317,7 @@ export class EntityManager
 
     /**
      * @param {ComponentType} componentType
-     * @returns {import('./factory/ComponentFactory.js').ComponentFactory} The component factory for the given component type.
+     * @returns {import('./ComponentFactory.js').ComponentFactory} The component factory for the given component type.
      */
     getComponentFactory(componentType)
     {

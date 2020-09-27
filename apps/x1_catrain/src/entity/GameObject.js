@@ -17,7 +17,6 @@ export class GameObject
     }
 
     /**
-     * 
      * @param {import('./EntityManager.js').EntityManager} entityManager The entity manager to own this object.
      * @param {Array<import('./EntityManager.js').ComponentType>} [componentTypes] 
      * @param {Object} [initialValues]
@@ -59,9 +58,15 @@ export class GameObject
         this.listeners = {};
     }
 
-    add(componentType)
+    /**
+     * @template T
+     * @param {import('./EntityBuilder.js').ComponentType<T>} componentType 
+     * @param {Object} [props]
+     * @returns {T}
+     */
+    add(componentType, props = undefined)
     {
-        return this.entityManager.add(componentType, this.entityId);
+        return this.entityManager.add(componentType, this.entityId, props);
     }
 
     remove(componentType)

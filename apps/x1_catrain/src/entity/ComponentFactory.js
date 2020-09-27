@@ -1,4 +1,3 @@
-/** @interface */
 export class ComponentFactory
 {
     constructor(componentType)
@@ -11,5 +10,6 @@ export class ComponentFactory
     delete(entityId) {}
     keys() { return []; }
     values() { return []; }
+    entries() { return []; }
     clear() {}
 }

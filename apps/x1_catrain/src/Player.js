@@ -1,3 +1,4 @@
+import { createAxisAlignedBoundingBox } from './aabb/AxisAlignedBoundingBoxIntersectionSolver.js';
 import { GameObject } from './entity/GameObject.js';
 import { Collidable } from './systems/Collidable.js';
 import { CollisionMask } from './systems/CollisionMask.js';
@@ -14,7 +15,13 @@ export class Player extends GameObject
         this.view = view;
 
         this.add('Player');
-        this.add(CollisionMask);
+        let collisionMask = this.add(CollisionMask);
+        collisionMask.shape.rx = 8;
+        collisionMask.shape.ry = 8;
+        let actionMask = this.add(CollisionMask);
+        actionMask.name = 'action';
+        actionMask.solid = false;
+        actionMask.trigger = true;
         let transform = this.add(Transform);
         transform.y -= 100;
         this.add(Motion);

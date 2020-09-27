@@ -30,11 +30,6 @@ export class TemplateMultiComponentFactory extends TemplateComponentFactory
 
     /** @override */
     values() { return flattenInstances([], this.instances); }
-    
-    entries()
-    {
-        return Object.entries(this.instances);
-    }
 
     addAll(entityId, addCount = 1, propsOrCallback = undefined)
     {

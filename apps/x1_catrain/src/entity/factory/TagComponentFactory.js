@@ -20,5 +20,7 @@ export class TagComponentFactory extends ComponentFactory
     /** @override */
     values() { return this.instances.values(); }
     /** @override */
+    entries() { return this.instances.entries(); }
+    /** @override */
     clear() { this.instances.clear(); }
 }

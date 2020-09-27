@@ -47,13 +47,15 @@ function defaultSweepVectorCallback(box) { return box; }
  * @param {Object} [opts] Any additional options.
  * @param {QuadTree} [opts.quadTree] The quad tree to use for partitioning.
  * @param {SweepVectorCallback} [opts.sweepVectorCallback] The callback to get the sweep vector for a target box.
+ * @param {Function} [opts.filter]
  * @returns {Array<CollisionResult>} The collisions found in the current graph.
  */
 export function solveCollisions(boxes, targets = boxes, opts = {})
 {
     const {
         quadTree = new QuadTree(),
-        sweepVectorCallback = defaultSweepVectorCallback
+        sweepVectorCallback = defaultSweepVectorCallback,
+        filter,
     } = opts;
 
     quadTree.clear();
@@ -68,6 +70,10 @@ export function solveCollisions(boxes, targets = boxes, opts = {})
         let sweepVector = sweepVectorCallback(target);
         if (sweepVector)
         {
+            if (filter)
+            {
+                others = others.filter(value => filter(target, value));
+            }
             let dx = sweepVector[0] || 0;
             let dy = sweepVector[1] || 0;
             let sweep = sweepInto(target, dx, dy, others);
@@ -80,10 +86,13 @@ export function solveCollisions(boxes, targets = boxes, opts = {})
         {
             for(let other of others)
             {
-                let hit = intersectAxisAlignedBoundingBox(target, other);
-                if (hit)
+                if (!filter || filter(target, other))
                 {
-                    result.push(createCollisionResult(target, other, hit, null));
+                    let hit = intersectAxisAlignedBoundingBox(target, other);
+                    if (hit)
+                    {
+                        result.push(createCollisionResult(target, other, hit, null));
+                    }
                 }
             }
         }
