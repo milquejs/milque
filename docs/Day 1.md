@@ -48,7 +48,7 @@ only be created or updated. It should not support editing the mapping in
 real-time as it would complicate managing the state of inputs and listeners
 to the actual devices. That also means we should probably have an
 `InputSchemeBuilder` of some sort. Functionality wise, this should be able
-to retreive all the necessary listeners and endpoints to attach to the devices
+to retrieve all the necessary listeners and endpoints to attach to the devices
 and also the developer's input names. Between these two ends is the adapter.
 There definitely should be some pre-built. These are the three main adapters
 as mentioned in the article: State, Action, and Range. This is probably the

@@ -561,6 +561,22 @@ export class InputContext extends HTMLElement
             throw new Error(`Cannot find input with name '${inputName}'.`);
         }
     }
+
+    getInputValue(inputName)
+    {
+        if (inputName in this._inputs)
+        {
+            return this._inputs[inputName].value;
+        }
+        else if (!this.strict)
+        {
+            return 0;
+        }
+        else
+        {
+            throw new Error(`Cannot find input with name '${inputName}'.`);
+        }
+    }
 }
 window.customElements.define('input-context', InputContext);
 

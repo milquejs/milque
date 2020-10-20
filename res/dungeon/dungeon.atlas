@@ -1,3 +1,5 @@
+#! dungeon.png
+
 wall_top_left 16 0 16 16
 wall_top_mid 32 0 16 16
 wall_top_right 48 0 16 16
@@ -71,9 +73,9 @@ hole 96 144 16 16
 doors_all 16 221 64 35
 doors_frame_left 16 224 16 32
 doors_frame_top 32 221 32 3
-doors_frame_righ 63 224 16 32
+doors_frame_right 63 224 16 32
 doors_leaf_closed 32 224 32 32
-doors_leaf_open 80 224 32 32
+doors_leaf_opened 80 224 32 32
 
 chest_empty_open_anim 304 288 16 16 3
 chest_full_open_anim 304 304 16 16 3
@@ -150,7 +152,7 @@ chort_idle_anim 368 328 16 24 4
 chort_run_anim 432 328 16 24 4
 big_zombie_idle_anim 16 270 32 34 4
 big_zombie_run_anim 144 270 32 34 4
-ogre_idle_anim  16 320 32 32 4
+ogre_idle_anim 16 320 32 32 4
 ogre_run_anim 144 320 32 32 4
 big_demon_idle_anim  16 364 32 36 4
 big_demon_run_anim 144 364 32 36 4

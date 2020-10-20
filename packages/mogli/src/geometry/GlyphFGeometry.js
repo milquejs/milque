@@ -1,4 +1,4 @@
-import { mat4 } from '../../../../deps.js';
+import { mat4 } from 'gl-matrix';
 import { applyColor, applyTransformation, joinGeometry } from './GeometryHelper.js';
 import * as CubeGeometry from './CubeGeometry.js';
 

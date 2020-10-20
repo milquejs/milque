@@ -1,4 +1,4 @@
-import { vec3, mat3 } from '../../../../deps.js';
+import { vec3, mat3 } from 'gl-matrix';
 
 export function create(position, texcoord, normal, indices, color = undefined)
 {
