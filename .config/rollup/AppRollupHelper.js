@@ -20,12 +20,15 @@ const STATIC_FILES = [
     '../../res',
     'res',
 ];
-const EXTERNAL_ASSETS = [
-    { src: 'src/assets/template.html', rename: 'index.html' },
-];
+const EXTERNAL_ASSETS = [];
 
-export function rollupConfig(args, packageJson)
+export function rollupConfig(args, packageJson, opts = { indexHTML: 'src/assets/template.html' })
 {
+    EXTERNAL_ASSETS.push({
+        src: opts.indexHTML,
+        rename: 'index.html',
+    });
+
     return args.watch
         ? development(packageJson)
         : production(packageJson);

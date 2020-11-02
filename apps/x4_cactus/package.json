@@ -1,0 +1,34 @@
+{
+  "name": "x-cactus-2",
+  "version": "1.0.0",
+  "description": "A milque.js app.",
+  "browser": "dist/index.js",
+  "author": "Andrew Kuo",
+  "license": "MIT",
+  "keywords": [
+    "milque"
+  ],
+  "scripts": {
+    "start": "rollup --config --watch",
+    "build": "rollup --config",
+    "build-all": "node ../../.config/build-all.js milque-app"
+  },
+  "dependencies": {
+    "@ctrl/tinycolor": "^3.1.4",
+    "gl-matrix": "^3.3.0",
+    "milque": "^0.0.1"
+  },
+  "devDependencies": {
+    "@rollup/plugin-alias": "^3.1.1",
+    "@rollup/plugin-commonjs": "^15.0.0",
+    "@rollup/plugin-node-resolve": "^9.0.0",
+    "rollup": "^2.26.10",
+    "rollup-plugin-clear": "^2.0.7",
+    "rollup-plugin-copy": "^3.3.0",
+    "rollup-plugin-livereload": "^2.0.0",
+    "rollup-plugin-serve": "^1.0.4",
+    "rollup-plugin-size-snapshot": "^0.12.0",
+    "rollup-plugin-terser": "^7.0.2",
+    "rollup-plugin-watch-assets": "^1.0.1"
+  }
+}
