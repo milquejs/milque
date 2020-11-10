@@ -1,5 +1,5 @@
-import { mat4, vec4 } from 'gl-matrix';
-import { TextLoader, vec3 } from 'milque';
+import { mat4, quat, vec4 } from 'gl-matrix';
+import { OBJLoader, TextLoader, vec3 } from 'milque';
 
 import * as GLUtil from './gl/index.js';
 import * as CameraUtil from './camera/index.js';
@@ -11,6 +11,7 @@ async function main()
 {
     const display = document.querySelector('display-port');
     const input = INPUT_CONTEXT;
+    /** @type {WebGLRenderingContext} */
     const gl = display.canvas.getContext('webgl');
     if (!gl) throw new Error('Your browser does not support WebGL.');
 
@@ -19,6 +20,7 @@ async function main()
     const assets = {
         mainVertexShaderSource: await TextLoader.loadText('main.vert'),
         mainFragmentShaderSource: await TextLoader.loadText('main.frag'),
+        cubeObj: await OBJLoader.loadOBJ('cube.obj'),
     };
 
     const mainProgram = GLUtil.createProgramInfo(gl,
@@ -27,17 +29,21 @@ async function main()
             .shader(gl.FRAGMENT_SHADER, assets.mainFragmentShaderSource)
             .link());
     
-    const positions = [
-        0, 0,
-        0, 0.5,
-        0.5, 0,
-    ];
-
+    const positionBufferSource = GLUtil.createBufferSource(gl, gl.FLOAT, assets.cubeObj.positions);
     const positionBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
+    gl.bufferData(gl.ARRAY_BUFFER, positionBufferSource, gl.STATIC_DRAW);
 
-    const mainCamera = CameraUtil.createOrthographicCamera(gl.canvas, -1, -1, 1, 1);
+    const elementBufferSource = GLUtil.createBufferSource(gl, gl.UNSIGNED_SHORT, assets.cubeObj.indices);
+    const elementBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, elementBuffer);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, elementBufferSource, gl.STATIC_DRAW);
+
+    const mainCamera = CameraUtil.createPerspectiveCamera(gl.canvas);
+    mat4.fromRotationTranslation(
+        mainCamera.viewMatrix,
+        quat.fromEuler(quat.create(), 30, 30, 30),
+        vec3.fromValues(0, 0, -10));
     
     const world = {};
     const game = {
@@ -67,17 +73,19 @@ async function main()
         let program = mainProgram;
         let camera = mainCamera;
 
+        /*
         let target = vec3.create();
         let invProjection = mat4.invert(mat4.create(), camera.projectionMatrix);
         vec3.transformMat4(target, [(cursorX - 0.5) * 2, -(cursorY - 0.5) * 2, 0], invProjection);
         CameraUtil.panTo(camera.viewMatrix, target[0], target[1], 0, 0.1);
+        */
         
         program.bind(gl)
             .uniform('u_projection', camera.projectionMatrix)
             .uniform('u_view', camera.viewMatrix)
             .uniform('u_color', vec4.fromValues(1 * cursorX, 1 * cursorY, 0.5, 1))
-            .attribute('a_position', positionBuffer, 2)
-            .draw(gl, gl.TRIANGLES, 0, 3);
+            .attribute('a_position', positionBuffer, 3)
+            .draw(gl, gl.TRIANGLES, 0, elementBufferSource.length, elementBuffer);
     });
 }
 

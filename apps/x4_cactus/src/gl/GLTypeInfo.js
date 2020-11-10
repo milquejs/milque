@@ -1,5 +1,22 @@
+/**
+ * @typedef TypeInfo
+ * @property {Array} TypedArray
+ * @property {Number} size
+ * @property {Function} uniform
+ * @property {Function} [arrayUniform]
+ * @property {Number} [arrayType]
+ * @property {Function} [sampler]
+ * @property {Function} [arraySampler]
+ * @property {Number} [bindPoint]
+ */
+
 let TYPE_INFO = null;
 
+/**
+ * @param {WebGLRenderingContext} gl 
+ * @param {Number} type 
+ * @returns {TypeInfo}
+ */
 export function getTypeInfo(gl, type) {
     if (!TYPE_INFO) {
         TYPE_INFO = createTypeInfo(gl);
@@ -13,8 +30,15 @@ export function isUniformSamplerType(gl, type) {
     return 'sampler' in typeInfo;
 }
 
-/** Get the element type if the passed-in type is a vector type. Otherwise, returns the same type. */
-export function getVectorElementType(gl, type)
+/**
+ * Get the component type if the passed-in type is a vertex type. Otherwise,
+ * returns the same type (treated as a single component vector).
+ * 
+ * @param {WebGLRenderingContext} gl
+ * @param {Number} type
+ * @returns {Number} The vertex component type.
+ */
+export function getVertexComponentType(gl, type)
 {
     let typeInfo = getTypeInfo(gl, type);
     if ('arrayType' in typeInfo)

@@ -1,5 +1,5 @@
 import { findActiveAttributes, findActiveUniforms } from './ProgramHelper.js';
-import { getVectorElementType } from './GLTypeInfo.js';
+import { getVertexComponentType } from './GLTypeInfo.js';
 import { draw } from './GLHelper.js';
 
 export function createProgramInfo(gl, program)
@@ -70,7 +70,7 @@ export class ProgramInfoDrawContext
             let location = attribute.location;
             if (buffer)
             {
-                let type = getVectorElementType(gl, attribute.type);
+                let type = getVertexComponentType(gl, attribute.type);
                 gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
                 gl.vertexAttribPointer(location, size, type, normalize, stride, offset);
                 gl.enableVertexAttribArray(location);
@@ -82,10 +82,19 @@ export class ProgramInfoDrawContext
         }
         return this;
     }
-
-    draw(gl, mode, offset, count, elements = null)
+    
+    /**
+     * Draws using this program.
+     * 
+     * @param {WebGLRenderingContext} gl 
+     * @param {Number} mode 
+     * @param {Number} offset 
+     * @param {Number} count 
+     * @param {WebGLBuffer} elementBuffer 
+     */
+    draw(gl, mode, offset, count, elementBuffer = null)
     {
-        draw(gl, mode, offset, count, elements);
+        draw(gl, mode, offset, count, elementBuffer);
         return this.parent;
     }
 }
