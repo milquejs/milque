@@ -1,14 +1,14 @@
-import { toRadians } from 'milque';
 import { mat4 } from 'gl-matrix';
 
-export function createPerspectiveCamera(canvas, fieldOfView = toRadians(40), near = 0.1, far = 1000)
+const DEFAULT_FOVY = Math.PI / 3;
+export function createPerspectiveCamera(canvas, fieldOfView = DEFAULT_FOVY, near = 0.1, far = 1000)
 {
     return new PerspectiveCamera(canvas, fieldOfView, near, far);
 }
 
 export class PerspectiveCamera
 {
-    constructor(canvas, fieldOfView = toRadians(40), near = 0.1, far = 1000)
+    constructor(canvas, fieldOfView = DEFAULT_FOVY, near = 0.1, far = 1000)
     {
         this.canvas = canvas;
         this.fieldOfView = fieldOfView;

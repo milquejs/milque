@@ -1,5 +1,5 @@
-import { mat4, quat, vec4 } from 'gl-matrix';
-import { OBJLoader, TextLoader, vec3 } from 'milque';
+import { mat4, quat, vec3, vec4 } from 'gl-matrix';
+import { OBJLoader, TextLoader } from 'milque';
 
 import * as GLUtil from './gl/index.js';
 import * as CameraUtil from './camera/index.js';
@@ -11,6 +11,19 @@ async function main()
 {
     const display = document.querySelector('display-port');
     const input = INPUT_CONTEXT;
+    display.addEventListener('focus', () => {
+        if (document.pointerLockElement !== display)
+        {
+            display.requestPointerLock();
+        }
+    });
+    document.addEventListener('pointerlockchange', () => {
+        if (document.pointerLockElement !== display)
+        {
+            display.blur();
+        }
+    });
+
     /** @type {WebGLRenderingContext} */
     const gl = display.canvas.getContext('webgl');
     if (!gl) throw new Error('Your browser does not support WebGL.');
@@ -40,10 +53,7 @@ async function main()
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, elementBufferSource, gl.STATIC_DRAW);
 
     const mainCamera = CameraUtil.createPerspectiveCamera(gl.canvas);
-    mat4.fromRotationTranslation(
-        mainCamera.viewMatrix,
-        quat.fromEuler(quat.create(), 30, 30, 30),
-        vec3.fromValues(0, 0, -10));
+    const mainCameraController = CameraUtil.createFirstPersonCameraController({ xzlock: true });
     
     const world = {};
     const game = {
@@ -56,15 +66,35 @@ async function main()
         program: mainProgram,
     };
 
+    function createCube(x = 0, y = 0, z = 0, dx = 1, dy = 1, dz = 1)
+    {
+        return {
+            transform: mat4.fromRotationTranslationScale(
+                mat4.create(),
+                quat.create(),
+                vec3.fromValues(x, y, z),
+                vec3.fromValues(dx, dy, dz)),
+            color: vec4.fromValues(Math.random(), Math.random(), Math.random(), 1),
+        };
+    }
+
+    let cubes = [
+        createCube(-1, -1, -1),
+        createCube(1, 1, 1),
+    ];
+
     initialize(game);
 
     display.addEventListener('frame', e => {
         const dt = (e.detail.deltaTime / 1000) * 60;
+        input.inputSource.poll();
         update(dt, world);
         render(gl, world);
 
-        const cursorX = input.getInputValue('cursorX');
-        const cursorY = input.getInputValue('cursorY');
+        const lookX = input.getInputValue('PointerMovementX');
+        const lookY = input.getInputValue('PointerMovementY');
+        const moveX = input.getInputValue('MoveRight') - input.getInputValue('MoveLeft');
+        const moveZ = input.getInputValue('MoveUp') - input.getInputValue('MoveDown');
 
         gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
         gl.clearColor(0, 0, 0, 0);
@@ -72,20 +102,29 @@ async function main()
 
         let program = mainProgram;
         let camera = mainCamera;
-
+        
+        mainCameraController.look(lookX * 100, -lookY * 60);
+        mainCameraController.move(moveZ, moveX);
+        mainCameraController.apply(camera.viewMatrix);
+        
         /*
         let target = vec3.create();
         let invProjection = mat4.invert(mat4.create(), camera.projectionMatrix);
         vec3.transformMat4(target, [(cursorX - 0.5) * 2, -(cursorY - 0.5) * 2, 0], invProjection);
         CameraUtil.panTo(camera.viewMatrix, target[0], target[1], 0, 0.1);
         */
-        
-        program.bind(gl)
-            .uniform('u_projection', camera.projectionMatrix)
-            .uniform('u_view', camera.viewMatrix)
-            .uniform('u_color', vec4.fromValues(1 * cursorX, 1 * cursorY, 0.5, 1))
-            .attribute('a_position', positionBuffer, 3)
-            .draw(gl, gl.TRIANGLES, 0, elementBufferSource.length, elementBuffer);
+        const ctx = program.bind(gl);
+        {
+            ctx.uniform('u_projection', camera.projectionMatrix);
+            ctx.uniform('u_view', camera.viewMatrix);
+            ctx.attribute('a_position', positionBuffer, 3);
+            for(let cube of cubes)
+            {
+                ctx.uniform('u_model', cube.transform);
+                ctx.uniform('u_color', cube.color);
+                ctx.draw(gl, gl.TRIANGLES, 0, elementBufferSource.length, elementBuffer);
+            }
+        }
     });
 }
 

@@ -11,6 +11,7 @@
   "scripts": {
     "start": "rollup --config --watch",
     "build": "rollup --config",
+    "build-deps": "node ../../.config/build-all.js x-cactus-2",
     "build-all": "node ../../.config/build-all.js milque-app"
   },
   "dependencies": {
