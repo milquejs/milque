@@ -1,10 +1,11 @@
-import { mat4, quat, vec3, vec4 } from 'gl-matrix';
+import { mat4, quat, vec3 } from 'gl-matrix';
 import { OBJLoader, TextLoader } from 'milque';
 
 import * as GLUtil from './gl/index.js';
 import * as CameraUtil from './camera/index.js';
 import { INPUT_CONTEXT } from './input.js';
-import { screenToWorldRay } from './camera/index.js';
+import { SceneGraph } from './scene/SceneGraph.js';
+import * as TransformUtil from './TransformHelper.js';
 
 document.addEventListener('DOMContentLoaded', main);
 
@@ -55,8 +56,7 @@ async function main()
 
     const mainCamera = CameraUtil.createPerspectiveCamera(gl.canvas);
     const mainCameraController = CameraUtil.createFirstPersonCameraController({ locky: true });
-    
-    
+
     const world = {};
     const game = {
         display,
@@ -68,33 +68,68 @@ async function main()
         program: mainProgram,
     };
 
+    const transforms = new Map();
+    const sceneGraph = new SceneGraph();
+
     function createCube(
         x = 0, y = 0, z = 0,
         dx = 1, dy = 1, dz = 1,
         color = vec3.fromValues(Math.random(), Math.random(), Math.random()))
     {
+        let sceneNode = sceneGraph.createSceneNode();
+        let transform = TransformUtil.createTransform();
+        mat4.fromRotationTranslationScale(
+            transform.localMatrix,
+            quat.create(),
+            vec3.fromValues(x, y, z),
+            vec3.fromValues(dx, dy, dz));
+        transforms.set(sceneNode, transform);
         return {
-            transform: mat4.fromRotationTranslationScale(
-                mat4.create(),
-                quat.create(),
-                vec3.fromValues(x, y, z),
-                vec3.fromValues(dx, dy, dz)),
+            sceneNode,
+            transform,
             color,
         };
     }
 
-    const s1 = 0.01;
-    const s2 = 0.1;
-    const s3 = s1 + s2;
-    const transformGizmo = {
-        transform: mat4.create(),
-        xAxis: createCube(s3, 0, 0, s2, s1, s1, vec3.fromValues(1, 0, 0)),
-        yAxis: createCube(0, s3, 0, s1, s2, s1, vec3.fromValues(0, 1, 0)),
-        zAxis: createCube(0, 0, s3, s1, s1, s2, vec3.fromValues(0, 0, 1)),
-        origin: createCube(0, 0, 0, s1, s1, s1, vec3.fromValues(1, 1, 1)),
-    };
+    function createGroup(
+        x = 0, y = 0, z = 0,
+        dx = 1, dy = 1, dz = 1)
+    {
+        let sceneNode = sceneGraph.createSceneNode();
+        let transform = TransformUtil.createTransform();
+        mat4.fromRotationTranslationScale(
+            transform.localMatrix,
+            quat.create(),
+            vec3.fromValues(x, y, z),
+            vec3.fromValues(dx, dy, dz));
+        transforms.set(sceneNode, transform);
+        return {
+            sceneNode,
+            transform,
+        };
+    }
 
-    let cubes = [
+    const transformGizmo = createGroup();
+    const transformAxes = [];
+    {
+        const s1 = 0.01;
+        const s2 = 0.1;
+        const s3 = s1 + s2;
+        const xAxis = createCube(s3, 0, 0, s2, s1, s1, vec3.fromValues(1, 0, 0));
+        const yAxis = createCube(0, s3, 0, s1, s2, s1, vec3.fromValues(0, 1, 0));
+        const zAxis = createCube(0, 0, s3, s1, s1, s2, vec3.fromValues(0, 0, 1));
+        const origin = createCube(0, 0, 0, s1, s1, s1, vec3.fromValues(1, 1, 1));
+        sceneGraph.parentSceneNode(xAxis.sceneNode, transformGizmo.sceneNode);
+        sceneGraph.parentSceneNode(yAxis.sceneNode, transformGizmo.sceneNode);
+        sceneGraph.parentSceneNode(zAxis.sceneNode, transformGizmo.sceneNode);
+        sceneGraph.parentSceneNode(origin.sceneNode, transformGizmo.sceneNode);
+        transformAxes.push(xAxis);
+        transformAxes.push(yAxis);
+        transformAxes.push(zAxis);
+        transformAxes.push(origin);
+    }
+
+    const cubes = [
         createCube(-1, -2, -1),
         createCube(1, 2, 1),
     ];
@@ -135,43 +170,33 @@ async function main()
         mainCameraController.move(moveZ * moveSpeed, moveX * moveSpeed);
         mainCameraController.apply(camera.viewMatrix);
 
-        let ray = screenToWorldRay(2 * (eyeX - 0.5), 2 * (0.5 - eyeY), camera.projectionMatrix, camera.viewMatrix);
+        let ray = CameraUtil.screenToWorldRay(2 * (eyeX - 0.5), 2 * (0.5 - eyeY), camera.projectionMatrix, camera.viewMatrix);
         vec3.add(ray, ray, mainCameraController.position);
-        mat4.fromTranslation(transformGizmo.transform, ray);
+        mat4.fromTranslation(transformGizmo.transform.localMatrix, ray);
         
-        /*
-        let target = vec3.create();
-        let invProjection = mat4.invert(mat4.create(), camera.projectionMatrix);
-        vec3.transformMat4(target, [(cursorX - 0.5) * 2, -(cursorY - 0.5) * 2, 0], invProjection);
-        CameraUtil.panTo(camera.viewMatrix, target[0], target[1], 0, 0.1);
-        */
         const ctx = program.bind(gl);
         {
             ctx.uniform('u_projection', camera.projectionMatrix);
             ctx.uniform('u_view', camera.viewMatrix);
             ctx.attribute('a_position', positionBuffer, 3);
+
+            // Compute matrices
+            sceneGraph.walk((sceneNode, sceneGraph) => {
+                let { parent } = sceneGraph.getSceneNodeInfo(sceneNode);
+                let transform = transforms.get(sceneNode);
+                let parentTransform = parent ? transforms.get(parent) : null;
+                TransformUtil.computeTransform(transform, parentTransform);
+            });
+
+            // Render the stuff
             for(let cube of cubes)
             {
-                drawCube(gl, ctx, cube.transform, cube.color);
+                drawCube(gl, ctx, cube.transform.worldMatrix, cube.color);
             }
-
-            // Draw Gizmo
-            let m = mat4.create();
-            mat4.copy(m, transformGizmo.xAxis.transform);
-            mat4.multiply(m, transformGizmo.transform, m);
-            drawCube(gl, ctx, m, transformGizmo.xAxis.color);
-
-            mat4.copy(m, transformGizmo.yAxis.transform);
-            mat4.multiply(m, transformGizmo.transform, m);
-            drawCube(gl, ctx, m, transformGizmo.yAxis.color);
-
-            mat4.copy(m, transformGizmo.zAxis.transform);
-            mat4.multiply(m, transformGizmo.transform, m);
-            drawCube(gl, ctx, m, transformGizmo.zAxis.color);
-            
-            mat4.copy(m, transformGizmo.origin.transform);
-            mat4.multiply(m, transformGizmo.transform, m);
-            drawCube(gl, ctx, m, transformGizmo.origin.color);
+            for(let axis of transformAxes)
+            {
+                drawCube(gl, ctx, axis.transform.worldMatrix, axis.color);
+            }
         }
     });
 }

@@ -178,7 +178,7 @@ function _uniformMatrix4x3fv(location, v) {
 }
 
 function _uniformSamplerWebGL1(bindPoint, unit) {
-    return function (location, texture) {
+    return function(location, texture) {
         this.uniform1i(location, unit);
         this.activeTexture(this.TEXTURE0 + unit);
         this.bindTexture(bindPoint, texture);
@@ -190,7 +190,7 @@ function _uniformSamplerArrayWebGL1(bindPoint, unit, size) {
     for (let ii = 0; ii < size; ++ii) {
         units[ii] = unit + ii;
     }
-    return function (location, textures) {
+    return function(location, textures) {
         this.uniform1iv(location, units);
         textures.forEach(function (texture, index) {
             this.activeTexture(this.TEXTURE0 + units[index]);
@@ -200,7 +200,7 @@ function _uniformSamplerArrayWebGL1(bindPoint, unit, size) {
 }
 
 function _uniformSamplerWebGL2(bindPoint, unit) {
-    return function (location, textureOrPair) {
+    return function(location, textureOrPair) {
         let texture;
         let sampler;
         if (textureOrPair instanceof WebGLTexture) {
@@ -222,7 +222,7 @@ function _uniformSamplerArrayWebGL2(bindPoint, unit, size) {
     for (let ii = 0; ii < size; ++ii) {
         units[ii] = unit + ii;
     }
-    return function (location, textures) {
+    return function(location, textures) {
         this.uniform1iv(location, units);
         textures.forEach(function (textureOrPair, index) {
             this.activeTexture(this.TEXTURE0 + units[index]);

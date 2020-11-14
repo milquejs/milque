@@ -1,24 +1,31 @@
 const MAX_DEPTH_LEVEL = 100;
 
 /**
+ * @typedef {Number} SceneNode
+ * 
+ * @typedef SceneNodeInfo
+ * @property {SceneNode} parent The parent node. If the node does not have a parent,
+ * it will be 0.
+ * @property {Array<SceneNode>} children The list of child nodes.
+ * 
  * @callback WalkCallback Called for each node, before traversing its children.
- * @param {Object} child The current object.
- * @param {SceneNode} childNode The representative node for the current object.
+ * @param {SceneNode} sceneNode The current scene node.
+ * @param {SceneGraph} sceneGraph The current scene graph.
  * @returns {WalkBackCallback|Boolean} If false, the walk will skip
- * the current node's children. If a function, it will be called after
- * traversing down all of its children.
+ * the current node's children and all of its descendents. If a function,
+ * it will be called after traversing down all of its children.
  * 
  * @callback WalkBackCallback Called if returned by {@link WalkCallback}, after
  * traversing the current node's children.
- * @param {Object} child The current object.
- * @param {SceneNode} childNode The representative node for the current object.
+ * @param {SceneNode} sceneNode The current scene node.
+ * @param {SceneGraph} sceneGraph The current scene graph.
  * 
  * @callback WalkChildrenCallback Called for each level of children, before
- * traversing its children. This is usually used to determine visit order.
- * @param {Array<SceneNode>} childNodes A mutable list of child nodes to be
- * visited.
- * @param {SceneNode} childNode The representative node for the current object.
- * This is also the parent of these children.
+ * traversing them. This is usually used to determine visit order.
+ * @param {Array<SceneNode>} childNodes A list of child nodes to be visited.
+ * @param {SceneNode} parentNode The current parent node of these children.
+ * @param {SceneGraph} sceneGraph The current scene graph.
+ * @returns {Array<SceneNode>} The list of children to traverse for this parent.
  */
 
 /**
@@ -27,329 +34,298 @@ const MAX_DEPTH_LEVEL = 100;
 export class SceneGraph
 {
     /**
-     * Constructs an empty scene graph with nodes to be created from the given constructor.
-     * 
-     * @param {Object} [opts] Any additional options.
-     * @param {typeof SceneNode} [opts.nodeConstructor] The scene node constructor that make up the graph.
+     * Constructs an empty scene graph.
      */
-    constructor(opts = {})
+    constructor()
     {
-        this.nodeConstructor = opts.nodeConstructor || SceneNode;
-        this.nodes = new Map();
+        this.nodes = {};
+        this.roots = [];
 
-        this.rootNodes = [];
+        this._nextAvailableSceneNodeId = 1;
     }
 
     /**
-     * Adds an object to the scene graph.
+     * Creates a scene node in the scene graph.
      * 
-     * @param {Object} child The child object to add.
-     * @param {Object} [parent=null] The parent object to add the child under. If null,
-     * the child will be inserted under the root node.
-     * @returns {SceneNode} The scene node that represents the added child object.
+     * @param {SceneNode} [parentNode] The parent node for the created scene
+     * node.
+     * @returns {SceneNode} The created scene node.
      */
-    add(child, parent = null)
+    createSceneNode(parentNode = undefined)
     {
-        if (child === null) throw new Error(`Cannot add null as child to scene graph.`);
-        if (parent === null || this.nodes.has(parent))
-        {
-            let parentNode = parent === null ? null : this.nodes.get(parent);
-            if (this.nodes.has(child))
-            {
-                let childNode = this.nodes.get(child);
-                detach(childNode.parentNode, childNode, this);
-                attach(parentNode, childNode, this);
-                return childNode;
-            }
-            else
-            {
-                let childNode = new (this.nodeConstructor)(this, child, null, []);
-                this.nodes.set(child, childNode);
-                attach(parentNode, childNode, this);
-                return childNode;
-            }
-        }
-        else
-        {
-            throw new Error(`No node in scene graph exists for parent.`);
-        }
+        let sceneNode = this._nextAvailableSceneNodeId++;
+        let info = createSceneNodeInfo();
+        this.nodes[sceneNode] = info;
+        attach(parentNode, sceneNode, this);
+        return sceneNode;
     }
 
     /**
-     * Removes an object from the scene graph, along with all
+     * Creates multiple scene nodes in the scene graph.
+     * 
+     * @param {Number} count The number of scene nodes to create.
+     * @param {SceneNode} [parentNode] The parent node for the created scene
+     * nodes.
+     * @returns {Array<SceneNode>} A list of created scene nodes.
+     */
+    createSceneNodes(count, parentNode = undefined)
+    {
+        let result = [];
+        for(let i = 0; i < count; ++i)
+        {
+            result.push(this.createSceneNode(parentNode));
+        }
+        return result;
+    }
+
+    /**
+     * Deletes a scene node from the scene graph, along with all
      * of its descendents.
      * 
-     * @param {Object} child The child object to remove. If null, will clear
-     * the entire graph.
-     * @returns {Boolean} Whether any objects were removed from the scene.
+     * @param {SceneNode} sceneNode The scene node to remove.
      */
-    remove(child)
+    deleteSceneNode(sceneNode)
     {
-        if (child === null)
+        if (sceneNode in this.nodes)
         {
-            this.clear();
-            return true;
-        }
-        else if (this.nodes.has(child))
-        {
-            let childNode = this.nodes.get(child);
-            let parentNode = childNode.parentNode;
-            detach(parentNode, childNode, this);
-            walkImpl(this, childNode, 0, descendent => {
-                this.nodes.delete(descendent);
-            });
-            return true;
+            let info = this.nodes[sceneNode];
+            detach(info.parent, sceneNode, this);
+            walkImpl(this, sceneNode, 0, walkDeleteCallback);
         }
         else
         {
-            return false;
+            throw new Error(`Cannot delete non-existant scene node for scene graph.`)
         }
     }
 
     /**
-     * Replaces the target object with the new child object in the graph,
+     * Deletes all given scene nodes from the scene graph, along with all
+     * of their descendents.
+     * 
+     * @param {Array<SceneNode>} sceneNodes A list of scene nodes to remove.
+     */
+    deleteSceneNodes(sceneNodes)
+    {
+        for(let sceneNode of sceneNodes)
+        {
+            this.deleteSceneNode(sceneNode);
+        }
+    }
+
+    /**
+     * Get the scene node's info.
+     * 
+     * @param {SceneNode} sceneNode The scene node to get info for.
+     * @returns {SceneNodeInfo} The info for the given scene node.
+     */
+    getSceneNodeInfo(sceneNode)
+    {
+        return this.nodes[sceneNode];
+    }
+
+    /**
+     * Changes the parent of the scene node with the new parent node in
+     * the graph.
+     * 
+     * @param {SceneNode} sceneNode The target scene node to change.
+     * @param {SceneNode} parentNode The scene node to set as the parent.
+     */
+    parentSceneNode(sceneNode, parentNode)
+    {
+        let info = this.nodes[sceneNode];
+        detach(info.parent, sceneNode, this);
+        attach(parentNode, sceneNode, this);
+    }
+
+    /**
+     * Replaces the scene node with the new replacement node in the graph,
      * inheriting its parent and children.
      * 
-     * @param {Object} target The target object to replace. Cannot be null.
-     * @param {Object} child The object to replace with. If null,
-     * it will remove the target and the target's parent will adopt
-     * its grandchildren.
+     * @param {SceneNode} sceneNode The target scene node to replace.
+     * @param {SceneNode} replacementNode The scene node to replace with. If falsey,
+     * it will remove the target scene node and the target's parent will adopt
+     * its grandchildren. If the target did not have parents, the grandchildren will
+     * become root nodes in the graph.
      */
-    replace(target, child)
+    replaceSceneNode(sceneNode, replacementNode)
     {
-        if (target === null) throw new Error('Cannot replace null for child in scene graph.');
-        if (this.nodes.has(target))
+        let info = this.nodes[sceneNode];
+        let parentNode = info.parent;
+        let grandChildren = info.children.slice();
+
+        // Remove the target node from graph
+        detach(parentNode, sceneNode, this);
+
+        // Begin grafting the grandchildren by removing them...
+        info.children.length = 0;
+
+        if (replacementNode)
         {
-            let targetNode = this.nodes.get(target);
-            let targetParent = targetNode.parentNode;
-            let targetChildren = [...targetNode.childNodes];
+            // Reattach all grandchildren to new replacement node.
+            let replacementInfo = this.nodes[replacementNode];
+            let replacementParent = replacementInfo.parent;
 
-            // Remove target node from the graph
-            detach(targetParent, targetNode, this);
+            // Remove replacement node from previous parent
+            detach(replacementParent, replacementNode, this);
 
-            // Begin grafting the grandchildren by first removing...
-            targetNode.childNodes.length = 0;
+            // ...and graft them back.
+            replacementInfo.children.push(...grandChildren);
 
-            if (child === null)
+            // And reattach target parent to new child.
+            attach(parentNode, replacementNode, this);
+        }
+        else
+        {
+            // Reattach all grandchildren to target parent...
+            if (parentNode)
             {
-                // Reattach all grandchildren to target parent.
-                if (targetParent === null)
-                {
-                    // As root children.
-                    this.rootNodes.push(...targetChildren);
-                }
-                else
-                {
-                    // As regular children.
-                    targetParent.childNodes.push(...targetChildren);
-                }
+                //...as regular children.
+                let parentInfo = this.nodes[parentNode];
+                parentInfo.children.push(...grandChildren);
             }
             else
             {
-                // Reattach all grandchildren to new child.
-                let childNode;
-                if (this.nodes.has(child))
-                {
-                    childNode = this.nodes.get(child);
-
-                    // Remove child node from prev parent
-                    detach(childNode.parentNode, childNode, this);
-
-                    // ...and graft them back.
-                    childNode.childNodes.push(...targetChildren);
-                }
-                else
-                {
-                    childNode = new (this.nodeConstructor)(this, child, null, targetChildren);
-                    this.nodes.set(child, childNode);
-                }
-
-                // And reattach target parent to new child.
-                attach(targetParent, childNode, this);
+                //...as root children.
+                this.roots.push(...grandChildren);
             }
-            
-            // ...and graft them back.
-            for(let targetChild of targetChildren)
-            {
-                targetChild.parentNode = targetParent;
-            }
+        }
 
-            return child;
-        }
-        else if (target === null)
+        // ...and repair their parent relations.
+        for(let childNode of grandChildren)
         {
-            return this.replace(this.root.owner, child);
+            this.nodes[childNode].parent = parentNode;
         }
-        else
-        {
-            throw new Error('Cannot find target object to replace in scene graph.');
-        }
-    }
-
-    /** Removes all nodes from the graph. */
-    clear()
-    {
-        this.nodes.clear();
-        this.rootNodes.length = 0;
     }
 
     /**
-     * Gets the scene node for the given object.
-     * 
-     * @param {Object} child The object to retrieve the node for.
-     * @returns {SceneNode} The scene node that represents the object.
-     */
-    get(child)
-    {
-        return this.nodes.get(child);
-    }
-
-    /**
-     * Walks through every child node in the graph for the given
-     * object's associated node.
+     * Walks through every child node in the graph.
      * 
      * @param {WalkCallback} callback The function called for each node
      * in the graph, in ordered traversal from parent to child.
      * @param {Object} [opts={}] Any additional options.
-     * @param {Boolean} [opts.childrenOnly=true] Whether to skip traversing
-     * the first node, usually the root, and start from its children instead.
-     * @param {Function} [opts.childrenCallback] The function called before
+     * @param {SceneNode|Array<SceneNode>} [opts.from] The parent node to
+     * start walking from, inclusive. By default, it will start from the root
+     * nodes.
+     * @param {WalkChildrenCallback} [opts.childfilter] The function called before
      * walking through the children. This is usually used to determine the
      * visiting order.
      */
-    walk(from, callback, opts = {})
+    walk(callback, opts = {})
     {
-        const { childrenOnly = true, childrenCallback } = opts;
-        if (from === null)
+        const { from = undefined, childFilter = undefined } = opts;
+
+        let fromNodes;
+        if (!from) fromNodes = this.roots;
+        else if (!Array.isArray(from)) fromNodes = [from];
+        else fromNodes = from;
+
+        if (childFilter) fromNodes = childFilter(fromNodes, 0, this);
+        for(let fromNode of fromNodes)
         {
-            sortChildrenForWalk(this.nodes, this.rootNodes, null, childrenCallback);
-            for(let childNode of this.rootNodes)
-            {
-                walkImpl(this, childNode, 0, callback, childrenCallback);
-            }
-        }
-        else
-        {
-            const fromNode = this.get(from);
-            if (!fromNode)
-            {
-                if (childrenOnly)
-                {
-                    sortChildrenForWalk(this.nodes, fromNode.childNodes, fromNode, childrenCallback);
-                    for(let childNode of fromNode.childNodes)
-                    {
-                        walkImpl(this, childNode, 0, callback, childrenCallback);
-                    }
-                }
-                else
-                {
-                    walkImpl(this, fromNode, 0, callback, childrenCallback);
-                }
-            }
-            else
-            {
-                throw new Error(`No node in scene graph exists for walk start.`);
-            }
+            walkImpl(this, fromNode, 0, callback, childFilter);
         }
     }
 }
 
+/**
+ * @param {SceneNode} key The scene node handle.
+ * @returns {SceneNodeInfo} The scene node metadata.
+ */
+function createSceneNodeInfo()
+{
+    return {
+        parent: 0,
+        children: [],
+    };
+}
+
+/**
+ * Attaches a child node to a parent in the scene graph. If parentNode is
+ * null, then it will attach as a root node.
+ * 
+ * @param {SceneNode} parentNode The parent node to attach to. Can be null.
+ * @param {SceneNode} childNode The child node to attach from.
+ * @param {SceneGraph} sceneGraph The scene graph to attach in.
+ */
 function attach(parentNode, childNode, sceneGraph)
 {
-    if (parentNode === null)
+    if (parentNode)
     {
-        sceneGraph.rootNodes.push(childNode);
-        childNode.parentNode = null;
+        // Has new parent; attach to parent. It is now in the graph.
+        sceneGraph.nodes[parentNode].children.push(childNode);
+        sceneGraph.nodes[childNode].parent = parentNode;
     }
     else
     {
-        parentNode.childNodes.push(childNode);
-        childNode.parentNode = parentNode;
+        // No parent; move to root. It is now in the graph.
+        sceneGraph.roots.push(childNode);
+        sceneGraph.nodes[childNode].parent = 0;
     }
 }
 
+/**
+ * Detaches a child node from its parent in the scene graph. If parentNode is
+ * null, then it will detach as a root node.
+ * 
+ * @param {SceneNode} parentNode The parent node to attach to. Can be null.
+ * @param {SceneNode} childNode The child node to attach from.
+ * @param {SceneGraph} sceneGraph The scene graph to attach in.
+ */
 function detach(parentNode, childNode, sceneGraph)
 {
-    if (parentNode === null)
+    if (parentNode)
     {
-        let index = sceneGraph.rootNodes.indexOf(childNode);
-        sceneGraph.rootNodes.splice(index, 1);
-        childNode.parentNode = undefined;
+        // Has parent; detach from parent. It is now a free node.
+        let children = sceneGraph.nodes[parentNode].children;
+        let childIndex = children.indexOf(childNode);
+        children.splice(childIndex, 1);
+        sceneGraph.nodes[sceneNode].parentNode = 0;
     }
     else
     {
-        let index = parentNode.childNodes.indexOf(childNode);
-        parentNode.childNodes.splice(index, 1);
-        childNode.parentNode = undefined;
+        // No parent; remove from root. It is now a free node.
+        let roots = sceneGraph.roots;
+        let rootIndex = roots.indexOf(childNode);
+        roots.splice(rootIndex, 1);
+        sceneGraph.nodes[childNode].parentNode = 0;
     }
 }
 
 /**
  * Walk down from the parent and through all its descendents.
  * 
+ * @param {SceneGraph} sceneGraph The scene graph containing the nodes to be visited.
  * @param {SceneNode} parentNode The parent node to start walking from.
  * @param {Number} level The current call depth level. This is used to limit the call stack.
  * @param {WalkCallback} nodeCallback The function called on each visited node.
- * @param {WalkChildrenCallback} [childrenCallback] The function called before
+ * @param {WalkChildrenCallback} [filterCallback] The function called before
  * walking through the children. This is usually used to determine the visiting order.
  */
-function walkImpl(sceneGraph, parentNode, level, nodeCallback, childrenCallback = undefined)
+function walkImpl(sceneGraph, parentNode, level, nodeCallback, filterCallback = undefined)
 {
     if (level >= MAX_DEPTH_LEVEL) return;
 
-    let result = nodeCallback(parentNode.owner, parentNode);
+    let result = nodeCallback(parentNode, sceneGraph);
     if (result === false) return;
 
-    let nextNodes = parentNode.childNodes;
-    sortChildrenForWalk(sceneGraph.nodes, nextNodes, parentNode, childrenCallback);
-
+    let parentInfo = sceneGraph.nodes[parentNode];
+    let nextNodes = filterCallback
+        ? filterCallback(parentInfo.children, parentNode, sceneGraph)
+        : parentInfo.children;
+    
     for(let childNode of nextNodes)
     {
-        walkImpl(childNode, level + 1, nodeCallback);
+        walkImpl(sceneGraph, childNode, level + 1, nodeCallback, filterCallback);
     }
 
     if (typeof result === 'function')
     {
-        result(parentNode.owner, parentNode);
+        result(parentNode, sceneGraph);
     }
 }
 
-function sortChildrenForWalk(nodeMapping, childNodes, parentNode, childrenCallback = null)
+function walkDeleteCallback(sceneNode, sceneGraph)
 {
-    if (!childrenCallback) return;
-    let nextChildren = childNodes.map(node => node.owner);
-    childrenCallback(nextChildren, parentNode);
-    for(let i = 0; i < nextChildren.length; ++i)
-    {
-        childNodes[i] = nodeMapping.get(nextChildren[i]);
-    }
-    childNodes.length = nextChildren.length;
+    delete sceneGraph.nodes[sceneNode];
 }
 
-/**
- * A representative node to keep relational metadata for any object in
- * the {@link SceneGraph}.
- */
-export class SceneNode
-{
-    /**
-     * Constructs a scene node with the given parent and children. This assumes
-     * the given parent and children satisfy the correctness constraints of the
-     * graph. In other words, This does not validate nor modify other nodes,
-     * such as its parent or children, to maintain correctness. That must be
-     * handled externally.
-     * 
-     * @param {SceneGraph} sceneGraph The scene graph this node belongs to.
-     * @param {Object} owner The owner object.
-     * @param {SceneNode} parentNode The parent node.
-     * @param {Array<SceneNode>} childNodes The list of child nodes.
-     */
-    constructor(sceneGraph, owner, parentNode, childNodes)
-    {
-        this.sceneGraph = sceneGraph;
-        this.owner = owner;
-
-        this.parentNode = parentNode;
-        this.childNodes = childNodes;
-    }
-}
