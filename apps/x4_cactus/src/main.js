@@ -4,6 +4,7 @@ import { OBJLoader, TextLoader } from 'milque';
 import * as GLUtil from './gl/index.js';
 import * as CameraUtil from './camera/index.js';
 import { INPUT_CONTEXT } from './input.js';
+import { screenToWorldRay } from './camera/index.js';
 
 document.addEventListener('DOMContentLoaded', main);
 
@@ -53,7 +54,8 @@ async function main()
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, elementBufferSource, gl.STATIC_DRAW);
 
     const mainCamera = CameraUtil.createPerspectiveCamera(gl.canvas);
-    const mainCameraController = CameraUtil.createFirstPersonCameraController({ xzlock: true });
+    const mainCameraController = CameraUtil.createFirstPersonCameraController({ locky: true });
+    
     
     const world = {};
     const game = {
@@ -66,7 +68,10 @@ async function main()
         program: mainProgram,
     };
 
-    function createCube(x = 0, y = 0, z = 0, dx = 1, dy = 1, dz = 1)
+    function createCube(
+        x = 0, y = 0, z = 0,
+        dx = 1, dy = 1, dz = 1,
+        color = vec3.fromValues(Math.random(), Math.random(), Math.random()))
     {
         return {
             transform: mat4.fromRotationTranslationScale(
@@ -74,16 +79,34 @@ async function main()
                 quat.create(),
                 vec3.fromValues(x, y, z),
                 vec3.fromValues(dx, dy, dz)),
-            color: vec4.fromValues(Math.random(), Math.random(), Math.random(), 1),
+            color,
         };
     }
 
+    const s1 = 0.01;
+    const s2 = 0.1;
+    const s3 = s1 + s2;
+    const transformGizmo = {
+        transform: mat4.create(),
+        xAxis: createCube(s3, 0, 0, s2, s1, s1, vec3.fromValues(1, 0, 0)),
+        yAxis: createCube(0, s3, 0, s1, s2, s1, vec3.fromValues(0, 1, 0)),
+        zAxis: createCube(0, 0, s3, s1, s1, s2, vec3.fromValues(0, 0, 1)),
+        origin: createCube(0, 0, 0, s1, s1, s1, vec3.fromValues(1, 1, 1)),
+    };
+
     let cubes = [
-        createCube(-1, -1, -1),
-        createCube(1, 1, 1),
+        createCube(-1, -2, -1),
+        createCube(1, 2, 1),
     ];
 
     initialize(game);
+
+    function drawCube(gl, ctx, transform, color)
+    {
+        ctx.uniform('u_model', transform);
+        ctx.uniform('u_color', color);
+        ctx.draw(gl, gl.TRIANGLES, 0, elementBufferSource.length, elementBuffer);
+    }
 
     display.addEventListener('frame', e => {
         const dt = (e.detail.deltaTime / 1000) * 60;
@@ -91,6 +114,8 @@ async function main()
         update(dt, world);
         render(gl, world);
 
+        const eyeX = input.getInputValue('PointerX');
+        const eyeY = input.getInputValue('PointerY');
         const lookX = input.getInputValue('PointerMovementX');
         const lookY = input.getInputValue('PointerMovementY');
         const moveX = input.getInputValue('MoveRight') - input.getInputValue('MoveLeft');
@@ -103,9 +128,16 @@ async function main()
         let program = mainProgram;
         let camera = mainCamera;
         
-        mainCameraController.look(lookX * 100, -lookY * 60);
-        mainCameraController.move(moveZ, moveX);
+        const aspectRatio = gl.canvas.width / gl.canvas.height;
+        const lookSpeed = 100;
+        const moveSpeed = 0.5;
+        mainCameraController.look(lookX * lookSpeed * aspectRatio, -lookY * lookSpeed);
+        mainCameraController.move(moveZ * moveSpeed, moveX * moveSpeed);
         mainCameraController.apply(camera.viewMatrix);
+
+        let ray = screenToWorldRay(2 * (eyeX - 0.5), 2 * (0.5 - eyeY), camera.projectionMatrix, camera.viewMatrix);
+        vec3.add(ray, ray, mainCameraController.position);
+        mat4.fromTranslation(transformGizmo.transform, ray);
         
         /*
         let target = vec3.create();
@@ -120,10 +152,26 @@ async function main()
             ctx.attribute('a_position', positionBuffer, 3);
             for(let cube of cubes)
             {
-                ctx.uniform('u_model', cube.transform);
-                ctx.uniform('u_color', cube.color);
-                ctx.draw(gl, gl.TRIANGLES, 0, elementBufferSource.length, elementBuffer);
+                drawCube(gl, ctx, cube.transform, cube.color);
             }
+
+            // Draw Gizmo
+            let m = mat4.create();
+            mat4.copy(m, transformGizmo.xAxis.transform);
+            mat4.multiply(m, transformGizmo.transform, m);
+            drawCube(gl, ctx, m, transformGizmo.xAxis.color);
+
+            mat4.copy(m, transformGizmo.yAxis.transform);
+            mat4.multiply(m, transformGizmo.transform, m);
+            drawCube(gl, ctx, m, transformGizmo.yAxis.color);
+
+            mat4.copy(m, transformGizmo.zAxis.transform);
+            mat4.multiply(m, transformGizmo.transform, m);
+            drawCube(gl, ctx, m, transformGizmo.zAxis.color);
+            
+            mat4.copy(m, transformGizmo.origin.transform);
+            mat4.multiply(m, transformGizmo.transform, m);
+            drawCube(gl, ctx, m, transformGizmo.origin.color);
         }
     });
 }
