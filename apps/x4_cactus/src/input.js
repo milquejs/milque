@@ -8,6 +8,7 @@ const INPUT_MAPPING = {
     PointerY: { key: 'Mouse:PosY', scale: 1 },
     PointerMovementX: { key: 'Mouse:PosX', event: 'move' },
     PointerMovementY: { key: 'Mouse:PosY', event: 'move' },
+    PointerMovementZ: { key: 'Mouse:WheelY', event: 'move' },
     PointerDown: [
         { key: 'Mouse:Button0', scale: 1 },
         { key: 'Mouse:Button2', scale: 1 },

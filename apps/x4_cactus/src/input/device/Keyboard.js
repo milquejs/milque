@@ -1,6 +1,12 @@
 import { InputDevice, InputType, InputEventCode } from './InputDevice.js';
 
 /**
+ * Available Key Codes:
+ * - This uses the `event.code` standard to reference each key.
+ * - Use this to help you determine the code: https://keycode.info/
+ */
+
+/**
  * A class that listens to the keyboard events from the event target and
  * transforms the events into a valid {@link InputEvent} for the added
  * listeners.

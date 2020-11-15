@@ -26,9 +26,9 @@ export function isInputAxis(deviceName, keyCode)
     return deviceName === 'Mouse'
         && (keyCode === 'PosX'
         || keyCode === 'PosY'
-        || keyCode === 'ScrollX'
-        || keyCode === 'ScrollY'
-        || keyCode === 'ScrollZ');
+        || keyCode === 'WheelX'
+        || keyCode === 'WheelY'
+        || keyCode === 'WheelZ');
 }
 
 /**
@@ -218,23 +218,23 @@ export class InputSource
             case InputType.WHEEL:
                 {
                     let inputs = this.inputs[deviceName];
-                    let xAxis = inputs.ScrollX;
+                    let xAxis = inputs.WheelX;
                     if (xAxis)
                     {
                         xAxis.update(e.dx, e.dx);
-                        this._dispatchInputEvent(InputSourceStage.UPDATE, deviceName, 'ScrollX', xAxis);
+                        this._dispatchInputEvent(InputSourceStage.UPDATE, deviceName, 'WheelX', xAxis);
                     }
-                    let yAxis = inputs.ScrollY;
+                    let yAxis = inputs.WheelY;
                     if (yAxis)
                     {
                         yAxis.update(e.dy, e.dy);
-                        this._dispatchInputEvent(InputSourceStage.UPDATE, deviceName, 'ScrollY', yAxis);
+                        this._dispatchInputEvent(InputSourceStage.UPDATE, deviceName, 'WheelY', yAxis);
                     }
-                    let zAxis = inputs.ScrollZ;
+                    let zAxis = inputs.WheelZ;
                     if (zAxis)
                     {
                         zAxis.update(e.dz, e.dz);
-                        this._dispatchInputEvent(InputSourceStage.UPDATE, deviceName, 'ScrollZ', zAxis);
+                        this._dispatchInputEvent(InputSourceStage.UPDATE, deviceName, 'WheelZ', zAxis);
                     }
                 }
                 break;

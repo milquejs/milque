@@ -153,7 +153,10 @@ async function main()
     ];
 
     const quads = [
-        createGameObject(0, -4, 0, 10, 1, 10),
+        createGameObject(0, -3, 0, 10, 1, 10),
+        createGameObject(0, 7, -10, 10, 1, 10, 90, 0, 0),
+        createGameObject(-10, 7, 0, 10, 1, 10, 0, 0, 90),
+        createGameObject(10, 7, 0, 10, 1, 10, 0, 0, 90),
     ];
 
     initialize(game);
@@ -174,6 +177,8 @@ async function main()
         ctx.draw(gl, gl.TRIANGLES, 0, quadModel.elementBufferSource.length, quadModel.elementBuffer);
     }
 
+    let z = 0;
+
     display.addEventListener('frame', e => {
         const dt = (e.detail.deltaTime / 1000) * 60;
         input.inputSource.poll();
@@ -184,6 +189,7 @@ async function main()
         const eyeY = input.getInputValue('PointerY');
         const lookX = input.getInputValue('PointerMovementX');
         const lookY = input.getInputValue('PointerMovementY');
+        const lookZ = input.getInputValue('PointerMovementZ');
         const moveX = input.getInputValue('MoveRight') - input.getInputValue('MoveLeft');
         const moveZ = input.getInputValue('MoveUp') - input.getInputValue('MoveDown');
 
@@ -201,8 +207,10 @@ async function main()
         mainCameraController.move(moveZ * moveSpeed, moveX * moveSpeed);
         mainCameraController.apply(camera.viewMatrix);
 
+        z += (lookZ / 1000);
+
         let ray = CameraUtil.screenToWorldRay(2 * (eyeX - 0.5), 2 * (0.5 - eyeY), camera.projectionMatrix, camera.viewMatrix);
-        vec3.add(ray, ray, mainCameraController.position);
+        vec3.scaleAndAdd(ray, mainCameraController.position, ray, 1 - z);
         mat4.fromTranslation(transformGizmo.transform.localMatrix, ray);
         
         const ctx = program.bind(gl);

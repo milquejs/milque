@@ -1,5 +1,19 @@
 import { InputDevice, InputType, InputEventCode } from './InputDevice.js';
 
+/**
+ * Available Key Codes:
+ * - PosX
+ * - PosY
+ * - WheelX
+ * - WheelY
+ * - WheelZ
+ * - Button0 (left button)
+ * - Button1 (middle button)
+ * - Button2 (right button)
+ * - Button3 (next button)
+ * - Button4 (back button)
+ */
+
 const DEFAULT_LINE_PIXELS = 10;
 const DEFAULT_PAGE_PIXELS = 100;
 
