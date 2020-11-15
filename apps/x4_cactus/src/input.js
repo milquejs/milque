@@ -13,7 +13,7 @@ const INPUT_MAPPING = {
         { key: 'Mouse:Button2', scale: 1 },
     ],
     MoveLeft: [ { key: 'Keyboard:ArrowLeft', scale: 1 }, { key: 'Keyboard:KeyA', scale: 1 } ],
-    MoveRight: [ { key: 'Keyboard:ArrowLeft', scale: 1 }, { key: 'Keyboard:KeyD', scale: 1 } ],
+    MoveRight: [ { key: 'Keyboard:ArrowRight', scale: 1 }, { key: 'Keyboard:KeyD', scale: 1 } ],
     MoveUp: [ { key: 'Keyboard:ArrowUp', scale: 1 }, { key: 'Keyboard:KeyW', scale: 1 } ],
     MoveDown: [ { key: 'Keyboard:ArrowDown', scale: 1 }, { key: 'Keyboard:KeyS', scale: 1 } ],
 };

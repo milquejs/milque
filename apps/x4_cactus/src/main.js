@@ -36,6 +36,7 @@ async function main()
         mainVertexShaderSource: await TextLoader.loadText('main.vert'),
         mainFragmentShaderSource: await TextLoader.loadText('main.frag'),
         cubeObj: await OBJLoader.loadOBJ('cube.obj'),
+        quadObj: await OBJLoader.loadOBJ('quad.obj'),
     };
 
     const mainProgram = GLUtil.createProgramInfo(gl,
@@ -43,16 +44,48 @@ async function main()
             .shader(gl.VERTEX_SHADER, assets.mainVertexShaderSource)
             .shader(gl.FRAGMENT_SHADER, assets.mainFragmentShaderSource)
             .link());
-    
-    const positionBufferSource = GLUtil.createBufferSource(gl, gl.FLOAT, assets.cubeObj.positions);
-    const positionBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, positionBufferSource, gl.STATIC_DRAW);
 
-    const elementBufferSource = GLUtil.createBufferSource(gl, gl.UNSIGNED_SHORT, assets.cubeObj.indices);
-    const elementBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, elementBuffer);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, elementBufferSource, gl.STATIC_DRAW);
+    const cubeModel = (() => {
+        const objData = assets.cubeObj;
+        const positionBufferSource = GLUtil.createBufferSource(gl, gl.FLOAT, objData.positions);
+        const positionBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, positionBufferSource, gl.STATIC_DRAW);
+    
+        const elementBufferSource = GLUtil.createBufferSource(gl, gl.UNSIGNED_SHORT, objData.indices);
+        const elementBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, elementBuffer);
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, elementBufferSource, gl.STATIC_DRAW);
+
+        return {
+            objData,
+            positionBufferSource,
+            positionBuffer,
+            elementBufferSource,
+            elementBuffer,
+        };
+    })();
+
+    const quadModel = (() => {
+        const objData = assets.quadObj;
+        const positionBufferSource = GLUtil.createBufferSource(gl, gl.FLOAT, objData.positions);
+        const positionBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, positionBufferSource, gl.STATIC_DRAW);
+    
+        const elementBufferSource = GLUtil.createBufferSource(gl, gl.UNSIGNED_SHORT, objData.indices);
+        const elementBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, elementBuffer);
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, elementBufferSource, gl.STATIC_DRAW);
+
+        return {
+            objData,
+            positionBufferSource,
+            positionBuffer,
+            elementBufferSource,
+            elementBuffer,
+        };
+    })();
 
     const mainCamera = CameraUtil.createPerspectiveCamera(gl.canvas);
     const mainCameraController = CameraUtil.createFirstPersonCameraController({ locky: true });
@@ -71,16 +104,18 @@ async function main()
     const transforms = new Map();
     const sceneGraph = new SceneGraph();
 
-    function createCube(
-        x = 0, y = 0, z = 0,
-        dx = 1, dy = 1, dz = 1,
-        color = vec3.fromValues(Math.random(), Math.random(), Math.random()))
+    function createGameObject(
+        x=0, y=0, z=0,
+        dx=1, dy=1, dz=1,
+        rx=0, ry=0, rz=0,
+        color=vec3.fromValues(Math.random(), Math.random(), Math.random()),
+        opts={})
     {
         let sceneNode = sceneGraph.createSceneNode();
         let transform = TransformUtil.createTransform();
         mat4.fromRotationTranslationScale(
             transform.localMatrix,
-            quat.create(),
+            quat.fromEuler(quat.create(), rx, ry, rz),
             vec3.fromValues(x, y, z),
             vec3.fromValues(dx, dy, dz));
         transforms.set(sceneNode, transform);
@@ -88,37 +123,20 @@ async function main()
             sceneNode,
             transform,
             color,
+            ...opts,
         };
     }
 
-    function createGroup(
-        x = 0, y = 0, z = 0,
-        dx = 1, dy = 1, dz = 1)
-    {
-        let sceneNode = sceneGraph.createSceneNode();
-        let transform = TransformUtil.createTransform();
-        mat4.fromRotationTranslationScale(
-            transform.localMatrix,
-            quat.create(),
-            vec3.fromValues(x, y, z),
-            vec3.fromValues(dx, dy, dz));
-        transforms.set(sceneNode, transform);
-        return {
-            sceneNode,
-            transform,
-        };
-    }
-
-    const transformGizmo = createGroup();
+    const transformGizmo = createGameObject();
     const transformAxes = [];
     {
         const s1 = 0.01;
         const s2 = 0.1;
         const s3 = s1 + s2;
-        const xAxis = createCube(s3, 0, 0, s2, s1, s1, vec3.fromValues(1, 0, 0));
-        const yAxis = createCube(0, s3, 0, s1, s2, s1, vec3.fromValues(0, 1, 0));
-        const zAxis = createCube(0, 0, s3, s1, s1, s2, vec3.fromValues(0, 0, 1));
-        const origin = createCube(0, 0, 0, s1, s1, s1, vec3.fromValues(1, 1, 1));
+        const xAxis = createGameObject(s3, 0, 0, s2, s1, s1, 0, 0, 0, vec3.fromValues(1, 0, 0));
+        const yAxis = createGameObject(0, s3, 0, s1, s2, s1, 0, 0, 0, vec3.fromValues(0, 1, 0));
+        const zAxis = createGameObject(0, 0, s3, s1, s1, s2, 0, 0, 0, vec3.fromValues(0, 0, 1));
+        const origin = createGameObject(0, 0, 0, s1, s1, s1, 0, 0, 0, vec3.fromValues(1, 1, 1));
         sceneGraph.parentSceneNode(xAxis.sceneNode, transformGizmo.sceneNode);
         sceneGraph.parentSceneNode(yAxis.sceneNode, transformGizmo.sceneNode);
         sceneGraph.parentSceneNode(zAxis.sceneNode, transformGizmo.sceneNode);
@@ -130,17 +148,30 @@ async function main()
     }
 
     const cubes = [
-        createCube(-1, -2, -1),
-        createCube(1, 2, 1),
+        createGameObject(-1, -2, -1),
+        createGameObject(1, 2, 1),
+    ];
+
+    const quads = [
+        createGameObject(0, -4, 0, 10, 1, 10),
     ];
 
     initialize(game);
 
     function drawCube(gl, ctx, transform, color)
     {
+        ctx.attribute('a_position', cubeModel.positionBuffer, 3);
         ctx.uniform('u_model', transform);
         ctx.uniform('u_color', color);
-        ctx.draw(gl, gl.TRIANGLES, 0, elementBufferSource.length, elementBuffer);
+        ctx.draw(gl, gl.TRIANGLES, 0, cubeModel.elementBufferSource.length, cubeModel.elementBuffer);
+    }
+
+    function drawQuad(gl, ctx, transform, color)
+    {
+        ctx.attribute('a_position', quadModel.positionBuffer, 3);
+        ctx.uniform('u_model', transform);
+        ctx.uniform('u_color', color);
+        ctx.draw(gl, gl.TRIANGLES, 0, quadModel.elementBufferSource.length, quadModel.elementBuffer);
     }
 
     display.addEventListener('frame', e => {
@@ -178,7 +209,6 @@ async function main()
         {
             ctx.uniform('u_projection', camera.projectionMatrix);
             ctx.uniform('u_view', camera.viewMatrix);
-            ctx.attribute('a_position', positionBuffer, 3);
 
             // Compute matrices
             sceneGraph.walk((sceneNode, sceneGraph) => {
@@ -196,6 +226,10 @@ async function main()
             for(let axis of transformAxes)
             {
                 drawCube(gl, ctx, axis.transform.worldMatrix, axis.color);
+            }
+            for(let quad of quads)
+            {
+                drawQuad(gl, ctx, quad.transform.worldMatrix, quad.color);
             }
         }
     });
