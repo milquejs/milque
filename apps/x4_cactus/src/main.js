@@ -1,5 +1,5 @@
 import { mat4, quat, vec3 } from 'gl-matrix';
-import { OBJLoader, TextLoader } from 'milque';
+import { OBJLoader, TextLoader, EntityManager } from 'milque';
 
 import * as GLUtil from './gl/index.js';
 import * as CameraUtil from './camera/index.js';
@@ -90,6 +90,7 @@ async function main()
     const mainCamera = CameraUtil.createPerspectiveCamera(gl.canvas);
     const mainCameraController = CameraUtil.createFirstPersonCameraController({ locky: true });
 
+    const entityManager = new EntityManager({ strictMode: true });
     const world = {};
     const game = {
         display,
