@@ -1,11 +1,14 @@
 import { mat4, quat, vec3 } from 'gl-matrix';
-import { OBJLoader, TextLoader, EntityManager } from 'milque';
+import { OBJLoader, TextLoader } from 'milque';
 
+import * as AABBUtil from './aabb/index.js';
 import * as GLUtil from './gl/index.js';
 import * as CameraUtil from './camera/index.js';
 import { INPUT_CONTEXT } from './input.js';
 import { SceneGraph } from './scene/SceneGraph.js';
 import * as TransformUtil from './TransformHelper.js';
+import { CubeRenderer } from './CubeRenderer.js';
+import { QuadRenderer } from './QuadRenderer.js';
 
 document.addEventListener('DOMContentLoaded', main);
 
@@ -45,62 +48,18 @@ async function main()
             .shader(gl.FRAGMENT_SHADER, assets.mainFragmentShaderSource)
             .link());
 
-    const cubeModel = (() => {
-        const objData = assets.cubeObj;
-        const positionBufferSource = GLUtil.createBufferSource(gl, gl.FLOAT, objData.positions);
-        const positionBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, positionBufferSource, gl.STATIC_DRAW);
+    const cubeRenderer = new CubeRenderer(gl, mainProgram, assets.cubeObj);
+    const quadRenderer = new QuadRenderer(gl, mainProgram, assets.quadObj);
+
+    const boxes = [];
+    boxes.push(AABBUtil.createAxisAlignedBoundingBox(-1, -1, 1, 1));
     
-        const elementBufferSource = GLUtil.createBufferSource(gl, gl.UNSIGNED_SHORT, objData.indices);
-        const elementBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, elementBuffer);
-        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, elementBufferSource, gl.STATIC_DRAW);
-
-        return {
-            objData,
-            positionBufferSource,
-            positionBuffer,
-            elementBufferSource,
-            elementBuffer,
-        };
-    })();
-
-    const quadModel = (() => {
-        const objData = assets.quadObj;
-        const positionBufferSource = GLUtil.createBufferSource(gl, gl.FLOAT, objData.positions);
-        const positionBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, positionBufferSource, gl.STATIC_DRAW);
-    
-        const elementBufferSource = GLUtil.createBufferSource(gl, gl.UNSIGNED_SHORT, objData.indices);
-        const elementBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, elementBuffer);
-        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, elementBufferSource, gl.STATIC_DRAW);
-
-        return {
-            objData,
-            positionBufferSource,
-            positionBuffer,
-            elementBufferSource,
-            elementBuffer,
-        };
-    })();
+    // const collisions = AABBUtil.solveCollisions(boxes, []);
 
     const mainCamera = CameraUtil.createPerspectiveCamera(gl.canvas);
     const mainCameraController = CameraUtil.createFirstPersonCameraController({ locky: true });
-
-    const entityManager = new EntityManager({ strictMode: true });
-    const world = {};
-    const game = {
-        display,
-        input,
-        gl,
-        assets,
-        world,
-        camera: mainCamera,
-        program: mainProgram,
-    };
+    mainCameraController.move(-15, 0, 5);
+    mainCameraController.look(0, -20);
 
     const transforms = new Map();
     const sceneGraph = new SceneGraph();
@@ -129,8 +88,7 @@ async function main()
     }
 
     const transformGizmo = createGameObject();
-    const transformAxes = [];
-    {
+    const transformAxes = (() => {
         const s1 = 0.01;
         const s2 = 0.1;
         const s3 = s1 + s2;
@@ -142,15 +100,72 @@ async function main()
         sceneGraph.parentSceneNode(yAxis.sceneNode, transformGizmo.sceneNode);
         sceneGraph.parentSceneNode(zAxis.sceneNode, transformGizmo.sceneNode);
         sceneGraph.parentSceneNode(origin.sceneNode, transformGizmo.sceneNode);
-        transformAxes.push(xAxis);
-        transformAxes.push(yAxis);
-        transformAxes.push(zAxis);
-        transformAxes.push(origin);
-    }
+        return {
+            xAxis,
+            yAxis,
+            zAxis,
+            origin,
+        };
+    })();
+
+    const cactus = createGameObject();
+    const cactusParts = (() => {
+        const lipRadius = 1.05;
+        const potRadius = 0.8;
+        const dirtRadius = 0.7;
+        let potBody = createGameObject(0, -2.5, 0, potRadius, 0.5, potRadius);
+        let potLip = createGameObject(0, -2, 0, lipRadius, 0.2, lipRadius);
+        let plantBody = createGameObject(0, -1, 0, 0.6, 1, 0.6);
+
+        let potDirt = createGameObject(0, -1.8, 0, dirtRadius, 0.2, dirtRadius);
+        
+        const armY = 0.3;
+
+        let plantHead = createGameObject(0, 0.15, 0, 0.6, 0.2, 0.6, -5);
+        let plantHeadFlap = createGameObject(0, 0.05, 0, 1, 0.1, 1, -5);
+
+        let plantRightEye = createGameObject(-0.3, -0.3, 0.6, 0.1, 0.1, 0.1);
+        let plantLeftEye = createGameObject(0.3, -0.3, 0.6, 0.1, 0.1, 0.1);
+
+        let plantRightArm = createGameObject(-0.9, -1 + armY, 0, 0.2, 0.3, 0.2, 0, 0, 90);
+        let plantRightUpArm = createGameObject(-1, -0.7 + armY, 0, 0.2, 0.1, 0.2, 0, 0, 0);
+        plantRightUpArm.color = plantRightArm.color;
+
+        let plantLeftArm = createGameObject(0.9, -1.3 + armY, 0, 0.2, 0.3, 0.2, 0, 0, 90);
+        let plantLeftUpArm = createGameObject(1, -1 + armY, 0, 0.2, 0.1, 0.2, 0, 0, 0);
+        plantLeftUpArm.color = plantLeftArm.color;
+
+        sceneGraph.parentSceneNode(potLip.sceneNode, cactus.sceneNode);
+        sceneGraph.parentSceneNode(potBody.sceneNode, cactus.sceneNode);
+        sceneGraph.parentSceneNode(potDirt.sceneNode, cactus.sceneNode);
+        sceneGraph.parentSceneNode(plantHead.sceneNode, cactus.sceneNode);
+        sceneGraph.parentSceneNode(plantHeadFlap.sceneNode, cactus.sceneNode);
+        sceneGraph.parentSceneNode(plantRightEye.sceneNode, cactus.sceneNode);
+        sceneGraph.parentSceneNode(plantLeftEye.sceneNode, cactus.sceneNode);
+        sceneGraph.parentSceneNode(plantBody.sceneNode, cactus.sceneNode);
+        sceneGraph.parentSceneNode(plantRightArm.sceneNode, cactus.sceneNode);
+        sceneGraph.parentSceneNode(plantRightUpArm.sceneNode, cactus.sceneNode);
+        sceneGraph.parentSceneNode(plantLeftArm.sceneNode, cactus.sceneNode);
+        sceneGraph.parentSceneNode(plantLeftUpArm.sceneNode, cactus.sceneNode);
+        return {
+            potLip,
+            potBody,
+            potDirt,
+            plantHead,
+            plantHeadFlap,
+            plantRightEye,
+            plantLeftEye,
+            plantBody,
+            plantRightArm,
+            plantRightUpArm,
+            plantLeftArm,
+            plantLeftUpArm,
+        };
+    })();
 
     const cubes = [
-        createGameObject(-1, -2, -1),
-        createGameObject(1, 2, 1),
+        ...Object.values(transformAxes),
+        ...Object.values(cactusParts),
     ];
 
     const quads = [
@@ -160,31 +175,11 @@ async function main()
         createGameObject(10, 7, 0, 10, 1, 10, 0, 0, 90),
     ];
 
-    initialize(game);
-
-    function drawCube(gl, ctx, transform, color)
-    {
-        ctx.attribute('a_position', cubeModel.positionBuffer, 3);
-        ctx.uniform('u_model', transform);
-        ctx.uniform('u_color', color);
-        ctx.draw(gl, gl.TRIANGLES, 0, cubeModel.elementBufferSource.length, cubeModel.elementBuffer);
-    }
-
-    function drawQuad(gl, ctx, transform, color)
-    {
-        ctx.attribute('a_position', quadModel.positionBuffer, 3);
-        ctx.uniform('u_model', transform);
-        ctx.uniform('u_color', color);
-        ctx.draw(gl, gl.TRIANGLES, 0, quadModel.elementBufferSource.length, quadModel.elementBuffer);
-    }
-
     let z = 0;
 
     display.addEventListener('frame', e => {
         const dt = (e.detail.deltaTime / 1000) * 60;
         input.inputSource.poll();
-        update(dt, world);
-        render(gl, world);
 
         const eyeX = input.getInputValue('PointerX');
         const eyeY = input.getInputValue('PointerY');
@@ -198,15 +193,20 @@ async function main()
         gl.clearColor(0, 0, 0, 0);
         gl.clear(gl.COLOR_BUFFER_BIT);
 
-        let program = mainProgram;
         let camera = mainCamera;
-        
         const aspectRatio = gl.canvas.width / gl.canvas.height;
         const lookSpeed = 100;
-        const moveSpeed = 0.5;
         mainCameraController.look(lookX * lookSpeed * aspectRatio, -lookY * lookSpeed);
+        mainCameraController.apply(camera.viewMatrix);
+        
+        /*
+        const moveSpeed = 0.5;
         mainCameraController.move(moveZ * moveSpeed, moveX * moveSpeed);
         mainCameraController.apply(camera.viewMatrix);
+        */
+
+        const moveSpeed = 0.3;
+        mat4.translate(cactus.transform.localMatrix, cactus.transform.localMatrix, vec3.fromValues(moveX * moveSpeed, 0, -moveZ * moveSpeed));
 
         z += (lookZ / 1000);
 
@@ -214,44 +214,32 @@ async function main()
         vec3.scaleAndAdd(ray, mainCameraController.position, ray, 1 - z);
         mat4.fromTranslation(transformGizmo.transform.localMatrix, ray);
         
-        const ctx = program.bind(gl);
+        // Compute matrices
+        sceneGraph.walk((sceneNode, sceneGraph) => {
+            let { parent } = sceneGraph.getSceneNodeInfo(sceneNode);
+            let transform = transforms.get(sceneNode);
+            let parentTransform = parent ? transforms.get(parent) : null;
+            TransformUtil.computeTransform(transform, parentTransform);
+        });
+
+        let ctx;
+
+        ctx = cubeRenderer.begin(gl, camera.projectionMatrix, camera.viewMatrix);
         {
-            ctx.uniform('u_projection', camera.projectionMatrix);
-            ctx.uniform('u_view', camera.viewMatrix);
-
-            // Compute matrices
-            sceneGraph.walk((sceneNode, sceneGraph) => {
-                let { parent } = sceneGraph.getSceneNodeInfo(sceneNode);
-                let transform = transforms.get(sceneNode);
-                let parentTransform = parent ? transforms.get(parent) : null;
-                TransformUtil.computeTransform(transform, parentTransform);
-            });
-
-            // Render the stuff
             for(let cube of cubes)
             {
-                drawCube(gl, ctx, cube.transform.worldMatrix, cube.color);
-            }
-            for(let axis of transformAxes)
-            {
-                drawCube(gl, ctx, axis.transform.worldMatrix, axis.color);
-            }
-            for(let quad of quads)
-            {
-                drawQuad(gl, ctx, quad.transform.worldMatrix, quad.color);
+                ctx.render(gl, cube.transform.worldMatrix, cube.color);
             }
         }
+        ctx.end(gl);
+
+        ctx = quadRenderer.begin(gl, camera.projectionMatrix, camera.viewMatrix);
+        {
+            for(let quad of quads)
+            {
+                ctx.render(gl, quad.transform.worldMatrix, quad.color);
+            }
+        }
+        ctx.end(gl);
     });
-}
-
-function initialize(game)
-{
-}
-
-function update(dt, world)
-{
-}
-
-function render(gl, world)
-{
 }
