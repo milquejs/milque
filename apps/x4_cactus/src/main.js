@@ -1,10 +1,10 @@
 import { mat4, quat, vec3 } from 'gl-matrix';
-import { OBJLoader, TextLoader } from 'milque';
 
 import * as AABBUtil from './aabb/index.js';
 import * as GLUtil from './gl/index.js';
 import * as CameraUtil from './camera/index.js';
 import { INPUT_CONTEXT } from './input.js';
+import { ASSET_CONTEXT } from './asset.js';
 import { SceneGraph } from './scene/SceneGraph.js';
 import * as TransformUtil from './TransformHelper.js';
 import { CubeRenderer } from './CubeRenderer.js';
@@ -35,12 +35,7 @@ async function main()
 
     gl.enable(gl.DEPTH_TEST);
 
-    const assets = {
-        mainVertexShaderSource: await TextLoader.loadText('main.vert'),
-        mainFragmentShaderSource: await TextLoader.loadText('main.frag'),
-        cubeObj: await OBJLoader.loadOBJ('cube.obj'),
-        quadObj: await OBJLoader.loadOBJ('quad.obj'),
-    };
+    const assets = await ASSET_CONTEXT.load();
 
     const mainProgram = GLUtil.createProgramInfo(gl,
         GLUtil.Program(gl)
