@@ -3,35 +3,14 @@
 export function loadAseprite(filepath, opts = {})
 {
     const response = await fetch(filepath);
-    const r = new ByteReader(response.body).setEndian(LITTLE_ENDIAN);
+    const r = new ByteReader(response.body);
 
-    const fileSize = r.readDoubleWord();
-    const magicNumber = r.readWord();
-    if (magicNumber !== 0xA5E0)
-    {
-        throw new Error('Invalid Aseprite byte format.');
-    }
-    const frames = r.readWord();
-    const width = r.readWord();
-    const height = r.readWord();
-    const colorDepth = r.readWord();
-    const flags = r.readDoubleWord();
-    const speed = r.readWord();
-    const zero1 = r.readDoubleWord();
-    const zero2 = r.readDoubleWord();
-    const transparentColor = r.readByte();
-    r.seekBytes(3);
-    const numColors = r.readWord();
-    const pixelWidth = r.readByte();
-    const pixelHeight = r.readByte();
-    r.seekBytes(92);
-    const opacityValid = flags & 1 === 1;
-
-    r.close();
+    readHeader(r);
 }
 
-function readHeader(reader)
+function readHeader(r)
 {
+    r.setEndian(LITTLE_ENDIAN);
     const fileSize = r.readDoubleWord();
     const magicNumber = r.readWord();
     if (magicNumber !== 0xA5E0)
@@ -44,19 +23,33 @@ function readHeader(reader)
     const colorDepth = r.readWord();
     const flags = r.readDoubleWord();
     const speed = r.readWord();
-    const zero1 = r.readDoubleWord();
-    const zero2 = r.readDoubleWord();
+    r.readDoubleWord(); // Zeroes
+    r.readDoubleWord(); // Zeroes
     const transparentColor = r.readByte();
     r.seekBytes(3);
     const numColors = r.readWord();
     const pixelWidth = r.readByte();
     const pixelHeight = r.readByte();
     r.seekBytes(92);
-    const flagHasValidLayerOpacity = flags & 1 === 1;
+    // const flagHasValidLayerOpacity = flags & 1 === 1;
+    return {
+        fileSize,
+        frames,
+        width,
+        height,
+        colorDepth,
+        flags,
+        speed,
+        transparentColor,
+        numColors,
+        pixelWidth,
+        pixelHeight,
+    };
 }
 
-function readFrame(reader)
+function readFrame(r)
 {
+    r.setEndian(LITTLE_ENDIAN);
     const frameBytes = r.readDoubleWord();
     const magicNumber = r.readWord();
     if (magicNumber !== 0xF1FA)
@@ -64,8 +57,8 @@ function readFrame(reader)
         throw new Error('Invalid Aseprite frame header byte format.');
     }
     const frameDuration = r.readWord();
-    const byte1 = r.readByte();
-    const byte2 = r.readByte();
+    r.readByte(); // Unused byte
+    r.readByte(); // Unused byte
     const numChunks = r.readDoubleWord();
 
     let chunks = [];
@@ -84,13 +77,9 @@ function readFrame(reader)
     return {
         frameBytes,
         frameDuration,
+        numChunks,
         chunks: []
-    }
-}
-
-function readFrameHeader()
-{
-
+    };
 }
 
 export const BIG_ENDIAN = 0;
@@ -185,7 +174,23 @@ class ByteReader
         else
         {
             let result = new Uint8Array(count);
+            let index = 0;
             let chunksToRead = (count - bytesRemainingInChunk) % this.byteChunk.length;
+            for(let i = 0; i < bytesRemainingInChunk; ++i)
+            {
+                result[i] = this.byteChunk[this.byteIndex + i];
+            }
+            index = bytesRemainingInChunk;
+            this.byteIndex = -1;
+            for(let i = 0; i < chunksToRead; ++i)
+            {
+                await this.prepareChunk();
+                for(let i = 0; i < this.byteChunk.length; ++i)
+                {
+                    result[index++] = this.byteChunk[i];
+                }
+            }
+            return result;
         }
     }
 

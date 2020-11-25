@@ -230,6 +230,7 @@ async function main()
 
         ctx = quadRenderer.begin(gl, camera.projectionMatrix, camera.viewMatrix);
         {
+            ctx.ctx.uniform('u_texture', 0);
             for(let quad of quads)
             {
                 ctx.render(gl, quad.transform.worldMatrix, quad.color);

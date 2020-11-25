@@ -71,6 +71,74 @@ export function getUniformSamplerArrayFunction(gl, samplerType, textureUnit, arr
     return typeInfo.arraySampler(typeInfo.bindPoint, textureUnit, arraySize);
 }
 
+
+
+/**
+ * 
+ * @param {WebGL2RenderingContext} gl 
+ * @param {WebGLData} elementType 
+ */
+function getTypedArrayForElementType(gl, elementType)
+{
+    switch(elementType)
+    {
+        // WebGL1 - Data types
+        case gl.BYTE: return Int8Array;
+        case gl.UNSIGNED_BYTE: return Uint8Array;
+        case gl.SHORT: return Int16Array;
+        case gl.UNSIGNED_SHORT: return Uint16Array;
+        case gl.INT: return Int32Array;
+        case gl.UNSIGNED_INT: return Uint32Array;
+        case gl.FLOAT: return Float32Array;
+
+        // WebGL1 - Pixel types
+        case gl.UNSIGNED_SHORT_4_4_4_4:
+        case gl.UNSIGNED_SHORT_5_5_5_1:
+        case gl.UNSIGNED_SHORT_5_6_5:
+            return Uint16Array;
+        
+        // WebGL2 - Data types
+        case gl.FLOAT_MAT2x3:
+        case gl.FLOAT_MAT2x4:
+        case gl.FLOAT_MAT3x2:
+        case gl.FLOAT_MAT3x4:
+        case gl.FLOAT_MAT4x2:
+        case gl.FLOAT_MAT4x3:
+            return Float32Array;
+        case gl.UNSIGNED_INT_VEC2:
+        case gl.UNSIGNED_INT_VEC3:
+        case gl.UNSIGNED_INT_VEC4:
+            return Uint16Array;
+        case gl.UNSIGNED_NORMALIZED:
+            return Uint16Array;
+        case gl.SIGNED_NORMALIZED:
+            return Int16Array;
+        
+        // WebGL2 - Pixel types
+        case gl.UNSIGNED_INT_2_10_10_10_REV:
+        case gl.UNSIGNED_INT_10F_11F_11F_REV:
+        case gl.UNSIGNED_INT_5_9_9_9_REV:
+            return Uint16Array;
+        case gl.FLOAT_32_UNSIGNED_INT_24_8_REV:
+            return Float32Array;
+        case gl.UNSIGNED_INT_24_8:
+            return Uint16Array;
+        case gl.HALF_FLOAT:
+            return;
+        case gl.RG:
+        case gl.RG_INTEGER:
+        case gl.INT_2_10_10_10_REV:
+            return;
+        default: throw new Error('No typed array found for element type.');
+    }
+}
+
+function getBytesForElementType(gl, elementType)
+{
+    return getTypedArrayForElementType(gl, elementType).BYTES_PER_ELEMENT;
+}
+
+
 function createTypeInfo(gl) {
     let result = {};
 
