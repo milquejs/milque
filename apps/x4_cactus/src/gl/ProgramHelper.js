@@ -1,5 +1,3 @@
-import { isUniformSamplerType, getUniformFunction, getUniformSamplerFunction } from './GLTypeInfo.js';
-
 export function Program(gl)
 {
     return new ProgramBuilder(gl);
@@ -29,93 +27,6 @@ class ProgramBuilder
         this.shaders.length = 0;
         return this.handle;
     }
-}
-
-/**
- * @typedef ActiveUniformInfo
- * @property {String} type
- * @property {Number} length
- * @property {Number} location
- * @property {Function} set
- */
-
-/**
- * Get object mapping of all active uniforms to their info.
- * @param {WebGLRenderingContext} gl The current webgl context.
- * @param {WebGLProgram} program The program to get active uniforms from.
- * @returns {Record<String, ActiveUniformInfo>} An object mapping of uniform names to info.
- */
-export function findActiveUniforms(gl, program)
-{
-    let result = {};
-    let activeUniformInfos = getActiveUniformInfos(gl, program);
-    for(let uniformInfo of activeUniformInfos)
-    {
-        let uniformType = uniformInfo.type;
-        let uniformName = uniformInfo.name;
-        let uniformSize = uniformInfo.size;
-        let uniformLocation = gl.getUniformLocation(program, uniformName);
-
-        let uniformSetter;
-        if (isUniformSamplerType(gl, uniformType))
-        {
-            let textureUnit = 0;
-            let func = getUniformSamplerFunction(gl, uniformType, textureUnit);
-            uniformSetter = function(gl, location, value) {
-                func.call(gl, location, value);
-            };
-
-            throw new Error('Samplers are not yet supported.');
-        }
-        else
-        {
-            let func = getUniformFunction(gl, uniformType);
-            uniformSetter = function(gl, location, value) {
-                func.call(gl, location, value);
-            };
-        }
-
-        result[uniformName] = {
-            type: uniformType,
-            length: uniformSize,
-            location: uniformLocation,
-            set: uniformSetter,
-        };
-    }
-    return result;
-}
-
-/**
- * @typedef ActiveAttributeInfo
- * @property {String} type
- * @property {Number} length
- * @property {Number} location
- */
-
-/**
- * Get object mapping of all active attributes to their info.
- * @param {WebGLRenderingContext} gl The current webgl context.
- * @param {WebGLProgram} program The program to get active attributes from.
- * @returns {Record<String, ActiveAttributeInfo>} An object mapping of attribute names to info.
- */
-export function findActiveAttributes(gl, program)
-{
-    let result = {};
-    let attributeInfos = getActiveAttributeInfos(gl, program);
-    for(let attributeInfo of attributeInfos)
-    {
-        let attributeType = attributeInfo.type;
-        let attributeName = attributeInfo.name;
-        let attributeSize = attributeInfo.size;
-        let attributeLocation = gl.getAttribLocation(program, attributeName);
-
-        result[attributeName] = {
-            type: attributeType,
-            length: attributeSize,
-            location: attributeLocation,
-        };
-    }
-    return result;
 }
 
 export function createShader(gl, type, shaderSource)
@@ -160,42 +71,4 @@ export function createShaderProgram(gl, program, shaders)
     
     console.error(gl.getProgramInfoLog(program));
     gl.deleteProgram(program);
-}
-
-/**
- * Get info for all active attributes in program.
- * @param {WebGLRenderingContext} gl The current webgl context.
- * @param {WebGLProgram} program The program to get the active attributes from.
- * @returns {Array<WebGLActiveInfo>} An array of active attributes.
- */
-export function getActiveAttributeInfos(gl, program)
-{
-    let result = [];
-    const attributeCount = gl.getProgramParameter(program, gl.ACTIVE_ATTRIBUTES);
-    for(let i = 0; i < attributeCount; ++i)
-    {
-        let attributeInfo = gl.getActiveAttrib(program, i);
-        if (!attributeInfo) continue;
-        result.push(attributeInfo);
-    }
-    return result;
-}
-
-/**
- * Get info for all active uniforms in program.
- * @param {WebGLRenderingContext} gl The current webgl context.
- * @param {WebGLProgram} program The program to get the active uniforms from.
- * @returns {Array<WebGLActiveInfo>} An array of active uniforms.
- */
-export function getActiveUniformInfos(gl, program)
-{
-    let result = [];
-    const uniformCount = gl.getProgramParameter(program, gl.ACTIVE_UNIFORMS);
-    for(let i = 0; i < uniformCount; ++i)
-    {
-        let uniformInfo = gl.getActiveUniform(program, i);
-        if (!uniformInfo) break;
-        result.push(uniformInfo);
-    }
-    return result;
 }

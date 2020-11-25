@@ -1,4 +1,5 @@
-import { findActiveAttributes, findActiveUniforms } from './ProgramHelper.js';
+import { getActiveUniformsInfo } from './UniformHelper.js';
+import { getActiveAttribsInfo } from './AttributeHelper.js';
 import { getVertexComponentType } from './GLTypeInfo.js';
 import { draw } from './GLHelper.js';
 
@@ -13,8 +14,8 @@ export class ProgramInfo
     {
         this.handle = program;
 
-        this.activeUniforms = findActiveUniforms(gl, program);
-        this.activeAttributes = findActiveAttributes(gl, program);
+        this.activeUniforms = getActiveUniformsInfo(gl, program);
+        this.activeAttributes = getActiveAttribsInfo(gl, program);
 
         this.drawContext = new ProgramInfoDrawContext(this);
     }
@@ -40,13 +41,12 @@ export class ProgramInfoDrawContext
     
     uniform(uniformName, value)
     {
-        const gl = this.gl;
         const activeUniforms = this.parent.activeUniforms;
         if (uniformName in activeUniforms)
         {
             let uniform = activeUniforms[uniformName];
             let location = uniform.location;
-            uniform.set(gl, location, value);
+            uniform.set.call(this.gl, location, value);
         }
         return this;
     }
