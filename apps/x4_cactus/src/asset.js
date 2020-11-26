@@ -9,7 +9,7 @@ export const ASSET_CONTEXT = {
             cubeObj: await OBJLoader.loadOBJ('cube.obj'),
             quadObj: await OBJLoader.loadOBJ('quad.obj'),
             gradientClay: await ImageLoader.loadImage('gradient_clay.png'),
-            color: await ImageLoader.loadImage('color.png'),
+            color: await ImageLoader.loadImage('null.png'),
         };
     }
 };

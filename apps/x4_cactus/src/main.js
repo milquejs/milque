@@ -1,5 +1,6 @@
 import { mat4, quat, vec3 } from 'gl-matrix';
 
+import { enablePointerLockBehavior } from './PointerLockHelper.js';
 import * as AABBUtil from './aabb/index.js';
 import * as GLUtil from './gl/index.js';
 import * as CameraUtil from './camera/index.js';
@@ -16,18 +17,7 @@ async function main()
 {
     const display = document.querySelector('display-port');
     const input = INPUT_CONTEXT;
-    display.addEventListener('focus', () => {
-        if (document.pointerLockElement !== display)
-        {
-            display.requestPointerLock();
-        }
-    });
-    document.addEventListener('pointerlockchange', () => {
-        if (document.pointerLockElement !== display)
-        {
-            display.blur();
-        }
-    });
+    enablePointerLockBehavior(display);
 
     /** @type {WebGLRenderingContext} */
     const gl = display.canvas.getContext('webgl');
@@ -40,7 +30,7 @@ async function main()
     const texture = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, texture);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([0, 0, 255, 255]));
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, assets.color);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, assets.gradientClay);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
     // gl.activeTexture(gl.TEXTURE0);
@@ -229,6 +219,7 @@ async function main()
 
         ctx = cubeRenderer.begin(gl, camera.projectionMatrix, camera.viewMatrix);
         {
+            ctx.ctx.uniform('u_texture', 0);
             for(let cube of cubes)
             {
                 ctx.render(gl, cube.transform.worldMatrix, cube.color);

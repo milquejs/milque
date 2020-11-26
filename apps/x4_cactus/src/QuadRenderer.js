@@ -17,6 +17,18 @@ export class QuadRenderer
             source: positionBufferSource,
             buffer: positionBuffer,
         };
+
+        {
+            const bufferSource = createBufferSource(gl, gl.FLOAT, meshData.texcoords);
+            const buffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+            gl.bufferData(gl.ARRAY_BUFFER, bufferSource, gl.STATIC_DRAW);
+    
+            this.texcoords = {
+                source: bufferSource,
+                buffer: buffer,
+            };
+        }
     
         const elementBufferSource = createBufferSource(gl, gl.UNSIGNED_SHORT, meshData.indices);
         const elementBuffer = gl.createBuffer();
@@ -58,8 +70,9 @@ export class QuadRendererDrawContext
     render(gl, modelMatrix, color = undefined)
     {
         const { ctx, renderer } = this;
-        const { positions, elements } = renderer;
+        const { positions, texcoords, elements } = renderer;
         ctx.attribute('a_position', positions.buffer, 3);
+        ctx.attribute('a_texcoord', texcoords.buffer, 2);
         ctx.uniform('u_model', modelMatrix);
         if (color) ctx.uniform('u_color', color);
         ctx.draw(gl, gl.TRIANGLES, 0, elements.source.length, elements.buffer);
