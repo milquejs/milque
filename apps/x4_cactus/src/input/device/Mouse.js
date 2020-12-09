@@ -38,7 +38,8 @@ export class Mouse extends InputDevice
         this.canvasTarget = (eventTarget instanceof HTMLCanvasElement && eventTarget)
             || eventTarget.canvas
             || eventTarget.querySelector('canvas')
-            || (eventTarget.shadowRoot && eventTarget.shadowRoot.querySelector('canvas'));
+            || (eventTarget.shadowRoot && eventTarget.shadowRoot.querySelector('canvas'))
+            || eventTarget;
         this.eventsOnFocus = opts.eventsOnFocus;
         this._downHasFocus = false;
 
