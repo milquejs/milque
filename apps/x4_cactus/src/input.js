@@ -19,5 +19,4 @@ const INPUT_MAPPING = {
     MoveDown: [ { key: 'Keyboard:ArrowDown', scale: 1 }, { key: 'Keyboard:KeyS', scale: 1 } ],
 };
 
-const inputSource = InputSource.from(document.querySelector('#main'));
-export const INPUT_CONTEXT = new InputContext().setInputMap(INPUT_MAPPING).attach(inputSource);
+export const INPUT_CONTEXT = new InputContext().setInputMap(INPUT_MAPPING);

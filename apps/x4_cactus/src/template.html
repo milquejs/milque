@@ -11,6 +11,21 @@
     </head>
     <body>
         <display-port mode="fit" id="main" width=1920 height=1080 debug></display-port>
+        <input-source for="main" id="mainInput" autopoll debug></input-source>
+        <div>
+            <input-kbd name="Mouse.KeyDown" title="ArrowDown"></input-kbd>
+            <input-kbd name="KeyUp"></input-kbd>
+            <input-kbd name="hello">KeyA</input-kbd>
+        </div>
+        <script>
+            const inputPort = document.querySelector('input-port');
+            inputPort.src = {
+                MoveLeft: [ { key: 'Keyboard:ArrowLeft', scale: 1 }, { key: 'Keyboard:KeyA', scale: 1 } ],
+                MoveRight: [ { key: 'Keyboard:ArrowRight', scale: 1 }, { key: 'Keyboard:KeyD', scale: 1 } ],
+                MoveUp: [ { key: 'Keyboard:ArrowUp', scale: 1 }, { key: 'Keyboard:KeyW', scale: 1 } ],
+                MoveDown: [ { key: 'Keyboard:ArrowDown', scale: 1 }, { key: 'Keyboard:KeyS', scale: 1 } ],
+            };
+        </script>
         <script src="index.js"></script>
     </body>
 </html>

@@ -11,12 +11,16 @@ import * as TransformUtil from './TransformHelper.js';
 import { CubeRenderer } from './CubeRenderer.js';
 import { QuadRenderer } from './QuadRenderer.js';
 
+import './input/InputPort.js';
+
 document.addEventListener('DOMContentLoaded', main);
 
 async function main()
 {
     const display = document.querySelector('display-port');
-    const input = INPUT_CONTEXT;
+    const inputSource = document.querySelector('input-source');
+
+    const input = INPUT_CONTEXT.attach(inputSource.source);
     enablePointerLockBehavior(display);
 
     /** @type {WebGLRenderingContext} */
@@ -157,15 +161,18 @@ async function main()
     })();
 
     const cubes = [
-        ...Object.values(transformAxes),
-        ...Object.values(cactusParts),
+        //...Object.values(transformAxes),
+        //...Object.values(cactusParts),
+        createGameObject(0, 0, 0, 1, 1, 1),
+        createGameObject(4, 0, 0, 1, 0.5, 1),
+        createGameObject(-4, 0, 0, 2, 4, 2, 45),
     ];
 
     const quads = [
-        createGameObject(0, -3, 0, 10, 1, 10),
-        createGameObject(0, 7, -10, 10, 1, 10, 90, 0, 0),
-        createGameObject(-10, 7, 0, 10, 1, 10, 0, 0, 90),
-        createGameObject(10, 7, 0, 10, 1, 10, 0, 0, 90),
+        createGameObject(0, -4, 0, 2, 2, 2),
+        // createGameObject(0, 7, -10, 10, 1, 10, 90, 0, 0),
+        // createGameObject(-10, 7, 0, 10, 1, 10, 0, 0, 90),
+        // createGameObject(10, 7, 0, 10, 1, 10, 0, 0, 90),
     ];
 
     let z = 0;
@@ -190,16 +197,13 @@ async function main()
         const aspectRatio = gl.canvas.width / gl.canvas.height;
         const lookSpeed = 100;
         mainCameraController.look(lookX * lookSpeed * aspectRatio, -lookY * lookSpeed);
-        mainCameraController.apply(camera.viewMatrix);
         
-        /*
         const moveSpeed = 0.5;
         mainCameraController.move(moveZ * moveSpeed, moveX * moveSpeed);
         mainCameraController.apply(camera.viewMatrix);
-        */
 
-        const moveSpeed = 0.3;
-        mat4.translate(cactus.transform.localMatrix, cactus.transform.localMatrix, vec3.fromValues(moveX * moveSpeed, 0, -moveZ * moveSpeed));
+        //const moveSpeed = 0.3;
+        //mat4.translate(cactus.transform.localMatrix, cactus.transform.localMatrix, vec3.fromValues(moveX * moveSpeed, 0, -moveZ * moveSpeed));
 
         z += (lookZ / 1000);
 
@@ -222,6 +226,7 @@ async function main()
             ctx.ctx.uniform('u_texture', 0);
             for(let cube of cubes)
             {
+                ctx.ctx.uniform('u_local', cube.transform.localMatrix);
                 ctx.render(gl, cube.transform.worldMatrix, cube.color);
             }
         }
@@ -232,6 +237,7 @@ async function main()
             ctx.ctx.uniform('u_texture', 0);
             for(let quad of quads)
             {
+                ctx.ctx.uniform('u_local', quad.transform.localMatrix);
                 ctx.render(gl, quad.transform.worldMatrix, quad.color);
             }
         }
