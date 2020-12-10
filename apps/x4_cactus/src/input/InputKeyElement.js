@@ -50,6 +50,12 @@ export class InputKeyElement extends HTMLElement
             content: "<?>";
             opacity: 0.6;
         }
+        
+        .disabled {
+            opacity: 0.6;
+            box-shadow: none;
+            background-color: #AAA;
+        }
 
         .hidden {
             display: none;
@@ -64,7 +70,7 @@ export class InputKeyElement extends HTMLElement
             padding: 0 4px;
             padding-top: 2px;
             color: #CCC;
-            background: #333;
+            background-color: #333;
             box-shadow: inset 0 3px 0 #222;
         }`;
         Object.defineProperty(this, STYLE_KEY, { value: style });
@@ -76,7 +82,8 @@ export class InputKeyElement extends HTMLElement
     {
         return [
             'name',
-            'hint',
+            'value',
+            'disabled',
         ];
     }
 
@@ -97,7 +104,7 @@ export class InputKeyElement extends HTMLElement
     connectedCallback()
     {
         upgradeProperty(this, 'name');
-        upgradeProperty(this, 'hint');
+        upgradeProperty(this, 'value');
     }
 
     /** @override */
@@ -108,7 +115,7 @@ export class InputKeyElement extends HTMLElement
             case 'name':
                 this._keyElement.innerText = value;
                 break;
-            case 'hint':
+            case 'value':
                 if (value !== null)
                 {
                     this._valueElement.classList.toggle('hidden', false);
@@ -120,13 +127,23 @@ export class InputKeyElement extends HTMLElement
                     this._valueElement.classList.toggle('hidden', true);
                 }
                 break;
+            case 'disabled':
+                this._keyboardElement.classList.toggle('disabled', value !== null);
+                break;
         }
     }
 
     get name() { return this.getAttribute('name'); }
     set name(value) { this.setAttribute('name', value); }
 
-    get hint() { return this.getAttribute('hint'); }
-    set hint(value) { this.setAttribute('hint', value); }
+    get value() { return this.getAttribute('value'); }
+    set value(value) { this.setAttribute('value', value); }
+
+    get disabled() { return this.hasAttribute('disabled'); }
+    set disabled(value)
+    {
+        if (value) this.setAttribute('disabled', '');
+        else this.removeAttribute('disabled');
+    }
 }
 window.customElements.define('input-kbd', InputKeyElement);
