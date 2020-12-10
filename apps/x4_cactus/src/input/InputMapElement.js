@@ -1,8 +1,4 @@
-import { InputKey } from 'milque';
-import { InputContext } from './InputContext.js';
-import { InputSourceElement } from './InputSourceElement.js';
-import './InputKeyElement.js';
-import './InputMapElement.js';
+import { InputKeyElement } from './InputKeyElement.js';
 
 const TEMPLATE_KEY = Symbol('template');
 const STYLE_KEY = Symbol('style');
@@ -16,7 +12,7 @@ function upgradeProperty(element, propertyName)
     }
 }
 
-export class InputContextElement extends HTMLElement
+export class InputMapElement extends HTMLElement
 {
     static get [TEMPLATE_KEY]()
     {
@@ -24,11 +20,10 @@ export class InputContextElement extends HTMLElement
         template.innerHTML = `
         <table>
             <thead>
-                <tr class="header">
-                    <th id="title" colspan=3>input-context</th>
-                    <th id="source">&nbsp;</th>
+                <tr class="tableHeader">
+                    <th id="title" colspan=4>input-context</th>
                 </tr>
-                <tr class="hint">
+                <tr class="colHeader">
                     <th>name</th>
                     <th>key</th>
                     <th>mod</th>
@@ -48,7 +43,7 @@ export class InputContextElement extends HTMLElement
         let style = document.createElement('style');
         style.innerHTML = `
         :host {
-            display: inline-block;
+            display: block;
         }
         table {
             border-collapse: collapse;
@@ -56,7 +51,7 @@ export class InputContextElement extends HTMLElement
         table, th, td {
             border: 1px solid gray;
         }
-        .hint > th {
+        .colHeader > th {
             font-size: 0.5em;
             font-family: monospace;
             padding: 0 10px;
@@ -70,23 +65,16 @@ export class InputContextElement extends HTMLElement
         td {
             text-align: center;
         }
-        kbd {
-            display: inline-block;
-            background-color: #EEEEEE;
-            border-radius: 3px;
-            border: 1px solid #B4B4B4;
-            box-shadow: 0 1px 1px rgba(0, 0, 0, .2), 0 2px 0 0 rgba(255, 255, 255, .7) inset;
-            color: #333333;
-            font-size: 0.85em;
-            font-weight: 700;
-            line-height: 1;
-            padding: 2px 4px;
-            white-space: nowrap;
-        }
         output {
             font-family: monospace;
             border-radius: 0.3em;
             padding: 3px;
+        }
+        tr:not(.primary) .name, tr:not(.primary) .value {
+            opacity: 0.3;
+        }
+        tr:nth-child(2n) {
+            background-color: #EEE;
         }
         slot {
             display: none;
@@ -99,11 +87,7 @@ export class InputContextElement extends HTMLElement
     static get observedAttributes()
     {
         return [
-            'for',
             'src',
-            'disabled',
-            // For debugging purposes
-            'debug',
             // Listening for built-in attribs
             'id',
             'class',
@@ -121,30 +105,16 @@ export class InputContextElement extends HTMLElement
         this._src = '';
 
         this._titleElement = this.shadowRoot.querySelector('#title');
-        this._pollElement = this.shadowRoot.querySelector('#poll');
+        this._tableElements = {};
+        this._bodyElement = this.shadowRoot.querySelector('tbody');
 
-        this._tableBody = this.shadowRoot.querySelector('tbody');
         this._children = this.shadowRoot.querySelector('slot');
-
-        this._inputContext = new InputContext();
     }
     
     /** @override */
     connectedCallback()
     {
         upgradeProperty(this, 'src');
-        upgradeProperty(this, 'for');
-        upgradeProperty(this, 'disabled');
-        upgradeProperty(this, 'debug');
-
-        // Allows this element to be focusable
-        if (!this.hasAttribute('tabindex')) this.setAttribute('tabindex', 0);
-    }
-
-    /** @override */
-    disconnectedCallback()
-    {
-        this._inputContext.disabled = true;
     }
 
     /** @override */
@@ -152,17 +122,6 @@ export class InputContextElement extends HTMLElement
     {
         switch(attribute)
         {
-            case 'for':
-                let element = value ? document.getElementById(value) : document.querySelector('input-source');
-                if (element)
-                {
-                    this._inputContext.attach(element.source);
-                }
-                else
-                {
-                    this._inputContext.detach();
-                }
-                break;
             case 'src':
                 if (this._src !== value)
                 {
@@ -170,25 +129,20 @@ export class InputContextElement extends HTMLElement
                     if (value.trim().startsWith('{'))
                     {
                         let jsonData = JSON.parse(value);
-                        this._inputContext.setInputMap(jsonData);
+                        this._setInputMap(jsonData);
                     }
                     else
                     {
                         fetch(value)
                             .then(fileBlob => fileBlob.json())
-                            .then(jsonData => this._inputContext.setInputMap(jsonData));
+                            .then(jsonData => this._setInputMap(jsonData));
                     }
                 }
                 break;
-            case 'disabled':
-                this._inputContext.disabled = value !== null;
-                break;
-            // NOTE: For debug info
+            // For debug info
             case 'id':
             case 'class':
                 this._titleElement.innerHTML = `input-port${this.className ? '.' + this.className : ''}${this.hasAttribute('id') ? '#' + this.getAttribute('id') : ''}`;
-                break;
-            case 'debug':
                 break;
         }
     }
@@ -201,7 +155,7 @@ export class InputContextElement extends HTMLElement
             case 'object':
                 let src = JSON.stringify(value);
                 this._src = src
-                this._inputContext.setInputMap(value);
+                this._setInputMap(value);
                 this.setAttribute('src', src);
                 break;
             case 'string':
@@ -212,12 +166,93 @@ export class InputContextElement extends HTMLElement
                 break;
         }
     }
-    
-    get disabled() { return this.hasAttribute('disabled'); }
-    set disabled(value)
+
+    _setInputMap(inputMap)
     {
-        if (value) this.setAttribute('disabled', '');
-        else this.removeAttribute('disabled');
+        let entries = [];
+        for(let name in inputMap)
+        {
+            let input = inputMap[name];
+            inputToTableEntries(entries, name, input);
+        }
+        this._bodyElement.innerHTML = '';
+        for(let entry of entries)
+        {
+            this._bodyElement.appendChild(entry);
+        }
     }
 }
-window.customElements.define('input-port', InputContextElement);
+window.customElements.define('input-map', InputMapElement);
+
+function inputToTableEntries(out, name, input)
+{
+    if (Array.isArray(input))
+    {
+        inputToTableEntries(out, name, input[0]);
+        let length = input.length;
+        for(let i = 1; i < length; ++i)
+        {
+            const { key, event, scale } = input[i];
+            let entry = createInputTableEntry(name, key, event, scale, 0, false);
+            out.push(entry);
+        }
+        return out;
+    }
+    else
+    {
+        const { key, event, scale } = input;
+        let entry = createInputTableEntry(name, key, event, scale, 0);
+        out.push(entry);
+        return out;
+    }
+}
+
+function createInputTableEntry(name, key, event, scale, value, primary = true)
+{
+    let row = document.createElement('tr');
+    if (primary) row.classList.add('primary');
+    // Name
+    {
+        let data = document.createElement('td');
+        data.textContent = name;
+        data.classList.add('name');
+        row.appendChild(data);
+    }
+    // Key
+    {
+        let data = document.createElement('td');
+        data.classList.add('key');
+        let kbd = new InputKeyElement();
+        kbd.innerText = key;
+        data.appendChild(kbd);
+        row.appendChild(data);
+    }
+    // Modifiers
+    {
+        let data = document.createElement('td');
+        let samp = document.createElement('samp');
+        let modifiers = [];
+        if (typeof event === 'string' && event !== 'null')
+        {
+            modifiers.push(event);
+        }
+        if (typeof scale === 'number' && scale !== 1)
+        {
+            modifiers.push(`\u00D7${scale.toFixed(2)}`);
+        }
+        samp.innerText = modifiers.join(' ');
+        data.classList.add('mod');
+        data.appendChild(samp);
+        row.appendChild(data);
+    }
+    // Value
+    {
+        let data = document.createElement('td');
+        let output = document.createElement('output');
+        output.innerText = Number(value).toFixed(2);
+        output.classList.add('value');
+        data.appendChild(output);
+        row.appendChild(data);
+    }
+    return row;
+}

@@ -42,7 +42,6 @@ export class InputKeyElement extends HTMLElement
             color: #444;
             background-color: #EEE;
             box-shadow: inset 0 -3px 0 #AAA;
-            user-select: none;
             overflow: hidden;
         }
         
@@ -119,7 +118,7 @@ export class InputKeyElement extends HTMLElement
                 if (value !== null)
                 {
                     this._valueElement.classList.toggle('hidden', false);
-                    this._valueElement.innerText = Number(value || 0).toFixed(1);
+                    this._valueElement.innerText = value;
                     this._keyboardElement.style.paddingRight = `${this._valueElement.clientWidth + 4}px`;
                 }
                 else
