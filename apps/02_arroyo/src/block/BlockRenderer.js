@@ -1,4 +1,3 @@
-import { AssetLoader } from '../lib.js';
 import { BLOCKS } from './BlockRegistry.js';
 import { GOLD, DIRT, GRASS } from './Blocks.js';
 import { MAX_FLUID_LEVELS, AIR_COMPONENT } from './fluid/FluidSystem.js';
@@ -8,7 +7,8 @@ import * as NeighborBehavior from './NeighborBehavior.js';
 let assets = {};
 export async function load()
 {
-    assets.meteorite = await AssetLoader.loadAsset('image:sprite/meteorite.png', {});
+    // TODO: Get an image for this.
+    assets.meteorite = null;
 }
 
 export function renderBlock(ctx, world, blockPos, blockSize)

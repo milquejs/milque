@@ -2,7 +2,6 @@
 
 Object.defineProperty(exports, '__esModule', { value: true });
 
-var util = require('@milque/util');
 var glMatrix = require('gl-matrix');
 
 var INNER_HTML = "<div class=\"container\">\r\n    <label class=\"hidden\" id=\"title\">display-port</label>\r\n    <label class=\"hidden\" id=\"fps\">00</label>\r\n    <label class=\"hidden\" id=\"dimension\">0x0</label>\r\n    <canvas></canvas>\r\n    <slot></slot>\r\n</div>";
@@ -321,13 +320,19 @@ window.customElements.define('display-port', DisplayPort);
  * @readonly
  * @enum {Number}
  */
-
+const InputType = {
+  NULL: 0,
+  KEY: 1,
+  POS: 2,
+  WHEEL: 3
+};
 /**
  * An enum for input events.
  * 
  * @readonly
  * @enum {Number}
  */
+
 const InputEventCode = {
   NULL: 0,
   DOWN: 1,
@@ -357,6 +362,115 @@ const InputEventCode = {
 };
 const WILDCARD_KEY_MATCHER = '*';
 /**
+ * @typedef InputEvent
+ * @property {EventTarget} target
+ * @property {String} deviceName
+ * @property {String} keyCode
+ * @property {InputEventCode} event
+ * @property {InputType} type
+ * @property {Number} [value] If type is `key`, it is defined to be the input
+ * value of the triggered event (usually this is 1). Otherwise, it is undefined.
+ * @property {Boolean} [control] If type is `key`, it is defined to be true if
+ * any control key is down (false if up). Otherwise, it is undefined.
+ * @property {Boolean} [shift] If type is `key`, it is defined to be true if
+ * any shift key is down (false if up). Otherwise, it is undefined.
+ * @property {Boolean} [alt] If type is `key`, it is defined to be true if any
+ * alt key is down (false if up). Otherwise, it is undefined.
+ * @property {Number} [x] If type is `pos`, it is defined to be the x value
+ * of the position event. Otherwise, it is undefined.
+ * @property {Number} [y] If type is `pos`, it is defined to be the y value
+ * of the position event. Otherwise, it is undefined.
+ * @property {Number} [dx] If type is `pos` or `wheel`, it is defined to be
+ * the change in the x value from the previous to the current position.
+ * Otherwise, it is undefined.
+ * @property {Number} [dy] If type is `pos` or `wheel`, it is defined to be
+ * the change in the y value from the previous to the current position.
+ * Otherwise, it is undefined.
+ * @property {Number} [dz] If type is `wheel`, it is defined to be the change
+ * in the z value from the previous to the current position. Otherwise, it
+ * is undefined.
+ * 
+ * @callback InputDeviceListener
+ * @param {InputEvent} e
+ * @returns {Boolean} Whether to consume the input after all other
+ * listeners had a chance to handle the event.
+ */
+
+class InputDevice {
+  constructor(deviceName, eventTarget) {
+    this.deviceName = deviceName;
+    this.eventTarget = eventTarget;
+    /** @private */
+
+    this.listeners = {};
+  }
+
+  destroy() {
+    /** @private */
+    this.listeners = {};
+  }
+  /**
+   * @param {String} keyMatcher
+   * @param {InputDeviceListener} listener
+   */
+
+
+  addInputListener(keyMatcher, listener) {
+    let inputListeners = this.listeners[keyMatcher];
+
+    if (!inputListeners) {
+      inputListeners = [listener];
+      this.listeners[keyMatcher] = inputListeners;
+    } else {
+      inputListeners.push(listener);
+    }
+  }
+  /**
+   * @param {String} keyMatcher
+   * @param {InputDeviceListener} listener
+   */
+
+
+  removeInputListener(keyMatcher, listener) {
+    let inputListeners = this.listeners[keyMatcher];
+
+    if (inputListeners) {
+      inputListeners.indexOf(listener);
+      inputListeners.splice(listener, 1);
+    }
+  }
+  /**
+   * @param {InputEvent} e
+   * @returns {Boolean} Whether the input event should be consumed.
+   */
+
+
+  dispatchInput(e) {
+    const {
+      keyCode
+    } = e;
+    const listeners = this.listeners[keyCode];
+    let flag = false;
+
+    if (listeners) {
+      // KeyCode listeners
+      for (let listener of listeners) {
+        flag |= listener(e);
+      }
+
+      return flag;
+    } // Wildcard listeners
+
+
+    for (let listener of this.listeners[WILDCARD_KEY_MATCHER]) {
+      flag |= listener(e);
+    }
+
+    return flag;
+  }
+
+}
+/**
  * @typedef AdapterInput
  * @property {Function} update
  * @property {Function} poll
@@ -370,6 +484,7 @@ const WILDCARD_KEY_MATCHER = '*';
  * @property {Number} scale
  * @property {Number} eventCode
  */
+
 
 const WILDCARD_DEVICE_MATCHER = '*';
 
@@ -676,6 +791,478 @@ function stringifyDeviceKeyCodePair(deviceName, keyCode) {
   return `${deviceName}${KEY_STRING_DEVICE_SEPARATOR}${keyCode}`;
 }
 /**
+ * Available Key Codes:
+ * - This uses the `event.code` standard to reference each key.
+ * - Use this to help you determine the code: https://keycode.info/
+ */
+
+/**
+ * A class that listens to the keyboard events from the event target and
+ * transforms the events into a valid {@link InputEvent} for the added
+ * listeners.
+ */
+
+
+class Keyboard extends InputDevice {
+  /**
+   * Constructs a listening keyboard with no listeners (yet).
+   * 
+   * @param {EventTarget} eventTarget 
+   * @param {Object} [opts] Any additional options.
+   * @param {Boolean} [opts.repeat=false] Whether to accept repeated key
+   * events.
+   */
+  constructor(eventTarget, opts = {}) {
+    super('Keyboard', eventTarget);
+    const {
+      repeat = false
+    } = opts;
+    this.repeat = repeat;
+    /** @private */
+
+    this._eventObject = {
+      target: eventTarget,
+      deviceName: this.deviceName,
+      keyCode: '',
+      event: InputEventCode.NULL,
+      type: InputType.KEY,
+      // Key values
+      value: 0,
+      control: false,
+      shift: false,
+      alt: false
+    };
+    /** @private */
+
+    this.onKeyDown = this.onKeyDown.bind(this);
+    /** @private */
+
+    this.onKeyUp = this.onKeyUp.bind(this);
+    eventTarget.addEventListener('keydown', this.onKeyDown);
+    eventTarget.addEventListener('keyup', this.onKeyUp);
+  }
+  /** @override */
+
+
+  destroy() {
+    let eventTarget = this.eventTarget;
+    eventTarget.removeEventListener('keydown', this.onKeyDown);
+    eventTarget.removeEventListener('keyup', this.onKeyUp);
+    super.destroy();
+  }
+  /**
+   * @private
+   * @param {KeyboardEvent} e
+   */
+
+
+  onKeyDown(e) {
+    if (e.repeat) {
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    }
+
+    let event = this._eventObject; // We care more about location (code) than print char (key).
+
+    event.keyCode = e.code;
+    event.event = InputEventCode.DOWN;
+    event.value = 1;
+    event.control = e.ctrlKey;
+    event.shift = e.shiftKey;
+    event.alt = e.altKey;
+    let result = this.dispatchInput(event);
+
+    if (result) {
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    }
+  }
+  /**
+   * @private
+   * @param {KeyboardEvent} e
+   */
+
+
+  onKeyUp(e) {
+    let event = this._eventObject; // We care more about location (code) than print char (key).
+
+    event.keyCode = e.code;
+    event.event = InputEventCode.UP;
+    event.value = 1;
+    event.control = e.ctrlKey;
+    event.shift = e.shiftKey;
+    event.alt = e.altKey;
+    let result = this.dispatchInput(event);
+
+    if (result) {
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    }
+  }
+
+}
+/**
+ * Available Key Codes:
+ * - PosX
+ * - PosY
+ * - WheelX
+ * - WheelY
+ * - WheelZ
+ * - Button0 (left button)
+ * - Button1 (middle button)
+ * - Button2 (right button)
+ * - Button3 (next button)
+ * - Button4 (back button)
+ */
+
+
+const DEFAULT_LINE_PIXELS = 10;
+const DEFAULT_PAGE_PIXELS = 100;
+/**
+ * A class that listens to the keyboard events from the event target and
+ * transforms the events into a valid {@link InputEvent} for the added
+ * listeners.
+ */
+
+class Mouse extends InputDevice {
+  /**
+   * Constructs a listening mouse with no listeners (yet).
+   * 
+   * @param {EventTarget} eventTarget
+   * @param {Object} [opts] Any additional options.
+   * @param {Boolean} [opts.eventsOnFocus=true] Whether to capture events only when it has focus.
+   */
+  constructor(eventTarget, opts = {
+    eventsOnFocus: true
+  }) {
+    super('Mouse', eventTarget);
+    this.canvasTarget = eventTarget instanceof HTMLCanvasElement && eventTarget || eventTarget.canvas || eventTarget.querySelector('canvas') || eventTarget.shadowRoot && eventTarget.shadowRoot.querySelector('canvas') || eventTarget;
+    this.eventsOnFocus = opts.eventsOnFocus;
+    this._downHasFocus = false;
+    /** @private */
+
+    this._eventObject = {
+      target: eventTarget,
+      deviceName: this.deviceName,
+      keyCode: '',
+      event: InputEventCode.NULL,
+      type: InputType.KEY,
+      // Key values
+      value: 0,
+      control: false,
+      shift: false,
+      alt: false
+    };
+    /** @private */
+
+    this._positionObject = {
+      target: eventTarget,
+      deviceName: this.deviceName,
+      keyCode: 'Position',
+      event: InputEventCode.MOVE,
+      type: InputType.POS,
+      // Pos values
+      x: 0,
+      y: 0,
+      dx: 0,
+      dy: 0
+    };
+    /** @private */
+
+    this._wheelObject = {
+      target: eventTarget,
+      deviceName: this.deviceName,
+      keyCode: 'Wheel',
+      event: InputEventCode.MOVE,
+      type: InputType.WHEEL,
+      // Wheel values
+      dx: 0,
+      dy: 0,
+      dz: 0
+    };
+    /** @private */
+
+    this.onMouseDown = this.onMouseDown.bind(this);
+    /** @private */
+
+    this.onMouseUp = this.onMouseUp.bind(this);
+    /** @private */
+
+    this.onMouseMove = this.onMouseMove.bind(this);
+    /** @private */
+
+    this.onContextMenu = this.onContextMenu.bind(this);
+    /** @private */
+
+    this.onWheel = this.onWheel.bind(this);
+    eventTarget.addEventListener('mousedown', this.onMouseDown);
+    eventTarget.addEventListener('contextmenu', this.onContextMenu);
+    eventTarget.addEventListener('wheel', this.onWheel);
+    eventTarget.addEventListener('mousemove', this.onMouseMove);
+    document.addEventListener('mouseup', this.onMouseUp);
+  }
+  /** @override */
+
+
+  destroy() {
+    let eventTarget = this.eventTarget;
+    eventTarget.removeEventListener('mousedown', this.onMouseDown);
+    eventTarget.removeEventListener('contextmenu', this.onContextMenu);
+    eventTarget.removeEventListener('wheel', this.onWheel);
+    eventTarget.removeEventListener('mousemove', this.onMouseMove);
+    document.removeEventListener('mouseup', this.onMouseUp);
+    super.destroy();
+  }
+
+  setPointerLock(force = true) {
+    if (force) {
+      this.eventTarget.requestPointerLock();
+    } else {
+      this.eventTarget.exitPointerLock();
+    }
+  }
+
+  hasPointerLock() {
+    return document.pointerLockElement === this.eventTarget;
+  }
+  /**
+   * @private
+   * @param {MouseEvent} e
+   */
+
+
+  onMouseDown(e) {
+    this._downHasFocus = true;
+    let event = this._eventObject; // We care more about location (code) than print char (key).
+
+    event.keyCode = 'Button' + e.button;
+    event.event = InputEventCode.DOWN;
+    event.value = 1;
+    event.control = e.ctrlKey;
+    event.shift = e.shiftKey;
+    event.alt = e.altKey;
+    let result = this.dispatchInput(event);
+
+    if (result) {
+      // Make sure it has focus first.
+      if (document.activeElement === this.eventTarget) {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      }
+    }
+  }
+  /**
+   * @private
+   * @param {MouseEvent} e
+   */
+
+
+  onContextMenu(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    return false;
+  }
+  /**
+   * @private
+   * @param {WheelEvent} e
+   */
+
+
+  onWheel(e) {
+    let event = this._wheelObject;
+
+    switch (e.deltaMode) {
+      case WheelEvent.DOM_DELTA_LINE:
+        event.dx = e.deltaX * DEFAULT_LINE_PIXELS;
+        event.dy = e.deltaY * DEFAULT_LINE_PIXELS;
+        event.dz = e.deltaZ * DEFAULT_LINE_PIXELS;
+        break;
+
+      case WheelEvent.DOM_DELTA_PAGE:
+        event.dx = e.deltaX * DEFAULT_PAGE_PIXELS;
+        event.dy = e.deltaY * DEFAULT_PAGE_PIXELS;
+        event.dz = e.deltaZ * DEFAULT_PAGE_PIXELS;
+        break;
+
+      case WheelEvent.DOM_DELTA_PIXEL:
+      default:
+        event.dx = e.deltaX;
+        event.dy = e.deltaY;
+        event.dz = e.deltaZ;
+        break;
+    }
+
+    let result = this.dispatchInput(event);
+
+    if (result) {
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    }
+  }
+  /**
+   * @private
+   * @param {MouseEvent} e
+   */
+
+
+  onMouseUp(e) {
+    // Make sure mouse down was pressed before this (with focus).
+    if (!this._downHasFocus) return;
+    this._downHasFocus = false;
+    let event = this._eventObject; // We care more about location (code) than print char (key).
+
+    event.keyCode = 'Button' + e.button;
+    event.event = InputEventCode.UP;
+    event.value = 1;
+    event.control = e.ctrlKey;
+    event.shift = e.shiftKey;
+    event.alt = e.altKey;
+    let result = this.dispatchInput(event);
+
+    if (result) {
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    }
+  }
+  /**
+   * @private
+   * @param {MouseEvent} e
+   */
+
+
+  onMouseMove(e) {
+    if (this.eventsOnFocus && document.activeElement !== this.eventTarget) return;
+    const element = this.canvasTarget;
+    const {
+      clientWidth,
+      clientHeight
+    } = element;
+    const rect = element.getBoundingClientRect();
+    let dx = e.movementX / clientWidth;
+    let dy = e.movementY / clientHeight;
+    let x = (e.clientX - rect.left) / clientWidth;
+    let y = (e.clientY - rect.top) / clientHeight;
+    let event = this._positionObject;
+    event.x = x;
+    event.y = y;
+    event.dx = dx;
+    event.dy = dy;
+    this.dispatchInput(event);
+  }
+
+}
+
+class Axis extends Input {
+  constructor() {
+    super();
+    this.delta = 0;
+    /** @private */
+
+    this.next = {
+      delta: 0
+    };
+  }
+  /** @override */
+
+
+  update(value, delta) {
+    this.value = value;
+    this.next.delta += delta;
+  }
+  /** @override */
+
+
+  poll() {
+    this.delta = this.next.delta;
+    this.next.delta = 0;
+  }
+  /** @override */
+
+
+  getEvent(eventCode) {
+    switch (eventCode) {
+      case InputEventCode.MOVE:
+        return this.delta;
+
+      default:
+        return super.getEvent(eventCode);
+    }
+  }
+
+}
+
+class Button extends Input {
+  constructor() {
+    super();
+    /** Whether the button is just pressed. Is updated on poll(). */
+
+    this.down = false;
+    /** Whether the button is just released. Is updated on poll(). */
+
+    this.up = false;
+    /** @private */
+
+    this.next = {
+      down: false,
+      up: false
+    };
+  }
+  /** @override */
+
+
+  update(value) {
+    if (value) {
+      this.next.down = true;
+    } else {
+      this.next.up = true;
+    }
+  }
+  /** @override */
+
+
+  poll() {
+    const {
+      up: nextUp,
+      down: nextDown
+    } = this.next;
+
+    if (this.value) {
+      if (this.up && !nextUp) {
+        this.value = 0;
+      }
+    } else if (nextDown) {
+      this.value = 1;
+    }
+
+    this.down = nextDown;
+    this.up = nextUp;
+    this.next.down = false;
+    this.next.up = false;
+  }
+  /** @override */
+
+
+  getEvent(eventCode) {
+    switch (eventCode) {
+      case InputEventCode.DOWN:
+        return this.down & 1;
+
+      case InputEventCode.UP:
+        return this.up & 1;
+
+      default:
+        return super.getEvent(eventCode);
+    }
+  }
+
+}
+/**
  * @readonly
  * @enum {Number}
  */
@@ -686,6 +1273,299 @@ const InputSourceStage = {
   UPDATE: 1,
   POLL: 2
 };
+/**
+ * Whether the given key code for device is an axis input.
+ * 
+ * @param {String} deviceName 
+ * @param {String} keyCode 
+ */
+
+function isInputAxis(deviceName, keyCode) {
+  return deviceName === 'Mouse' && (keyCode === 'PosX' || keyCode === 'PosY' || keyCode === 'WheelX' || keyCode === 'WheelY' || keyCode === 'WheelZ');
+}
+/** This determines whether an element has an associated input source. */
+
+
+const INPUT_SOURCE_REF_KEY = Symbol('inputSource');
+/**
+ * @typedef InputSourceInputEvent
+ * @property {InputSourceStage} stage
+ * @property {String} deviceName
+ * @property {String} keyCode
+ * @property {Axis|Button} input
+ * 
+ * @typedef InputSourcePollEvent
+ * 
+ * @callback InputSourceEventListener
+ * @param {InputSourceInputEvent|InputSourcePollEvent} e
+ */
+
+/**
+ * A class to model the current input state with buttons and axes.
+ */
+
+class InputSource {
+  static for(eventTarget) {
+    if (Object.prototype.hasOwnProperty.call(eventTarget, INPUT_SOURCE_REF_KEY)) {
+      return eventTarget[INPUT_SOURCE_REF_KEY];
+    } else {
+      let result = new InputSource([new Keyboard(eventTarget), new Mouse(eventTarget)]);
+      Object.defineProperty(eventTarget, INPUT_SOURCE_REF_KEY, {
+        value: result
+      });
+      return result;
+    }
+  }
+
+  constructor(deviceList) {
+    /** @private */
+    this.onInputEvent = this.onInputEvent.bind(this);
+    let deviceMap = {};
+    let inputMap = {};
+
+    for (let device of deviceList) {
+      const deviceName = device.deviceName;
+      deviceMap[deviceName] = device;
+      inputMap[deviceName] = {};
+      device.addInputListener(WILDCARD_KEY_MATCHER, this.onInputEvent);
+    }
+
+    this.devices = deviceMap;
+    /** @private */
+
+    this.inputs = inputMap;
+    /** @private */
+
+    this.listeners = {
+      poll: [],
+      update: []
+    };
+  }
+
+  destroy() {
+    this.clear();
+
+    for (let deviceName in this.devices) {
+      let device = this.devices[deviceName];
+      device.removeInputListener(WILDCARD_KEY_MATCHER, this.onInputEvent);
+      device.destroy();
+    }
+  }
+  /**
+   * Add listener to listen for event, in order by most
+   * recently added. In other words, this listener will
+   * be called BEFORE the previously added listener (if
+   * there exists one) and so on.
+   * 
+   * @param {String} event 
+   * @param {InputSourceEventListener} listener 
+   */
+
+
+  addEventListener(event, listener) {
+    if (event in this.listeners) {
+      this.listeners[event].unshift(listener);
+    } else {
+      this.listeners[event] = [listener];
+    }
+  }
+  /**
+   * Removes the listener from listening to the event.
+   * 
+   * @param {String} event 
+   * @param {InputSourceEventListener} listener 
+   */
+
+
+  removeEventListener(event, listener) {
+    if (event in this.listeners) {
+      let list = this.listeners[event];
+      let i = list.indexOf(listener);
+      list.splice(i, 1);
+    }
+  }
+  /**
+   * Dispatches an event to the listeners.
+   * 
+   * @param {String} eventName The name of the event.
+   * @param {InputSourceInputEvent|InputSourcePollEvent} event The event object to pass to listeners.
+   */
+
+
+  dispatchEvent(eventName, event) {
+    for (let listener of this.listeners[eventName]) {
+      listener(event);
+    }
+  }
+  /**
+   * @private
+   * @param {InputSourceStage} stage 
+   * @param {String} deviceName 
+   * @param {String} keyCode 
+   * @param {Axis|Button} input 
+   */
+
+
+  _dispatchInputEvent(stage, deviceName, keyCode, input) {
+    this.dispatchEvent('input', {
+      stage,
+      deviceName,
+      keyCode,
+      input
+    });
+  }
+  /** @private */
+
+
+  _dispatchPollEvent() {
+    this.dispatchEvent('poll', {});
+  }
+  /**
+   * Poll the devices and update the input state.
+   */
+
+
+  poll() {
+    for (const deviceName in this.inputs) {
+      const inputMap = this.inputs[deviceName];
+
+      for (const keyCode in inputMap) {
+        let input = inputMap[keyCode];
+        input.poll();
+
+        this._dispatchInputEvent(InputSourceStage.POLL, deviceName, keyCode, input);
+      }
+    }
+
+    this._dispatchPollEvent();
+  }
+  /** @private */
+
+
+  onInputEvent(e) {
+    const deviceName = e.deviceName;
+
+    switch (e.type) {
+      case InputType.KEY:
+        {
+          const keyCode = e.keyCode;
+          let button = this.inputs[deviceName][keyCode];
+
+          if (button) {
+            button.update(e.event === InputEventCode.DOWN);
+
+            this._dispatchInputEvent(InputSourceStage.UPDATE, deviceName, keyCode, button);
+          }
+        }
+        break;
+
+      case InputType.POS:
+        {
+          let inputs = this.inputs[deviceName];
+          let xAxis = inputs.PosX;
+
+          if (xAxis) {
+            xAxis.update(e.x, e.dx);
+
+            this._dispatchInputEvent(InputSourceStage.UPDATE, deviceName, 'PosX', xAxis);
+          }
+
+          let yAxis = inputs.PosY;
+
+          if (yAxis) {
+            yAxis.update(e.y, e.dy);
+
+            this._dispatchInputEvent(InputSourceStage.UPDATE, deviceName, 'PosY', yAxis);
+          }
+        }
+        break;
+
+      case InputType.WHEEL:
+        {
+          let inputs = this.inputs[deviceName];
+          let xAxis = inputs.WheelX;
+
+          if (xAxis) {
+            xAxis.update(e.dx, e.dx);
+
+            this._dispatchInputEvent(InputSourceStage.UPDATE, deviceName, 'WheelX', xAxis);
+          }
+
+          let yAxis = inputs.WheelY;
+
+          if (yAxis) {
+            yAxis.update(e.dy, e.dy);
+
+            this._dispatchInputEvent(InputSourceStage.UPDATE, deviceName, 'WheelY', yAxis);
+          }
+
+          let zAxis = inputs.WheelZ;
+
+          if (zAxis) {
+            zAxis.update(e.dz, e.dz);
+
+            this._dispatchInputEvent(InputSourceStage.UPDATE, deviceName, 'WheelZ', zAxis);
+          }
+        }
+        break;
+    }
+  }
+  /**
+   * Add an input for the given device and key code.
+   * 
+   * @param {String} deviceName 
+   * @param {String} keyCode 
+   */
+
+
+  add(deviceName, keyCode) {
+    if (!(deviceName in this.devices)) {
+      throw new Error('Invalid device name - missing device with name in source.');
+    }
+
+    let result = isInputAxis(deviceName, keyCode) ? new Axis() : new Button();
+    this.inputs[deviceName][keyCode] = result;
+    return this;
+  }
+  /**
+   * Remove the input for the given device and key code.
+   * 
+   * @param {String} deviceName 
+   * @param {String} keyCode 
+   */
+
+
+  delete(deviceName, keyCode) {
+    delete this.inputs[deviceName][keyCode];
+  }
+  /** @returns {Button|Axis} */
+
+
+  get(deviceName, keyCode) {
+    return this.inputs[deviceName][keyCode];
+  }
+  /**
+   * @param {String} deviceName 
+   * @param {String} keyCode 
+   * @returns {Boolean} Whether the device and key code has been added.
+   */
+
+
+  has(deviceName, keyCode) {
+    return deviceName in this.inputs && keyCode in this.inputs[deviceName];
+  }
+  /**
+   * Removes all registered inputs from all devices.
+   */
+
+
+  clear() {
+    for (let deviceName in this.devices) {
+      this.inputs[deviceName] = {};
+    }
+  }
+
+}
 
 class InputContext {
   /**
@@ -700,7 +1580,7 @@ class InputContext {
     } = opts;
     /** @type {import('./source/InputSource.js').InputSource} */
 
-    this.inputSource = null;
+    this.source = null;
     /** @private */
 
     this._disabled = disabled;
@@ -735,7 +1615,7 @@ class InputContext {
 
 
   setInputMap(inputMap) {
-    this._setupInputs(this.inputSource, inputMap);
+    this._setupInputs(this.source, inputMap);
 
     return this;
   }
@@ -772,7 +1652,7 @@ class InputContext {
     const prevDisabled = this.disabled;
     this.disabled = true; // Prepare previous state...
 
-    const prevInputSource = this.inputSource;
+    const prevInputSource = this.source;
     const prevInputs = this.inputs;
     const isPrevSourceReplaced = prevInputSource !== inputSource && prevInputSource;
     const isPrevInputsReplaced = this.inputs && inputMap; // Tear down
@@ -844,10 +1724,10 @@ class InputContext {
         }
       }
 
-      if (this.inputSource !== inputSource) {
+      if (this.source !== inputSource) {
         inputSource.addEventListener('poll', this.onSourcePoll);
         inputSource.addEventListener('input', this.onSourceInput);
-        this.inputSource = inputSource;
+        this.source = inputSource;
       }
     } // Make sure this context returns to its previous expected state...
 
@@ -911,7 +1791,7 @@ class InputContext {
 
   toggle(force = this._disabled) {
     if (force) {
-      if (!this.inputSource) {
+      if (!this.source) {
         throw new Error('Input source must be set before enabling input context.');
       }
 
@@ -1050,6 +1930,872 @@ class SimpleRandomGenerator extends RandomGenerator {
     this._next = this._seed;
   }
 
+}
+
+// Bresenham's Line Algorithm
+function line(fromX, fromY, toX, toY, callback) {
+  let fx = Math.floor(fromX);
+  let fy = Math.floor(fromY);
+  let tx = Math.floor(toX);
+  let ty = Math.floor(toY);
+  let dx = Math.abs(toX - fromX);
+  let sx = fromX < toX ? 1 : -1;
+  let dy = -Math.abs(toY - fromY);
+  let sy = fromY < toY ? 1 : -1;
+  let er = dx + dy;
+  let x = fx;
+  let y = fy;
+  let flag = callback(x, y);
+  if (typeof flag !== 'undefined') return flag;
+  let maxLength = dx * dx + dy * dy;
+  let length = 0;
+
+  while (length < maxLength && (x !== tx || y !== ty)) {
+    // Make sure it doesn't go overboard.
+    ++length;
+    let er2 = er * 2;
+
+    if (er2 >= dy) {
+      er += dy;
+      x += sx;
+    }
+
+    if (er2 <= dx) {
+      er += dx;
+      y += sy;
+    }
+
+    flag = callback(x, y);
+    if (typeof flag !== 'undefined') return flag;
+  }
+}
+
+var Discrete = /*#__PURE__*/Object.freeze({
+  __proto__: null,
+  line: line
+});
+const FILE_TYPE_PNG = 'png';
+const FILE_TYPE_SVG = 'svg';
+
+function downloadText(filename, textData) {
+  downloadURL(filename, getTextDataURI(textData));
+}
+
+function downloadImageFromSVG(filename, filetype, svg, width, height) {
+  const blob = createBlobFromSVG(svg);
+
+  switch (filetype) {
+    case FILE_TYPE_PNG:
+      {
+        const url = URL.createObjectURL(blob);
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const pixelRatio = window.devicePixelRatio || 1;
+        canvas.width = width * pixelRatio;
+        canvas.height = height * pixelRatio;
+        canvas.style.width = width + 'px';
+        canvas.style.height = height + 'px';
+        ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+        const image = new Image();
+
+        image.onload = () => {
+          ctx.drawImage(image, 0, 0);
+          URL.revokeObjectURL(url);
+          const imageURI = canvas.toDataURL('image/' + filetype).replace('image/' + filetype, 'image/octet-stream');
+          downloadURL(filename, imageURI);
+        };
+
+        image.src = url;
+      }
+      break;
+
+    case FILE_TYPE_SVG:
+      {
+        const reader = new FileReader();
+
+        reader.onload = () => {
+          downloadURL(filename, reader.result);
+        };
+
+        reader.readAsDataURL(blob);
+      }
+      break;
+
+    default:
+      throw new Error('Unknown file type \'' + filetype + '\'');
+  }
+}
+
+function downloadURL(filename, url) {
+  const element = document.createElement('a');
+  const headerIndex = url.indexOf(';');
+  url = url.substring(0, headerIndex + 1) + 'headers=Content-Disposition%3A%20attachment%3B%20filename=' + filename + ';' + url.substring(headerIndex + 1);
+  element.setAttribute('href', url);
+  element.setAttribute('download', filename);
+  element.style.display = 'none';
+  document.body.appendChild(element);
+  element.click();
+  document.body.removeChild(element);
+}
+
+function createBlobFromSVG(svg) {
+  const styledSVG = computeSVGStyles(svg);
+  const serializer = new XMLSerializer();
+  const svgString = serializer.serializeToString(styledSVG);
+  const blob = new Blob([svgString], {
+    type: 'image/svg+xml'
+  });
+  return blob;
+} // SOURCE: https://stackoverflow.com/questions/3975499/convert-svg-to-image-jpeg-png-etc-in-the-browser/44769098#44769098
+
+
+const SVG_CONTAINERS = ['svg', 'g'];
+
+function computeSVGStyles(svg, dst = svg.cloneNode(true)) {
+  let sourceChildren = svg.childNodes;
+  let children = dst.childNodes;
+
+  for (var index = 0; index < children.length; index++) {
+    let child = children[index];
+    let tagName = child.tagName;
+
+    if (SVG_CONTAINERS.indexOf(tagName) != -1) {
+      computeSVGStyles(sourceChildren[index], child);
+    } else if (sourceChildren[index] instanceof Element) {
+      const computedStyle = window.getComputedStyle(sourceChildren[index]);
+      let styleAttributes = [];
+
+      for (let styleName of Object.keys(computedStyle)) {
+        styleAttributes.push(`${styleName}:${computedStyle.getPropertyValue(styleName)};`);
+      }
+
+      child.setAttribute('style', styleAttributes.join(''));
+    }
+  }
+
+  return dst;
+}
+
+function getTextDataURI(data) {
+  return 'data:text/plain; charset=utf-8,' + encodeURIComponent(data);
+}
+
+var Downloader = /*#__PURE__*/Object.freeze({
+  __proto__: null,
+  FILE_TYPE_PNG: FILE_TYPE_PNG,
+  FILE_TYPE_SVG: FILE_TYPE_SVG,
+  downloadText: downloadText,
+  downloadImageFromSVG: downloadImageFromSVG,
+  downloadURL: downloadURL
+});
+
+async function uploadFile(accept = [], multiple = false) {
+  return new Promise((resolve, reject) => {
+    const element = document.createElement('input');
+    element.addEventListener('change', e => {
+      if (multiple) {
+        resolve(e.target.files);
+      } else {
+        resolve(e.target.files[0]);
+      }
+    });
+    element.type = 'file';
+    element.accept = accept.join(',');
+    element.style.display = 'none';
+    element.toggleAttribute('multiple', multiple);
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+  });
+}
+
+var Uploader = /*#__PURE__*/Object.freeze({
+  __proto__: null,
+  uploadFile: uploadFile
+}); // Log levels
+
+const TRACE = 5;
+const DEBUG = 4;
+const INFO = 3;
+const WARN = 2;
+const ERROR = 1;
+const OFF = 0;
+const LOG_LEVEL_STYLES = {
+  [TRACE]: styledLogLevel('#7F8C8D'),
+  // Gray
+  [DEBUG]: styledLogLevel('#2ECC71'),
+  // Green
+  [INFO]: styledLogLevel('#4794C8'),
+  // Blue
+  [WARN]: styledLogLevel('#F39C12'),
+  // Yellow
+  [ERROR]: styledLogLevel('#C0392B'),
+  // Red
+  [OFF]: ['']
+};
+
+function compareLogLevel(a, b) {
+  return a - b;
+}
+
+function styledLogLevel(color) {
+  return [`background: ${color}`, 'border-radius: 0.5em', 'color: white', 'font-weight: bold', 'padding: 2px 0.5em'];
+} // Useful functions
+
+
+function noop() {
+  /** Do nothing. */
+}
+
+function getStyledMessage(message, styles) {
+  return [`%c${message}`, styles.join(';')];
+}
+
+function getConsoleFunction(level) {
+  switch (level) {
+    case TRACE:
+      return console.trace;
+
+    case DEBUG:
+      return console.log;
+
+    case INFO:
+      return console.log;
+
+    case WARN:
+      return console.warn;
+
+    case ERROR:
+      return console.error;
+
+    case OFF:
+      return noop;
+
+    default:
+      return console.log;
+  }
+}
+
+function prependMessageTags(out, name, domain, level) {
+  if (name) {
+    out.unshift(`[${name}]`);
+  }
+
+  if (domain) {
+    let tag = getStyledMessage(domain, LOG_LEVEL_STYLES[level]);
+    out.unshift(tag[0], tag[1]);
+  }
+
+  return out;
+}
+
+const LEVEL = Symbol('level');
+const DOMAIN = Symbol('domain');
+const LOGGERS = {
+  /** To be populated by logger instances. */
+};
+let DEFAULT_LEVEL = WARN;
+let DEFAULT_DOMAIN = 'app';
+
+class Logger {
+  static get TRACE() {
+    return TRACE;
+  }
+
+  static get DEBUG() {
+    return DEBUG;
+  }
+
+  static get INFO() {
+    return INFO;
+  }
+
+  static get WARN() {
+    return WARN;
+  }
+
+  static get ERROR() {
+    return ERROR;
+  }
+
+  static get OFF() {
+    return OFF;
+  }
+  /**
+   * Creates or gets the logger for the given unique name.
+   * @param {String} name 
+   * @returns {Logger} The logger with the name.
+   */
+
+
+  static getLogger(name) {
+    if (name in LOGGERS) {
+      return LOGGERS[name];
+    } else {
+      return LOGGERS[name] = new Logger(name);
+    }
+  }
+
+  static useDefaultLevel(level) {
+    DEFAULT_LEVEL = level;
+    return this;
+  }
+
+  static useDefaultDomain(domain) {
+    DEFAULT_DOMAIN = domain;
+    return this;
+  }
+
+  constructor(name) {
+    this.name = name;
+    this[LEVEL] = DEFAULT_LEVEL;
+    this[DOMAIN] = DEFAULT_DOMAIN;
+  }
+
+  setLevel(level) {
+    this[LEVEL] = level;
+    return this;
+  }
+
+  getLevel() {
+    return this[LEVEL];
+  }
+
+  setDomain(domain) {
+    this[DOMAIN] = domain;
+    return this;
+  }
+
+  getDomain() {
+    return this[DOMAIN];
+  }
+
+  log(level, ...messages) {
+    if (compareLogLevel(this[LEVEL], level) < 0) return this;
+    prependMessageTags(messages, this.name, this[DOMAIN], level);
+    getConsoleFunction(level)(...messages);
+  }
+
+  trace(...messages) {
+    if (compareLogLevel(this[LEVEL], TRACE) < 0) return this;
+    prependMessageTags(messages, this.name, this[DOMAIN], TRACE);
+    getConsoleFunction(TRACE)(...messages);
+  }
+
+  debug(...messages) {
+    if (compareLogLevel(this[LEVEL], DEBUG) < 0) return this;
+    prependMessageTags(messages, this.name, this[DOMAIN], DEBUG);
+    getConsoleFunction(DEBUG)(...messages);
+  }
+
+  info(...messages) {
+    if (compareLogLevel(this[LEVEL], INFO) < 0) return this;
+    prependMessageTags(messages, this.name, this[DOMAIN], INFO);
+    getConsoleFunction(INFO)(...messages);
+  }
+
+  warn(...messages) {
+    if (compareLogLevel(this[LEVEL], WARN) < 0) return this;
+    prependMessageTags(messages, this.name, this[DOMAIN], WARN);
+    getConsoleFunction(WARN)(...messages);
+  }
+
+  error(...messages) {
+    if (compareLogLevel(this[LEVEL], ERROR) < 0) return this;
+    prependMessageTags(messages, this.name, this[DOMAIN], ERROR);
+    getConsoleFunction(ERROR)(...messages);
+  }
+
+}
+
+var Logger$1 = /*#__PURE__*/Object.freeze({
+  __proto__: null,
+  Logger: Logger
+});
+/**
+ * @typedef Eventable
+ * @property {function} on
+ * @property {function} off
+ * @property {function} once
+ * @property {function} emit
+ */
+
+/**
+ * @version 1.3.0
+ * @description
+ * # Changelog
+ * ## 1.3.0
+ * - Return results for emit()
+ * ## 1.2.0
+ * - Added named exports
+ * - Added custom this context
+ * - Added some needed explanations for the functions
+ * ## 1.1.0
+ * - Started versioning
+ */
+
+const EventableInstance = {
+  /**
+   * Registers an event handler to continually listen for the event.
+   * 
+   * @param {string} event The name of the event to listen for.
+   * @param {function} callback The callback function to handle the event.
+   * @param {*} [handle = callback] The handle to refer to this registered callback.
+   * Used by off() to remove handlers. If none specified, it will use the callback
+   * itself as the handle. This must be unique.
+   * @return {Eventable} Self for method-chaining.
+   */
+  on(event, callback, handle = callback) {
+    let callbacks;
+
+    if (!this.__events.has(event)) {
+      callbacks = new Map();
+
+      this.__events.set(event, callbacks);
+    } else {
+      callbacks = this.__events.get(event);
+    }
+
+    if (!callbacks.has(handle)) {
+      callbacks.set(handle, callback);
+    } else {
+      throw new Error(`Found callback for event '${event}' with the same handle '${handle}'.`);
+    }
+
+    return this;
+  },
+
+  /**
+   * Unregisters an event handler to stop listening for the event.
+   * 
+   * @param {string} event The name of the event listened for.
+   * @param {*} handle The registered handle to refer to the registered
+   * callback. If no handle was provided when calling on(), the callback
+   * is used as the handle instead.
+   * @return {Eventable} Self for method-chaining.
+   */
+  off(event, handle) {
+    if (this.__events.has(event)) {
+      const callbacks = this.__events.get(event);
+
+      if (callbacks.has(handle)) {
+        callbacks.delete(handle);
+      } else {
+        throw new Error(`Unable to find callback for event '${event}' with handle '${handle}'.`);
+      }
+    } else {
+      throw new Error(`Unable to find event '${event}'.`);
+    }
+
+    return this;
+  },
+
+  /**
+   * Registers a one-off event handler to start listening for the next,
+   * and only the next, event.
+   * 
+   * @param {string} event The name of the event to listen for.
+   * @param {function} callback The callback function to handle the event.
+   * @param {*} [handle = callback] The handle to refer to this registered callback.
+   * Used by off() to remove handlers. If none specified, it will use the callback
+   * itself as the handle. This must be unique.
+   * @return {Eventable} Self for method-chaining.
+   */
+  once(event, callback, handle = callback) {
+    const func = (...args) => {
+      this.off(event, handle);
+      callback.apply(this.__context || this, args);
+    };
+
+    return this.on(event, func, handle);
+  },
+
+  /**
+   * Emits the event with the arguments passed on to the registered handlers.
+   * The context of the handlers, if none were initially bound, could be
+   * defined upon calling the Eventable's creation function. Otherwise, the
+   * handler is called with `this` context of the Eventable instance.
+   * 
+   * @param {string} event The name of the event to emit.
+   * @param  {...any} args Any arguments to pass to registered handlers.
+   * @return {Array<any>} Array of any returned values of the callbacks.
+   */
+  emit(event, ...args) {
+    if (this.__events.has(event)) {
+      let results = [];
+      const callbacks = Array.from(this.__events.get(event).values());
+
+      for (const callback of callbacks) {
+        let result = callback.apply(this.__context || this, args);
+        if (result) results.push(result);
+      }
+
+      return results;
+    } else {
+      this.__events.set(event, new Map());
+
+      return [];
+    }
+  }
+
+};
+/**
+ * Creates an eventable object.
+ * 
+ * @param {Object} [context] The context used for the event handlers.
+ * @return {Eventable} The created eventable object.
+ */
+
+function create(context = undefined) {
+  const result = Object.create(EventableInstance);
+  result.__events = new Map();
+  result.__context = context;
+  return result;
+}
+/**
+ * Assigns the passed-in object with eventable properties.
+ * 
+ * @param {Object} dst The object to assign with eventable properties.
+ * @param {Object} [context] The context used for the event handlers.
+ * @return {Eventable} The resultant eventable object.
+ */
+
+
+function assign(dst, context = undefined) {
+  const result = Object.assign(dst, EventableInstance);
+  result.__events = new Map();
+  result.__context = context;
+  return result;
+}
+/**
+ * Mixins eventable properties into the passed-in class.
+ * 
+ * @param {Class} targetClass The class to mixin eventable properties.
+ * @param {Object} [context] The context used for the event handlers.
+ * @return {Class<Eventable>} The resultant eventable-mixed-in class.
+ */
+
+
+function mixin(targetClass, context = undefined) {
+  const targetPrototype = targetClass.prototype;
+  Object.assign(targetPrototype, EventableInstance);
+  targetPrototype.__events = new Map();
+  targetPrototype.__context = context;
+  return targetPrototype;
+}
+
+var Eventable = {
+  create,
+  assign,
+  mixin
+};
+var Eventable$1 = /*#__PURE__*/Object.freeze({
+  __proto__: null,
+  create: create,
+  assign: assign,
+  mixin: mixin,
+  'default': Eventable
+});
+const TOP_INDEX = 0; // NOTE: Uses a binary heap to sort.
+
+class PriorityQueue {
+  constructor(comparator) {
+    this._heap = [];
+    this._comparator = comparator;
+  }
+
+  get size() {
+    return this._heap.length;
+  }
+
+  clear() {
+    this._heap.length = 0;
+  }
+
+  push(...values) {
+    for (const value of values) {
+      this._heap.push(value);
+
+      this._shiftUp();
+    }
+  }
+
+  pop() {
+    const result = this.peek();
+    let bottom = bottomIndex(this);
+
+    if (bottom > TOP_INDEX) {
+      this._swap(TOP_INDEX, bottom);
+    }
+
+    this._heap.pop();
+
+    this._shiftDown();
+
+    return result;
+  }
+  /** Replaces the top value with the new value. */
+
+
+  replace(value) {
+    const result = this.peek();
+    this._heap[TOP_INDEX] = value;
+
+    this._shiftDown();
+
+    return result;
+  }
+
+  peek() {
+    return this._heap[TOP_INDEX];
+  }
+  /** @private */
+
+
+  _compare(i, j) {
+    return this._comparator(this._heap[i], this._heap[j]);
+  }
+  /** @private */
+
+
+  _swap(i, j) {
+    let result = this._heap[i];
+    this._heap[i] = this._heap[j];
+    this._heap[j] = result;
+  }
+  /** @private */
+
+
+  _shiftUp() {
+    let node = this._heap.length - 1;
+    let nodeParent;
+
+    while (node > TOP_INDEX && this._compare(node, nodeParent = parentIndex(node))) {
+      this._swap(node, nodeParent);
+
+      node = nodeParent;
+    }
+  }
+  /** @private */
+
+
+  _shiftDown() {
+    const length = this._heap.length;
+    let node = TOP_INDEX;
+    let nodeMax;
+    let nodeLeft = leftIndex(node);
+    let flagLeft = nodeLeft < length;
+    let nodeRight = rightIndex(node);
+    let flagRight = nodeRight < length;
+
+    while (flagLeft && this._compare(nodeLeft, node) || flagRight && this._compare(nodeRight, node)) {
+      nodeMax = flagRight && this._compare(nodeRight, nodeLeft) ? nodeRight : nodeLeft;
+
+      this._swap(node, nodeMax);
+
+      node = nodeMax;
+      nodeLeft = leftIndex(node);
+      flagLeft = nodeLeft < length;
+      nodeRight = rightIndex(node);
+      flagRight = nodeRight < length;
+    }
+  }
+
+  values() {
+    return this._heap;
+  }
+
+  [Symbol.iterator]() {
+    return this._heap[Symbol.iterator]();
+  }
+
+}
+
+function bottomIndex(queue) {
+  return queue._heap.length - 1;
+}
+
+function parentIndex(i) {
+  return (i + 1 >>> 1) - 1;
+}
+
+function leftIndex(i) {
+  return (i << 1) + 1;
+}
+
+function rightIndex(i) {
+  return i + 1 << 1;
+}
+/**
+ * Generates a uuid v4.
+ * 
+ * @param {number} a The placeholder (serves for recursion within function).
+ * @returns {string} The universally unique id.
+ */
+
+
+function uuid(a = undefined) {
+  // https://gist.github.com/jed/982883
+  return a ? (a ^ Math.random() * 16 >> a / 4).toString(16) : ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, uuid);
+}
+
+function lerp(a, b, t) {
+  return a + (b - a) * t;
+}
+
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function cycle(value, min, max) {
+  let range = max - min;
+  let result = (value - min) % range;
+  if (result < 0) result += range;
+  return result + min;
+}
+
+function withinRadius(fromX, fromY, toX, toY, radius) {
+  const dx = fromX - toX;
+  const dy = fromY - toY;
+  return dx * dx + dy * dy <= radius * radius;
+}
+
+function distance2(fromX, fromY, toX, toY) {
+  let dx = toX - fromX;
+  let dy = toY - fromY;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
+function direction2(fromX, fromY, toX, toY) {
+  let dx = toX - fromX;
+  let dy = toY - fromY;
+  return Math.atan2(dy, dx);
+}
+
+function lookAt2(radians, target, dt) {
+  let step = cycle(target - radians, -Math.PI, Math.PI);
+  return clamp(radians + step, radians - dt, radians + dt);
+}
+
+const TO_RAD_FACTOR = Math.PI / 180;
+const TO_DEG_FACTOR = 180 / Math.PI;
+
+function toRadians(degrees) {
+  return degrees * TO_RAD_FACTOR;
+}
+
+function toDegrees(radians) {
+  return radians * TO_DEG_FACTOR;
+}
+/**
+ * @callback DependencyCallback
+ * @param {Object} node The target node to get the dependencies for.
+ * @returns {Array<Object>} A list of all dependencies for the given node.
+ */
+
+/**
+ * Sort an array topologically.
+ * 
+ * @param {Array<Object>} nodes List of all nodes (as long as it includes the root node).
+ * @param {DependencyCallback} dependencyCallback A callback to get the dependencies of a node.
+ * @returns {Array<Object>} A sorted array of node objects where the dependent nodes are always listed before the dependees.
+ */
+
+
+function topoSort(nodes, dependencyCallback) {
+  let dependencyEntries = [];
+
+  for (let node of nodes) {
+    let outs = dependencyCallback(node);
+
+    if (Array.isArray(outs)) {
+      dependencyEntries.push([node, ...outs]);
+    } else if (outs) {
+      throw new Error('Dependency callback must return an array.');
+    }
+  }
+
+  return computeDependencyList(getNodesFromDependencyEntries(dependencyEntries), getEdgesFromDependencyEntries(dependencyEntries));
+}
+
+function getNodesFromDependencyEntries(dependencyEntries) {
+  let result = new Set();
+
+  for (let dependencyEntry of dependencyEntries) {
+    for (let value of dependencyEntry) {
+      result.add(value);
+    }
+  }
+
+  return Array.from(result);
+}
+
+function getEdgesFromDependencyEntries(dependencyEntries) {
+  let result = [];
+
+  for (let dependencyEntry of dependencyEntries) {
+    let source = dependencyEntry[0];
+
+    for (let i = 1; i < dependencyEntry.length; ++i) {
+      let dependency = dependencyEntry[i];
+      result.push([source, dependency]);
+    }
+  }
+
+  return result;
+}
+
+function computeDependencyList(nodes, edges, dst = []) {
+  // Compute edge outs (more efficient lookup)
+  let edgeOuts = new Map();
+
+  for (let edge of edges) {
+    if (edge.length > 1) {
+      let source = edge[0];
+      let dest = edge[1];
+      if (!edgeOuts.has(source)) edgeOuts.set(source, new Set());
+      if (!edgeOuts.has(dest)) edgeOuts.set(dest, new Set());
+      edgeOuts.get(source).add(dest);
+    }
+  }
+
+  let context = {
+    edgeMap: edgeOuts,
+    index: nodes.length,
+    visited: new Set(),
+    dst
+  };
+
+  for (let node of nodes) {
+    visit(context, node, new Set());
+  }
+
+  return dst;
+}
+
+function visit(context, node, prev) {
+  if (prev.has(node)) {
+    throw new Error(`Found cyclic dependency for '${node.name || node}'.`);
+  }
+
+  if (context.visited.has(node)) return;
+  context.visited.add(node);
+
+  if (context.edgeMap.has(node)) {
+    let outs = context.edgeMap.get(node);
+
+    if (outs.size > 0) {
+      prev.add(node);
+
+      for (let out of outs) {
+        visit(context, out, prev);
+      }
+
+      prev.delete(node);
+    }
+  }
+
+  context.dst.push(node);
 }
 
 async function loadImage(filepath, opts) {
@@ -1608,7 +3354,7 @@ var AssetLoader = /*#__PURE__*/Object.freeze({
 
 const EPSILON = 1e-8;
 
-function clamp(value, min, max) {
+function clamp$1(value, min, max) {
   return Math.min(Math.max(value, min), max);
 }
 
@@ -1712,7 +3458,7 @@ function intersectSegment(out, a, x, y, dx, dy, px = 0, py = 0) {
   let nearTime = Math.max(nearTimeX, nearTimeY);
   let farTime = Math.min(farTimeX, farTimeY);
   if (nearTime > 1 || farTime < 0) return null;
-  let time = clamp(nearTime, 0, 1);
+  let time = clamp$1(nearTime, 0, 1);
   let hitdx = (1.0 - time) * -dx;
   let hitdy = (1.0 - time) * -dy;
   let hitx = x + dx * time;
@@ -1757,7 +3503,7 @@ function sweepIntoAABB(out, a, b, dx, dy) {
   let hit = intersectSweepAABB({}, b, a, dx, dy);
 
   if (hit) {
-    let time = clamp(hit.time, 0, 1);
+    let time = clamp$1(hit.time, 0, 1);
     let length = Math.sqrt(dx * dx + dy * dy);
     let normaldx;
     let normaldy;
@@ -1770,8 +3516,8 @@ function sweepIntoAABB(out, a, b, dx, dy) {
       normaldy = 0;
     }
 
-    hit.x = clamp(hit.x + normaldx * a.rx, b.x - b.rx, b.x + b.rx);
-    hit.y = clamp(hit.y + normaldy * a.ry, b.y - b.ry, b.y + b.ry);
+    hit.x = clamp$1(hit.x + normaldx * a.rx, b.x - b.rx, b.x + b.rx);
+    hit.y = clamp$1(hit.y + normaldy * a.ry, b.y - b.ry, b.y + b.ry);
     out.time = time;
     out.x = a.x + dx * time;
     out.y = a.y + dy * time;
@@ -1810,7 +3556,7 @@ function sweepInto(out, a, staticColliders, dx, dy) {
 var IntersectionHelper = /*#__PURE__*/Object.freeze({
   __proto__: null,
   EPSILON: EPSILON,
-  clamp: clamp,
+  clamp: clamp$1,
   createAABB: createAABB,
   createRect: createRect,
   testAABB: testAABB,
@@ -3593,7 +5339,7 @@ const XAXIS = glMatrix.vec3.fromValues(1, 0, 0);
 const YAXIS = glMatrix.vec3.fromValues(0, 1, 0);
 const ZAXIS = glMatrix.vec3.fromValues(0, 0, 1);
 
-function create() {
+function create$1() {
   return {
     translation: glMatrix.vec3.create(),
     rotation: glMatrix.quat.create(),
@@ -3655,7 +5401,7 @@ var Transform = /*#__PURE__*/Object.freeze({
   XAXIS: XAXIS,
   YAXIS: YAXIS,
   ZAXIS: ZAXIS,
-  create: create,
+  create: create$1,
   lookAt: lookAt,
   getTransformationMatrix: getTransformationMatrix,
   getForwardVector: getForwardVector,
@@ -3665,14 +5411,14 @@ var Transform = /*#__PURE__*/Object.freeze({
 
 class SceneGraph$1 {
   constructor() {
-    this.root = this.createSceneNode(create(), null);
+    this.root = this.createSceneNode(create$1(), null);
   }
 
   update() {
     this.root.updateWorldMatrix();
   }
 
-  createSceneNode(transform = create(), parent = this.root) {
+  createSceneNode(transform = create$1(), parent = this.root) {
     const result = {
       sceneGraph: this,
       transform,
@@ -3723,7 +5469,7 @@ class SceneGraph$1 {
 
 }
 
-function create$1(position, texcoord, normal, indices, color = undefined) {
+function create$1$1(position, texcoord, normal, indices, color = undefined) {
   if (!color) {
     const r = Math.random();
     const g = Math.random();
@@ -3800,7 +5546,7 @@ function joinGeometry(...geometries) {
     indexCount += geometry.position.length / 3;
   }
 
-  return create$1(position, texcoord, normal, indices, color);
+  return create$1$1(position, texcoord, normal, indices, color);
 }
 
 function create$2(centered = false) {
@@ -3822,7 +5568,7 @@ function create$2(centered = false) {
   const texcoord = [0, 0, 1, 0, 0, 1, 1, 1];
   const normal = [0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1];
   const indices = [0, 1, 2, 2, 1, 3];
-  return create$1(position, texcoord, normal, indices);
+  return create$1$1(position, texcoord, normal, indices);
 }
 
 var QuadGeometry = /*#__PURE__*/Object.freeze({
@@ -3948,7 +5694,7 @@ var Geometry3D = /*#__PURE__*/Object.freeze({
   Plane: PlaneGeometry,
   Cube: CubeGeometry,
   GlyphF: GlyphFGeometry,
-  create: create$1,
+  create: create$1$1,
   applyColor: applyColor,
   applyTransformation: applyTransformation,
   joinGeometry: joinGeometry
@@ -4973,32 +6719,41 @@ var index$1 = /*#__PURE__*/Object.freeze({
   Camera3D: Camera3D
 });
 
-Object.keys(util).forEach(function (k) {
-  if (k !== 'default') Object.defineProperty(exports, k, {
-    enumerable: true,
-    get: function () {
-      return util[k];
-    }
-  });
-});
+exports.AdapterManager = AdapterManager;
 exports.ApplicationLoop = ApplicationLoop;
 exports.AssetLoader = AssetLoader;
 exports.Audio = Audio;
+exports.Axis = Axis;
 exports.AxisAlignedBoundingBox = AxisAlignedBoundingBox;
 exports.AxisAlignedBoundingBoxGraph = AxisAlignedBoundingBoxGraph;
 exports.BoxRenderer = BoxRenderer;
+exports.Button = Button;
 exports.ByteLoader = ByteLoader;
+exports.Discrete = Discrete;
 exports.DisplayPort = DisplayPort;
+exports.Downloader = Downloader;
 exports.EntityManager = EntityManager;
+exports.Eventable = Eventable$1;
 exports.Game = Game$1;
 exports.ImageLoader = ImageLoader;
+exports.Input = Input;
 exports.InputContext = InputContext;
+exports.InputDevice = InputDevice;
+exports.InputEventCode = InputEventCode;
+exports.InputSource = InputSource;
+exports.InputSourceStage = InputSourceStage;
+exports.InputType = InputType;
 exports.IntersectionHelper = IntersectionHelper;
 exports.IntersectionResolver = IntersectionResolver;
 exports.IntersectionWorld = IntersectionWorld;
 exports.JSONLoader = JSONLoader;
+exports.KEY_STRING_DEVICE_SEPARATOR = KEY_STRING_DEVICE_SEPARATOR;
+exports.Keyboard = Keyboard;
+exports.Logger = Logger$1;
 exports.Mogli = index;
+exports.Mouse = Mouse;
 exports.OBJLoader = OBJLoader;
+exports.PriorityQueue = PriorityQueue;
 exports.QuadTree = QuadTree;
 exports.Random = Random;
 exports.RandomGenerator = RandomGenerator;
@@ -5006,6 +6761,24 @@ exports.SceneGraph = SceneGraph;
 exports.SceneNode = SceneNode;
 exports.SimpleRandomGenerator = SimpleRandomGenerator;
 exports.SpriteRenderer = SpriteRenderer;
+exports.Synthetic = Synthetic;
 exports.TextLoader = TextLoader;
+exports.Uploader = Uploader;
 exports.View = index$1;
+exports.WILDCARD_DEVICE_MATCHER = WILDCARD_DEVICE_MATCHER;
+exports.WILDCARD_KEY_MATCHER = WILDCARD_KEY_MATCHER;
+exports.clamp = clamp;
+exports.cycle = cycle;
+exports.direction2 = direction2;
+exports.distance2 = distance2;
+exports.isInputAxis = isInputAxis;
+exports.lerp = lerp;
+exports.lookAt2 = lookAt2;
+exports.parseKeyString = parseKeyString;
+exports.stringifyDeviceKeyCodePair = stringifyDeviceKeyCodePair;
 exports.testAxisAlignedBoundingBox = testAxisAlignedBoundingBox;
+exports.toDegrees = toDegrees;
+exports.toRadians = toRadians;
+exports.topoSort = topoSort;
+exports.uuid = uuid;
+exports.withinRadius = withinRadius;
