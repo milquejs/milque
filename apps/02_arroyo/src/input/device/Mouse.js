@@ -221,7 +221,7 @@ function onMouseMove(e)
 
     if (typeof result !== 'undefined')
     {
-        throw new Error(`Return value must be 'undefined'. Mouse position and movement events cannot be consumed.`);
+        throw new Error('Return value must be \'undefined\'. Mouse position and movement events cannot be consumed.');
     }
 }
 

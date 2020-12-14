@@ -277,24 +277,26 @@ export class InputContext extends HTMLElement
         switch(attribute)
         {
             case 'for':
-                let target;
-                if (value)
                 {
-                    target = document.getElementById(value);
-                }
-                else
-                {
-                    target = document.querySelector('display-port') || document.querySelector('canvas');
-                }
-
-                if (this._inputTarget)
-                {
-                    this.detach();
-                }
-
-                if (target)
-                {
-                    this.attach(target);
+                    let target;
+                    if (value)
+                    {
+                        target = document.getElementById(value);
+                    }
+                    else
+                    {
+                        target = document.querySelector('display-port') || document.querySelector('canvas');
+                    }
+    
+                    if (this._inputTarget)
+                    {
+                        this.detach();
+                    }
+    
+                    if (target)
+                    {
+                        this.attach(target);
+                    }
                 }
                 break;
             // Event handlers...
@@ -421,31 +423,35 @@ export class InputContext extends HTMLElement
             {
                 case 'action':
                     // Action should be any key value.
-                    let consumed = false;
-                    for(let inputKey of this._inputKeys[inputName])
                     {
-                        let value = inputKey.value;
-                        if (value)
+                        let consumed = false;
+                        for(let inputKey of this._inputKeys[inputName])
                         {
-                            input.update(value, inputKey);
-                            inputKey.consumeKey();
-                            consumed = true;
-                            break;
+                            let value = inputKey.value;
+                            if (value)
+                            {
+                                input.update(value, inputKey);
+                                inputKey.consumeKey();
+                                consumed = true;
+                                break;
+                            }
                         }
-                    }
-                    if (!consumed)
-                    {
-                        input.update(0, null);
+                        if (!consumed)
+                        {
+                            input.update(0, null);
+                        }
                     }
                     break;
                 case 'range':
                     // Range should be sum of keys.
-                    let value = 0;
-                    for(let inputKey of this._inputKeys[inputName])
                     {
-                        value += inputKey.value;
+                        let value = 0;
+                        for(let inputKey of this._inputKeys[inputName])
+                        {
+                            value += inputKey.value;
+                        }
+                        input.update(value, null);
                     }
-                    input.update(value, null);
                     break;
                 default:
                     throw new Error('Unknown input type.');
@@ -627,7 +633,7 @@ function evaluateInputOptionType(inputOption)
         }
         else
         {
-            throw new Error(`Missing 'scale' or 'event' for input option '${inputName}'.`);
+            throw new Error(`Missing 'scale' or 'event' for input option '${inputOption}'.`);
         }
     }
     else if (typeof inputOption === 'string')
