@@ -99,7 +99,7 @@ export class EntityManager
         }
         else
         {
-            throw new Error(`Invalid duplicate entity id '${entityId}' allocated for new entity.`)
+            throw new Error(`Invalid duplicate entity id '${entityId}' allocated for new entity.`);
         }
     }
 

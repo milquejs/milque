@@ -16,7 +16,7 @@ function createMask(owner, name, box, get)
         name,
         box,
         get,
-    }
+    };
 }
 
 /**

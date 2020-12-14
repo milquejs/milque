@@ -1,3 +1,6 @@
+import INNER_HTML from './DisplayPort.template.html';
+import INNER_STYLE from './DisplayPort.module.css';
+
 export const MODE_NOSCALE = 'noscale';
 export const MODE_CENTER = 'center';
 export const MODE_FIT = 'fit';
@@ -7,124 +10,9 @@ const DEFAULT_MODE = MODE_NOSCALE;
 const DEFAULT_WIDTH = 300;
 const DEFAULT_HEIGHT = 150;
 
-const INNER_HTML = `
-<div class="container">
-    <label class="hidden" id="title">display-port</label>
-    <label class="hidden" id="fps">00</label>
-    <label class="hidden" id="dimension">0x0</label>
-    <canvas></canvas>
-    <slot></slot>
-</div>`;
-const INNER_STYLE = `
-:host {
-    display: inline-block;
-    color: #555555;
-}
-.container {
-    display: flex;
-    position: relative;
-    width: 100%;
-    height: 100%;
-}
-canvas {
-    background: #000000;
-    margin: auto;
-    image-rendering: pixelated;
-}
-label {
-    font-family: monospace;
-    color: currentColor;
-    position: absolute;
-}
-#title {
-    left: 0.5rem;
-    top: 0.5rem;
-}
-#fps {
-    right: 0.5rem;
-    top: 0.5rem;
-}
-#dimension {
-    left: 0.5rem;
-    bottom: 0.5rem;
-}
-.hidden {
-    display: none;
-}
-:host([debug]) .container {
-    outline: 6px dashed rgba(0, 0, 0, 0.1);
-    outline-offset: -4px;
-    background-color: rgba(0, 0, 0, 0.1);
-}
-:host([mode="${MODE_NOSCALE}"]) canvas {
-    margin: 0;
-    top: 0;
-    left: 0;
-}
-:host([mode="${MODE_FIT}"]), :host([mode="${MODE_CENTER}"]), :host([mode="${MODE_STRETCH}"]) {
-    width: 100%;
-    height: 100%;
-}
-:host([full]) {
-    width: 100vw!important;
-    height: 100vh!important;
-}
-:host([disabled]) {
-    display: none;
-}
-slot {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    top: 0;
-    left: 0;
-
-    pointer-events: none;
-}
-::slotted(*) {
-    pointer-events: auto;
-}`;
-
 const TEMPLATE_KEY = Symbol('template');
 const STYLE_KEY = Symbol('style');
 
-/**
- * @version 1.2.2
- * @description
- * # Changelog
- * ## 1.2.2
- * - Removed 'contexttype'
- * ## 1.2.1
- * - Added 'contexttype' for getContext()
- * ## 1.2.0
- * - Moved template creation to static time
- * - Removed default export
- * ## 1.1.2
- * - Added clear()
- * - Added delta time for frame events
- * ## 1.1.1
- * - Added onframe and onresize attribute callbacks
- * - Added "stretch" mode
- * ## 1.1.0
- * - Changed "topleft" to "noscale"
- * - Changed default size to 640 x 480
- * - Changed "center" and "fit" to fill container instead of viewport
- * - Added "full" property to override and fill viewport
- * ## 1.0.2
- * - Moved default values to the top
- * ## 1.0.1
- * - Fixed scaling issues when dimensions do not match
- * ## 1.0.0
- * - Created DisplayPort
- * 
- * @fires frame Every time a new frame is rendered.
- * @fires resize When the display is resized.
- */
 export class DisplayPort extends HTMLElement
 {
     static get [TEMPLATE_KEY]()
@@ -167,7 +55,7 @@ export class DisplayPort extends HTMLElement
     constructor()
     {
         super();
-
+        
         this.attachShadow({ mode: 'open' });
         this.shadowRoot.appendChild(this.constructor[TEMPLATE_KEY].content.cloneNode(true));
         this.shadowRoot.appendChild(this.constructor[STYLE_KEY].cloneNode(true));

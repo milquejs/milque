@@ -1,5 +1,3 @@
-/* eslint-disable no-console */
-
 // Log levels
 const TRACE = 5;
 const DEBUG = 4;

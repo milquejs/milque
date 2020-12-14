@@ -50,9 +50,9 @@ function parse2(string)
     // vt float float float
     const texcoordPattern = /vt\s+(\S+)\s+(\S+)/g;
     // f vertex/uv/normal vertex/uv/normal vertex/uv/normal ...
-    const facePattern = /f\s+(([^\/\s]*)\/([^\/\s]*)\/?([^\/\s]*))\s+(([^\/\s]*)\/([^\/\s]*)\/?([^\/\s]*))\s+(([^\/\s]*)\/([^\/\s]*)\/?([^\/\s]*))(\s+(([^\/\s]*)\/([^\/\s]*)\/?([^\/\s]*)))?/g;
+    const facePattern = /f\s+(([^/\s]*)\/([^/\s]*)\/?([^/\s]*))\s+(([^/\s]*)\/([^/\s]*)\/?([^/\s]*))\s+(([^/\s]*)\/([^/\s]*)\/?([^/\s]*))(\s+(([^/\s]*)\/([^/\s]*)\/?([^/\s]*)))?/g;
     // f float float float
-    const faceVertexPattern = /f\s+([^\/\s]+)\s+([^\/\s]+)\s+([^\/\s]+)/g;
+    const faceVertexPattern = /f\s+([^/\s]+)\s+([^/\s]+)\s+([^/\s]+)/g;
 
     let quad = false;
     let result = null;
@@ -267,15 +267,15 @@ function parse(string)
     // # comments
     const commentPattern = /^#.*/g;
     // v float float float
-    const vertexPattern = /v( +[\d|\.|\+|\-|e]+)( [\d|\.|\+|\-|e]+)( [\d|\.|\+|\-|e]+)/g;
+    const vertexPattern = /v( +[\d|.|+|\-|e]+)( [\d|.|+|\-|e]+)( [\d|.|+|\-|e]+)/g;
     // vn float float float
-    const normalPattern = /vn( +[\d|\.|\+|\-|e]+)( [\d|\.|\+|\-|e]+)( [\d|\.|\+|\-|e]+)/g;
+    const normalPattern = /vn( +[\d|.|+|\-|e]+)( [\d|.|+|\-|e]+)( [\d|.|+|\-|e]+)/g;
     // vt float float float
-    const texcoordPattern = /vt( +[\d|\.|\+|\-|e]+)( [\d|\.|\+|\-|e]+)/g;
+    const texcoordPattern = /vt( +[\d|.|+|\-|e]+)( [\d|.|+|\-|e]+)/g;
     // f vertex/uv/normal vertex/uv/normal vertex/uv/normal ...
     const facePattern = /f( +([\d]*)\/([\d]*)\/([\d]*))( ([\d]*)\/([\d]*)\/([\d]*))( ([\d]*)\/([\d]*)\/([\d]*))( ([\d]*)\/([\d]*)\/([\d]*))?/g;
     // f float float float
-    const faceVertexPattern = /f( +[\d|\.|\+|\-|e]+)( [\d|\.|\+|\-|e]+)( [\d|\.|\+|\-|e]+)/g;
+    const faceVertexPattern = /f( +[\d|.|+|\-|e]+)( [\d|.|+|\-|e]+)( [\d|.|+|\-|e]+)/g;
 
     let quad = false;
     let result = null;

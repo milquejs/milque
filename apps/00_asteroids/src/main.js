@@ -555,7 +555,7 @@ function withinRadius(from, to, radius)
 {
     const dx = from.x - to.x;
     const dy = from.y - to.y;
-    return dx * dx + dy * dy <= radius * radius
+    return dx * dx + dy * dy <= radius * radius;
 }
 
 function drawCollisionCircle(ctx, x, y, radius)
@@ -580,7 +580,7 @@ function createPowerUp(scene, x, y, dx, dy)
         {
             this.scene.powerUps.splice(this.scene.powerUps.indexOf(this), 1);
         }
-    }
+    };
 }
 
 function createAsteroid(scene, x, y, dx, dy, size)

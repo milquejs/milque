@@ -29,9 +29,9 @@ export function saveChunk(chunkWidth, chunkHeight, chunk)
     };
     for(let i = 0; i < length; ++i)
     {
-        data.block[i] = chunk.data.block[i];
-        data.meta[i] = chunk.data.meta[i];
-        data.neighbor[i] = chunk.data.neighbor[i];
+        result.block[i] = chunk.data.block[i];
+        result.meta[i] = chunk.data.meta[i];
+        result.neighbor[i] = chunk.data.neighbor[i];
     }
     return result;
 }

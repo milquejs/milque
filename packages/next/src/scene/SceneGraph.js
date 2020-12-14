@@ -50,7 +50,7 @@ export class SceneGraph
      */
     add(child, parent = null)
     {
-        if (child === null) throw new Error(`Cannot add null as child to scene graph.`);
+        if (child === null) throw new Error('Cannot add null as child to scene graph.');
         if (parent === null || this.nodes.has(parent))
         {
             let parentNode = parent === null ? null : this.nodes.get(parent);
@@ -71,7 +71,7 @@ export class SceneGraph
         }
         else
         {
-            throw new Error(`No node in scene graph exists for parent.`);
+            throw new Error('No node in scene graph exists for parent.');
         }
     }
 
@@ -248,7 +248,7 @@ export class SceneGraph
             }
             else
             {
-                throw new Error(`No node in scene graph exists for walk start.`);
+                throw new Error('No node in scene graph exists for walk start.');
             }
         }
     }

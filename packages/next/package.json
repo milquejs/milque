@@ -1,24 +1,16 @@
 {
   "name": "@milque/next",
   "version": "0.0.1",
-  "description": "The next module for Milque",
+  "description": "The next module for milque.js",
   "module": "dist/esm/index.js",
-  "main": "dist/index.js",
+  "main": "dist/cjs/index.js",
+  "bundle": "dist/index.js",
   "author": "Andrew Kuo",
   "license": "MIT",
   "keywords": [
     "milque",
     "next"
   ],
-  "scripts": {
-    "build": "rollup --config"
-  },
-  "devDependencies": {
-    "@rollup/plugin-alias": "^3.1.1",
-    "@rollup/plugin-node-resolve": "^9.0.0",
-    "rollup": "^2.26.10",
-    "rollup-plugin-clear": "^2.0.7"
-  },
   "peerDependencies": {
     "gl-matrix": "^3.3.0"
   }

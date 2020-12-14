@@ -43,7 +43,7 @@ export async function loadAssetMap(assetMap, assetParentPath = '.')
         {
             if (!('src' in entry))
             {
-                throw new Error(`Missing required field 'src' for entry in asset map.`);
+                throw new Error('Missing required field \'src\' for entry in asset map.');
             }
 
             if ('name' in entry && entry.name !== assetName)
@@ -74,7 +74,7 @@ export async function loadAssetList(assetList, assetParentPath = '.')
         {
             if (!('src' in entry))
             {
-                throw new Error(`Missing required field 'src' for entry in asset list.`);
+                throw new Error('Missing required field \'src\' for entry in asset list.');
             }
 
             result['name' in entry ? entry.name : entry.src] = await loadAsset(entry.src, entry, assetParentPath);

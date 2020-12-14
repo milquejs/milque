@@ -1,4 +1,4 @@
-import { ApplicationLoop } from './ApplicationLoop.js'
+import { ApplicationLoop } from './ApplicationLoop.js';
 
 class Game
 {

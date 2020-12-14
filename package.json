@@ -1,11 +1,51 @@
 {
+  "name": "milque-repo",
   "private": true,
-  "workspaces": [
-    "packages/*",
-    "apps/*",
-    "editors/*"
-  ],
+  "type": "module",
   "scripts": {
-    "build": "node .config/build-all.js"
+    "start": "npm run watch",
+    "postinstall": "husky install & npm run bootstrap",
+    "prepublishOnly": "pinst --disable",
+    "postpublish": "pinst --enable",
+    "bootstrap": "lerna bootstrap --hoist --no-ci",
+    "clean": "lerna clean",
+    "buildall": "rollup --config --environment NODE_ENV:production",
+    "build": "node ./tools/scripts/build.js",
+    "watch": "node ./tools/scripts/start.js",
+    "lint": "npm run lintjs && npm run lintcss",
+    "lintfix": "npm run lintjs -- --fix && npm run lintcss -- --fix",
+    "lintjs": "eslint **/*.js --ignore-path .gitignore --max-warnings 0",
+    "lintcss": "stylelint **/*.css --ignore-path .gitignore --max-warnings 0",
+    "test": "npm run lint"
+  },
+  "keywords": [],
+  "author": "Andrew Kuo",
+  "license": "MIT",
+  "devDependencies": {
+    "@babel/core": "^7.12.10",
+    "@rollup/plugin-alias": "^3.1.1",
+    "@rollup/plugin-babel": "^5.2.2",
+    "@rollup/plugin-commonjs": "^17.0.0",
+    "@rollup/plugin-eslint": "^8.0.1",
+    "@rollup/plugin-json": "^4.1.0",
+    "@rollup/plugin-node-resolve": "^11.0.0",
+    "autoprefixer": "^10.1.0",
+    "babel-plugin-macros": "^3.0.0",
+    "cssnano": "^4.1.10",
+    "husky": "^5.0.6",
+    "lerna": "^3.22.1",
+    "pinst": "^2.1.1",
+    "rollup": "^2.26.10",
+    "rollup-plugin-clear": "^2.0.7",
+    "rollup-plugin-copy": "^3.3.0",
+    "rollup-plugin-livereload": "^2.0.0",
+    "rollup-plugin-serve": "^1.1.0",
+    "rollup-plugin-string": "^3.0.0",
+    "rollup-plugin-stylelint": "^1.0.0",
+    "rollup-plugin-styles": "^3.11.0",
+    "rollup-plugin-terser": "^7.0.2",
+    "rollup-plugin-watch-assets": "^1.0.1",
+    "stylelint": "^13.8.0",
+    "stylelint-config-standard": "^20.0.0"
   }
 }

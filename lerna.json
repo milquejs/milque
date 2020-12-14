@@ -1,0 +1,8 @@
+{
+  "packages": [
+    "packages/*",
+    "bundles/*",
+    "apps/*"
+  ],
+  "version": "independent"
+}

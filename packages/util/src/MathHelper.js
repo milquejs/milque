@@ -20,7 +20,7 @@ export function withinRadius(fromX, fromY, toX, toY, radius)
 {
     const dx = fromX - toX;
     const dy = fromY - toY;
-    return dx * dx + dy * dy <= radius * radius
+    return dx * dx + dy * dy <= radius * radius;
 }
 
 export function distance2(fromX, fromY, toX, toY)

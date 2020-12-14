@@ -1,0 +1,25 @@
+{
+    "root": true,
+    "extends": "eslint:recommended",
+    "env": {
+        "browser": true,
+        "es6": true
+    },
+    "parserOptions": {
+        "sourceType": "module",
+        "ecmaVersion": 12
+    },
+    "ignorePatterns": [
+        "node_modules",
+        "dist",
+        "*.html",
+        "*.css",
+        "deprecated"
+    ],
+    "reportUnusedDisableDirectives": true,
+    "rules": {
+        "semi": "error",
+        "quotes": ["error", "single"],
+        "no-unused-vars": "off"
+    }
+}

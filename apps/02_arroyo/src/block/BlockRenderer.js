@@ -95,5 +95,5 @@ function renderBlockSolid(ctx, world, blockPos, blockSize, blockId)
 function renderBlockWithNeighbor(ctx, world, blockPos, blockSize)
 {
     let neighbor = world.map.getBlockNeighbor(blockPos);
-    ctx.drawImage(assets.meteorite, neighbor * 16, 0, 16, 16, 0, 0, blockSize, blockSize)
+    ctx.drawImage(assets.meteorite, neighbor * 16, 0, 16, 16, 0, 0, blockSize, blockSize);
 }
