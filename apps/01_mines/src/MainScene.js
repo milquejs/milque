@@ -1,4 +1,4 @@
-import { clamp } from './lib.js';
+import { clamp } from '@milque/util';
 
 import { Mines } from './Mines.js';
 import * as MinesControls from './MinesControls.js';

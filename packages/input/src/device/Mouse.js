@@ -90,7 +90,7 @@ export class Mouse extends InputDevice
         this.onWheel = this.onWheel.bind(this);
 
         eventTarget.addEventListener('mousedown', this.onMouseDown);
-        eventTarget.addEventListener('contextmenu', this.onMouseDown);
+        eventTarget.addEventListener('contextmenu', this.onContextMenu);
         eventTarget.addEventListener('wheel', this.onWheel);
         eventTarget.addEventListener('mousemove', this.onMouseMove);
         document.addEventListener('mouseup', this.onMouseUp);
@@ -101,7 +101,7 @@ export class Mouse extends InputDevice
     {
         let eventTarget = this.eventTarget;
         eventTarget.removeEventListener('mousedown', this.onMouseDown);
-        eventTarget.removeEventListener('contextmenu', this.onMouseDown);
+        eventTarget.removeEventListener('contextmenu', this.onContextMenu);
         eventTarget.removeEventListener('wheel', this.onWheel);
         eventTarget.removeEventListener('mousemove', this.onMouseMove);
         document.removeEventListener('mouseup', this.onMouseUp);

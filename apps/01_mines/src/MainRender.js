@@ -1,4 +1,4 @@
-import { clamp } from './lib.js';
+import { clamp } from '@milque/util';
 
 import * as MainScene from './MainScene.js';
 

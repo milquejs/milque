@@ -15,7 +15,7 @@ export class InputContext
         const { disabled = true } = opts;
 
         /** @type {import('./source/InputSource.js').InputSource} */
-        this.inputSource = null;
+        this.source = null;
 
         /** @private */
         this._disabled = disabled;
@@ -42,7 +42,7 @@ export class InputContext
      */
     setInputMap(inputMap)
     {
-        this._setupInputs(this.inputSource, inputMap);
+        this._setupInputs(this.source, inputMap);
         return this;
     }
 
@@ -76,7 +76,7 @@ export class InputContext
         this.disabled = true;
 
         // Prepare previous state...
-        const prevInputSource = this.inputSource;
+        const prevInputSource = this.source;
         const prevInputs = this.inputs;
         const isPrevSourceReplaced = (prevInputSource !== inputSource) && prevInputSource;
         const isPrevInputsReplaced = this.inputs && inputMap;
@@ -145,11 +145,11 @@ export class InputContext
                 }
             }
 
-            if (this.inputSource !== inputSource)
+            if (this.source !== inputSource)
             {
                 inputSource.addEventListener('poll', this.onSourcePoll);
                 inputSource.addEventListener('input', this.onSourceInput);
-                this.inputSource = inputSource;
+                this.source = inputSource;
             }
         }
 
@@ -207,7 +207,7 @@ export class InputContext
     {
         if (force)
         {
-            if (!this.inputSource)
+            if (!this.source)
             {
                 throw new Error('Input source must be set before enabling input context.');
             }

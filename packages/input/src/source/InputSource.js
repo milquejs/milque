@@ -31,6 +31,9 @@ export function isInputAxis(deviceName, keyCode)
         || keyCode === 'WheelZ');
 }
 
+/** This determines whether an element has an associated input source. */
+const INPUT_SOURCE_REF_KEY = Symbol('inputSource');
+
 /**
  * @typedef InputSourceInputEvent
  * @property {InputSourceStage} stage
@@ -49,12 +52,21 @@ export function isInputAxis(deviceName, keyCode)
  */
 export class InputSource
 {
-    static from(eventTarget)
+    static for(eventTarget)
     {
-        return new InputSource([
-            new Keyboard(eventTarget),
-            new Mouse(eventTarget),
-        ]);
+        if (Object.prototype.hasOwnProperty.call(eventTarget, INPUT_SOURCE_REF_KEY))
+        {
+            return eventTarget[INPUT_SOURCE_REF_KEY];
+        }
+        else
+        {
+            let result = new InputSource([
+                new Keyboard(eventTarget),
+                new Mouse(eventTarget),
+            ]);
+            Object.defineProperty(eventTarget, INPUT_SOURCE_REF_KEY, { value: result });
+            return result;
+        }
     }
 
     constructor(deviceList)

@@ -1,4 +1,4 @@
-import { AssetLoader } from './lib.js';
+import * as ImageLoader from './assets/ImageLoader.js';
 
 const ASSETS = {
     LOADED: false,
@@ -9,9 +9,9 @@ const ASSETS = {
 
 export async function load()
 {
-    ASSETS.TILE_IMAGE = await AssetLoader.loadAsset('image:mines/tile.png', {});
-    ASSETS.NUMS_IMAGE = await AssetLoader.loadAsset('image:mines/nums.png', {});
-    ASSETS.MARK_IMAGE = await AssetLoader.loadAsset('image:mines/flag.png', {});
+    ASSETS.TILE_IMAGE = await ImageLoader.loadImage('mines/tile.png', {});
+    ASSETS.NUMS_IMAGE = await ImageLoader.loadImage('mines/nums.png', {});
+    ASSETS.MARK_IMAGE = await ImageLoader.loadImage('mines/flag.png', {});
     ASSETS.LOADED = true;
 }
 

@@ -4,6 +4,12 @@
  * @readonly
  * @enum {Number}
  */
+const InputType = {
+  NULL: 0,
+  KEY: 1,
+  POS: 2,
+  WHEEL: 3
+};
 /**
  * An enum for input events.
  * 
@@ -39,6 +45,115 @@ const InputEventCode = {
 
 };
 const WILDCARD_KEY_MATCHER = '*';
+/**
+ * @typedef InputEvent
+ * @property {EventTarget} target
+ * @property {String} deviceName
+ * @property {String} keyCode
+ * @property {InputEventCode} event
+ * @property {InputType} type
+ * @property {Number} [value] If type is `key`, it is defined to be the input
+ * value of the triggered event (usually this is 1). Otherwise, it is undefined.
+ * @property {Boolean} [control] If type is `key`, it is defined to be true if
+ * any control key is down (false if up). Otherwise, it is undefined.
+ * @property {Boolean} [shift] If type is `key`, it is defined to be true if
+ * any shift key is down (false if up). Otherwise, it is undefined.
+ * @property {Boolean} [alt] If type is `key`, it is defined to be true if any
+ * alt key is down (false if up). Otherwise, it is undefined.
+ * @property {Number} [x] If type is `pos`, it is defined to be the x value
+ * of the position event. Otherwise, it is undefined.
+ * @property {Number} [y] If type is `pos`, it is defined to be the y value
+ * of the position event. Otherwise, it is undefined.
+ * @property {Number} [dx] If type is `pos` or `wheel`, it is defined to be
+ * the change in the x value from the previous to the current position.
+ * Otherwise, it is undefined.
+ * @property {Number} [dy] If type is `pos` or `wheel`, it is defined to be
+ * the change in the y value from the previous to the current position.
+ * Otherwise, it is undefined.
+ * @property {Number} [dz] If type is `wheel`, it is defined to be the change
+ * in the z value from the previous to the current position. Otherwise, it
+ * is undefined.
+ * 
+ * @callback InputDeviceListener
+ * @param {InputEvent} e
+ * @returns {Boolean} Whether to consume the input after all other
+ * listeners had a chance to handle the event.
+ */
+
+class InputDevice {
+  constructor(deviceName, eventTarget) {
+    this.deviceName = deviceName;
+    this.eventTarget = eventTarget;
+    /** @private */
+
+    this.listeners = {};
+  }
+
+  destroy() {
+    /** @private */
+    this.listeners = {};
+  }
+  /**
+   * @param {String} keyMatcher
+   * @param {InputDeviceListener} listener
+   */
+
+
+  addInputListener(keyMatcher, listener) {
+    let inputListeners = this.listeners[keyMatcher];
+
+    if (!inputListeners) {
+      inputListeners = [listener];
+      this.listeners[keyMatcher] = inputListeners;
+    } else {
+      inputListeners.push(listener);
+    }
+  }
+  /**
+   * @param {String} keyMatcher
+   * @param {InputDeviceListener} listener
+   */
+
+
+  removeInputListener(keyMatcher, listener) {
+    let inputListeners = this.listeners[keyMatcher];
+
+    if (inputListeners) {
+      inputListeners.indexOf(listener);
+      inputListeners.splice(listener, 1);
+    }
+  }
+  /**
+   * @param {InputEvent} e
+   * @returns {Boolean} Whether the input event should be consumed.
+   */
+
+
+  dispatchInput(e) {
+    const {
+      keyCode
+    } = e;
+    const listeners = this.listeners[keyCode];
+    let flag = false;
+
+    if (listeners) {
+      // KeyCode listeners
+      for (let listener of listeners) {
+        flag |= listener(e);
+      }
+
+      return flag;
+    } // Wildcard listeners
+
+
+    for (let listener of this.listeners[WILDCARD_KEY_MATCHER]) {
+      flag |= listener(e);
+    }
+
+    return flag;
+  }
+
+}
 
 /**
  * @typedef AdapterInput
@@ -357,6 +472,478 @@ function stringifyDeviceKeyCodePair(deviceName, keyCode) {
 }
 
 /**
+ * Available Key Codes:
+ * - This uses the `event.code` standard to reference each key.
+ * - Use this to help you determine the code: https://keycode.info/
+ */
+
+/**
+ * A class that listens to the keyboard events from the event target and
+ * transforms the events into a valid {@link InputEvent} for the added
+ * listeners.
+ */
+
+class Keyboard extends InputDevice {
+  /**
+   * Constructs a listening keyboard with no listeners (yet).
+   * 
+   * @param {EventTarget} eventTarget 
+   * @param {Object} [opts] Any additional options.
+   * @param {Boolean} [opts.repeat=false] Whether to accept repeated key
+   * events.
+   */
+  constructor(eventTarget, opts = {}) {
+    super('Keyboard', eventTarget);
+    const {
+      repeat = false
+    } = opts;
+    this.repeat = repeat;
+    /** @private */
+
+    this._eventObject = {
+      target: eventTarget,
+      deviceName: this.deviceName,
+      keyCode: '',
+      event: InputEventCode.NULL,
+      type: InputType.KEY,
+      // Key values
+      value: 0,
+      control: false,
+      shift: false,
+      alt: false
+    };
+    /** @private */
+
+    this.onKeyDown = this.onKeyDown.bind(this);
+    /** @private */
+
+    this.onKeyUp = this.onKeyUp.bind(this);
+    eventTarget.addEventListener('keydown', this.onKeyDown);
+    eventTarget.addEventListener('keyup', this.onKeyUp);
+  }
+  /** @override */
+
+
+  destroy() {
+    let eventTarget = this.eventTarget;
+    eventTarget.removeEventListener('keydown', this.onKeyDown);
+    eventTarget.removeEventListener('keyup', this.onKeyUp);
+    super.destroy();
+  }
+  /**
+   * @private
+   * @param {KeyboardEvent} e
+   */
+
+
+  onKeyDown(e) {
+    if (e.repeat) {
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    }
+
+    let event = this._eventObject; // We care more about location (code) than print char (key).
+
+    event.keyCode = e.code;
+    event.event = InputEventCode.DOWN;
+    event.value = 1;
+    event.control = e.ctrlKey;
+    event.shift = e.shiftKey;
+    event.alt = e.altKey;
+    let result = this.dispatchInput(event);
+
+    if (result) {
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    }
+  }
+  /**
+   * @private
+   * @param {KeyboardEvent} e
+   */
+
+
+  onKeyUp(e) {
+    let event = this._eventObject; // We care more about location (code) than print char (key).
+
+    event.keyCode = e.code;
+    event.event = InputEventCode.UP;
+    event.value = 1;
+    event.control = e.ctrlKey;
+    event.shift = e.shiftKey;
+    event.alt = e.altKey;
+    let result = this.dispatchInput(event);
+
+    if (result) {
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    }
+  }
+
+}
+
+/**
+ * Available Key Codes:
+ * - PosX
+ * - PosY
+ * - WheelX
+ * - WheelY
+ * - WheelZ
+ * - Button0 (left button)
+ * - Button1 (middle button)
+ * - Button2 (right button)
+ * - Button3 (next button)
+ * - Button4 (back button)
+ */
+
+const DEFAULT_LINE_PIXELS = 10;
+const DEFAULT_PAGE_PIXELS = 100;
+/**
+ * A class that listens to the keyboard events from the event target and
+ * transforms the events into a valid {@link InputEvent} for the added
+ * listeners.
+ */
+
+class Mouse extends InputDevice {
+  /**
+   * Constructs a listening mouse with no listeners (yet).
+   * 
+   * @param {EventTarget} eventTarget
+   * @param {Object} [opts] Any additional options.
+   * @param {Boolean} [opts.eventsOnFocus=true] Whether to capture events only when it has focus.
+   */
+  constructor(eventTarget, opts = {
+    eventsOnFocus: true
+  }) {
+    super('Mouse', eventTarget);
+    this.canvasTarget = eventTarget instanceof HTMLCanvasElement && eventTarget || eventTarget.canvas || eventTarget.querySelector('canvas') || eventTarget.shadowRoot && eventTarget.shadowRoot.querySelector('canvas') || eventTarget;
+    this.eventsOnFocus = opts.eventsOnFocus;
+    this._downHasFocus = false;
+    /** @private */
+
+    this._eventObject = {
+      target: eventTarget,
+      deviceName: this.deviceName,
+      keyCode: '',
+      event: InputEventCode.NULL,
+      type: InputType.KEY,
+      // Key values
+      value: 0,
+      control: false,
+      shift: false,
+      alt: false
+    };
+    /** @private */
+
+    this._positionObject = {
+      target: eventTarget,
+      deviceName: this.deviceName,
+      keyCode: 'Position',
+      event: InputEventCode.MOVE,
+      type: InputType.POS,
+      // Pos values
+      x: 0,
+      y: 0,
+      dx: 0,
+      dy: 0
+    };
+    /** @private */
+
+    this._wheelObject = {
+      target: eventTarget,
+      deviceName: this.deviceName,
+      keyCode: 'Wheel',
+      event: InputEventCode.MOVE,
+      type: InputType.WHEEL,
+      // Wheel values
+      dx: 0,
+      dy: 0,
+      dz: 0
+    };
+    /** @private */
+
+    this.onMouseDown = this.onMouseDown.bind(this);
+    /** @private */
+
+    this.onMouseUp = this.onMouseUp.bind(this);
+    /** @private */
+
+    this.onMouseMove = this.onMouseMove.bind(this);
+    /** @private */
+
+    this.onContextMenu = this.onContextMenu.bind(this);
+    /** @private */
+
+    this.onWheel = this.onWheel.bind(this);
+    eventTarget.addEventListener('mousedown', this.onMouseDown);
+    eventTarget.addEventListener('contextmenu', this.onContextMenu);
+    eventTarget.addEventListener('wheel', this.onWheel);
+    eventTarget.addEventListener('mousemove', this.onMouseMove);
+    document.addEventListener('mouseup', this.onMouseUp);
+  }
+  /** @override */
+
+
+  destroy() {
+    let eventTarget = this.eventTarget;
+    eventTarget.removeEventListener('mousedown', this.onMouseDown);
+    eventTarget.removeEventListener('contextmenu', this.onContextMenu);
+    eventTarget.removeEventListener('wheel', this.onWheel);
+    eventTarget.removeEventListener('mousemove', this.onMouseMove);
+    document.removeEventListener('mouseup', this.onMouseUp);
+    super.destroy();
+  }
+
+  setPointerLock(force = true) {
+    if (force) {
+      this.eventTarget.requestPointerLock();
+    } else {
+      this.eventTarget.exitPointerLock();
+    }
+  }
+
+  hasPointerLock() {
+    return document.pointerLockElement === this.eventTarget;
+  }
+  /**
+   * @private
+   * @param {MouseEvent} e
+   */
+
+
+  onMouseDown(e) {
+    this._downHasFocus = true;
+    let event = this._eventObject; // We care more about location (code) than print char (key).
+
+    event.keyCode = 'Button' + e.button;
+    event.event = InputEventCode.DOWN;
+    event.value = 1;
+    event.control = e.ctrlKey;
+    event.shift = e.shiftKey;
+    event.alt = e.altKey;
+    let result = this.dispatchInput(event);
+
+    if (result) {
+      // Make sure it has focus first.
+      if (document.activeElement === this.eventTarget) {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      }
+    }
+  }
+  /**
+   * @private
+   * @param {MouseEvent} e
+   */
+
+
+  onContextMenu(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    return false;
+  }
+  /**
+   * @private
+   * @param {WheelEvent} e
+   */
+
+
+  onWheel(e) {
+    let event = this._wheelObject;
+
+    switch (e.deltaMode) {
+      case WheelEvent.DOM_DELTA_LINE:
+        event.dx = e.deltaX * DEFAULT_LINE_PIXELS;
+        event.dy = e.deltaY * DEFAULT_LINE_PIXELS;
+        event.dz = e.deltaZ * DEFAULT_LINE_PIXELS;
+        break;
+
+      case WheelEvent.DOM_DELTA_PAGE:
+        event.dx = e.deltaX * DEFAULT_PAGE_PIXELS;
+        event.dy = e.deltaY * DEFAULT_PAGE_PIXELS;
+        event.dz = e.deltaZ * DEFAULT_PAGE_PIXELS;
+        break;
+
+      case WheelEvent.DOM_DELTA_PIXEL:
+      default:
+        event.dx = e.deltaX;
+        event.dy = e.deltaY;
+        event.dz = e.deltaZ;
+        break;
+    }
+
+    let result = this.dispatchInput(event);
+
+    if (result) {
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    }
+  }
+  /**
+   * @private
+   * @param {MouseEvent} e
+   */
+
+
+  onMouseUp(e) {
+    // Make sure mouse down was pressed before this (with focus).
+    if (!this._downHasFocus) return;
+    this._downHasFocus = false;
+    let event = this._eventObject; // We care more about location (code) than print char (key).
+
+    event.keyCode = 'Button' + e.button;
+    event.event = InputEventCode.UP;
+    event.value = 1;
+    event.control = e.ctrlKey;
+    event.shift = e.shiftKey;
+    event.alt = e.altKey;
+    let result = this.dispatchInput(event);
+
+    if (result) {
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    }
+  }
+  /**
+   * @private
+   * @param {MouseEvent} e
+   */
+
+
+  onMouseMove(e) {
+    if (this.eventsOnFocus && document.activeElement !== this.eventTarget) return;
+    const element = this.canvasTarget;
+    const {
+      clientWidth,
+      clientHeight
+    } = element;
+    const rect = element.getBoundingClientRect();
+    let dx = e.movementX / clientWidth;
+    let dy = e.movementY / clientHeight;
+    let x = (e.clientX - rect.left) / clientWidth;
+    let y = (e.clientY - rect.top) / clientHeight;
+    let event = this._positionObject;
+    event.x = x;
+    event.y = y;
+    event.dx = dx;
+    event.dy = dy;
+    this.dispatchInput(event);
+  }
+
+}
+
+class Axis extends Input {
+  constructor() {
+    super();
+    this.delta = 0;
+    /** @private */
+
+    this.next = {
+      delta: 0
+    };
+  }
+  /** @override */
+
+
+  update(value, delta) {
+    this.value = value;
+    this.next.delta += delta;
+  }
+  /** @override */
+
+
+  poll() {
+    this.delta = this.next.delta;
+    this.next.delta = 0;
+  }
+  /** @override */
+
+
+  getEvent(eventCode) {
+    switch (eventCode) {
+      case InputEventCode.MOVE:
+        return this.delta;
+
+      default:
+        return super.getEvent(eventCode);
+    }
+  }
+
+}
+
+class Button extends Input {
+  constructor() {
+    super();
+    /** Whether the button is just pressed. Is updated on poll(). */
+
+    this.down = false;
+    /** Whether the button is just released. Is updated on poll(). */
+
+    this.up = false;
+    /** @private */
+
+    this.next = {
+      down: false,
+      up: false
+    };
+  }
+  /** @override */
+
+
+  update(value) {
+    if (value) {
+      this.next.down = true;
+    } else {
+      this.next.up = true;
+    }
+  }
+  /** @override */
+
+
+  poll() {
+    const {
+      up: nextUp,
+      down: nextDown
+    } = this.next;
+
+    if (this.value) {
+      if (this.up && !nextUp) {
+        this.value = 0;
+      }
+    } else if (nextDown) {
+      this.value = 1;
+    }
+
+    this.down = nextDown;
+    this.up = nextUp;
+    this.next.down = false;
+    this.next.up = false;
+  }
+  /** @override */
+
+
+  getEvent(eventCode) {
+    switch (eventCode) {
+      case InputEventCode.DOWN:
+        return this.down & 1;
+
+      case InputEventCode.UP:
+        return this.up & 1;
+
+      default:
+        return super.getEvent(eventCode);
+    }
+  }
+
+}
+
+/**
  * @readonly
  * @enum {Number}
  */
@@ -366,6 +953,298 @@ const InputSourceStage = {
   UPDATE: 1,
   POLL: 2
 };
+/**
+ * Whether the given key code for device is an axis input.
+ * 
+ * @param {String} deviceName 
+ * @param {String} keyCode 
+ */
+
+function isInputAxis(deviceName, keyCode) {
+  return deviceName === 'Mouse' && (keyCode === 'PosX' || keyCode === 'PosY' || keyCode === 'WheelX' || keyCode === 'WheelY' || keyCode === 'WheelZ');
+}
+/** This determines whether an element has an associated input source. */
+
+const INPUT_SOURCE_REF_KEY = Symbol('inputSource');
+/**
+ * @typedef InputSourceInputEvent
+ * @property {InputSourceStage} stage
+ * @property {String} deviceName
+ * @property {String} keyCode
+ * @property {Axis|Button} input
+ * 
+ * @typedef InputSourcePollEvent
+ * 
+ * @callback InputSourceEventListener
+ * @param {InputSourceInputEvent|InputSourcePollEvent} e
+ */
+
+/**
+ * A class to model the current input state with buttons and axes.
+ */
+
+class InputSource {
+  static for(eventTarget) {
+    if (Object.prototype.hasOwnProperty.call(eventTarget, INPUT_SOURCE_REF_KEY)) {
+      return eventTarget[INPUT_SOURCE_REF_KEY];
+    } else {
+      let result = new InputSource([new Keyboard(eventTarget), new Mouse(eventTarget)]);
+      Object.defineProperty(eventTarget, INPUT_SOURCE_REF_KEY, {
+        value: result
+      });
+      return result;
+    }
+  }
+
+  constructor(deviceList) {
+    /** @private */
+    this.onInputEvent = this.onInputEvent.bind(this);
+    let deviceMap = {};
+    let inputMap = {};
+
+    for (let device of deviceList) {
+      const deviceName = device.deviceName;
+      deviceMap[deviceName] = device;
+      inputMap[deviceName] = {};
+      device.addInputListener(WILDCARD_KEY_MATCHER, this.onInputEvent);
+    }
+
+    this.devices = deviceMap;
+    /** @private */
+
+    this.inputs = inputMap;
+    /** @private */
+
+    this.listeners = {
+      poll: [],
+      update: []
+    };
+  }
+
+  destroy() {
+    this.clear();
+
+    for (let deviceName in this.devices) {
+      let device = this.devices[deviceName];
+      device.removeInputListener(WILDCARD_KEY_MATCHER, this.onInputEvent);
+      device.destroy();
+    }
+  }
+  /**
+   * Add listener to listen for event, in order by most
+   * recently added. In other words, this listener will
+   * be called BEFORE the previously added listener (if
+   * there exists one) and so on.
+   * 
+   * @param {String} event 
+   * @param {InputSourceEventListener} listener 
+   */
+
+
+  addEventListener(event, listener) {
+    if (event in this.listeners) {
+      this.listeners[event].unshift(listener);
+    } else {
+      this.listeners[event] = [listener];
+    }
+  }
+  /**
+   * Removes the listener from listening to the event.
+   * 
+   * @param {String} event 
+   * @param {InputSourceEventListener} listener 
+   */
+
+
+  removeEventListener(event, listener) {
+    if (event in this.listeners) {
+      let list = this.listeners[event];
+      let i = list.indexOf(listener);
+      list.splice(i, 1);
+    }
+  }
+  /**
+   * Dispatches an event to the listeners.
+   * 
+   * @param {String} eventName The name of the event.
+   * @param {InputSourceInputEvent|InputSourcePollEvent} event The event object to pass to listeners.
+   */
+
+
+  dispatchEvent(eventName, event) {
+    for (let listener of this.listeners[eventName]) {
+      listener(event);
+    }
+  }
+  /**
+   * @private
+   * @param {InputSourceStage} stage 
+   * @param {String} deviceName 
+   * @param {String} keyCode 
+   * @param {Axis|Button} input 
+   */
+
+
+  _dispatchInputEvent(stage, deviceName, keyCode, input) {
+    this.dispatchEvent('input', {
+      stage,
+      deviceName,
+      keyCode,
+      input
+    });
+  }
+  /** @private */
+
+
+  _dispatchPollEvent() {
+    this.dispatchEvent('poll', {});
+  }
+  /**
+   * Poll the devices and update the input state.
+   */
+
+
+  poll() {
+    for (const deviceName in this.inputs) {
+      const inputMap = this.inputs[deviceName];
+
+      for (const keyCode in inputMap) {
+        let input = inputMap[keyCode];
+        input.poll();
+
+        this._dispatchInputEvent(InputSourceStage.POLL, deviceName, keyCode, input);
+      }
+    }
+
+    this._dispatchPollEvent();
+  }
+  /** @private */
+
+
+  onInputEvent(e) {
+    const deviceName = e.deviceName;
+
+    switch (e.type) {
+      case InputType.KEY:
+        {
+          const keyCode = e.keyCode;
+          let button = this.inputs[deviceName][keyCode];
+
+          if (button) {
+            button.update(e.event === InputEventCode.DOWN);
+
+            this._dispatchInputEvent(InputSourceStage.UPDATE, deviceName, keyCode, button);
+          }
+        }
+        break;
+
+      case InputType.POS:
+        {
+          let inputs = this.inputs[deviceName];
+          let xAxis = inputs.PosX;
+
+          if (xAxis) {
+            xAxis.update(e.x, e.dx);
+
+            this._dispatchInputEvent(InputSourceStage.UPDATE, deviceName, 'PosX', xAxis);
+          }
+
+          let yAxis = inputs.PosY;
+
+          if (yAxis) {
+            yAxis.update(e.y, e.dy);
+
+            this._dispatchInputEvent(InputSourceStage.UPDATE, deviceName, 'PosY', yAxis);
+          }
+        }
+        break;
+
+      case InputType.WHEEL:
+        {
+          let inputs = this.inputs[deviceName];
+          let xAxis = inputs.WheelX;
+
+          if (xAxis) {
+            xAxis.update(e.dx, e.dx);
+
+            this._dispatchInputEvent(InputSourceStage.UPDATE, deviceName, 'WheelX', xAxis);
+          }
+
+          let yAxis = inputs.WheelY;
+
+          if (yAxis) {
+            yAxis.update(e.dy, e.dy);
+
+            this._dispatchInputEvent(InputSourceStage.UPDATE, deviceName, 'WheelY', yAxis);
+          }
+
+          let zAxis = inputs.WheelZ;
+
+          if (zAxis) {
+            zAxis.update(e.dz, e.dz);
+
+            this._dispatchInputEvent(InputSourceStage.UPDATE, deviceName, 'WheelZ', zAxis);
+          }
+        }
+        break;
+    }
+  }
+  /**
+   * Add an input for the given device and key code.
+   * 
+   * @param {String} deviceName 
+   * @param {String} keyCode 
+   */
+
+
+  add(deviceName, keyCode) {
+    if (!(deviceName in this.devices)) {
+      throw new Error('Invalid device name - missing device with name in source.');
+    }
+
+    let result = isInputAxis(deviceName, keyCode) ? new Axis() : new Button();
+    this.inputs[deviceName][keyCode] = result;
+    return this;
+  }
+  /**
+   * Remove the input for the given device and key code.
+   * 
+   * @param {String} deviceName 
+   * @param {String} keyCode 
+   */
+
+
+  delete(deviceName, keyCode) {
+    delete this.inputs[deviceName][keyCode];
+  }
+  /** @returns {Button|Axis} */
+
+
+  get(deviceName, keyCode) {
+    return this.inputs[deviceName][keyCode];
+  }
+  /**
+   * @param {String} deviceName 
+   * @param {String} keyCode 
+   * @returns {Boolean} Whether the device and key code has been added.
+   */
+
+
+  has(deviceName, keyCode) {
+    return deviceName in this.inputs && keyCode in this.inputs[deviceName];
+  }
+  /**
+   * Removes all registered inputs from all devices.
+   */
+
+
+  clear() {
+    for (let deviceName in this.devices) {
+      this.inputs[deviceName] = {};
+    }
+  }
+
+}
 
 class InputContext {
   /**
@@ -380,7 +1259,7 @@ class InputContext {
     } = opts;
     /** @type {import('./source/InputSource.js').InputSource} */
 
-    this.inputSource = null;
+    this.source = null;
     /** @private */
 
     this._disabled = disabled;
@@ -415,7 +1294,7 @@ class InputContext {
 
 
   setInputMap(inputMap) {
-    this._setupInputs(this.inputSource, inputMap);
+    this._setupInputs(this.source, inputMap);
 
     return this;
   }
@@ -452,7 +1331,7 @@ class InputContext {
     const prevDisabled = this.disabled;
     this.disabled = true; // Prepare previous state...
 
-    const prevInputSource = this.inputSource;
+    const prevInputSource = this.source;
     const prevInputs = this.inputs;
     const isPrevSourceReplaced = prevInputSource !== inputSource && prevInputSource;
     const isPrevInputsReplaced = this.inputs && inputMap; // Tear down
@@ -524,10 +1403,10 @@ class InputContext {
         }
       }
 
-      if (this.inputSource !== inputSource) {
+      if (this.source !== inputSource) {
         inputSource.addEventListener('poll', this.onSourcePoll);
         inputSource.addEventListener('input', this.onSourceInput);
-        this.inputSource = inputSource;
+        this.source = inputSource;
       }
     } // Make sure this context returns to its previous expected state...
 
@@ -591,7 +1470,7 @@ class InputContext {
 
   toggle(force = this._disabled) {
     if (force) {
-      if (!this.inputSource) {
+      if (!this.source) {
         throw new Error('Input source must be set before enabling input context.');
       }
 
@@ -655,4 +1534,4 @@ function removeSourceRef(inputSource, deviceName, keyCode) {
   return value;
 }
 
-export { InputContext };
+export { AdapterManager, Axis, Button, Input, InputContext, InputDevice, InputEventCode, InputSource, InputSourceStage, InputType, KEY_STRING_DEVICE_SEPARATOR, Keyboard, Mouse, Synthetic, WILDCARD_DEVICE_MATCHER, WILDCARD_KEY_MATCHER, isInputAxis, parseKeyString, stringifyDeviceKeyCodePair };

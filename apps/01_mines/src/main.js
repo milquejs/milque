@@ -1,3 +1,5 @@
+import '@milque/display';
+
 import * as MainScene from './MainScene.js';
 import * as MainRender from './MainRender.js';
 
@@ -34,7 +36,7 @@ async function main()
     const ctx = display.canvas.getContext('2d');
     ctx.imageSmoothingEnabled = false;
     
-    MinesControls.show();
+    MinesControls.attach();
 
     const world = { display };
     await MainRender.load.call(world);
