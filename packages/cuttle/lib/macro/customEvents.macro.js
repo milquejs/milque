@@ -1,5 +1,4 @@
 /* eslint-env node */
-const { createMacro } = require('babel-plugin-macros');
 const { types } = require('@babel/core');
 
 const EventsEvaluator = require('../lib/EventsEvaluator.js');
@@ -44,4 +43,4 @@ function customEvents({ references })
     }
 }
 
-module.exports = createMacro(customEvents);
+module.exports = customEvents;

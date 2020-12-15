@@ -35,25 +35,35 @@ export default async function main()
 
     if (target)
     {
+        // HACK: Undo path separator formatting
+        let targetPackageName = target.replaceAll('\\', '/');
+
         // Build mapping for module name to packageJson
         const packages = (await getPackageJsons()).reduce(
             (prev, packageJson) => {
                 prev[packageJson.name] = packageJson;
                 return prev;
             }, {});
-
-        let targetPackage = packages[target];
+        let targetPackage = packages[targetPackageName];
         if (!targetPackage)
         {
-            throw new Error(`Cannot find package info for ${target}.`);
+            throw new Error(`Cannot find package info for ${targetPackageName}.`);
         }
 
         // Sort map
         let result = topoSort(
             [targetPackage],
             packageJson => {
-                let names = Object.keys(packageJson.dependencies);
-                return names.map(name => packages[name]).filter(Boolean);
+                const { dependencies } = packageJson;
+                if (dependencies)
+                {
+                    let names = Object.keys(packageJson.dependencies);
+                    return names.map(name => packages[name]).filter(Boolean);
+                }
+                else
+                {
+                    return [];
+                }
             });
         
         console.log(`Dependencies found:\n=> ${result.map(packageJson => packageJson.name).join('\n=> ')}\n`);
@@ -68,16 +78,24 @@ export default async function main()
 
 function configure(packageJsons, isDevelopment)
 {
-    return packageJsons.map(packageJson => {
+    return cleanArray(packageJsons.map(packageJson => {
         if (packageJson.browser)
         {
             return createBrowserConfig(packageJson, '@app', isDevelopment);
         }
         else
         {
-            return createLibraryConfig(packageJson, '@module');
+            if (packageJson.name.endsWith('.macro'))
+            {
+                // Nothing to bundle for macros.
+                return null;
+            }
+            else
+            {
+                return createLibraryConfig(packageJson, '@module');
+            }
         }
-    });
+    }));
 }
 
 function createLibraryConfig(packageJson, sourceAlias)
@@ -153,7 +171,6 @@ function plugins(outputDir, sourceAlias, test = false)
         ] : []),
         // Including external packages
         nodeResolve(),
-        commonjs(),
         // Clean output dir
         clear({
             targets: [ outputDir ]
@@ -178,6 +195,7 @@ function plugins(outputDir, sourceAlias, test = false)
         // Transpile macros
         babel({
             babelHelpers: 'bundled',
+            plugins: ['macros']
         }),
     ];
 }
@@ -206,9 +224,10 @@ function createBrowserConfig(packageJson, sourceAlias, isDevelopment = false)
 
     return {
         input: inputPath,
-        output: [
-            outputBrowser(path.join(outputRoot, path.basename(browser))),
-        ],
+        output: {
+            file: path.join(outputRoot, path.basename(browser)),
+            format: 'iife',
+        },
         plugins: [
             // Including external packages
             nodeResolve({ browser: true }),
@@ -249,13 +268,5 @@ function createBrowserConfig(packageJson, sourceAlias, isDevelopment = false)
                     terser()
                 ])
         ]
-    };
-}
-
-function outputBrowser(outputPath)
-{
-    return {
-        file: outputPath,
-        format: 'iife',
     };
 }

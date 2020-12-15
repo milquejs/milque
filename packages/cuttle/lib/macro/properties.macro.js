@@ -1,6 +1,4 @@
 /* eslint-env node */
-const { createMacro } = require('babel-plugin-macros');
-
 const PropertiesEvaluator = require('../lib/PropertiesEvaluator.js');
 const PropertyAccessorGenerator = require('../lib/PropertyAccessorGenerator.js');
 const ConnectedCallbackGenerator = require('../lib/ConnectedCallbackGenerator.js');
@@ -27,4 +25,4 @@ function properties({ references })
     }
 }
 
-module.exports = createMacro(properties);
+module.exports = properties;

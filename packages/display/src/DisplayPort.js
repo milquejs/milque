@@ -1,5 +1,6 @@
 import INNER_HTML from './DisplayPort.template.html';
 import INNER_STYLE from './DisplayPort.module.css';
+import { properties, customEvents, attachShadowTemplate } from '@milque/cuttle.macro';
 
 export const MODE_NOSCALE = 'noscale';
 export const MODE_CENTER = 'center';
@@ -10,43 +11,30 @@ const DEFAULT_MODE = MODE_NOSCALE;
 const DEFAULT_WIDTH = 300;
 const DEFAULT_HEIGHT = 150;
 
-const TEMPLATE_KEY = Symbol('template');
-const STYLE_KEY = Symbol('style');
-
 export class DisplayPort extends HTMLElement
 {
-    static get [TEMPLATE_KEY]()
+    static get [properties]()
     {
-        let template = document.createElement('template');
-        template.innerHTML = INNER_HTML;
-        Object.defineProperty(this, TEMPLATE_KEY, { value: template });
-        return template;
+        return {
+            width: Number,
+            height: Number,
+            disabled: Boolean,
+            debug: Boolean,
+            mode: { type: String, value: 'fit', observed: false },
+        };
     }
 
-    static get [STYLE_KEY]()
+    static get [customEvents]()
     {
-        let style = document.createElement('style');
-        style.innerHTML = INNER_STYLE;
-        Object.defineProperty(this, STYLE_KEY, { value: style });
-        return style;
+        return [
+            'frame'
+        ];
     }
 
     /** @override */
     static get observedAttributes()
     {
         return [
-            'width',
-            'height',
-            'disabled',
-            // Event handlers...
-            'onframe',
-            /*
-            // NOTE: Already handled by GlobalEventHandlers...
-            'onresize',
-            */
-            // NOTE: For debuggin purposes...
-            'debug',
-            // ...listening for built-in attribs...
             'id',
             'class',
         ];
@@ -55,10 +43,7 @@ export class DisplayPort extends HTMLElement
     constructor()
     {
         super();
-        
-        this.attachShadow({ mode: 'open' });
-        this.shadowRoot.appendChild(this.constructor[TEMPLATE_KEY].content.cloneNode(true));
-        this.shadowRoot.appendChild(this.constructor[STYLE_KEY].cloneNode(true));
+        attachShadowTemplate(this, INNER_HTML, INNER_STYLE, { mode: 'open' });
 
         this._canvasElement = this.shadowRoot.querySelector('canvas');
 
@@ -73,10 +58,6 @@ export class DisplayPort extends HTMLElement
         this._height = DEFAULT_HEIGHT;
 
         this._onframe = null;
-        /*
-        // NOTE: Already handled by GlobalEventHandlers...
-        this._onresize = null;
-        */
 
         this.update = this.update.bind(this);
     }
@@ -86,8 +67,6 @@ export class DisplayPort extends HTMLElement
     /** @override */
     connectedCallback()
     {
-        if (!this.hasAttribute('mode')) this.mode = DEFAULT_MODE;
-        
         // Allows this element to be focusable
         if (!this.hasAttribute('tabindex')) this.setAttribute('tabindex', 0);
 
@@ -106,12 +85,6 @@ export class DisplayPort extends HTMLElement
     {
         switch(attribute)
         {
-            case 'width':
-                this._width = value;
-                break;
-            case 'height':
-                this._height = value;
-                break;
             case 'disabled':
                 if (value)
                 {
@@ -123,16 +96,6 @@ export class DisplayPort extends HTMLElement
                     this.resume();
                 }
                 break;
-            // Event handlers...
-            case 'onframe':
-                this.onframe = new Function('event', `with(document){with(this){${value}}}`).bind(this);
-                break;
-            /*
-            // NOTE: Already handled by GlobalEventHandlers...
-            case 'onresize':
-                this.onresize = new Function('event', `with(document){with(this){${value}}}`).bind(this);
-                break;
-            */
             // NOTE: For debugging purposes...
             case 'id':
             case 'class':
@@ -189,8 +152,6 @@ export class DisplayPort extends HTMLElement
                 prevTime: this._prevAnimationFrameTime,
                 deltaTime: deltaTime,
                 canvas: this._canvasElement,
-                /** @deprecated */
-                get context() { let ctx = this.canvas.getContext('2d'); ctx.imageSmoothingEnabled = false; return ctx; },
             },
             bubbles: false,
             composed: true
@@ -256,40 +217,5 @@ export class DisplayPort extends HTMLElement
             this.dispatchEvent(new CustomEvent('resize', { detail: { width: canvasWidth, height: canvasHeight }, bubbles: false, composed: true }));
         }
     }
-
-    /*
-    // NOTE: Already handled by GlobalEventHandlers...
-    get onresize() { return this._onresize; }
-    set onresize(value)
-    {
-        if (this._onresize) this.removeEventListener('resize', this._onresize);
-        this._onresize = value;
-        if (this._onresize) this.addEventListener('resize', value);
-    }
-    */
-
-    get onframe() { return this._onframe; }
-    set onframe(value)
-    {
-        if (this._onframe) this.removeEventListener('frame', this._onframe);
-        this._onframe = value;
-        if (this._onframe) this.addEventListener('frame', value);
-    }
-
-    get width() { return this._width; }
-    set width(value) { this.setAttribute('width', value); }
-
-    get height() { return this._height; }
-    set height(value) { this.setAttribute('height', value); }
-
-    get mode() { return this.getAttribute('mode'); }
-    set mode(value) { this.setAttribute('mode', value); }
-
-    get disabled() { return this.hasAttribute('disabled'); }
-    set disabled(value) { if (value) this.setAttribute('disabled', ''); else this.removeAttribute('disabled'); }
-
-    // NOTE: For debugging purposes...
-    get debug() { return this.hasAttribute('debug'); }
-    set debug(value) { if (value) this.setAttribute('debug', ''); else this.removeAttribute('debug'); }
 }
 window.customElements.define('display-port', DisplayPort);

@@ -1,5 +1,4 @@
 /* eslint-env node */
-const { createMacro } = require('babel-plugin-macros');
 const { template, types } = require('@babel/core');
 
 const { CUTTLE_GENERATION_KEY } = require('../../lib/CuttleProperty.js');
@@ -81,4 +80,4 @@ function attachShadowTemplate({ references })
     }
 }
 
-module.exports = createMacro(attachShadowTemplate);
+module.exports = attachShadowTemplate;

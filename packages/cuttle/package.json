@@ -1,0 +1,17 @@
+{
+  "name": "@milque/cuttle.macro",
+  "version": "0.0.1",
+  "description": "The web component macro for milque.js",
+  "main": "lib/index.js",
+  "author": "Andrew Kuo",
+  "license": "MIT",
+  "keywords": [
+    "milque",
+    "cuttle",
+    "babel-plugin-macros"
+  ],
+  "peerDependencies": {
+    "@babel/core": "^7.12.10",
+    "babel-plugin-macros": "^3.0.0"
+  }
+}

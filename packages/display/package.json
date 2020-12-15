@@ -10,5 +10,8 @@
   "keywords": [
     "milque",
     "display"
-  ]
+  ],
+  "dependencies": {
+    "@milque/cuttle.macro": "^0.0.1"
+  }
 }
