@@ -1,7 +1,9 @@
-import { InputKeyElement } from './InputKeyElement.js';
+import { attachShadowTemplate } from '@milque/cuttle.macro';
 
-const TEMPLATE_KEY = Symbol('template');
-const STYLE_KEY = Symbol('style');
+import { InputKeyElement } from './InputKeyElement.js';
+import INNER_HTML from './InputMapElement.template.html';
+import INNER_STYLE from './InputMapElement.module.css';
+
 function upgradeProperty(element, propertyName)
 {
     if (Object.prototype.hasOwnProperty.call(element, propertyName))
@@ -14,73 +16,6 @@ function upgradeProperty(element, propertyName)
 
 export class InputMapElement extends HTMLElement
 {
-    static get [TEMPLATE_KEY]()
-    {
-        let template = document.createElement('template');
-        template.innerHTML = `
-        <table>
-            <thead>
-                <tr class="tableHeader">
-                    <th id="title" colspan=4>
-                        <slot></slot>
-                    </th>
-                </tr>
-                <tr class="colHeader">
-                    <th>name</th>
-                    <th>key</th>
-                    <th>mod</th>
-                    <th>value</th>
-                </tr>
-            </thead>
-            <tbody>
-            </tbody>
-        </table>`;
-        Object.defineProperty(this, TEMPLATE_KEY, { value: template });
-        return template;
-    }
-
-    static get [STYLE_KEY]()
-    {
-        let style = document.createElement('style');
-        style.innerHTML = `
-        :host {
-            display: block;
-        }
-        table {
-            border-collapse: collapse;
-        }
-        table, th, td {
-            border: 1px solid gray;
-        }
-        .colHeader > th {
-            font-size: 0.8em;
-            font-family: monospace;
-            padding: 0 10px;
-            letter-spacing: 3px;
-            background-color: #AAA;
-            color: #666666;
-        }
-        th, td {
-            padding: 5px 10px;
-        }
-        td {
-            text-align: center;
-        }
-        output {
-            font-family: monospace;
-            border-radius: 0.3em;
-            padding: 3px;
-        }
-        tr:not(.primary) .name, tr:not(.primary) .value {
-            opacity: 0.3;
-        }
-        tr:nth-child(2n) {
-            background-color: #EEE;
-        }`;
-        Object.defineProperty(this, STYLE_KEY, { value: style });
-        return style;
-    }
-
     /** @override */
     static get observedAttributes()
     {
@@ -95,10 +30,7 @@ export class InputMapElement extends HTMLElement
     constructor()
     {
         super();
-
-        this.attachShadow({ mode: 'open' });
-        this.shadowRoot.appendChild(this.constructor[TEMPLATE_KEY].content.cloneNode(true));
-        this.shadowRoot.appendChild(this.constructor[STYLE_KEY].cloneNode(true));
+        attachShadowTemplate(this, INNER_HTML, INNER_STYLE, { mode: 'open' });
 
         this._src = '';
 
@@ -192,18 +124,26 @@ function inputToTableEntries(out, name, input)
         let length = input.length;
         for(let i = 1; i < length; ++i)
         {
-            const { key, event, scale } = input[i];
-            let entry = createInputTableEntry(name, key, event, scale, 0, false);
-            out.push(entry);
+            out.push(parseInputOption(name, input[i], false));
         }
-        return out;
     }
     else
     {
-        const { key, event, scale } = input;
-        let entry = createInputTableEntry(name, key, event, scale, 0);
-        out.push(entry);
-        return out;
+        out.push(parseInputOption(name, input, true));
+    }
+    return out;
+}
+
+function parseInputOption(inputName, inputOption, inputPrimary = true)
+{
+    if (typeof inputOption === 'object')
+    {
+        const { key, event, scale } = inputOption;
+        return createInputTableEntry(inputName, key, event, scale, 0, inputPrimary);
+    }
+    else
+    {
+        return createInputTableEntry(inputName, inputOption, null, 1, 0, inputPrimary);
     }
 }
 

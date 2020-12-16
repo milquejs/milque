@@ -200,6 +200,12 @@ function plugins(outputDir, sourceAlias, test = false)
     ];
 }
 
+function resolveAsset(packagePath, assetPath)
+{
+    // HACK: For some reason, the copy plugin REQUIRES unix path separators
+    return path.join(packagePath, assetPath).replaceAll('\\', '/');
+}
+
 function createBrowserConfig(packageJson, sourceAlias, isDevelopment = false)
 {
     const {
@@ -209,8 +215,6 @@ function createBrowserConfig(packageJson, sourceAlias, isDevelopment = false)
         browser,
     } = packageJson;
 
-    const indexTemplatePath = 'src/template.html';
-
     const packagePath = path.relative(__dirname, location);
     const inputPath = path.join(packagePath, input);
     const outputRoot = path.join(packagePath, isDevelopment ? TEMP_OUTPUT_ROOT_PATH : OUTPUT_ROOT_PATH);
@@ -218,9 +222,10 @@ function createBrowserConfig(packageJson, sourceAlias, isDevelopment = false)
         'res',
         path.join(packagePath, 'res'),
     ];
-    
-    // HACK: For some reason, the copy plugin REQUIRES unix path separators
-    const indexHTMLPath = path.join(packagePath, indexTemplatePath).replaceAll('\\', '/');
+    const staticAssets = [
+        { src: resolveAsset(packagePath, 'src/template.html'), rename: 'index.html' },
+        { src: resolveAsset(packagePath, 'src/style.css'), rename: 'index.css' },
+    ];
 
     return {
         input: inputPath,
@@ -241,9 +246,7 @@ function createBrowserConfig(packageJson, sourceAlias, isDevelopment = false)
             }),
             // Copy assets
             copy({
-                targets: [
-                    { dest: outputRoot, src: indexHTMLPath, rename: 'index.html' },
-                ]
+                targets: staticAssets.map(opt => ({ dest: outputRoot, ...opt }))
             }),
             // Import alias
             alias({
@@ -277,7 +280,7 @@ function createBrowserConfig(packageJson, sourceAlias, isDevelopment = false)
                             ...contentRoots
                         ]
                     }),
-                    watchAssets({ assets: [ indexHTMLPath ] }),
+                    watchAssets({ assets: staticAssets.map(opt => opt.src) }),
                     livereload({ watch: outputRoot })
                 ]
                 : [

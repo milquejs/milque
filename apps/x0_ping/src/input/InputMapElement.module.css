@@ -1,0 +1,46 @@
+:host {
+    display: block;
+}
+
+table {
+    border-collapse: collapse;
+}
+
+table,
+th,
+td {
+    border: 1px solid #666666;
+}
+
+.colHeader > th {
+    font-size: 0.8em;
+    font-family: monospace;
+    padding: 0 10px;
+    letter-spacing: 3px;
+    background-color: #aaaaaa;
+    color: #666666;
+}
+
+th,
+td {
+    padding: 5px 10px;
+}
+
+td {
+    text-align: center;
+}
+
+output {
+    font-family: monospace;
+    border-radius: 0.3em;
+    padding: 3px;
+}
+
+tr:not(.primary) .name,
+tr:not(.primary) .value {
+    opacity: 0.3;
+}
+
+tr:nth-child(2n) {
+    background-color: #eeeeee;
+}
