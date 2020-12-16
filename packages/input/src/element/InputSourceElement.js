@@ -1,6 +1,6 @@
-import { InputSource } from '@milque/input';
 import { properties, customEvents, attachShadowTemplate } from '@milque/cuttle.macro';
 
+import { InputSource } from '../source/InputSource.js';
 import INNER_HTML from './InputSourceElement.template.html';
 import INNER_STYLE from './InputSourceElement.module.css';
 

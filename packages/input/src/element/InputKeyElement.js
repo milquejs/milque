@@ -50,4 +50,4 @@ export class InputKeyElement extends HTMLElement
         }
     }
 }
-window.customElements.define('input-kbd', InputKeyElement);
+window.customElements.define('input-key', InputKeyElement);

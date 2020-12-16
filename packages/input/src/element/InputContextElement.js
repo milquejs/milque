@@ -1,6 +1,6 @@
 import { attachShadowTemplate, properties } from '@milque/cuttle.macro';
-import { InputContext } from '@milque/input';
 
+import { InputContext } from '../InputContext.js';
 import INNER_HTML from './InputContextElement.template.html';
 import INNER_STYLE from './InputContextElement.module.css';
 

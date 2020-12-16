@@ -1,12 +1,12 @@
 import '@milque/display';
-import './input/index.js';
+import '@milque/input';
 
 window.addEventListener('DOMContentLoaded', main);
 
 async function main()
 {
     const display = document.querySelector('#main');
-    const input = document.querySelector('#mainInput');
+    const input = document.querySelector('#inputMain');
     input.src = {
         PointerX: 'Mouse:PosX',
         PointerY: 'Mouse:PosY',
