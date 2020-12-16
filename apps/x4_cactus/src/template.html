@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Cactus</title>
+        <style>
+            html {
+                width: 100vw;
+                height: 100vh;
+            }
+
+            body {
+                margin: 0;
+                width: 100%;
+                height: 100%;
+            }
+        </style>
+    </head>
+    <body>
+        <display-port id="main" mode="fit" width=1920 height=1080 debug></display-port>
+
+        <input-port id="primary" for="main" src="" autopoll debug disabled></input-port>
+
+        <input-source id="mainInputSource" for="main" autopoll debug></input-source>
+        <input-map></input-map>
+        <input-ctx source="" map="" disabled></input-ctx>
+
+        <input-port id="primary" src="" disabled></input-port>
+
+        <script>
+            const inputMap = document.querySelector('input-map');
+            inputMap.src = {
+                PointerX: { key: 'Mouse:PosX', scale: 1 },
+                PointerY: { key: 'Mouse:PosY', scale: 1 },
+                PointerMovementX: { key: 'Mouse:PosX', event: 'move' },
+                PointerMovementY: { key: 'Mouse:PosY', event: 'move' },
+                PointerMovementZ: { key: 'Mouse:WheelY', event: 'move' },
+                PointerDown: [
+                    { key: 'Mouse:Button0', scale: 1 },
+                    { key: 'Mouse:Button2', scale: 1 },
+                ],
+                MoveLeft: [ { key: 'Keyboard:ArrowLeft', scale: 1 }, { key: 'Keyboard:KeyA', scale: 1 } ],
+                MoveRight: [ { key: 'Keyboard:ArrowRight', scale: 1 }, { key: 'Keyboard:KeyD', scale: 1 } ],
+                MoveUp: [ { key: 'Keyboard:ArrowUp', scale: 1 }, { key: 'Keyboard:KeyW', scale: 1 } ],
+                MoveDown: [ { key: 'Keyboard:ArrowDown', scale: 1 }, { key: 'Keyboard:KeyS', scale: 1 } ],
+            };
+        </script>
+        <script src="index.js"></script>
+    </body>
+</html>

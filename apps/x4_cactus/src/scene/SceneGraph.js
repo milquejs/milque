@@ -94,7 +94,7 @@ export class SceneGraph
         }
         else
         {
-            throw new Error(`Cannot delete non-existant scene node for scene graph.`)
+            throw new Error('Cannot delete non-existant scene node for scene graph.');
         }
     }
 
@@ -279,7 +279,7 @@ function detach(parentNode, childNode, sceneGraph)
         let children = sceneGraph.nodes[parentNode].children;
         let childIndex = children.indexOf(childNode);
         children.splice(childIndex, 1);
-        sceneGraph.nodes[sceneNode].parentNode = 0;
+        sceneGraph.nodes[childNode].parentNode = 0;
     }
     else
     {

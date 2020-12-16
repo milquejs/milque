@@ -1,24 +1,22 @@
-import { createBufferSource } from './gl/GLHelper.js'
+import { createBufferSource } from './gl/GLHelper.js';
 
-export class CubeRenderer
+export class QuadRenderer
 {
-    constructor(gl, shaderProgram, cubeMeshData)
+    constructor(gl, shaderProgram, quadMeshData)
     {
         this.shaderProgram = shaderProgram;
-        this.meshData = cubeMeshData;
+        this.meshData = quadMeshData;
 
-        let meshData = cubeMeshData;
-        {
-            const bufferSource = createBufferSource(gl, gl.FLOAT, meshData.positions);
-            const buffer = gl.createBuffer();
-            gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-            gl.bufferData(gl.ARRAY_BUFFER, bufferSource, gl.STATIC_DRAW);
-    
-            this.positions = {
-                source: bufferSource,
-                buffer: buffer,
-            };
-        }
+        let meshData = quadMeshData;
+        const positionBufferSource = createBufferSource(gl, gl.FLOAT, meshData.positions);
+        const positionBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, positionBufferSource, gl.STATIC_DRAW);
+
+        this.positions = {
+            source: positionBufferSource,
+            buffer: positionBuffer,
+        };
 
         {
             const bufferSource = createBufferSource(gl, gl.FLOAT, meshData.texcoords);
@@ -54,7 +52,7 @@ export class CubeRenderer
             buffer: elementBuffer,
         };
 
-        this._drawContext = new CubeRendererDrawContext(this);
+        this._drawContext = new QuadRendererDrawContext(this);
     }
 
     begin(gl, projectionMatrix, viewMatrix)
@@ -67,7 +65,7 @@ export class CubeRenderer
     }
 }
 
-export class CubeRendererDrawContext
+export class QuadRendererDrawContext
 {
     constructor(renderer)
     {

@@ -1,0 +1,15 @@
+{
+  "name": "cactus",
+  "version": "1.0.0",
+  "description": "Take care of this cactus, pls.",
+  "browser": "dist/index.js",
+  "author": "Andrew Kuo",
+  "license": "MIT",
+  "keywords": [
+    "milque"
+  ],
+  "dependencies": {
+    "gl-matrix": "^3.3.0",
+    "milque": "^0.0.1"
+  }
+}

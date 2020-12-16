@@ -2,7 +2,7 @@ const TEMPLATE_KEY = Symbol('template');
 const STYLE_KEY = Symbol('style');
 function upgradeProperty(element, propertyName)
 {
-    if (element.hasOwnProperty(propertyName))
+    if (Object.prototype.hasOwnProperty.call(element, propertyName))
     {
         let value = element[propertyName];
         delete element[propertyName];

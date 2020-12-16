@@ -1,6 +1,4 @@
-import { InputKey } from 'milque';
 import { InputContext } from './InputContext.js';
-import { InputSourceElement } from './InputSourceElement.js';
 import './InputKeyElement.js';
 import './InputMapElement.js';
 
@@ -8,7 +6,7 @@ const TEMPLATE_KEY = Symbol('template');
 const STYLE_KEY = Symbol('style');
 function upgradeProperty(element, propertyName)
 {
-    if (element.hasOwnProperty(propertyName))
+    if (Object.prototype.hasOwnProperty.call(element, propertyName))
     {
         let value = element[propertyName];
         delete element[propertyName];
@@ -21,7 +19,7 @@ export class InputPortElement extends HTMLElement
     static get [TEMPLATE_KEY]()
     {
         let template = document.createElement('template');
-        template.innerHTML = ``;
+        template.innerHTML = '';
         Object.defineProperty(this, TEMPLATE_KEY, { value: template });
         return template;
     }
@@ -96,14 +94,16 @@ export class InputPortElement extends HTMLElement
         switch(attribute)
         {
             case 'for':
-                let element = value ? document.getElementById(value) : document.querySelector('input-source');
-                if (element)
                 {
-                    this._inputContext.attach(element.source);
-                }
-                else
-                {
-                    this._inputContext.detach();
+                    let element = value ? document.getElementById(value) : document.querySelector('input-source');
+                    if (element)
+                    {
+                        this._inputContext.attach(element.source);
+                    }
+                    else
+                    {
+                        this._inputContext.detach();
+                    }
                 }
                 break;
             case 'src':
@@ -142,10 +142,12 @@ export class InputPortElement extends HTMLElement
         switch(typeof value)
         {
             case 'object':
-                let src = JSON.stringify(value);
-                this._src = src
-                this._inputContext.setInputMap(value);
-                this.setAttribute('src', src);
+                {
+                    let src = JSON.stringify(value);
+                    this._src = src;
+                    this._inputContext.setInputMap(value);
+                    this.setAttribute('src', src);
+                }
                 break;
             case 'string':
                 this.setAttribute('src', value);

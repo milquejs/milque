@@ -4,7 +4,7 @@ const TEMPLATE_KEY = Symbol('template');
 const STYLE_KEY = Symbol('style');
 function upgradeProperty(element, propertyName)
 {
-    if (element.hasOwnProperty(propertyName))
+    if (Object.prototype.hasOwnProperty.call(element, propertyName))
     {
         let value = element[propertyName];
         delete element[propertyName];
@@ -151,10 +151,12 @@ export class InputMapElement extends HTMLElement
         switch(typeof value)
         {
             case 'object':
-                let src = JSON.stringify(value);
-                this._src = src
-                this._setInputMap(value);
-                this.setAttribute('src', src);
+                {
+                    let src = JSON.stringify(value);
+                    this._src = src;
+                    this._setInputMap(value);
+                    this.setAttribute('src', src);
+                }
                 break;
             case 'string':
                 this.setAttribute('src', value);

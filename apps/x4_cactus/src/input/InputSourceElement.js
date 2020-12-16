@@ -4,7 +4,7 @@ const TEMPLATE_KEY = Symbol('template');
 const STYLE_KEY = Symbol('style');
 function upgradeProperty(element, propertyName)
 {
-    if (element.hasOwnProperty(propertyName))
+    if (Object.prototype.hasOwnProperty.call(element, propertyName))
     {
         let value = element[propertyName];
         delete element[propertyName];
@@ -153,8 +153,10 @@ export class InputSourceElement extends HTMLElement
         switch(attribute)
         {
             case 'for':
-                let eventTarget = value ? document.getElementById(value) : this;
-                this._setSourceElement(eventTarget);
+                {
+                    let eventTarget = value ? document.getElementById(value) : this;
+                    this._setSourceElement(eventTarget);
+                }
                 break;
             case 'autopoll':
                 this._autopoll = value !== null;
@@ -169,9 +171,11 @@ export class InputSourceElement extends HTMLElement
             // For debug info
             case 'id':
             case 'class':
-                let cname = this.className ? '.' + this.className : '';
-                let iname = this.hasAttribute('id') ? '#' + this.getAttribute('id') : '';
-                this._titleElement.innerHTML = cname + iname;
+                {
+                    let cname = this.className ? '.' + this.className : '';
+                    let iname = this.hasAttribute('id') ? '#' + this.getAttribute('id') : '';
+                    this._titleElement.innerHTML = cname + iname;
+                }
                 break;
             case 'debug':
                 this._containerElement.classList.toggle('hidden', value);

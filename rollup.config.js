@@ -229,6 +229,9 @@ function createBrowserConfig(packageJson, sourceAlias, isDevelopment = false)
             format: 'iife',
         },
         plugins: [
+            // Linting
+            eslint(),
+            stylelint(),
             // Including external packages
             nodeResolve({ browser: true }),
             commonjs(),
@@ -250,6 +253,20 @@ function createBrowserConfig(packageJson, sourceAlias, isDevelopment = false)
             }),
             // Import JSON
             json(),
+            // Preprocess CSS (emit for plugin)
+            styles({ mode: 'emit' }),
+            // Import CSS & HTML as string
+            string({
+                include: [
+                    '**/*.template.html',
+                    '**/*.module.css'
+                ]
+            }),
+            // Transpile macros
+            babel({
+                babelHelpers: 'bundled',
+                plugins: ['macros']
+            }),
             ...(isDevelopment
                 ? [
                     // Development-only plugins
