@@ -33,6 +33,7 @@ export class InputMapElement extends HTMLElement
         attachShadowTemplate(this, INNER_HTML, INNER_STYLE, { mode: 'open' });
 
         this._src = '';
+        this._inputMap = {};
 
         this._titleElement = this.shadowRoot.querySelector('#title');
         this._tableElements = {};
@@ -40,6 +41,8 @@ export class InputMapElement extends HTMLElement
 
         this._children = this.shadowRoot.querySelector('slot');
     }
+
+    get map() { return this._inputMap; }
     
     /** @override */
     connectedCallback()
@@ -94,7 +97,7 @@ export class InputMapElement extends HTMLElement
                 this.setAttribute('src', value);
                 break;
             default:
-                this.setAttribute('src', String(value));
+                this.setAttribute('src', JSON.stringify(value));
                 break;
         }
     }
@@ -112,6 +115,7 @@ export class InputMapElement extends HTMLElement
         {
             this._bodyElement.appendChild(entry);
         }
+        this._inputMap = inputMap;
     }
 }
 window.customElements.define('input-map', InputMapElement);

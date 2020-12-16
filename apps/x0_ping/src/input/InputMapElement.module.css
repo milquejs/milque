@@ -12,15 +12,6 @@ td {
     border: 1px solid #666666;
 }
 
-.colHeader > th {
-    font-size: 0.8em;
-    font-family: monospace;
-    padding: 0 10px;
-    letter-spacing: 3px;
-    background-color: #aaaaaa;
-    color: #666666;
-}
-
 th,
 td {
     padding: 5px 10px;
@@ -28,6 +19,19 @@ td {
 
 td {
     text-align: center;
+}
+
+thead th {
+    padding: 0;
+}
+
+.colHeader > th {
+    font-size: 0.8em;
+    font-family: monospace;
+    padding: 0 10px;
+    letter-spacing: 3px;
+    background-color: #aaaaaa;
+    color: #666666;
 }
 
 output {

@@ -1,5 +1,9 @@
-const TEMPLATE_KEY = Symbol('template');
-const STYLE_KEY = Symbol('style');
+import { attachShadowTemplate, properties } from '@milque/cuttle.macro';
+import { InputContext } from '@milque/input';
+
+import INNER_HTML from './InputContextElement.template.html';
+import INNER_STYLE from './InputContextElement.module.css';
+
 function upgradeProperty(element, propertyName)
 {
     if (Object.prototype.hasOwnProperty.call(element, propertyName))
@@ -12,28 +16,21 @@ function upgradeProperty(element, propertyName)
 
 export class InputContextElement extends HTMLElement
 {
-    static get [TEMPLATE_KEY]()
+    static get [properties]()
     {
-        let template = document.createElement('template');
-        template.innerHTML = '';
-        Object.defineProperty(this, TEMPLATE_KEY, { value: template });
-        return template;
-    }
-
-    static get [STYLE_KEY]()
-    {
-        let style = document.createElement('style');
-        style.innerHTML = '';
-        Object.defineProperty(this, STYLE_KEY, { value: style });
-        return style;
+        return {
+            for: String,
+            disabled: Boolean,
+            autopoll: Boolean,
+            debug: Boolean,
+        };
     }
 
     /** @override */
     static get observedAttributes()
     {
         return [
-            'source',
-            'map',
+            'src',
             // Listening for built-in attribs
             'id',
             'class',
@@ -43,19 +40,17 @@ export class InputContextElement extends HTMLElement
     constructor()
     {
         super();
+        attachShadowTemplate(this, INNER_HTML, INNER_STYLE, { mode: 'open' });
 
-        this.attachShadow({ mode: 'open' });
-        this.shadowRoot.appendChild(this.constructor[TEMPLATE_KEY].content.cloneNode(true));
-        this.shadowRoot.appendChild(this.constructor[STYLE_KEY].cloneNode(true));
+        this._inputContext = new InputContext();
 
-        this._src = '';
-
-        this._titleElement = this.shadowRoot.querySelector('#title');
-        this._tableElements = {};
-        this._bodyElement = this.shadowRoot.querySelector('tbody');
-
-        this._children = this.shadowRoot.querySelector('slot');
+        this._mapElement = this.shadowRoot.querySelector('input-map');
+        this._sourceElement = this.shadowRoot.querySelector('input-source');
     }
+
+    get context() { return this._inputContext; }
+    get source() { return this._sourceElement.source; }
+    get map() { return this._mapElement.map; }
     
     /** @override */
     connectedCallback()
@@ -68,51 +63,38 @@ export class InputContextElement extends HTMLElement
     {
         switch(attribute)
         {
-            case 'src':
-                if (this._src !== value)
+            case 'for':
                 {
-                    this._src = value;
-                    if (value.trim().startsWith('{'))
-                    {
-                        let jsonData = JSON.parse(value);
-                        this._setInputMap(jsonData);
-                    }
-                    else
-                    {
-                        fetch(value)
-                            .then(fileBlob => fileBlob.json())
-                            .then(jsonData => this._setInputMap(jsonData));
-                    }
+                    this._sourceElement.for = value;
+                    this._inputContext.attach(this._sourceElement.source);
                 }
+                break;
+            case 'disabled':
+                this._inputContext.disabled = value !== null;
+                break;
+            case 'autopoll':
+                this._sourceElement.autopoll = value !== null;
+                break;
+            case 'src':
+                {
+                    this._mapElement.src = value;
+                    this._inputContext.setInputMap(this._mapElement.map);
+                }
+                break;
+            case 'debug':
+                this._mapElement.classList.toggle('hidden', value === null);
                 break;
             // For debug info
             case 'id':
+                this._sourceElement.id = value;
+                break;
             case 'class':
-                this._titleElement.innerHTML = `input-port${this.className ? '.' + this.className : ''}${this.hasAttribute('id') ? '#' + this.getAttribute('id') : ''}`;
+                this._sourceElement.className = value;
                 break;
         }
     }
 
-    get src() { return this.getAttribute('src'); }
-    set src(value)
-    {
-        switch(typeof value)
-        {
-            case 'object':
-                {
-                    let src = JSON.stringify(value);
-                    this._src = src;
-                    this._setInputMap(value);
-                    this.setAttribute('src', src);
-                }
-                break;
-            case 'string':
-                this.setAttribute('src', value);
-                break;
-            default:
-                this.setAttribute('src', String(value));
-                break;
-        }
-    }
+    get src() { return this._mapElement.src; }
+    set src(value) { this._mapElement.src = value; }
 }
-window.customElements.define('input-ctx', InputContextElement);
+window.customElements.define('input-context', InputContextElement);

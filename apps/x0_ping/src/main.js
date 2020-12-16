@@ -6,10 +6,8 @@ window.addEventListener('DOMContentLoaded', main);
 async function main()
 {
     const display = document.querySelector('#main');
-    const inputSource = document.querySelector('#mainInputSource');
-    const inputMap = document.querySelector('#mainInputMap');
-
-    inputMap.src = {
+    const input = document.querySelector('#mainInput');
+    input.src = {
         PointerX: 'Mouse:PosX',
         PointerY: 'Mouse:PosY',
         PointerDown: 'Mouse:Button0',
