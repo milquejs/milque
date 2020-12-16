@@ -1,0 +1,6 @@
+{
+    "PointerX": "Mouse:PosX",
+    "PointerY": "Mouse:PosY",
+    "PointerDown": "Mouse:Button0",
+    "PointerAlt": "Mouse:Button2"
+}

@@ -1,4 +1,4 @@
-import { attachShadowTemplate } from '@milque/cuttle.macro';
+import { attachShadowTemplate, customEvents } from '@milque/cuttle.macro';
 
 import { InputKeyElement } from './InputKeyElement.js';
 import INNER_HTML from './InputMapElement.template.html';
@@ -16,6 +16,13 @@ function upgradeProperty(element, propertyName)
 
 export class InputMapElement extends HTMLElement
 {
+    static get [customEvents]()
+    {
+        return [
+            'load'
+        ];
+    }
+
     /** @override */
     static get observedAttributes()
     {
@@ -33,7 +40,7 @@ export class InputMapElement extends HTMLElement
         attachShadowTemplate(this, INNER_HTML, INNER_STYLE, { mode: 'open' });
 
         this._src = '';
-        this._inputMap = {};
+        this._inputMap = null;
 
         this._titleElement = this.shadowRoot.querySelector('#title');
         this._tableElements = {};
@@ -116,6 +123,12 @@ export class InputMapElement extends HTMLElement
             this._bodyElement.appendChild(entry);
         }
         this._inputMap = inputMap;
+        
+        this.dispatchEvent(new CustomEvent('load', {
+            bubbles: false,
+            composed: true,
+            detail: { map: inputMap },
+        }));
     }
 }
 window.customElements.define('input-map', InputMapElement);

@@ -84,7 +84,6 @@ export class InputSource
             device.addInputListener(WILDCARD_KEY_MATCHER, this.onInputEvent);
         }
         this.devices = deviceMap;
-        /** @private */
         this.inputs = inputMap;
 
         /** @private */
@@ -92,6 +91,34 @@ export class InputSource
             poll: [],
             update: [],
         };
+
+        /** @private */
+        this._autopoll = false;
+        /** @private */
+        this._animationFrameHandle = null;
+
+        /** @private */
+        this.onAnimationFrame = this.onAnimationFrame.bind(this);
+    }
+
+    set autopoll(value)
+    {
+        this._autopoll = value;
+        if (value)
+        {
+            // Start animation frame loop
+            this._animationFrameHandle = requestAnimationFrame(this.onAnimationFrame);
+        }
+        else
+        {
+            // Stop animation frame loop
+            cancelAnimationFrame(this._animationFrameHandle);
+        }
+    }
+
+    get autopoll()
+    {
+        return this._autopoll;
     }
 
     destroy()
@@ -170,15 +197,15 @@ export class InputSource
     }
 
     /** @private */
-    _dispatchPollEvent()
+    _dispatchPollEvent(now)
     {
-        this.dispatchEvent('poll', {});
+        this.dispatchEvent('poll', { now });
     }
     
     /**
      * Poll the devices and update the input state.
      */
-    poll()
+    poll(now = performance.now())
     {
         for(const deviceName in this.inputs)
         {
@@ -190,7 +217,15 @@ export class InputSource
                 this._dispatchInputEvent(InputSourceStage.POLL, deviceName, keyCode, input);
             }
         }
-        this._dispatchPollEvent();
+        this._dispatchPollEvent(now);
+    }
+
+    /** @private */
+    onAnimationFrame(now)
+    {
+        if (!this._autopoll) return;
+        this._animationFrameHandle = requestAnimationFrame(this.onAnimationFrame);
+        this.poll(now);
     }
 
     /** @private */

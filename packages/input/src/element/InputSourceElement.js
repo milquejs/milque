@@ -4,6 +4,7 @@ import { InputSource } from '../source/InputSource.js';
 import INNER_HTML from './InputSourceElement.template.html';
 import INNER_STYLE from './InputSourceElement.module.css';
 
+// TODO: This should just be InputSource
 export class InputSourceElement extends HTMLElement
 {
     static get [properties]()
@@ -37,8 +38,6 @@ export class InputSourceElement extends HTMLElement
     {
         super();
         attachShadowTemplate(this, INNER_HTML, INNER_STYLE, { mode: 'open' });
-        
-        this._autopoll = false;
 
         this._containerElement = this.shadowRoot.querySelector('div');
         this._titleElement = this.shadowRoot.querySelector('#title');
@@ -51,13 +50,11 @@ export class InputSourceElement extends HTMLElement
         this._sourceElement = null;
         /** @type {InputSource} */
         this._inputSource = null;
-        this._animationFrameHandle = null;
 
         this.onSourceInput = this.onSourceInput.bind(this);
         this.onSourcePoll = this.onSourcePoll.bind(this);
         this.onSourceFocus = this.onSourceFocus.bind(this);
         this.onSourceBlur = this.onSourceBlur.bind(this);
-        this.onAnimationFrame = this.onAnimationFrame.bind(this);
     }
 
     get source() { return this._inputSource; }
@@ -71,17 +68,11 @@ export class InputSourceElement extends HTMLElement
 
         // Initialize input source, if unset
         if (!this.hasAttribute('for')) this._setSourceElement(this);
-        
-        // Start animation frame loop
-        this._animationFrameHandle = requestAnimationFrame(this.onAnimationFrame);
     }
 
     /** @override */
     disconnectedCallback()
     {
-        // Stop animation frame loop
-        cancelAnimationFrame(this._animationFrameHandle);
-
         // Terminate input source
         this._clearSourceElement();
     } 
@@ -116,30 +107,14 @@ export class InputSourceElement extends HTMLElement
         }));
     }
 
-    onSourcePoll()
+    onSourcePoll(e)
     {
+        const { now } = e;
+
         this._pollCount += 1;
         this.dispatchEvent(new CustomEvent('poll', {
             composed: true, bubbles: false
         }));
-    }
-
-    onSourceFocus()
-    {
-        this._focusElement.innerText = '✓';
-    }
-
-    onSourceBlur()
-    {
-        this._focusElement.innerText = '';
-    }
-
-    onAnimationFrame(now)
-    {
-        this._animationFrameHandle = requestAnimationFrame(this.onAnimationFrame);
-
-        // If auto is enabled, do auto-polling
-        if (this._autopoll) this.poll();
 
         // If debug is enabled, do poll-counting
         if (this.debug)
@@ -159,6 +134,16 @@ export class InputSourceElement extends HTMLElement
                 }
             }
         }
+    }
+
+    onSourceFocus()
+    {
+        this._focusElement.innerText = '✓';
+    }
+
+    onSourceBlur()
+    {
+        this._focusElement.innerText = '';
     }
 
     _clearSourceElement()
