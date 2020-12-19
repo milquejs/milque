@@ -92,7 +92,7 @@ export class Mouse extends InputDevice
         eventTarget.addEventListener('mousedown', this.onMouseDown);
         eventTarget.addEventListener('contextmenu', this.onContextMenu);
         eventTarget.addEventListener('wheel', this.onWheel);
-        eventTarget.addEventListener('mousemove', this.onMouseMove);
+        document.addEventListener('mousemove', this.onMouseMove);
         document.addEventListener('mouseup', this.onMouseUp);
     }
 
@@ -103,7 +103,7 @@ export class Mouse extends InputDevice
         eventTarget.removeEventListener('mousedown', this.onMouseDown);
         eventTarget.removeEventListener('contextmenu', this.onContextMenu);
         eventTarget.removeEventListener('wheel', this.onWheel);
-        eventTarget.removeEventListener('mousemove', this.onMouseMove);
+        document.removeEventListener('mousemove', this.onMouseMove);
         document.removeEventListener('mouseup', this.onMouseUp);
 
         super.destroy();

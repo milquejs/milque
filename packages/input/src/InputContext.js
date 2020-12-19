@@ -118,7 +118,8 @@ export class InputContext
             for(let inputName in inputMap)
             {
                 let adapterOptions = inputMap[inputName];
-                let synthetic = new Synthetic(adapterOptions);
+                let synthetic = prevInputs[inputName] || new Synthetic();
+                synthetic.hydrate(adapterOptions);
                 let syntheticAdapters = synthetic.adapters;
                 this.adapters.add(syntheticAdapters);
                 inputs[inputName] = synthetic;
@@ -229,7 +230,21 @@ export class InputContext
      */
     getInput(inputName)
     {
-        return this.inputs[inputName];
+        if (inputName in this.inputs)
+        {
+            return this.inputs[inputName];
+        }
+        else
+        {
+            let synthetic = new Synthetic();
+            this.inputs[inputName] = synthetic;
+            return synthetic;
+        }
+    }
+
+    hasInput(inputName)
+    {
+        return inputName in this.inputs && this.inputs[inputName].adapters.length > 0;
     }
 
     /**

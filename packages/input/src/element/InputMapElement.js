@@ -42,14 +42,15 @@ export class InputMapElement extends HTMLElement
         this._src = '';
         this._inputMap = null;
 
-        this._titleElement = this.shadowRoot.querySelector('#title');
         this._tableElements = {};
+        this._titleElement = this.shadowRoot.querySelector('#title');
         this._bodyElement = this.shadowRoot.querySelector('tbody');
 
         this._children = this.shadowRoot.querySelector('slot');
     }
 
     get map() { return this._inputMap; }
+    get mapElements() { return this._tableElements; }
     
     /** @override */
     connectedCallback()
@@ -111,18 +112,23 @@ export class InputMapElement extends HTMLElement
 
     _setInputMap(inputMap)
     {
-        let entries = [];
+        let entryMap = {};
+        let entryList = [];
         for(let name in inputMap)
         {
             let input = inputMap[name];
+            let entries = [];
             inputToTableEntries(entries, name, input);
+            entryMap[name] = entries;
+            entryList.push(...entries);
         }
         this._bodyElement.innerHTML = '';
-        for(let entry of entries)
+        for(let entry of entryList)
         {
             this._bodyElement.appendChild(entry);
         }
         this._inputMap = inputMap;
+        this._tableElements = entryMap;
         
         this.dispatchEvent(new CustomEvent('load', {
             bubbles: false,

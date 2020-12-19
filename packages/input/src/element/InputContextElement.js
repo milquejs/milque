@@ -47,8 +47,10 @@ export class InputContextElement extends HTMLElement
         this._sourceElement = this.shadowRoot.querySelector('input-source');
 
         this.onInputMapLoad = this.onInputMapLoad.bind(this);
+        this.onInputSourcePoll = this.onInputSourcePoll.bind(this);
 
         this._mapElement.addEventListener('load', this.onInputMapLoad);
+        this._sourceElement.addEventListener('poll', this.onInputSourcePoll);
     }
 
     get context() { return this._inputContext; }
@@ -63,6 +65,17 @@ export class InputContextElement extends HTMLElement
         {
             this._inputContext.setInputMap(map).attach(source);
             this._inputContext.disabled = this._disabled;
+        }
+    }
+
+    onInputSourcePoll()
+    {
+        for(let [inputName, entries] of Object.entries(this._mapElement.mapElements))
+        {
+            let value = this._inputContext.getInputValue(inputName);
+            let primary = entries[0];
+            let outputElement = primary.querySelector('output');
+            outputElement.innerText = Number(value).toFixed(2);
         }
     }
     

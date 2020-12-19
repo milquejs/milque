@@ -280,7 +280,12 @@ function createBrowserConfig(packageJson, sourceAlias, isDevelopment = false)
                             ...contentRoots
                         ]
                     }),
-                    watchAssets({ assets: staticAssets.map(opt => opt.src) }),
+                    watchAssets({
+                        assets: [
+                            ...staticAssets.map(opt => opt.src),
+                            ...contentRoots,
+                        ]
+                    }),
                     livereload({ watch: outputRoot })
                 ]
                 : [

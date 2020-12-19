@@ -379,10 +379,24 @@ class Input {
 
 const KEY_STRING_DEVICE_SEPARATOR = ':';
 class Synthetic extends Input {
-  constructor(adapterOptions) {
+  constructor() {
     super();
     this.update = this.update.bind(this);
+    /** @private */
 
+    this.adapters = [];
+    /** @private */
+
+    this.values = [];
+    /** @private */
+
+    this.next = {
+      values: [],
+      value: 0
+    };
+  }
+
+  hydrate(adapterOptions) {
     if (!Array.isArray(adapterOptions)) {
       adapterOptions = [adapterOptions];
     }
@@ -412,15 +426,9 @@ class Synthetic extends Input {
       adapterList.push(adapter);
       ++adapterId;
     }
-    /** @private */
-
 
     this.adapters = adapterList;
-    /** @private */
-
     this.values = new Array(adapterList.length).fill(0);
-    /** @private */
-
     this.next = {
       values: new Array(adapterList.length).fill(0),
       value: 0
@@ -681,7 +689,7 @@ class Mouse extends InputDevice {
     eventTarget.addEventListener('mousedown', this.onMouseDown);
     eventTarget.addEventListener('contextmenu', this.onContextMenu);
     eventTarget.addEventListener('wheel', this.onWheel);
-    eventTarget.addEventListener('mousemove', this.onMouseMove);
+    document.addEventListener('mousemove', this.onMouseMove);
     document.addEventListener('mouseup', this.onMouseUp);
   }
   /** @override */
@@ -692,7 +700,7 @@ class Mouse extends InputDevice {
     eventTarget.removeEventListener('mousedown', this.onMouseDown);
     eventTarget.removeEventListener('contextmenu', this.onContextMenu);
     eventTarget.removeEventListener('wheel', this.onWheel);
-    eventTarget.removeEventListener('mousemove', this.onMouseMove);
+    document.removeEventListener('mousemove', this.onMouseMove);
     document.removeEventListener('mouseup', this.onMouseUp);
     super.destroy();
   }
@@ -1405,7 +1413,8 @@ class InputContext {
 
       for (let inputName in inputMap) {
         let adapterOptions = inputMap[inputName];
-        let synthetic = new Synthetic(adapterOptions);
+        let synthetic = prevInputs[inputName] || new Synthetic();
+        synthetic.hydrate(adapterOptions);
         let syntheticAdapters = synthetic.adapters;
         this.adapters.add(syntheticAdapters);
         inputs[inputName] = synthetic;
@@ -1524,7 +1533,17 @@ class InputContext {
 
 
   getInput(inputName) {
-    return this.inputs[inputName];
+    if (inputName in this.inputs) {
+      return this.inputs[inputName];
+    } else {
+      let synthetic = new Synthetic();
+      this.inputs[inputName] = synthetic;
+      return synthetic;
+    }
+  }
+
+  hasInput(inputName) {
+    return inputName in this.inputs && this.inputs[inputName].adapters.length > 0;
   }
   /**
    * Get the current value of the input by name.
@@ -1772,14 +1791,18 @@ class InputMapElement extends HTMLElement {
     this.shadowRoot.appendChild(this.constructor[Symbol.for("cuttleStyle")].cloneNode(true));
     this._src = '';
     this._inputMap = null;
-    this._titleElement = this.shadowRoot.querySelector('#title');
     this._tableElements = {};
+    this._titleElement = this.shadowRoot.querySelector('#title');
     this._bodyElement = this.shadowRoot.querySelector('tbody');
     this._children = this.shadowRoot.querySelector('slot');
   }
 
   get map() {
     return this._inputMap;
+  }
+
+  get mapElements() {
+    return this._tableElements;
   }
   /** @override */
 
@@ -1859,20 +1882,25 @@ class InputMapElement extends HTMLElement {
   }
 
   _setInputMap(inputMap) {
-    let entries = [];
+    let entryMap = {};
+    let entryList = [];
 
     for (let name in inputMap) {
       let input = inputMap[name];
+      let entries = [];
       inputToTableEntries(entries, name, input);
+      entryMap[name] = entries;
+      entryList.push(...entries);
     }
 
     this._bodyElement.innerHTML = '';
 
-    for (let entry of entries) {
+    for (let entry of entryList) {
       this._bodyElement.appendChild(entry);
     }
 
     this._inputMap = inputMap;
+    this._tableElements = entryMap;
     this.dispatchEvent(new CustomEvent('load', {
       bubbles: false,
       composed: true,
@@ -2344,8 +2372,11 @@ class InputContextElement extends HTMLElement {
     this._mapElement = this.shadowRoot.querySelector('input-map');
     this._sourceElement = this.shadowRoot.querySelector('input-source');
     this.onInputMapLoad = this.onInputMapLoad.bind(this);
+    this.onInputSourcePoll = this.onInputSourcePoll.bind(this);
 
     this._mapElement.addEventListener('load', this.onInputMapLoad);
+
+    this._sourceElement.addEventListener('poll', this.onInputSourcePoll);
   }
 
   get context() {
@@ -2368,6 +2399,16 @@ class InputContextElement extends HTMLElement {
       this._inputContext.setInputMap(map).attach(source);
 
       this._inputContext.disabled = this._disabled;
+    }
+  }
+
+  onInputSourcePoll() {
+    for (let [inputName, entries] of Object.entries(this._mapElement.mapElements)) {
+      let value = this._inputContext.getInputValue(inputName);
+
+      let primary = entries[0];
+      let outputElement = primary.querySelector('output');
+      outputElement.innerText = Number(value).toFixed(2);
     }
   }
   /** @override */

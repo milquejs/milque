@@ -7,12 +7,25 @@ export const KEY_STRING_DEVICE_SEPARATOR = ':';
 
 export class Synthetic extends Input
 {
-    constructor(adapterOptions)
+    constructor()
     {
         super();
 
         this.update = this.update.bind(this);
 
+        /** @private */
+        this.adapters = [];
+        /** @private */
+        this.values = [];
+        /** @private */
+        this.next = {
+            values: [],
+            value: 0,
+        };
+    }
+
+    hydrate(adapterOptions)
+    {
         if (!Array.isArray(adapterOptions))
         {
             adapterOptions = [adapterOptions];
@@ -37,11 +50,8 @@ export class Synthetic extends Input
             ++adapterId;
         }
 
-        /** @private */
         this.adapters = adapterList;
-        /** @private */
         this.values = new Array(adapterList.length).fill(0);
-        /** @private */
         this.next = {
             values: new Array(adapterList.length).fill(0),
             value: 0,
