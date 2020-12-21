@@ -1,4 +1,4 @@
-import { distance2, lerp, Audio, Random, Downloader, Uploader, Eventable } from './lib.js';
+import { distance2, lerp, Audio, Random, Downloader, Uploader } from './lib.js';
 import './input/index.js';
 
 import { CanvasView } from './view/CanvasView.js';

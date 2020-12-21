@@ -37,17 +37,17 @@ async function main()
 
     display.addEventListener('frame', ({ deltaTime }) => {
         input.source.poll();
-        
-        const PointerX = input.context.getInputValue('PointerX');
-        const PointerY = input.context.getInputValue('PointerY');
 
         const displayWidth = display.width;
         const displayHeight = display.height;
         const halfDisplayWidth = displayWidth / 2;
         const halfDisplayHeight = displayHeight / 2;
+        
+        const PointerX = input.context.getInputValue('PointerX');
+        const PointerY = input.context.getInputValue('PointerY');
 
-        localPlayer.x = PointerX;
-        localPlayer.y = PointerY;
+        // localPlayer.x = (PointerX * displayWidth) - halfDisplayWidth + HALF_MAP_PIXEL_WIDTH - HALF_TILE_PIXEL_WIDTH;
+        // localPlayer.y = (PointerY * displayHeight) - halfDisplayHeight + HALF_MAP_PIXEL_HEIGHT - HALF_TILE_PIXEL_HEIGHT;
         
         ctx.translate(halfDisplayWidth, halfDisplayHeight);
         {

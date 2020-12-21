@@ -1,26 +1,26 @@
+import '@milque/display';
+import '@milque/input';
+
 import { mat4, quat, vec3 } from 'gl-matrix';
 
 import { enablePointerLockBehavior } from './PointerLockHelper.js';
 import * as AABBUtil from './aabb/index.js';
 import * as GLUtil from './gl/index.js';
 import * as CameraUtil from './camera/index.js';
-import { INPUT_CONTEXT } from './input.js';
 import { ASSET_CONTEXT } from './asset.js';
 import { SceneGraph } from './scene/SceneGraph.js';
 import * as TransformUtil from './TransformHelper.js';
 import { CubeRenderer } from './CubeRenderer.js';
 import { QuadRenderer } from './QuadRenderer.js';
 
-import './input/InputPort.js';
-
 document.addEventListener('DOMContentLoaded', main);
 
 async function main()
 {
     const display = document.querySelector('display-port');
-    const inputSource = document.querySelector('input-source');
-
-    const input = INPUT_CONTEXT.attach(inputSource.source);
+    // TODO: Should print the key code of any key somewhere, so we know what to use.
+    // NOTE: https://keycode.info/
+    const input = document.querySelector('input-context');
     enablePointerLockBehavior(display);
 
     /** @type {WebGLRenderingContext} */
@@ -179,15 +179,15 @@ async function main()
 
     display.addEventListener('frame', e => {
         const dt = (e.detail.deltaTime / 1000) * 60;
-        input.inputSource.poll();
+        input.source.poll();
 
-        const eyeX = input.getInputValue('PointerX');
-        const eyeY = input.getInputValue('PointerY');
-        const lookX = input.getInputValue('PointerMovementX');
-        const lookY = input.getInputValue('PointerMovementY');
-        const lookZ = input.getInputValue('PointerMovementZ');
-        const moveX = input.getInputValue('MoveRight') - input.getInputValue('MoveLeft');
-        const moveZ = input.getInputValue('MoveUp') - input.getInputValue('MoveDown');
+        const eyeX = input.context.getInputValue('PointerX');
+        const eyeY = input.context.getInputValue('PointerY');
+        const lookX = input.context.getInputValue('PointerMovementX');
+        const lookY = input.context.getInputValue('PointerMovementY');
+        const lookZ = input.context.getInputValue('PointerMovementZ');
+        const moveX = input.context.getInputValue('MoveRight') - input.context.getInputValue('MoveLeft');
+        const moveZ = input.context.getInputValue('MoveUp') - input.context.getInputValue('MoveDown');
 
         gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
         gl.clearColor(0, 0, 0, 0);

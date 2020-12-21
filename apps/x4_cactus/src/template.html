@@ -19,14 +19,7 @@
     </head>
     <body>
         <display-port id="main" mode="fit" width=1920 height=1080 debug></display-port>
-
-        <input-port id="primary" for="main" src="" autopoll debug disabled></input-port>
-
-        <input-source id="mainInputSource" for="main" autopoll debug></input-source>
-        <input-map></input-map>
-        <input-ctx source="" map="" disabled></input-ctx>
-
-        <input-port id="primary" src="" disabled></input-port>
+        <input-context id="mainInput" for="main" src="input.json" debug></input-context>
 
         <script>
             const inputMap = document.querySelector('input-map');
