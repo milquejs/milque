@@ -1,15 +1,15 @@
-export function enablePointerLockBehavior(displayElement)
+export function enablePointerLockBehavior(targetElement)
 {
-    displayElement.addEventListener('focus', () => {
-        if (document.pointerLockElement !== displayElement)
+    targetElement.addEventListener('focus', () => {
+        if (document.pointerLockElement !== targetElement)
         {
-            displayElement.requestPointerLock();
+            targetElement.requestPointerLock();
         }
     });
     document.addEventListener('pointerlockchange', () => {
-        if (document.pointerLockElement !== displayElement)
+        if (document.pointerLockElement !== targetElement)
         {
-            displayElement.blur();
+            targetElement.blur();
         }
     });
 }

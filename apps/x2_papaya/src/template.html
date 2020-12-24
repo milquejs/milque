@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Papaya</title>
+        <link rel="stylesheet" href="index.css">
+    </head>
+    <body>
+        <display-port id="main" mode="fit" debug></display-port>
+        <input-context id="input" for="main" src="input.json" debug></input-context>
+        
+        <asset-bundle href="res">
+            <asset-link type="glshadervert" src="main.vert"></asset-link>
+            <asset-link type="glshaderfrag" src="main.frag"></asset-link>
+            <asset-link type="gltexture" src="main.png"></asset-link>
+        </asset-bundle>
+
+        <script src="index.js"></script>
+    </body>
+</html>
