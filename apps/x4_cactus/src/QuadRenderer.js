@@ -1,4 +1,4 @@
-import { createBufferSource } from './gl/GLHelper.js';
+import { createBufferSource } from '@milque/mogli';
 
 export class QuadRenderer
 {
@@ -83,9 +83,9 @@ export class QuadRendererDrawContext
     {
         const { ctx, renderer } = this;
         const { positions, texcoords, normals, elements } = renderer;
-        ctx.attribute('a_position', positions.buffer, 3);
-        ctx.attribute('a_texcoord', texcoords.buffer, 2);
-        ctx.attribute('a_normal', normals.buffer, 3);
+        ctx.attribute('a_position', gl.FLOAT, positions.buffer, 3);
+        ctx.attribute('a_texcoord', gl.FLOAT, texcoords.buffer, 2);
+        ctx.attribute('a_normal', gl.FLOAT, normals.buffer, 3);
         ctx.uniform('u_model', modelMatrix);
         if (color) ctx.uniform('u_color', color);
         ctx.draw(gl, gl.TRIANGLES, 0, elements.source.length, elements.buffer);

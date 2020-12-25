@@ -1,12 +1,19 @@
-import '@milque/display';
-import '@milque/input';
-
 import { mat4, quat, vec3 } from 'gl-matrix';
 
+import '@milque/display';
+import '@milque/input';
+import {
+    createPerspectiveCamera,
+    createFirstPersonCameraController,
+    screenToWorldRay
+} from '@milque/scene';
+import {
+    ProgramInfo
+} from '@milque/mogli';
+
 import { enablePointerLockBehavior } from './PointerLockHelper.js';
+
 import * as AABBUtil from './aabb/index.js';
-import * as GLUtil from './gl/index.js';
-import * as CameraUtil from './camera/index.js';
 import { ASSET_CONTEXT } from './asset.js';
 import { SceneGraph } from './scene/SceneGraph.js';
 import * as TransformUtil from './TransformHelper.js';
@@ -39,11 +46,10 @@ async function main()
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
     // gl.activeTexture(gl.TEXTURE0);
 
-    const mainProgram = GLUtil.createProgramInfo(gl,
-        GLUtil.Program(gl)
-            .shader(gl.VERTEX_SHADER, assets.mainVertexShaderSource)
-            .shader(gl.FRAGMENT_SHADER, assets.mainFragmentShaderSource)
-            .link());
+    const mainProgram = ProgramInfo.from(gl)
+        .shader(gl.VERTEX_SHADER, assets.mainVertexShaderSource)
+        .shader(gl.FRAGMENT_SHADER, assets.mainFragmentShaderSource)
+        .link();
 
     const cubeRenderer = new CubeRenderer(gl, mainProgram, assets.cubeObj);
     const quadRenderer = new QuadRenderer(gl, mainProgram, assets.quadObj);
@@ -53,8 +59,8 @@ async function main()
     
     // const collisions = AABBUtil.solveCollisions(boxes, []);
 
-    const mainCamera = CameraUtil.createPerspectiveCamera(gl.canvas);
-    const mainCameraController = CameraUtil.createFirstPersonCameraController({ locky: true });
+    const mainCamera = createPerspectiveCamera(gl.canvas);
+    const mainCameraController = createFirstPersonCameraController({ locky: true });
     mainCameraController.move(-15, 0, 5);
     mainCameraController.look(0, -20);
 
@@ -207,7 +213,7 @@ async function main()
 
         z += (lookZ / 1000);
 
-        let ray = CameraUtil.screenToWorldRay(2 * (eyeX - 0.5), 2 * (0.5 - eyeY), camera.projectionMatrix, camera.viewMatrix);
+        let ray = screenToWorldRay(2 * (eyeX - 0.5), 2 * (0.5 - eyeY), camera.projectionMatrix, camera.viewMatrix);
         vec3.scaleAndAdd(ray, mainCameraController.position, ray, 1 - z);
         mat4.fromTranslation(transformGizmo.transform.localMatrix, ray);
         

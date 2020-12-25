@@ -1,0 +1,17 @@
+{
+  "name": "@milque/scene",
+  "version": "0.0.1",
+  "description": "The scene module for milque.js",
+  "module": "dist/esm/index.js",
+  "main": "dist/cjs/index.js",
+  "bundle": "dist/index.js",
+  "author": "Andrew Kuo",
+  "license": "MIT",
+  "keywords": [
+    "milque",
+    "scene"
+  ],
+  "peerDependencies": {
+    "gl-matrix": "^3.3.0"
+  }
+}

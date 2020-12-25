@@ -19,26 +19,7 @@
     </head>
     <body>
         <display-port id="main" mode="fit" width=1920 height=1080 debug></display-port>
-        <input-context id="mainInput" for="main" src="input.json" debug></input-context>
-
-        <script>
-            const inputMap = document.querySelector('input-map');
-            inputMap.src = {
-                PointerX: { key: 'Mouse:PosX', scale: 1 },
-                PointerY: { key: 'Mouse:PosY', scale: 1 },
-                PointerMovementX: { key: 'Mouse:PosX', event: 'move' },
-                PointerMovementY: { key: 'Mouse:PosY', event: 'move' },
-                PointerMovementZ: { key: 'Mouse:WheelY', event: 'move' },
-                PointerDown: [
-                    { key: 'Mouse:Button0', scale: 1 },
-                    { key: 'Mouse:Button2', scale: 1 },
-                ],
-                MoveLeft: [ { key: 'Keyboard:ArrowLeft', scale: 1 }, { key: 'Keyboard:KeyA', scale: 1 } ],
-                MoveRight: [ { key: 'Keyboard:ArrowRight', scale: 1 }, { key: 'Keyboard:KeyD', scale: 1 } ],
-                MoveUp: [ { key: 'Keyboard:ArrowUp', scale: 1 }, { key: 'Keyboard:KeyW', scale: 1 } ],
-                MoveDown: [ { key: 'Keyboard:ArrowDown', scale: 1 }, { key: 'Keyboard:KeyS', scale: 1 } ],
-            };
-        </script>
+        <input-context id="input" for="main" src="input.json" debug></input-context>
         <script src="index.js"></script>
     </body>
 </html>

@@ -1,11 +1,7 @@
 import '@milque/display';
 import '@milque/input';
-import { mat4 } from 'gl-matrix';
-
-import { TextLoader } from './asset/TextLoader.js';
-import { OBJLoader } from './asset/OBJLoader.js';
-import { ProgramInfo } from './gl/info/ProgramInfo.js';
-import { BufferInfo } from './gl/info/BufferInfo.js';
+import { TextLoader, OBJLoader, ImageLoader } from '@milque/asset';
+import { ProgramInfo, BufferInfo } from '@milque/mogli';
 
 window.addEventListener('DOMContentLoaded', main);
 
@@ -21,29 +17,21 @@ async function main()
 
     const assets = {};
 
-    const vertexSource = await TextLoader('test.vert');
-    const fragmentSource = await TextLoader('test.frag');
     const programInfo = ProgramInfo.from(gl)
-        .shader(gl.VERTEX_SHADER, vertexSource)
-        .shader(gl.FRAGMENT_SHADER, fragmentSource)
+        .shader(gl.VERTEX_SHADER, await TextLoader('test.vert'))
+        .shader(gl.FRAGMENT_SHADER, await TextLoader('test.frag'))
         .link();
     assets.mainShaderProgramInfo = programInfo;
 
     const testObj = await OBJLoader('test.obj');
-    const positionBufferInfo = BufferInfo.from(gl, gl.ARRAY_BUFFER)
-        .data(testObj.positions)
-        .build();
-    const texcoordBufferInfo = BufferInfo.from(gl, gl.ARRAY_BUFFER)
-        .data(testObj.texcoords)
-        .build();
-    const normalBufferInfo = BufferInfo.from(gl, gl.ARRAY_BUFFER)
-        .data(testObj.normals)
-        .build();
-    const elementBufferInfo = BufferInfo.from(gl, gl.ELEMENT_ARRAY_BUFFER)
-        .data(testObj.indices)
-        .build();
-    const elementOffset = 0;
-    const elementCount = testObj.indices.length;
+    const testMesh = createMesh(gl, testObj);
+
+    const testImage = await ImageLoader('color.png');
+    const testTexture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, testTexture);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, testImage);
+    gl.generateMipmap(gl.TEXTURE_2D);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 
     display.addEventListener('frame', ({ deltaTime }) => {
         input.source.poll();
@@ -52,9 +40,39 @@ async function main()
         const PointerY = input.context.getInputValue('PointerY');
         const PointerDown = input.context.getInputValue('PointerDown');
 
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, testTexture);
+
         programInfo.bind(gl)
-            .attribute('a_position', positionBufferInfo.type, positionBufferInfo.handle)
+            .attribute('a_position', testMesh.position.type, testMesh.position.handle)
             .uniform('u_color', [0.1, 0, 0])
-            .draw(gl, gl.TRIANGLES, elementOffset, elementCount, elementBufferInfo.handle);
+            .uniform('u_texture', 0)
+            .draw(gl, gl.TRIANGLES, testMesh.elementOffset, testMesh.elementCount, testMesh.element.handle);
     });
+}
+
+function createMesh(gl, obj)
+{
+    const positionBufferInfo = BufferInfo.from(gl, gl.ARRAY_BUFFER)
+        .data(obj.positions)
+        .build();
+    const texcoordBufferInfo = BufferInfo.from(gl, gl.ARRAY_BUFFER)
+        .data(obj.texcoords)
+        .build();
+    const normalBufferInfo = BufferInfo.from(gl, gl.ARRAY_BUFFER)
+        .data(obj.normals)
+        .build();
+    const elementBufferInfo = BufferInfo.from(gl, gl.ELEMENT_ARRAY_BUFFER)
+        .data(obj.indices)
+        .build();
+    const elementOffset = 0;
+    const elementCount = obj.indices.length;
+    return {
+        position: positionBufferInfo,
+        texcoord: texcoordBufferInfo,
+        normal: normalBufferInfo,
+        element: elementBufferInfo,
+        elementOffset,
+        elementCount,
+    };
 }

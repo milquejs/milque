@@ -10,9 +10,11 @@
   ],
   "dependencies": {
     "gl-matrix": "^3.3.0",
-    "milque": "^0.0.1",
     "@milque/display": "^0.0.1",
     "@milque/input": "^0.0.1",
-    "@milque/cuttle.macro": "^0.0.1"
+    "@milque/cuttle.macro": "^0.0.1",
+    "@milque/scene": "^0.0.1",
+    "@milque/asset": "^0.0.1",
+    "@milque/mogli": "^0.0.1"
   }
 }
