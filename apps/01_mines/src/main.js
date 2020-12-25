@@ -1,4 +1,5 @@
 import '@milque/display';
+import '@milque/input';
 
 import * as MainScene from './MainScene.js';
 import * as MainRender from './MainRender.js';

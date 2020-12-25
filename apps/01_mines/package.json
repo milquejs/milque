@@ -13,6 +13,7 @@
     "@milque/display": "^0.0.1",
     "@milque/input": "^0.0.1",
     "@milque/random": "^0.0.1",
-    "@milque/util": "^0.0.1"
+    "@milque/util": "^0.0.1",
+    "@milque/asset": "^0.0.1"
   }
 }

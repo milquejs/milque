@@ -1,4 +1,6 @@
-import { Random, Audio } from '../../lib.js';
+import { Random } from '@milque/random';
+
+import * as Audio from '../../Audio.js';
 import { BLOCKS } from '../BlockRegistry.js';
 
 export const MATERIAL_COMPONENT = 'material';

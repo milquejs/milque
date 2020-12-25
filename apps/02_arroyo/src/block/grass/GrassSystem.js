@@ -1,4 +1,5 @@
-import { Random } from '../../lib.js';
+import { Random } from '@milque/random';
+
 import { BLOCK_UPDATE_EVENT } from '../WorldEvents.js';
 import { BLOCKS } from '../BlockRegistry.js';
 import { AIR_COMPONENT } from '../fluid/FluidSystem.js';

@@ -1,4 +1,5 @@
-import { Random } from '../../lib.js';
+import { Random } from '@milque/random';
+
 import { BLOCKS } from '../BlockRegistry.js';
 import { PLACE_EVENT } from '../placement/PlacementEvents.js';
 import { WORLD_UPDATE_EVENT } from '../WorldEvents.js';
