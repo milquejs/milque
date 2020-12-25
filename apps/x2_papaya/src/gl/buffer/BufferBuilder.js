@@ -1,28 +1,16 @@
 import { isWebGL2Supported } from '../GLHelper.js';
 
-export class BufferBuilder
+export class BufferDataContext
 {
-    static from(gl, target, buffer = undefined)
-    {
-        return new BufferBuilder(gl, target, buffer);
-    }
-
     /**
      * @param {WebGLRenderingContext} gl The gl context.
      * @param {GLenum} target The buffer bind target. Usually, this is
      * `gl.ARRAY_BUFFER` or `gl.ELEMENT_ARRAY_BUFFER`.
-     * @param {WebGLBuffer} [buffer] The buffer handle. If undefined, a
-     * new buffer will be created.
      */
-    constructor(gl, target, buffer = undefined)
+    constructor(gl, target)
     {
-        this.handle = buffer || gl.createBuffer();
         this.gl = gl;
-
-        /** @private */
-        this.bufferTarget = target;
-        
-        gl.bindBuffer(target, this.handle);
+        this.target = target;
     }
 
     /**
@@ -32,18 +20,22 @@ export class BufferBuilder
     data(srcData, usage = undefined)
     {
         const gl = this.gl;
-        const target = this.bufferTarget;
-
+        const target = this.target;
         if (!ArrayBuffer.isView(srcData)) throw new Error('Source data must be a typed array.');
         gl.bufferData(target, srcData, usage || gl.STATIC_DRAW);
         return this;
     }
 
+    /**
+     * @param {BufferSource} srcData The buffer data source.
+     * @param {number} [dstOffset] The destination byte offset to put the data.
+     * @param {number} [srcOffset] The source array index offset to copy the data from.
+     * @param {number} [srcLength] The source array count to copy the data until.
+     */
     subData(srcData, dstOffset = 0, srcOffset = undefined, srcLength = undefined)
     {
         const gl = this.gl;
-        const target = this.bufferTarget;
-
+        const target = this.target;
         if (!ArrayBuffer.isView(srcData)) throw new Error('Source data must be a typed array.');
         if (srcOffset)
         {
@@ -65,7 +57,37 @@ export class BufferBuilder
         }
         return this;
     }
+}
 
+export class BufferBuilder extends BufferDataContext
+{
+    /**
+     * @param {WebGLRenderingContext} gl The gl context.
+     * @param {GLenum} target The buffer bind target. Usually, this is
+     * `gl.ARRAY_BUFFER` or `gl.ELEMENT_ARRAY_BUFFER`.
+     * @param {WebGLBuffer} [buffer] The buffer handle. If undefined, a
+     * new buffer will be created.
+     */
+    static from(gl, target, buffer = undefined)
+    {
+        return new BufferBuilder(gl, target, buffer);
+    }
+
+    /**
+     * @param {WebGLRenderingContext} gl The gl context.
+     * @param {GLenum} target The buffer bind target. Usually, this is
+     * `gl.ARRAY_BUFFER` or `gl.ELEMENT_ARRAY_BUFFER`.
+     * @param {WebGLBuffer} [buffer] The buffer handle. If undefined, a
+     * new buffer will be created.
+     */
+    constructor(gl, target, buffer = undefined)
+    {
+        super(gl, target);
+        this.handle = buffer || gl.createBuffer();
+
+        gl.bindBuffer(target, this.handle);
+    }
+    
     build()
     {
         return this.handle;

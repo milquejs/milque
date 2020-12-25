@@ -31,7 +31,7 @@ export function getActiveAttribsInfo(gl, program)
             type: attributeType,
             length: attributeSize,
             location: attributeLocation,
-            size: attributeComponents,
+            size: attributeComponents
         };
     }
     return result;

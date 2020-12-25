@@ -33,7 +33,7 @@ export class ProgramInfo
         this.activeAttributes = getActiveAttribsInfo(gl, program);
 
         /** @private */
-        this.drawContext = new ProgramInfoDrawContext(this);
+        this.drawContext = new ProgramInfoDrawContext(gl, this);
     }
 
     bind(gl)
@@ -47,13 +47,11 @@ export class ProgramInfo
 
 export class ProgramInfoDrawContext
 {
-    constructor(programInfo)
+    constructor(gl, programInfo)
     {
+        this.gl = gl;
         /** @private */
         this.parent = programInfo;
-
-        // Must be set by parent.
-        this.gl = null;
     }
     
     uniform(uniformName, value)
@@ -69,16 +67,16 @@ export class ProgramInfoDrawContext
     }
 
     /**
-     * 
-     * @param {String} attributeName Name of the attribute.
-     * @param {GLenum} bufferType The buffer data type.
+     * @param {string} attributeName Name of the attribute.
+     * @param {GLenum} bufferType The buffer data type. This is usually `gl.FLOAT`
+     * but can also be one of `gl.BYTE`, `gl.UNSIGNED_BYTE`, `gl.SHORT`,
+     * `gl.UNSIGNED_SHORT` or `gl.HALF_FLOAT` for WebGL2.
      * @param {WebGLBuffer} buffer The buffer handle.
-     * @param {Number} size The size of each vector in the buffer.
-     * @param {Boolean} [normalize=false] Whether to normalize the vectors in the buffer.
-     * @param {Number} [stride=0] The stride for each vector in the buffer.
-     * @param {Number} [offset=0] The initial offset in the buffer.
+     * @param {boolean} [normalize=false] Whether to normalize the vectors in the buffer.
+     * @param {number} [stride=0] The stride for each vector in the buffer.
+     * @param {number} [offset=0] The initial offset in the buffer.
      */
-    attribute(attributeName, bufferType, buffer, size, normalize = false, stride = 0, offset = 0)
+    attribute(attributeName, bufferType, buffer, normalize = false, stride = 0, offset = 0)
     {
         const gl = this.gl;
         const activeAttributes = this.parent.activeAttributes;
@@ -86,6 +84,7 @@ export class ProgramInfoDrawContext
         {
             let attribute = activeAttributes[attributeName];
             let location = attribute.location;
+            let size = attribute.size;
             if (buffer)
             {
                 gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
