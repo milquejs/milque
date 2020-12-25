@@ -129,8 +129,8 @@ class ByteReader
 
     async readDoubleWord()
     {
-        let a = this.readWord();
-        let b = this.readWord();
+        let a = await this.readWord();
+        let b = await this.readWord();
         if (this.endianMode === BIG_ENDIAN)
         {
             return (a << 16) + b;
@@ -143,8 +143,8 @@ class ByteReader
 
     async readWord()
     {
-        let a = this.readByte();
-        let b = this.readByte();
+        let a = await this.readByte();
+        let b = await this.readByte();
         if (this.endianMode === BIG_ENDIAN)
         {
             return (a << 8) + b;
