@@ -9,20 +9,19 @@ async function main()
 {
     const display = document.querySelector('#main');
     const input = document.querySelector('#input');
+    input.source.autopoll = true;
 
     /** @type {WebGLRenderingContext} */
     const gl = display.canvas.getContext('webgl');
     if (!gl) throw new Error('Your browser does not support WebGL.');
     gl.enable(gl.DEPTH_TEST);
 
-    const assets = {};
-
     const programInfo = ProgramInfo.from(gl)
         .shader(gl.VERTEX_SHADER, await TextLoader('test.vert'))
         .shader(gl.FRAGMENT_SHADER, await TextLoader('test.frag'))
         .link();
-    assets.mainShaderProgramInfo = programInfo;
 
+    const quadObj = await OBJLoader('quad.obj');
     const testObj = await OBJLoader('test.obj');
     const testMesh = createMesh(gl, testObj);
 
@@ -34,8 +33,6 @@ async function main()
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 
     display.addEventListener('frame', ({ deltaTime }) => {
-        input.source.poll();
-
         const PointerX = input.context.getInputValue('PointerX');
         const PointerY = input.context.getInputValue('PointerY');
         const PointerDown = input.context.getInputValue('PointerDown');
