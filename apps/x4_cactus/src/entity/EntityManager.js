@@ -75,6 +75,12 @@ const DEFAULT_PROPS = {};
  * counterparts. Although this should be done for better performance, it is at a
  * much greater cost of development speed and experience. Furthermore, you can
  * still opt-in and optimize by replacing them.
+ * 
+ * **Q: Why allow props for components? Shouldn't we delay as much of the
+ * architectural decisions to the user?**
+ * 
+ * > A: It's a limitation. We need a way to support adding GameObjects into the
+ * system as a component.
  */
 export class EntityManager
 {
