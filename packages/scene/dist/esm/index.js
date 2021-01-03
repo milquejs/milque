@@ -207,25 +207,26 @@ class FirstPersonCameraController {
     let sinp = Math.sin(radp);
     let dx = cosy * cosp;
     let dy = sinp;
-    let dz = siny * cosp;
-    vec3.normalize(forward, vec3.set(forward, dx, dy, dz));
+    let dz = siny * cosp; // Set forward for move vector
+
+    vec3.normalize(forward, vec3.set(forward, dx, this.locky ? 0 : dy, dz));
     vec3.normalize(right, vec3.cross(right, forward, up));
-    let move = vec3.create();
-    let prevY = position[1]; // Move forward
+    let move = vec3.create(); // Move forward
 
     vec3.scale(move, forward, forwardAmount);
     vec3.add(position, position, move); // Move right
 
     vec3.scale(move, right, rightAmount);
-    vec3.add(position, position, move);
-    if (this.locky) position[1] = prevY; // Move up
+    vec3.add(position, position, move); // Move up
 
     vec3.scale(move, up, upAmount);
     vec3.add(position, position, move); // Reset movement
 
     this.forwardAmount = 0;
     this.rightAmount = 0;
-    this.upAmount = 0;
+    this.upAmount = 0; // Reset forward for look vector
+
+    if (this.locky) vec3.set(forward, dx, dy, dz);
     let target = vec3.add(move, position, forward);
     mat4.lookAt(viewMatrix, position, target, up);
     return viewMatrix;
