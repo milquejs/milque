@@ -242,6 +242,7 @@ export class InputSource
                     {
                         button.update(e.event === InputEventCode.DOWN);
                         this._dispatchInputEvent(InputSourceStage.UPDATE, deviceName, keyCode, button);
+                        return true;
                     }
                 }
                 break;

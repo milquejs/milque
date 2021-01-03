@@ -201,7 +201,7 @@ function createInputTableEntry(name, key, event, scale, value, primary = true)
         }
         if (typeof scale === 'number' && scale !== 1)
         {
-            modifiers.push(`\u00D7${scale.toFixed(2)}`);
+            modifiers.push(`\u00D7(${scale.toFixed(2)})`);
         }
         samp.innerText = modifiers.join(' ');
         data.classList.add('mod');
