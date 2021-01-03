@@ -1,6 +1,6 @@
 // https://github.com/aseprite/aseprite/blob/master/docs/ase-file-specs.md
 
-export function loadAseprite(filepath, opts = {})
+export async function loadAseprite(filepath, opts = {})
 {
     const response = await fetch(filepath);
     const r = new ByteReader(response.body);

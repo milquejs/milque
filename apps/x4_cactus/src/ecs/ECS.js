@@ -10,6 +10,7 @@
  * Systems are functions that accept component lists
  */
 
+ /*
 import { System, Not, Optional, Query } from './system/index.js';
 
 import { EntityManager } from './EntityManager.js';
@@ -122,3 +123,4 @@ class Meteorite extends Entity
 }
 
 new Meteorite(entityManager);
+*/

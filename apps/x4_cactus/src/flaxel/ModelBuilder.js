@@ -1,4 +1,4 @@
-import { vec3, mat4 } from 'gl-matrix';
+import { vec3, mat4, quat } from 'gl-matrix';
 
 export class ModelBuilder
 {
@@ -104,7 +104,7 @@ export class ModelBuilder
         mirrorX = false, mirrorY = false,
         rotateZ = 0)
     {
-        if (!partName in this.parts)
+        if (!(partName in this.parts))
         {
             throw new Error(`Cannot find part with name '${partName}'.`);
         }
