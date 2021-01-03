@@ -1,7 +1,7 @@
 import '@milque/display';
 import '@milque/input';
 
-import { mat4 } from 'gl-matrix';
+import { mat4, quat, vec3 } from 'gl-matrix';
 import { TextLoader, OBJLoader, ImageLoader } from '@milque/asset';
 import { ProgramInfo } from '@milque/mogli';
 
@@ -36,6 +36,48 @@ async function main()
         .link();
     
     const cubeMesh = createMesh(gl, cubeObj);
+    const cubes = {
+        [Symbol.iterator]() { return this.instances[Symbol.iterator](); },
+        instances: [],
+        create(fromX = 0, fromY = 0, fromZ = 0, toX = fromX + 1, toY = fromY + 1, toZ = fromZ + 1)
+        {
+            let x1 = fromX;
+            let y1 = fromY;
+            let z1 = fromZ;
+            let x2 = toX;
+            let y2 = toY;
+            let z2 = toZ;
+            if (x1 > x2) { x1 = toX; x2 = fromX; }
+            if (y1 > y2) { y1 = toY; y2 = fromY; }
+            if (z1 > z2) { z1 = toZ; z2 = fromZ; }
+            
+            let dx = (x2 - x1) / 2;
+            let dy = (y2 - y1) / 2;
+            let dz = (z2 - z1) / 2;
+            let x = x1 + dx;
+            let y = y1 + dy;
+            let z = z1 + dz;
+
+            let transform = mat4.create();
+            mat4.fromRotationTranslationScale(
+                transform,
+                quat.create(),
+                vec3.fromValues(x, y, z),
+                vec3.fromValues(dx, dy, dz));
+
+            let result = {
+                transform,
+                color: vec3.fromValues(1 * Math.random(), 1 * Math.random(), 1 * Math.random()),
+            };
+
+            this.instances.push(result);
+            return result;
+        }
+    };
+
+    cubes.create();
+    cubes.create(2, 1);
+    cubes.create(-10, -1, -10, 10, -2, 10);
 
     const testTexture = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, testTexture);
@@ -61,8 +103,6 @@ async function main()
     const MoveZ = input.context.getInput('MoveZ');
 
     display.addEventListener('frame', ({ deltaTime }) => {
-
-        // TODO: Seems to halt movement when looking down.
         controller.look(
             LookX.value * LOOK_SENSITIVITY,
             -LookY.value * LOOK_SENSITIVITY);
@@ -72,17 +112,26 @@ async function main()
             MoveY.value * MOVE_SENSITIVITY);
         controller.apply(camera.viewMatrix);
 
+        if (PointerDown.value)
+        {
+            cubes.instances[0].color[0] = Math.random();
+        }
+
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, testTexture);
-    
-        program.bind(gl)
-            .attribute('a_position', cubeMesh.position.type, cubeMesh.position.handle)
-            .attribute('a_texcoord', cubeMesh.texcoord.type, cubeMesh.texcoord.handle)
+
+        let ctx = program.bind(gl)
             .uniform('u_projection', camera.projectionMatrix)
-            .uniform('u_view', camera.viewMatrix)
-            .uniform('u_model', mat4.create())
-            .uniform('u_color', [1, 0, 0])
-            .uniform('u_texture', 0)
-            .draw(gl, gl.TRIANGLES, cubeMesh.elementOffset, cubeMesh.elementCount, cubeMesh.element.handle);
+            .uniform('u_view', camera.viewMatrix);
+        for(let cube of cubes)
+        {
+            ctx
+                .attribute('a_position', cubeMesh.position.type, cubeMesh.position.handle)
+                .attribute('a_texcoord', cubeMesh.texcoord.type, cubeMesh.texcoord.handle)
+                .uniform('u_model', cube.transform)
+                .uniform('u_color', cube.color)
+                .uniform('u_texture', 0)
+                .draw(gl, gl.TRIANGLES, cubeMesh.elementOffset, cubeMesh.elementCount, cubeMesh.element.handle);
+        }
     });
 }
