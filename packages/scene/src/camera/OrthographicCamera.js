@@ -1,11 +1,6 @@
 import { mat4 } from 'gl-matrix';
 import { Camera } from './Camera.js';
 
-export function createOrthographicCamera(canvas, left, top, right, bottom, near = -1000, far = 1000)
-{
-    return new OrthographicCamera(canvas, left, top, right, bottom, near, far);
-}
-
 export class OrthographicCamera extends Camera
 {
     constructor(canvas, left, top, right, bottom, near, far)

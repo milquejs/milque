@@ -3,17 +3,11 @@ import { vec3, mat4 } from 'gl-matrix';
 const TO_RAD_FACTOR = Math.PI / 180;
 
 /**
- * Creates a camera controller that behaves like a traditional
- * first person camera. Pitch is restricted to prevent gimbal lock
- * and roll is ignored.
+ * A camera controller that behaves like a traditional first person camera.
+ * Pitch is restricted to prevent gimbal lock and roll is ignored.
  * 
  * NOTE: Don't forget to lock your pointer, i.e. `canvas.requestPointerLock()`.
  */
-export function createFirstPersonCameraController(opts = {})
-{
-    return new FirstPersonCameraController(opts);
-}
-
 export class FirstPersonCameraController
 {
     constructor(opts = { locky: false })

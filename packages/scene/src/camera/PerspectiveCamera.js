@@ -3,11 +3,6 @@ import { Camera } from './Camera.js';
 
 const DEFAULT_FOVY = Math.PI / 3;
 
-export function createPerspectiveCamera(canvas, fieldOfView = DEFAULT_FOVY, near = 0.1, far = 1000)
-{
-    return new PerspectiveCamera(canvas, fieldOfView, near, far);
-}
-
 export class PerspectiveCamera extends Camera
 {
     constructor(canvas, fieldOfView = DEFAULT_FOVY, near = 0.1, far = 1000)
