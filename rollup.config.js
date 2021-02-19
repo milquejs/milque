@@ -35,25 +35,35 @@ export default async function main()
 
     if (target)
     {
+        // HACK: Undo path separator formatting
+        let targetPackageName = target.replaceAll('\\', '/');
+
         // Build mapping for module name to packageJson
         const packages = (await getPackageJsons()).reduce(
             (prev, packageJson) => {
                 prev[packageJson.name] = packageJson;
                 return prev;
             }, {});
-
-        let targetPackage = packages[target];
+        let targetPackage = packages[targetPackageName];
         if (!targetPackage)
         {
-            throw new Error(`Cannot find package info for ${target}.`);
+            throw new Error(`Cannot find package info for ${targetPackageName}.`);
         }
 
         // Sort map
         let result = topoSort(
             [targetPackage],
             packageJson => {
-                let names = Object.keys(packageJson.dependencies);
-                return names.map(name => packages[name]).filter(Boolean);
+                const { dependencies } = packageJson;
+                if (dependencies)
+                {
+                    let names = Object.keys(packageJson.dependencies);
+                    return names.map(name => packages[name]).filter(Boolean);
+                }
+                else
+                {
+                    return [];
+                }
             });
         
         console.log(`Dependencies found:\n=> ${result.map(packageJson => packageJson.name).join('\n=> ')}\n`);
@@ -68,16 +78,24 @@ export default async function main()
 
 function configure(packageJsons, isDevelopment)
 {
-    return packageJsons.map(packageJson => {
+    return cleanArray(packageJsons.map(packageJson => {
         if (packageJson.browser)
         {
             return createBrowserConfig(packageJson, '@app', isDevelopment);
         }
         else
         {
-            return createLibraryConfig(packageJson, '@module');
+            if (packageJson.name.endsWith('.macro'))
+            {
+                // Nothing to bundle for macros.
+                return null;
+            }
+            else
+            {
+                return createLibraryConfig(packageJson, '@module');
+            }
         }
-    });
+    }));
 }
 
 function createLibraryConfig(packageJson, sourceAlias)
@@ -153,7 +171,6 @@ function plugins(outputDir, sourceAlias, test = false)
         ] : []),
         // Including external packages
         nodeResolve(),
-        commonjs(),
         // Clean output dir
         clear({
             targets: [ outputDir ]
@@ -178,8 +195,15 @@ function plugins(outputDir, sourceAlias, test = false)
         // Transpile macros
         babel({
             babelHelpers: 'bundled',
+            plugins: ['macros']
         }),
     ];
+}
+
+function resolveAsset(packagePath, assetPath)
+{
+    // HACK: For some reason, the copy plugin REQUIRES unix path separators
+    return path.join(packagePath, assetPath).replaceAll('\\', '/');
 }
 
 function createBrowserConfig(packageJson, sourceAlias, isDevelopment = false)
@@ -191,8 +215,6 @@ function createBrowserConfig(packageJson, sourceAlias, isDevelopment = false)
         browser,
     } = packageJson;
 
-    const indexTemplatePath = 'src/template.html';
-
     const packagePath = path.relative(__dirname, location);
     const inputPath = path.join(packagePath, input);
     const outputRoot = path.join(packagePath, isDevelopment ? TEMP_OUTPUT_ROOT_PATH : OUTPUT_ROOT_PATH);
@@ -200,16 +222,21 @@ function createBrowserConfig(packageJson, sourceAlias, isDevelopment = false)
         'res',
         path.join(packagePath, 'res'),
     ];
-    
-    // HACK: For some reason, the copy plugin REQUIRES unix path separators
-    const indexHTMLPath = path.join(packagePath, indexTemplatePath).replaceAll('\\', '/');
+    const staticAssets = [
+        { src: resolveAsset(packagePath, 'src/template.html'), rename: 'index.html' },
+        { src: resolveAsset(packagePath, 'src/style.css'), rename: 'index.css' },
+    ];
 
     return {
         input: inputPath,
-        output: [
-            outputBrowser(path.join(outputRoot, path.basename(browser))),
-        ],
+        output: {
+            file: path.join(outputRoot, path.basename(browser)),
+            format: 'iife',
+        },
         plugins: [
+            // Linting
+            eslint(),
+            stylelint(),
             // Including external packages
             nodeResolve({ browser: true }),
             commonjs(),
@@ -219,9 +246,7 @@ function createBrowserConfig(packageJson, sourceAlias, isDevelopment = false)
             }),
             // Copy assets
             copy({
-                targets: [
-                    { dest: outputRoot, src: indexHTMLPath, rename: 'index.html' },
-                ]
+                targets: staticAssets.map(opt => ({ dest: outputRoot, ...opt }))
             }),
             // Import alias
             alias({
@@ -231,6 +256,20 @@ function createBrowserConfig(packageJson, sourceAlias, isDevelopment = false)
             }),
             // Import JSON
             json(),
+            // Preprocess CSS (emit for plugin)
+            styles({ mode: 'emit' }),
+            // Import CSS & HTML as string
+            string({
+                include: [
+                    '**/*.template.html',
+                    '**/*.module.css'
+                ]
+            }),
+            // Transpile macros
+            babel({
+                babelHelpers: 'bundled',
+                plugins: ['macros']
+            }),
             ...(isDevelopment
                 ? [
                     // Development-only plugins
@@ -241,7 +280,12 @@ function createBrowserConfig(packageJson, sourceAlias, isDevelopment = false)
                             ...contentRoots
                         ]
                     }),
-                    watchAssets({ assets: [ indexHTMLPath ] }),
+                    watchAssets({
+                        assets: [
+                            ...staticAssets.map(opt => opt.src),
+                            ...contentRoots,
+                        ]
+                    }),
                     livereload({ watch: outputRoot })
                 ]
                 : [
@@ -249,13 +293,5 @@ function createBrowserConfig(packageJson, sourceAlias, isDevelopment = false)
                     terser()
                 ])
         ]
-    };
-}
-
-function outputBrowser(outputPath)
-{
-    return {
-        file: outputPath,
-        format: 'iife',
     };
 }

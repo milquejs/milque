@@ -1,4 +1,4 @@
-import { Random } from '../lib.js';
+import { Random } from '@milque/random';
 
 import { Camera2D } from '../view/Camera2D.js';
 import { ChunkMap } from '../chunk/ChunkMap.js';

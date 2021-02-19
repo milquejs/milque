@@ -383,10 +383,24 @@ class Input {
 
 const KEY_STRING_DEVICE_SEPARATOR = ':';
 class Synthetic extends Input {
-  constructor(adapterOptions) {
+  constructor() {
     super();
     this.update = this.update.bind(this);
+    /** @private */
 
+    this.adapters = [];
+    /** @private */
+
+    this.values = [];
+    /** @private */
+
+    this.next = {
+      values: [],
+      value: 0
+    };
+  }
+
+  hydrate(adapterOptions) {
     if (!Array.isArray(adapterOptions)) {
       adapterOptions = [adapterOptions];
     }
@@ -416,15 +430,9 @@ class Synthetic extends Input {
       adapterList.push(adapter);
       ++adapterId;
     }
-    /** @private */
-
 
     this.adapters = adapterList;
-    /** @private */
-
     this.values = new Array(adapterList.length).fill(0);
-    /** @private */
-
     this.next = {
       values: new Array(adapterList.length).fill(0),
       value: 0
@@ -685,7 +693,7 @@ class Mouse extends InputDevice {
     eventTarget.addEventListener('mousedown', this.onMouseDown);
     eventTarget.addEventListener('contextmenu', this.onContextMenu);
     eventTarget.addEventListener('wheel', this.onWheel);
-    eventTarget.addEventListener('mousemove', this.onMouseMove);
+    document.addEventListener('mousemove', this.onMouseMove);
     document.addEventListener('mouseup', this.onMouseUp);
   }
   /** @override */
@@ -696,7 +704,7 @@ class Mouse extends InputDevice {
     eventTarget.removeEventListener('mousedown', this.onMouseDown);
     eventTarget.removeEventListener('contextmenu', this.onContextMenu);
     eventTarget.removeEventListener('wheel', this.onWheel);
-    eventTarget.removeEventListener('mousemove', this.onMouseMove);
+    document.removeEventListener('mousemove', this.onMouseMove);
     document.removeEventListener('mouseup', this.onMouseUp);
     super.destroy();
   }
@@ -1014,8 +1022,6 @@ class InputSource {
     }
 
     this.devices = deviceMap;
-    /** @private */
-
     this.inputs = inputMap;
     /** @private */
 
@@ -1023,6 +1029,31 @@ class InputSource {
       poll: [],
       update: []
     };
+    /** @private */
+
+    this._autopoll = false;
+    /** @private */
+
+    this._animationFrameHandle = null;
+    /** @private */
+
+    this.onAnimationFrame = this.onAnimationFrame.bind(this);
+  }
+
+  set autopoll(value) {
+    this._autopoll = value;
+
+    if (value) {
+      // Start animation frame loop
+      this._animationFrameHandle = requestAnimationFrame(this.onAnimationFrame);
+    } else {
+      // Stop animation frame loop
+      cancelAnimationFrame(this._animationFrameHandle);
+    }
+  }
+
+  get autopoll() {
+    return this._autopoll;
   }
 
   destroy() {
@@ -1100,15 +1131,17 @@ class InputSource {
   /** @private */
 
 
-  _dispatchPollEvent() {
-    this.dispatchEvent('poll', {});
+  _dispatchPollEvent(now) {
+    this.dispatchEvent('poll', {
+      now
+    });
   }
   /**
    * Poll the devices and update the input state.
    */
 
 
-  poll() {
+  poll(now = performance.now()) {
     for (const deviceName in this.inputs) {
       const inputMap = this.inputs[deviceName];
 
@@ -1120,7 +1153,15 @@ class InputSource {
       }
     }
 
-    this._dispatchPollEvent();
+    this._dispatchPollEvent(now);
+  }
+  /** @private */
+
+
+  onAnimationFrame(now) {
+    if (!this._autopoll) return;
+    this._animationFrameHandle = requestAnimationFrame(this.onAnimationFrame);
+    this.poll(now);
   }
   /** @private */
 
@@ -1138,6 +1179,8 @@ class InputSource {
             button.update(e.event === InputEventCode.DOWN);
 
             this._dispatchInputEvent(InputSourceStage.UPDATE, deviceName, keyCode, button);
+
+            return true;
           }
         }
         break;
@@ -1376,7 +1419,8 @@ class InputContext {
 
       for (let inputName in inputMap) {
         let adapterOptions = inputMap[inputName];
-        let synthetic = new Synthetic(adapterOptions);
+        let synthetic = prevInputs[inputName] || new Synthetic();
+        synthetic.hydrate(adapterOptions);
         let syntheticAdapters = synthetic.adapters;
         this.adapters.add(syntheticAdapters);
         inputs[inputName] = synthetic;
@@ -1495,7 +1539,17 @@ class InputContext {
 
 
   getInput(inputName) {
-    return this.inputs[inputName];
+    if (inputName in this.inputs) {
+      return this.inputs[inputName];
+    } else {
+      let synthetic = new Synthetic();
+      this.inputs[inputName] = synthetic;
+      return synthetic;
+    }
+  }
+
+  hasInput(inputName) {
+    return inputName in this.inputs && this.inputs[inputName].adapters.length > 0;
   }
   /**
    * Get the current value of the input by name.
@@ -1538,14 +1592,948 @@ function removeSourceRef(inputSource, deviceName, keyCode) {
   return value;
 }
 
+var INNER_HTML = "<kbd>\n    <span id=\"key\"><slot></slot></span>\n    <span id=\"value\" class=\"hidden\"></span>\n</kbd>\n";
+
+var INNER_STYLE = "kbd{position:relative;display:inline-block;border-radius:3px;border:1px solid #888;font-size:.85em;font-weight:700;text-rendering:optimizeLegibility;line-height:12px;height:14px;padding:2px 4px;color:#444;background-color:#eee;box-shadow:inset 0 -3px 0 #aaa;overflow:hidden}kbd:empty:after{content:\"<?>\";opacity:.6}.disabled{opacity:.6;box-shadow:none;background-color:#aaa}.hidden{display:none}#value{position:absolute;top:0;bottom:0;right:0;font-size:.85em;padding:2px 4px 0;color:#ccc;background-color:#333;box-shadow:inset 0 3px 0 #222}";
+
+class InputKeyElement extends HTMLElement {
+  /** Generated by cuttle.js */
+  static get [Symbol.for("cuttleTemplate")]() {
+    let t = document.createElement("template");
+    t.innerHTML = INNER_HTML;
+    Object.defineProperty(this, Symbol.for("cuttleTemplate"), {
+      value: t
+    });
+    return t;
+  }
+
+  /** Generated by cuttle.js */
+  static get [Symbol.for("cuttleStyle")]() {
+    let s = document.createElement("style");
+    s.innerHTML = INNER_STYLE;
+    Object.defineProperty(this, Symbol.for("cuttleStyle"), {
+      value: s
+    });
+    return s;
+  }
+
+  static get properties() {
+    return {
+      name: String,
+      value: String,
+      disabled: Boolean
+    };
+  }
+
+  get disabled() {
+    return this._disabled;
+  }
+
+  set disabled(value) {
+    this.toggleAttribute("disabled", value);
+  }
+
+  get value() {
+    return this._value;
+  }
+
+  set value(value) {
+    this.setAttribute("value", value);
+  }
+
+  get name() {
+    return this._name;
+  }
+
+  set name(value) {
+    this.setAttribute("name", value);
+  }
+
+  constructor() {
+    super();
+    this.attachShadow({
+      mode: 'open'
+    });
+    this.shadowRoot.appendChild(this.constructor[Symbol.for("cuttleTemplate")].content.cloneNode(true));
+    this.shadowRoot.appendChild(this.constructor[Symbol.for("cuttleStyle")].cloneNode(true));
+    this._keyboardElement = this.shadowRoot.querySelector('kbd');
+    this._keyElement = this.shadowRoot.querySelector('#key');
+    this._valueElement = this.shadowRoot.querySelector('#value');
+  }
+  /** @override */
+
+
+  attributeChangedCallback(attribute, prev, value) {
+    /** Generated by cuttle.js */
+    switch (attribute) {
+      case "name":
+        this._name = value;
+        break;
+
+      case "value":
+        this._value = value;
+        break;
+
+      case "disabled":
+        {
+          this._disabled = value !== null;
+        }
+        break;
+    }
+
+    ((attribute, prev, value) => {
+      switch (attribute) {
+        case 'name':
+          this._keyElement.innerText = value;
+          break;
+
+        case 'value':
+          if (value !== null) {
+            this._valueElement.classList.toggle('hidden', false);
+
+            this._valueElement.innerText = value;
+            this._keyboardElement.style.paddingRight = `${this._valueElement.clientWidth + 4}px`;
+          } else {
+            this._valueElement.classList.toggle('hidden', true);
+          }
+
+          break;
+
+        case 'disabled':
+          this._keyboardElement.classList.toggle('disabled', value !== null);
+
+          break;
+      }
+    })(attribute, prev, value);
+  }
+
+  connectedCallback() {
+    if (Object.prototype.hasOwnProperty.call(this, "name")) {
+      let value = this.name;
+      delete this.name;
+      this.name = value;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(this, "value")) {
+      let value = this.value;
+      delete this.value;
+      this.value = value;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(this, "disabled")) {
+      let value = this.disabled;
+      delete this.disabled;
+      this.disabled = value;
+    }
+  }
+
+  static get observedAttributes() {
+    return ["name", "value", "disabled"];
+  }
+
+}
+window.customElements.define('input-key', InputKeyElement);
+
+var INNER_HTML$1 = "<table>\n    <thead>\n        <tr class=\"tableHeader\">\n            <th colspan=4>\n                <slot id=\"title\">input-map</slot>\n            </th>\n        </tr>\n        <tr class=\"colHeader\">\n            <th>name</th>\n            <th>key</th>\n            <th>mod</th>\n            <th>value</th>\n        </tr>\n    </thead>\n    <tbody>\n    </tbody>\n</table>\n";
+
+var INNER_STYLE$1 = ":host{display:block}table{border-collapse:collapse}table,td,th{border:1px solid #666}td,th{padding:5px 10px}td{text-align:center}thead th{padding:0}.colHeader>th{font-size:.8em;padding:0 10px;letter-spacing:3px;background-color:#aaa;color:#666}.colHeader>th,output{font-family:monospace}output{border-radius:.3em;padding:3px}tr:not(.primary) .name,tr:not(.primary) .value{opacity:.3}tr:nth-child(2n){background-color:#eee}";
+
+function upgradeProperty(element, propertyName) {
+  if (Object.prototype.hasOwnProperty.call(element, propertyName)) {
+    let value = element[propertyName];
+    delete element[propertyName];
+    element[propertyName] = value;
+  }
+}
+
+class InputMapElement extends HTMLElement {
+  /** Generated by cuttle.js */
+  static get [Symbol.for("cuttleTemplate")]() {
+    let t = document.createElement("template");
+    t.innerHTML = INNER_HTML$1;
+    Object.defineProperty(this, Symbol.for("cuttleTemplate"), {
+      value: t
+    });
+    return t;
+  }
+
+  /** Generated by cuttle.js */
+  static get [Symbol.for("cuttleStyle")]() {
+    let s = document.createElement("style");
+    s.innerHTML = INNER_STYLE$1;
+    Object.defineProperty(this, Symbol.for("cuttleStyle"), {
+      value: s
+    });
+    return s;
+  }
+
+  static get customEvents() {
+    return ['load'];
+  }
+  /** @override */
+
+
+  get onload() {
+    return this._onload;
+  }
+
+  set onload(value) {
+    if (this._onload) this.removeEventListener("load", this._onload);
+    this._onload = value;
+    if (this._onload) this.addEventListener("load", value);
+  }
+
+  static get observedAttributes() {
+    return ["onload", 'src', // Listening for built-in attribs
+    'id', 'class'];
+  }
+
+  constructor() {
+    super();
+    this.attachShadow({
+      mode: 'open'
+    });
+    this.shadowRoot.appendChild(this.constructor[Symbol.for("cuttleTemplate")].content.cloneNode(true));
+    this.shadowRoot.appendChild(this.constructor[Symbol.for("cuttleStyle")].cloneNode(true));
+    this._src = '';
+    this._inputMap = null;
+    this._tableElements = {};
+    this._titleElement = this.shadowRoot.querySelector('#title');
+    this._bodyElement = this.shadowRoot.querySelector('tbody');
+    this._children = this.shadowRoot.querySelector('slot');
+  }
+
+  get map() {
+    return this._inputMap;
+  }
+
+  get mapElements() {
+    return this._tableElements;
+  }
+  /** @override */
+
+
+  connectedCallback() {
+    if (Object.prototype.hasOwnProperty.call(this, "onload")) {
+      let value = this.onload;
+      delete this.onload;
+      this.onload = value;
+    }
+
+    upgradeProperty(this, 'src');
+  }
+
+  /** @override */
+  attributeChangedCallback(attribute, prev, value) {
+    /** Generated by cuttle.js */
+    switch (attribute) {
+      case "onload":
+        {
+          this.onload = new Function('event', 'with(document){with(this){' + value + '}}').bind(this);
+        }
+        break;
+    }
+
+    ((attribute, prev, value) => {
+      switch (attribute) {
+        case 'src':
+          if (this._src !== value) {
+            this._src = value;
+
+            if (value.trim().startsWith('{')) {
+              let jsonData = JSON.parse(value);
+
+              this._setInputMap(jsonData);
+            } else {
+              fetch(value).then(fileBlob => fileBlob.json()).then(jsonData => this._setInputMap(jsonData));
+            }
+          }
+
+          break;
+        // For debug info
+
+        case 'id':
+        case 'class':
+          this._titleElement.innerHTML = `input-port${this.className ? '.' + this.className : ''}${this.hasAttribute('id') ? '#' + this.getAttribute('id') : ''}`;
+          break;
+      }
+    })(attribute, prev, value);
+  }
+
+  get src() {
+    return this.getAttribute('src');
+  }
+
+  set src(value) {
+    switch (typeof value) {
+      case 'object':
+        {
+          let src = JSON.stringify(value);
+          this._src = src;
+
+          this._setInputMap(value);
+
+          this.setAttribute('src', src);
+        }
+        break;
+
+      case 'string':
+        this.setAttribute('src', value);
+        break;
+
+      default:
+        this.setAttribute('src', JSON.stringify(value));
+        break;
+    }
+  }
+
+  _setInputMap(inputMap) {
+    let entryMap = {};
+    let entryList = [];
+
+    for (let name in inputMap) {
+      let input = inputMap[name];
+      let entries = [];
+      inputToTableEntries(entries, name, input);
+      entryMap[name] = entries;
+      entryList.push(...entries);
+    }
+
+    this._bodyElement.innerHTML = '';
+
+    for (let entry of entryList) {
+      this._bodyElement.appendChild(entry);
+    }
+
+    this._inputMap = inputMap;
+    this._tableElements = entryMap;
+    this.dispatchEvent(new CustomEvent('load', {
+      bubbles: false,
+      composed: true,
+      detail: {
+        map: inputMap
+      }
+    }));
+  }
+
+}
+window.customElements.define('input-map', InputMapElement);
+
+function inputToTableEntries(out, name, input) {
+  if (Array.isArray(input)) {
+    inputToTableEntries(out, name, input[0]);
+    let length = input.length;
+
+    for (let i = 1; i < length; ++i) {
+      out.push(parseInputOption(name, input[i], false));
+    }
+  } else {
+    out.push(parseInputOption(name, input, true));
+  }
+
+  return out;
+}
+
+function parseInputOption(inputName, inputOption, inputPrimary = true) {
+  if (typeof inputOption === 'object') {
+    const {
+      key,
+      event,
+      scale
+    } = inputOption;
+    return createInputTableEntry(inputName, key, event, scale, 0, inputPrimary);
+  } else {
+    return createInputTableEntry(inputName, inputOption, null, 1, 0, inputPrimary);
+  }
+}
+
+function createInputTableEntry(name, key, event, scale, value, primary = true) {
+  let row = document.createElement('tr');
+  if (primary) row.classList.add('primary'); // Name
+
+  {
+    let data = document.createElement('td');
+    data.textContent = name;
+    data.classList.add('name');
+    row.appendChild(data);
+  } // Key
+
+  {
+    let data = document.createElement('td');
+    data.classList.add('key');
+    let kbd = new InputKeyElement();
+    kbd.innerText = key;
+    data.appendChild(kbd);
+    row.appendChild(data);
+  } // Modifiers
+
+  {
+    let data = document.createElement('td');
+    let samp = document.createElement('samp');
+    let modifiers = [];
+
+    if (typeof event === 'string' && event !== 'null') {
+      modifiers.push(event);
+    }
+
+    if (typeof scale === 'number' && scale !== 1) {
+      modifiers.push(`\u00D7(${scale.toFixed(2)})`);
+    }
+
+    samp.innerText = modifiers.join(' ');
+    data.classList.add('mod');
+    data.appendChild(samp);
+    row.appendChild(data);
+  } // Value
+
+  {
+    let data = document.createElement('td');
+    let output = document.createElement('output');
+    output.innerText = Number(value).toFixed(2);
+    output.classList.add('value');
+    data.appendChild(output);
+    row.appendChild(data);
+  }
+  return row;
+}
+
+var INNER_HTML$2 = "<div class=\"hidden\">\n    <label id=\"title\">\n        input-source\n    </label>\n    <span>|</span>\n    <p>\n        <label for=\"poll\">poll</label>\n        <output id=\"poll\"></output>\n    </p>\n    <p>\n        <label for=\"focus\">focus</label>\n        <output id=\"focus\"></output>\n    </p>\n</div>\n";
+
+var INNER_STYLE$2 = ":host{display:inline-block}.hidden{display:none}div{font-family:monospace;color:#666;outline:1px solid #666;padding:4px}p{display:inline;margin:0;padding:0}#focus:empty:after,#poll:empty:after{content:\"✗\";color:red}";
+
+class InputSourceElement extends HTMLElement {
+  /** Generated by cuttle.js */
+  static get [Symbol.for("cuttleTemplate")]() {
+    let t = document.createElement("template");
+    t.innerHTML = INNER_HTML$2;
+    Object.defineProperty(this, Symbol.for("cuttleTemplate"), {
+      value: t
+    });
+    return t;
+  }
+
+  /** Generated by cuttle.js */
+  static get [Symbol.for("cuttleStyle")]() {
+    let s = document.createElement("style");
+    s.innerHTML = INNER_STYLE$2;
+    Object.defineProperty(this, Symbol.for("cuttleStyle"), {
+      value: s
+    });
+    return s;
+  }
+
+  static get properties() {
+    return {
+      for: String,
+      autopoll: Boolean,
+      debug: Boolean
+    };
+  }
+
+  get debug() {
+    return this._debug;
+  }
+
+  set debug(value) {
+    this.toggleAttribute("debug", value);
+  }
+
+  get autopoll() {
+    return this._autopoll;
+  }
+
+  set autopoll(value) {
+    this.toggleAttribute("autopoll", value);
+  }
+
+  get for() {
+    return this._for;
+  }
+
+  set for(value) {
+    this.setAttribute("for", value);
+  }
+
+  static get customEvents() {
+    return ['input', 'poll'];
+  }
+  /** @override */
+
+
+  get onpoll() {
+    return this._onpoll;
+  }
+
+  set onpoll(value) {
+    if (this._onpoll) this.removeEventListener("poll", this._onpoll);
+    this._onpoll = value;
+    if (this._onpoll) this.addEventListener("poll", value);
+  }
+
+  get oninput() {
+    return this._oninput;
+  }
+
+  set oninput(value) {
+    if (this._oninput) this.removeEventListener("input", this._oninput);
+    this._oninput = value;
+    if (this._oninput) this.addEventListener("input", value);
+  }
+
+  static get observedAttributes() {
+    return ["oninput", "onpoll", "for", "autopoll", "debug", // Listening for built-in attribs
+    'id', 'class'];
+  }
+
+  constructor() {
+    super();
+    this.attachShadow({
+      mode: 'open'
+    });
+    this.shadowRoot.appendChild(this.constructor[Symbol.for("cuttleTemplate")].content.cloneNode(true));
+    this.shadowRoot.appendChild(this.constructor[Symbol.for("cuttleStyle")].cloneNode(true));
+    this._containerElement = this.shadowRoot.querySelector('div');
+    this._titleElement = this.shadowRoot.querySelector('#title');
+    this._pollElement = this.shadowRoot.querySelector('#poll');
+    this._focusElement = this.shadowRoot.querySelector('#focus');
+    this._pollCount = 0;
+    this._pollCountDelay = 0;
+    /** @type {HTMLElement} */
+
+    this._sourceElement = null;
+    /** @type {InputSource} */
+
+    this._inputSource = null;
+    this.onSourceInput = this.onSourceInput.bind(this);
+    this.onSourcePoll = this.onSourcePoll.bind(this);
+    this.onSourceFocus = this.onSourceFocus.bind(this);
+    this.onSourceBlur = this.onSourceBlur.bind(this);
+  }
+
+  get source() {
+    return this._inputSource;
+  }
+
+  poll() {
+    this._inputSource.poll();
+  }
+  /** @override */
+
+
+  connectedCallback() {
+    if (Object.prototype.hasOwnProperty.call(this, "oninput")) {
+      let value = this.oninput;
+      delete this.oninput;
+      this.oninput = value;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(this, "onpoll")) {
+      let value = this.onpoll;
+      delete this.onpoll;
+      this.onpoll = value;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(this, "for")) {
+      let value = this.for;
+      delete this.for;
+      this.for = value;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(this, "autopoll")) {
+      let value = this.autopoll;
+      delete this.autopoll;
+      this.autopoll = value;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(this, "debug")) {
+      let value = this.debug;
+      delete this.debug;
+      this.debug = value;
+    }
+
+    // Allows this element to be focusable
+    if (!this.hasAttribute('tabindex')) this.setAttribute('tabindex', 0); // Initialize input source, if unset
+
+    if (!this.hasAttribute('for')) this._setSourceElement(this);
+  }
+
+  /** @override */
+  disconnectedCallback() {
+    // Terminate input source
+    this._clearSourceElement();
+  }
+  /** @override */
+
+
+  attributeChangedCallback(attribute, prev, value) {
+    /** Generated by cuttle.js */
+    switch (attribute) {
+      case "for":
+        this._for = value;
+        break;
+
+      case "autopoll":
+        {
+          this._autopoll = value !== null;
+        }
+        break;
+
+      case "debug":
+        {
+          this._debug = value !== null;
+        }
+        break;
+
+      case "oninput":
+        {
+          this.oninput = new Function('event', 'with(document){with(this){' + value + '}}').bind(this);
+        }
+        break;
+
+      case "onpoll":
+        {
+          this.onpoll = new Function('event', 'with(document){with(this){' + value + '}}').bind(this);
+        }
+        break;
+    }
+
+    ((attribute, prev, value) => {
+      switch (attribute) {
+        case 'for':
+          this._setSourceElement(value ? document.getElementById(value) : this);
+
+          break;
+        // For debug info
+
+        case 'id':
+        case 'class':
+          {
+            let cname = this.className ? '.' + this.className : '';
+            let iname = this.hasAttribute('id') ? '#' + this.getAttribute('id') : '';
+            this._titleElement.innerHTML = cname + iname;
+          }
+          break;
+
+        case 'debug':
+          this._containerElement.classList.toggle('hidden', value);
+
+          break;
+      }
+    })(attribute, prev, value);
+  }
+
+  onSourceInput(e) {
+    this.dispatchEvent(new CustomEvent('input', {
+      composed: true,
+      bubbles: false,
+      detail: e
+    }));
+  }
+
+  onSourcePoll(e) {
+    const {
+      now
+    } = e;
+    this._pollCount += 1;
+    this.dispatchEvent(new CustomEvent('poll', {
+      composed: true,
+      bubbles: false
+    })); // If debug is enabled, do poll-counting
+
+    if (this.debug) {
+      let dt = now - this._pollCountDelay;
+
+      if (dt > 1000) {
+        this._pollCountDelay = now;
+
+        if (this._pollCount > 0) {
+          this._pollElement.innerText = '✓';
+          this._pollCount = 0;
+        } else {
+          this._pollElement.innerText = '';
+        }
+      }
+    }
+  }
+
+  onSourceFocus() {
+    this._focusElement.innerText = '✓';
+  }
+
+  onSourceBlur() {
+    this._focusElement.innerText = '';
+  }
+
+  _clearSourceElement() {
+    if (this._inputSource) {
+      let inputSource = this._inputSource;
+      let sourceElement = this._sourceElement;
+      this._inputSource = null;
+      this._sourceElement = null;
+      sourceElement.removeEventListener('focus', this.onSourceFocus);
+      sourceElement.removeEventListener('blur', this.onSourceBlur);
+      inputSource.destroy();
+    }
+  }
+
+  _setSourceElement(eventTarget) {
+    this._clearSourceElement();
+
+    if (!eventTarget) {
+      throw new Error('Event target not found.');
+    }
+
+    let inputSource = InputSource.for(eventTarget);
+    inputSource.addEventListener('input', this.onSourceInput);
+    inputSource.addEventListener('poll', this.onSourcePoll);
+    eventTarget.addEventListener('focus', this.onSourceFocus);
+    eventTarget.addEventListener('blur', this.onSourceBlur);
+    this._sourceElement = eventTarget;
+    this._inputSource = inputSource;
+  }
+
+}
+window.customElements.define('input-source', InputSourceElement);
+
+var INNER_HTML$3 = "<input-map class=\"hidden\">\n    <slot></slot>\n    <input-source debug></input-source>\n</input-map>\n";
+
+var INNER_STYLE$3 = ":host{display:inline-block}.hidden{display:none}";
+
+function upgradeProperty$1(element, propertyName) {
+  if (Object.prototype.hasOwnProperty.call(element, propertyName)) {
+    let value = element[propertyName];
+    delete element[propertyName];
+    element[propertyName] = value;
+  }
+}
+
+class InputContextElement extends HTMLElement {
+  /** Generated by cuttle.js */
+  static get [Symbol.for("cuttleTemplate")]() {
+    let t = document.createElement("template");
+    t.innerHTML = INNER_HTML$3;
+    Object.defineProperty(this, Symbol.for("cuttleTemplate"), {
+      value: t
+    });
+    return t;
+  }
+
+  /** Generated by cuttle.js */
+  static get [Symbol.for("cuttleStyle")]() {
+    let s = document.createElement("style");
+    s.innerHTML = INNER_STYLE$3;
+    Object.defineProperty(this, Symbol.for("cuttleStyle"), {
+      value: s
+    });
+    return s;
+  }
+
+  static get properties() {
+    return {
+      for: String,
+      disabled: Boolean,
+      debug: Boolean
+    };
+  }
+  /** @override */
+
+
+  get debug() {
+    return this._debug;
+  }
+
+  set debug(value) {
+    this.toggleAttribute("debug", value);
+  }
+
+  get disabled() {
+    return this._disabled;
+  }
+
+  set disabled(value) {
+    this.toggleAttribute("disabled", value);
+  }
+
+  get for() {
+    return this._for;
+  }
+
+  set for(value) {
+    this.setAttribute("for", value);
+  }
+
+  static get observedAttributes() {
+    return ["for", "disabled", "debug", 'src', // Listening for built-in attribs
+    'id', 'class'];
+  }
+
+  constructor() {
+    super();
+    this.attachShadow({
+      mode: 'open'
+    });
+    this.shadowRoot.appendChild(this.constructor[Symbol.for("cuttleTemplate")].content.cloneNode(true));
+    this.shadowRoot.appendChild(this.constructor[Symbol.for("cuttleStyle")].cloneNode(true));
+    this._inputContext = new InputContext();
+    this._mapElement = this.shadowRoot.querySelector('input-map');
+    this._sourceElement = this.shadowRoot.querySelector('input-source');
+    this.onInputMapLoad = this.onInputMapLoad.bind(this);
+    this.onInputSourcePoll = this.onInputSourcePoll.bind(this);
+
+    this._mapElement.addEventListener('load', this.onInputMapLoad);
+
+    this._sourceElement.addEventListener('poll', this.onInputSourcePoll);
+  }
+
+  get context() {
+    return this._inputContext;
+  }
+
+  get source() {
+    return this._sourceElement.source;
+  }
+
+  get map() {
+    return this._mapElement.map;
+  }
+
+  onInputMapLoad() {
+    let source = this._sourceElement.source;
+    let map = this._mapElement.map;
+
+    if (source && map) {
+      this._inputContext.setInputMap(map).attach(source);
+
+      this._inputContext.disabled = this._disabled;
+    }
+  }
+
+  onInputSourcePoll() {
+    for (let [inputName, entries] of Object.entries(this._mapElement.mapElements)) {
+      let value = this._inputContext.getInputValue(inputName);
+
+      let primary = entries[0];
+      let outputElement = primary.querySelector('output');
+      outputElement.innerText = Number(value).toFixed(2);
+    }
+  }
+  /** @override */
+
+
+  connectedCallback() {
+    if (Object.prototype.hasOwnProperty.call(this, "for")) {
+      let value = this.for;
+      delete this.for;
+      this.for = value;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(this, "disabled")) {
+      let value = this.disabled;
+      delete this.disabled;
+      this.disabled = value;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(this, "debug")) {
+      let value = this.debug;
+      delete this.debug;
+      this.debug = value;
+    }
+
+    upgradeProperty$1(this, 'src');
+  }
+
+  /** @override */
+  attributeChangedCallback(attribute, prev, value) {
+    /** Generated by cuttle.js */
+    switch (attribute) {
+      case "for":
+        this._for = value;
+        break;
+
+      case "disabled":
+        {
+          this._disabled = value !== null;
+        }
+        break;
+
+      case "debug":
+        {
+          this._debug = value !== null;
+        }
+        break;
+    }
+
+    ((attribute, prev, value) => {
+      switch (attribute) {
+        case 'for':
+          {
+            this._sourceElement.for = value;
+            let source = this._sourceElement.source;
+            let map = this._mapElement.map;
+
+            if (map) {
+              this._inputContext.setInputMap(map).attach(source);
+
+              this._inputContext.disabled = this._disabled;
+            }
+          }
+          break;
+
+        case 'src':
+          this._mapElement.src = value;
+          break;
+
+        case 'disabled':
+          {
+            let source = this._sourceElement.source;
+            let map = this._mapElement.map;
+
+            if (source && map) {
+              this._inputContext.disabled = this._disabled;
+            }
+          }
+          break;
+
+        case 'debug':
+          this._mapElement.classList.toggle('hidden', value === null);
+
+          break;
+        // For debug info
+
+        case 'id':
+          this._sourceElement.id = value;
+          break;
+
+        case 'class':
+          this._sourceElement.className = value;
+          break;
+      }
+    })(attribute, prev, value);
+  }
+
+  get src() {
+    return this._mapElement.src;
+  }
+
+  set src(value) {
+    this._mapElement.src = value;
+  }
+
+}
+window.customElements.define('input-context', InputContextElement);
+
 exports.AdapterManager = AdapterManager;
 exports.Axis = Axis;
 exports.Button = Button;
 exports.Input = Input;
 exports.InputContext = InputContext;
+exports.InputContextElement = InputContextElement;
 exports.InputDevice = InputDevice;
 exports.InputEventCode = InputEventCode;
+exports.InputKeyElement = InputKeyElement;
+exports.InputMapElement = InputMapElement;
 exports.InputSource = InputSource;
+exports.InputSourceElement = InputSourceElement;
 exports.InputSourceStage = InputSourceStage;
 exports.InputType = InputType;
 exports.KEY_STRING_DEVICE_SEPARATOR = KEY_STRING_DEVICE_SEPARATOR;

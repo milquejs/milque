@@ -1,5 +1,16 @@
-import { distance2, lerp, Audio, Random, Downloader, Uploader, Eventable } from './lib.js';
-import './input/index.js';
+import '@milque/display';
+import '@milque/input';
+
+import { Random } from '@milque/random';
+import {
+    Eventable,
+    Downloader,
+    Uploader,
+    distance2,
+    lerp
+} from '@milque/util';
+
+import * as Audio from './Audio.js';
 
 import { CanvasView } from './view/CanvasView.js';
 import { Camera2D } from './view/Camera2D.js';
@@ -52,15 +63,16 @@ async function main()
 {
     const display = document.querySelector('display-port');
     const input = document.querySelector('input-context');
+    input.source.autopoll = true;
 
-    const CursorX = input.getInput('cursorX');
-    const CursorY = input.getInput('cursorY');
-    const Place = input.getInput('place');
-    const Rotate = input.getInput('rotate');
-    const Debug = input.getInput('debug');
-    const Reset = input.getInput('reset');
-    const Save = input.getInput('save');
-    const Load = input.getInput('load');
+    const CursorX = input.context.getInput('cursorX');
+    const CursorY = input.context.getInput('cursorY');
+    const Place = input.context.getInput('place');
+    const Rotate = input.context.getInput('rotate');
+    const Debug = input.context.getInput('debug');
+    const Reset = input.context.getInput('reset');
+    const Save = input.context.getInput('save');
+    const Load = input.context.getInput('load');
 
     const ctx = display.canvas.getContext('2d');
     ctx.imageSmoothingEnabled = false;

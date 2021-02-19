@@ -54,7 +54,11 @@ RAND = new Random();
 class SimpleRandomGenerator extends RandomGenerator {
   constructor(seed = 0) {
     super();
+    /** @private */
+
     this._seed = Math.abs(seed % 2147483647);
+    /** @private */
+
     this._next = this._seed;
   }
   /** @override */
