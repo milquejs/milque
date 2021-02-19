@@ -3,9 +3,9 @@ import { mat4, quat, vec3 } from 'gl-matrix';
 import '@milque/display';
 import '@milque/input';
 import {
-    createPerspectiveCamera,
-    createFirstPersonCameraController,
-    screenToWorldRay
+    screenToWorldRay,
+    PerspectiveCamera,
+    FirstPersonCameraController
 } from '@milque/scene';
 import {
     ProgramInfo
@@ -59,8 +59,8 @@ async function main()
     
     // const collisions = AABBUtil.solveCollisions(boxes, []);
 
-    const mainCamera = createPerspectiveCamera(gl.canvas);
-    const mainCameraController = createFirstPersonCameraController({ locky: true });
+    const mainCamera = new PerspectiveCamera(gl.canvas);
+    const mainCameraController = new FirstPersonCameraController({ locky: true });
     mainCameraController.move(-15, 0, 5);
     mainCameraController.look(0, -20);
 

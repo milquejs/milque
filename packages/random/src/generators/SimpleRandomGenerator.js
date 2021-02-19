@@ -7,7 +7,9 @@ export class SimpleRandomGenerator extends RandomGenerator
     {
         super();
 
+        /** @private */
         this._seed = Math.abs(seed % 2147483647);
+        /** @private */
         this._next = this._seed;
     }
 

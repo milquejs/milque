@@ -1,6 +1,3 @@
-import '@milque/display';
-import '@milque/input';
-
 import { mat4, quat, vec3 } from 'gl-matrix';
 import { TextLoader, OBJLoader, ImageLoader } from '@milque/asset';
 import { ProgramInfo } from '@milque/mogli';
@@ -10,9 +7,7 @@ import { PerspectiveCamera, FirstPersonCameraController } from '@milque/scene';
 import { createMesh } from './mesh.js';
 import { enablePointerLockBehavior } from './PointerLockHelper.js';
 
-window.addEventListener('DOMContentLoaded', main);
-
-async function main()
+export async function main()
 {
     const display = document.querySelector('#main');
     const input = document.querySelector('#input');
