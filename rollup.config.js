@@ -1,5 +1,6 @@
 /* global __dirname process */
 import path from 'path';
+import fs from 'fs/promises';
 
 import alias from '@rollup/plugin-alias';
 import babel from '@rollup/plugin-babel';
@@ -67,21 +68,21 @@ export default async function main()
             });
         
         console.log(`Dependencies found:\n=> ${result.map(packageJson => packageJson.name).join('\n=> ')}\n`);
-        return configure(result, isDevelopment);
+        return await configure(result, isDevelopment);
     }
     else
     {
         const result = await getPackageJsons();
-        return configure(result, isDevelopment);
+        return await configure(result, isDevelopment);
     }
 }
 
-function configure(packageJsons, isDevelopment)
+async function configure(packageJsons, isDevelopment)
 {
-    return cleanArray(packageJsons.map(packageJson => {
+    let promises = packageJsons.map(async packageJson => {
         if (packageJson.browser)
         {
-            return createBrowserConfig(packageJson, '@app', isDevelopment);
+            return await createBrowserConfig(packageJson, '@app', isDevelopment);
         }
         else
         {
@@ -92,13 +93,14 @@ function configure(packageJsons, isDevelopment)
             }
             else
             {
-                return createLibraryConfig(packageJson, '@module');
+                return await createLibraryConfig(packageJson, '@module');
             }
         }
-    }));
+    });
+    return cleanArray(await Promise.all(promises));
 }
 
-function createLibraryConfig(packageJson, sourceAlias)
+async function createLibraryConfig(packageJson, sourceAlias)
 {
     const {
         input = 'src/index.js',
@@ -206,7 +208,7 @@ function resolveAsset(packagePath, assetPath)
     return path.join(packagePath, assetPath).replaceAll('\\', '/');
 }
 
-function createBrowserConfig(packageJson, sourceAlias, isDevelopment = false)
+async function createBrowserConfig(packageJson, sourceAlias, isDevelopment = false)
 {
     const {
         input = 'src/main.js',
