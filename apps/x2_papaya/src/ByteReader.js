@@ -1,91 +1,7 @@
-// https://github.com/aseprite/aseprite/blob/master/docs/ase-file-specs.md
-
-export async function loadAseprite(filepath, opts = {})
-{
-    const response = await fetch(filepath);
-    const r = new ByteReader(response.body);
-
-    readHeader(r);
-}
-
-function readHeader(r)
-{
-    r.setEndian(LITTLE_ENDIAN);
-    const fileSize = r.readDoubleWord();
-    const magicNumber = r.readWord();
-    if (magicNumber !== 0xA5E0)
-    {
-        throw new Error('Invalid Aseprite header byte format.');
-    }
-    const frames = r.readWord();
-    const width = r.readWord();
-    const height = r.readWord();
-    const colorDepth = r.readWord();
-    const flags = r.readDoubleWord();
-    const speed = r.readWord();
-    r.readDoubleWord(); // Zeroes
-    r.readDoubleWord(); // Zeroes
-    const transparentColor = r.readByte();
-    r.seekBytes(3);
-    const numColors = r.readWord();
-    const pixelWidth = r.readByte();
-    const pixelHeight = r.readByte();
-    r.seekBytes(92);
-    // const flagHasValidLayerOpacity = flags & 1 === 1;
-    return {
-        fileSize,
-        frames,
-        width,
-        height,
-        colorDepth,
-        flags,
-        speed,
-        transparentColor,
-        numColors,
-        pixelWidth,
-        pixelHeight,
-    };
-}
-
-function readFrame(r)
-{
-    r.setEndian(LITTLE_ENDIAN);
-    const frameBytes = r.readDoubleWord();
-    const magicNumber = r.readWord();
-    if (magicNumber !== 0xF1FA)
-    {
-        throw new Error('Invalid Aseprite frame header byte format.');
-    }
-    const frameDuration = r.readWord();
-    r.readByte(); // Unused byte
-    r.readByte(); // Unused byte
-    const numChunks = r.readDoubleWord();
-
-    let chunks = [];
-    for(let i = 0; i < numChunks; ++i)
-    {
-        const size = r.readDoubleWord();
-        const type = r.readWord();
-        const data = r.readBytes(size);
-        chunks.push({
-            size,
-            type,
-            data,
-        });
-    }
-
-    return {
-        frameBytes,
-        frameDuration,
-        numChunks,
-        chunks: []
-    };
-}
-
 export const BIG_ENDIAN = 0;
 export const LITTLE_ENDIAN = 1;
 
-class ByteReader
+export class ByteReader
 {
     constructor(readableStream)
     {
@@ -106,7 +22,7 @@ class ByteReader
 
     close()
     {
-        this.reader.close();
+        this.reader.cancel();
     }
 
     async prepareChunk()
@@ -114,9 +30,10 @@ class ByteReader
         if (this.byteIndex < 0 || this.byteIndex > this.byteChunk.length)
         {
             // Load next chunk
-            this.byteChunk = await this.reader.read();
-            if (this.byteChunk)
+            let { value } = await this.reader.read();
+            if (value)
             {
+                this.byteChunk = value;
                 this.byteIndex = 0;
             }
             else
@@ -139,6 +56,13 @@ class ByteReader
         {
             return (b << 16) + a;
         }
+    }
+
+    async readSignedWord()
+    {
+        let word = await this.readWord();
+        if (word & 0x8000) word = -(word & 0x7FFF);
+        return word;
     }
 
     async readWord()
@@ -202,4 +126,3 @@ class ByteReader
         }
     }
 }
-

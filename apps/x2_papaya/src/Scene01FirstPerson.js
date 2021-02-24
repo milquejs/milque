@@ -23,7 +23,7 @@ export async function main()
     const vertShaderSource = await TextLoader('main.vert');
     const fragShaderSource = await TextLoader('main.frag');
     const cubeObj = await OBJLoader('cube.obj');
-    const testImage = await ImageLoader('color.png');
+    const testImage = await ImageLoader('people/hairguy.png');
 
     const program = ProgramInfo.from(gl)
         .shader(gl.VERTEX_SHADER, vertShaderSource)
@@ -72,7 +72,6 @@ export async function main()
 
     cubes.create();
     cubes.create(2, 1);
-
     cubes.create(-10, -1, -10, 10, -2, 10);
 
     const testTexture = gl.createTexture();
