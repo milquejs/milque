@@ -52,9 +52,13 @@ const INPUT_SOURCE_REF_KEY = Symbol('inputSource');
  */
 export class InputSource
 {
+    /**
+     * @param {EventTarget} eventTarget The target element to listen to.
+     * @returns {InputSource} The input source for this event target.
+     */
     static for(eventTarget)
     {
-        if (Object.prototype.hasOwnProperty.call(eventTarget, INPUT_SOURCE_REF_KEY))
+        if (isElementInputSource(eventTarget))
         {
             return eventTarget[INPUT_SOURCE_REF_KEY];
         }
@@ -346,4 +350,13 @@ export class InputSource
             this.inputs[deviceName] = {};
         }
     }
+}
+
+/**
+ * @param {EventTarget} eventTarget The target element to listen to.
+ * @returns {boolean} Whether the target element has a registered input source.
+ */
+export function isElementInputSource(eventTarget)
+{
+    return Object.prototype.hasOwnProperty.call(eventTarget, INPUT_SOURCE_REF_KEY);
 }

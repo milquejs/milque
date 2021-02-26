@@ -1,6 +1,6 @@
 import { AdapterManager } from './adapter/AdapterManager.js';
 import { Synthetic, stringifyDeviceKeyCodePair } from './adapter/Synthetic.js';
-import { InputSource, InputSourceStage } from './source/InputSource.js';
+import { InputSource, InputSourceStage, isElementInputSource } from './source/InputSource.js';
 
 export class InputContext
 {
@@ -325,7 +325,13 @@ function resolveInputSource(inputSource)
 {
     if (!(inputSource instanceof InputSource))
     {
-        return InputSource.for(inputSource);
+        let result = InputSource.for(inputSource);
+        if (isElementInputSource(inputSource))
+        {
+            // By default, all NEW input sources resolved from event targets should autopoll.
+            result.autopoll = true;
+        }
+        return result;
     }
     else
     {
