@@ -36,12 +36,12 @@ export class InputContextElement extends HTMLElement
         ];
     }
 
-    constructor()
+    constructor(inputContext = new InputContext())
     {
         super();
         attachShadowTemplate(this, INNER_HTML, INNER_STYLE, { mode: 'open' });
 
-        this._inputContext = new InputContext();
+        this._inputContext = inputContext;
 
         this._mapElement = this.shadowRoot.querySelector('input-map');
         this._sourceElement = this.shadowRoot.querySelector('input-source');
@@ -63,7 +63,10 @@ export class InputContextElement extends HTMLElement
         let map = this._mapElement.map;
         if (source && map)
         {
-            this._inputContext.setInputMap(map).attach(source);
+            this._inputContext
+                .setInputMap(map)
+                .setInputSource(source)
+                .attach();
             this._inputContext.disabled = this._disabled;
         }
     }
@@ -98,7 +101,10 @@ export class InputContextElement extends HTMLElement
                     let map = this._mapElement.map;
                     if (map)
                     {
-                        this._inputContext.setInputMap(map).attach(source);
+                        this._inputContext
+                            .setInputMap(map)
+                            .setInputSource(source)
+                            .attach();
                         this._inputContext.disabled = this._disabled;
                     }
                 }

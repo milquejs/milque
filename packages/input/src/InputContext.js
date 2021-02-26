@@ -1,20 +1,19 @@
 import { AdapterManager } from './adapter/AdapterManager.js';
 import { Synthetic, stringifyDeviceKeyCodePair } from './adapter/Synthetic.js';
-import { InputSourceStage } from './source/InputSource.js';
+import { InputSource, InputSourceStage } from './source/InputSource.js';
 
 export class InputContext
 {
     /**
      * Constructs a disabled InputContext with the given adapters and inputs.
      * 
-     * @param {Object} [opts] Any additional options.
-     * @param {Boolean} [opts.disabled=false] Whether the context should start disabled.
+     * @param {EventTarget|InputSource} [inputSource=null] The source of all inputs listened to.
+     * @param {Object} [inputMap=null] The input to adapter options object map.
+     * @param {Boolean} [disabled=true] Whether the context should start disabled.
      */
-    constructor(opts = {})
+    constructor(inputSource = null, inputMap = null, disabled = true)
     {
-        const { disabled = true } = opts;
-
-        /** @type {import('./source/InputSource.js').InputSource} */
+        /** @type {InputSource} */
         this.source = null;
 
         /** @private */
@@ -31,6 +30,16 @@ export class InputContext
         this.onSourceInput = this.onSourceInput.bind(this);
         /** @private */
         this.onSourcePoll = this.onSourcePoll.bind(this);
+
+        if (inputSource || inputMap)
+        {
+            this._setupInputs(resolveInputSource(inputSource), inputMap);
+        }
+
+        if (!disabled)
+        {
+            this.attach();
+        }
     }
 
     get disabled() { return this._disabled; }
@@ -47,13 +56,24 @@ export class InputContext
     }
 
     /**
-     * @param {import('./source/InputSource.js').InputSource} inputSource The
-     * source of all inputs listened to.
+     * @param {EventTarget|InputSource} inputSource The source of all inputs listened to.
      * @returns {InputContext} Self for method-chaining.
      */
-    attach(inputSource)
+    setInputSource(inputSource)
     {
-        this._setupInputs(inputSource, null);
+        this._setupInputs(resolveInputSource(inputSource), null);
+        return this;
+    }
+
+    /**
+     * @returns {InputContext} Self for method-chaining.
+     */
+    attach()
+    {
+        if (!this.source)
+        {
+            throw new Error('Missing input source to attach context.');
+        }
         this.toggle(true);
         return this;
     }
@@ -299,4 +319,16 @@ function removeSourceRef(inputSource, deviceName, keyCode)
     let value = (refCounts[keyString] - 1) || 0;
     refCounts[keyString] = Math.max(value, 0);
     return value;
+}
+
+function resolveInputSource(inputSource)
+{
+    if (!(inputSource instanceof InputSource))
+    {
+        return InputSource.for(inputSource);
+    }
+    else
+    {
+        return inputSource;
+    }
 }
