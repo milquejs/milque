@@ -1,6 +1,7 @@
 import { AdapterManager } from './adapter/AdapterManager.js';
-import { Synthetic, stringifyDeviceKeyCodePair } from './adapter/Synthetic.js';
-import { InputSource, InputSourceStage, isElementInputSource } from './source/InputSource.js';
+import { Synthetic } from './adapter/Synthetic.js';
+import { InputSourceEventStage } from './source/InputEventSource.js';
+import { InputSource, hasInputEventSource } from './source/InputSource.js';
 
 export class InputContext
 {
@@ -88,7 +89,11 @@ export class InputContext
         return this;
     }
 
-    /** @private */
+    /**
+     * @private
+     * @param {InputSource} inputSource
+     * @param {object} inputMap
+     */
     _setupInputs(inputSource, inputMap)
     {
         // Make sure this context is disabled before changing it...
@@ -96,6 +101,7 @@ export class InputContext
         this.disabled = true;
 
         // Prepare previous state...
+        /** @type {InputSource} */
         const prevInputSource = this.source;
         const prevInputs = this.inputs;
         const isPrevSourceReplaced = (prevInputSource !== inputSource) && prevInputSource;
@@ -116,11 +122,7 @@ export class InputContext
                 for(let adapter of adapters)
                 {
                     const { deviceName, keyCode } = adapter;
-                    let refCount = removeSourceRef(prevInputSource, deviceName, keyCode);
-                    if (refCount === 0)
-                    {
-                        prevInputSource.delete(deviceName, keyCode);
-                    }
+                    prevInputSource.disableKeySource(deviceName, keyCode);
                 }
             }
 
@@ -149,8 +151,6 @@ export class InputContext
 
         if (inputSource)
         {
-            initSourceRefs(inputSource);
-
             const inputs = this.inputs;
             for(let inputName in inputs)
             {
@@ -158,11 +158,7 @@ export class InputContext
                 for(let adapter of adapters)
                 {
                     const { deviceName, keyCode } = adapter;
-                    let refCount = addSourceRef(inputSource, deviceName, keyCode);
-                    if (refCount === 1)
-                    {
-                        inputSource.add(deviceName, keyCode);
-                    }
+                    inputSource.enableKeySource(deviceName, keyCode);
                 }
             }
 
@@ -180,21 +176,23 @@ export class InputContext
 
     /**
      * @private
-     * @param {import('./source/InputSource.js').SourceInputEvent} e
+     * @param {import('./source/InputEventSource.js').SourceInputEvent} e
      */
     onSourceInput(e)
     {
-        if (!e.consumed && !this._ignoreInput)
+        if (!e.detail.consumed && !this._ignoreInput)
         {
-            const { stage, deviceName, keyCode, input } = e;
+            const { stage, deviceName, keyCode, input } = e.detail;
             switch(stage)
             {
-                case InputSourceStage.POLL:
+                case InputSourceEventStage.POLL:
                     this.adapters.poll(deviceName, keyCode, input);
                     break;
-                case InputSourceStage.UPDATE:
+                case InputSourceEventStage.UPDATE:
                     this.adapters.update(deviceName, keyCode, input);
                     break;
+                default:
+                    throw new Error('Unknown input source stage.');
             }
             e.consumed = true;
         }
@@ -207,7 +205,7 @@ export class InputContext
 
     /**
      * @private
-     * @param {import('./source/InputSource.js').SourcePollEvent} e
+     * @param {import('./source/InputEventSource.js').SourcePollEvent} e
      */
     onSourcePoll(e)
     {
@@ -286,47 +284,14 @@ export class InputContext
     }
 }
 
-const INPUT_SOURCE_INPUT_REF_COUNTS = Symbol('inputRefCounts');
-
-function initSourceRefs(inputSource)
+function resolveInputSource(inputSourceOrEventTarget)
 {
-    if (!(INPUT_SOURCE_INPUT_REF_COUNTS in inputSource))
+    if (!(inputSourceOrEventTarget instanceof InputSource))
     {
-        inputSource[INPUT_SOURCE_INPUT_REF_COUNTS] = {};
-    }
-}
-
-function countSourceRef(inputSource, deviceName, keyCode)
-{
-    const keyString = stringifyDeviceKeyCodePair(deviceName, keyCode);
-    let refCounts = inputSource[INPUT_SOURCE_INPUT_REF_COUNTS];
-    return refCounts[keyString] || 0;
-}
-
-function addSourceRef(inputSource, deviceName, keyCode)
-{
-    const keyString = stringifyDeviceKeyCodePair(deviceName, keyCode);
-    let refCounts = inputSource[INPUT_SOURCE_INPUT_REF_COUNTS];
-    let value = (refCounts[keyString] + 1) || 1;
-    refCounts[keyString] = value;
-    return value;
-}
-
-function removeSourceRef(inputSource, deviceName, keyCode)
-{
-    const keyString = stringifyDeviceKeyCodePair(deviceName, keyCode);
-    let refCounts = inputSource[INPUT_SOURCE_INPUT_REF_COUNTS];
-    let value = (refCounts[keyString] - 1) || 0;
-    refCounts[keyString] = Math.max(value, 0);
-    return value;
-}
-
-function resolveInputSource(inputSource)
-{
-    if (!(inputSource instanceof InputSource))
-    {
-        let result = InputSource.for(inputSource);
-        if (isElementInputSource(inputSource))
+        let eventTarget = inputSourceOrEventTarget;
+        let flag = hasInputEventSource(eventTarget);
+        let result = new InputSource(eventTarget);
+        if (!flag)
         {
             // By default, all NEW input sources resolved from event targets should autopoll.
             result.autopoll = true;
@@ -335,6 +300,6 @@ function resolveInputSource(inputSource)
     }
     else
     {
-        return inputSource;
+        return inputSourceOrEventTarget;
     }
 }

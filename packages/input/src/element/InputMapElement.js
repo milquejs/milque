@@ -1,8 +1,9 @@
 import { attachShadowTemplate, customEvents } from '@milque/cuttle.macro';
 
-import { InputKeyElement } from './InputKeyElement.js';
 import INNER_HTML from './InputMapElement.template.html';
 import INNER_STYLE from './InputMapElement.module.css';
+
+import { InputKeyElement } from './InputKeyElement.js';
 
 function upgradeProperty(element, propertyName)
 {

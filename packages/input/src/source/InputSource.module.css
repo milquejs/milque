@@ -2,10 +2,6 @@
     display: inline-block;
 }
 
-.hidden {
-    display: none;
-}
-
 div {
     font-family: monospace;
     color: #666666;

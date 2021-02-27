@@ -24,6 +24,22 @@ const DEFAULT_PAGE_PIXELS = 100;
  */
 export class Mouse extends InputDevice
 {
+    /** @override */
+    static isAxis(keyCode)
+    {
+        return keyCode === 'PosX'
+            || keyCode === 'PosY'
+            || keyCode === 'WheelX'
+            || keyCode === 'WheelY'
+            || keyCode === 'WheelZ';
+    }
+
+    /** @override */
+    static isButton(keyCode)
+    {
+        return !this.isAxis(keyCode);
+    }
+
     /**
      * Constructs a listening mouse with no listeners (yet).
      * 

@@ -1,8 +1,10 @@
 import { attachShadowTemplate, properties } from '@milque/cuttle.macro';
 
-import { InputContext } from '../InputContext.js';
 import INNER_HTML from './InputContextElement.template.html';
 import INNER_STYLE from './InputContextElement.module.css';
+
+import { InputContext } from '../InputContext.js';
+import { hasInputEventSource, InputSource } from '../source/InputSource';
 
 function upgradeProperty(element, propertyName)
 {
@@ -19,9 +21,9 @@ export class InputContextElement extends HTMLElement
     static get [properties]()
     {
         return {
+            // src: A custom type,
             for: String,
             disabled: Boolean,
-            debug: Boolean,
         };
     }
 
@@ -36,12 +38,12 @@ export class InputContextElement extends HTMLElement
         ];
     }
 
-    constructor(inputContext = new InputContext())
+    constructor()
     {
         super();
         attachShadowTemplate(this, INNER_HTML, INNER_STYLE, { mode: 'open' });
 
-        this._inputContext = inputContext;
+        this._inputContext = new InputContext();
 
         this._mapElement = this.shadowRoot.querySelector('input-map');
         this._sourceElement = this.shadowRoot.querySelector('input-source');
@@ -54,12 +56,12 @@ export class InputContextElement extends HTMLElement
     }
 
     get context() { return this._inputContext; }
-    get source() { return this._sourceElement.source; }
+    get source() { return this._sourceElement; }
     get map() { return this._mapElement.map; }
 
     onInputMapLoad()
     {
-        let source = this._sourceElement.source;
+        let source = this._sourceElement;
         let map = this._mapElement.map;
         if (source && map)
         {
@@ -95,9 +97,24 @@ export class InputContextElement extends HTMLElement
         {
             case 'for':
                 {
-                    this._sourceElement.for = value;
+                    let targetElement = document.getElementById(value);
+                    // Enable autopoll if input source is unset.
+                    let flag = hasInputEventSource(value ? targetElement : this._sourceElement);
+                    if (!flag)
+                    {
+                        this._sourceElement.autopoll = true;
+                    }
 
-                    let source = this._sourceElement.source;
+                    if (targetElement instanceof InputSource && targetElement._eventTarget)
+                    {
+                        this._sourceElement.setEventTarget(targetElement._eventTarget);
+                    }
+                    else
+                    {
+                        this._sourceElement.for = value;
+                    }
+
+                    let source = this._sourceElement;
                     let map = this._mapElement.map;
                     if (map)
                     {
@@ -114,16 +131,13 @@ export class InputContextElement extends HTMLElement
                 break;
             case 'disabled':
                 {
-                    let source = this._sourceElement.source;
+                    let source = this._sourceElement;
                     let map = this._mapElement.map;
                     if (source && map)
                     {
                         this._inputContext.disabled = this._disabled;
                     }
                 }
-                break;
-            case 'debug':
-                this._mapElement.classList.toggle('hidden', value === null);
                 break;
             // For debug info
             case 'id':
