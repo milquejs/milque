@@ -302,8 +302,9 @@ export class InputSource extends HTMLElement
         this._eventSource = eventSource;
         this._eventTarget = eventTarget;
 
+        // TODO: Need to revisit whether this is a good way to set autopoll.
         // NOTE: Auto-poll can only be turned on and only during init.
-        let autopoll = this._autopoll;
+        let autopoll = this.autopoll;
         if (autopoll)
         {
             this._eventSource.autopoll = autopoll;

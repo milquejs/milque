@@ -97,6 +97,7 @@ export class InputContextElement extends HTMLElement
         {
             case 'for':
                 {
+                    // TODO: Need to revisit whether this is a good way to set autopoll.
                     let targetElement = document.getElementById(value);
                     // Enable autopoll if input source is unset.
                     let flag = hasInputEventSource(value ? targetElement : this._sourceElement);
@@ -108,6 +109,8 @@ export class InputContextElement extends HTMLElement
                     if (targetElement instanceof InputSource && targetElement._eventTarget)
                     {
                         this._sourceElement.setEventTarget(targetElement._eventTarget);
+                        this._sourceElement.className = targetElement.className;
+                        this._sourceElement.id = targetElement.id;
                     }
                     else
                     {
