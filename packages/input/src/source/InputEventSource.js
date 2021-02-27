@@ -35,9 +35,11 @@ export class InputEventSource
     {
         /** @private */
         this.onInputEvent = this.onInputEvent.bind(this);
+        /** @private */
+        this.onAnimationFrame = this.onAnimationFrame.bind(this);
 
         let deviceMap = {};
-        let inputMap = {};
+        let keyMap = {};
         for(let device of deviceList)
         {
             const deviceName = device.deviceName;
@@ -46,17 +48,22 @@ export class InputEventSource
                 throw new Error(`Another device with name '${deviceName}' already exists.`);
             }
             deviceMap[deviceName] = device;
-            inputMap[deviceName] = {};
+            keyMap[deviceName] = {};
             device.addInputListener(WILDCARD_KEY_MATCHER, this.onInputEvent);
         }
         this.devices = deviceMap;
-        this.inputs = inputMap;
+        this.keySources = keyMap;
 
         /** @private */
         this.listeners = {
             poll: [],
             update: [],
         };
+
+        /** @private */
+        this._autopoll = false;
+        /** @private */
+        this._animationFrameHandle = null;
     }
 
     destroy()
@@ -78,14 +85,14 @@ export class InputEventSource
      */
     poll(now = performance.now())
     {
-        for(const deviceName in this.inputs)
+        for(const deviceName in this.keySources)
         {
-            const inputMap = this.inputs[deviceName];
-            for(const keyCode in inputMap)
+            const keyMap = this.keySources[deviceName];
+            for(const keyCode in keyMap)
             {
-                let input = inputMap[keyCode];
-                input.poll();
-                this.dispatchInputEvent(InputSourceEventStage.POLL, deviceName, keyCode, input);
+                let keyInput = keyMap[keyCode];
+                keyInput.poll();
+                this.dispatchInputEvent(InputSourceEventStage.POLL, deviceName, keyCode, keyInput);
             }
         }
         this.dispatchPollEvent(now);
@@ -186,7 +193,7 @@ export class InputEventSource
             case InputType.KEY:
                 {
                     const keyCode = e.keyCode;
-                    let button = this.inputs[deviceName][keyCode];
+                    let button = this.keySources[deviceName][keyCode];
                     if (button)
                     {
                         button.update(e.event === InputEventCode.DOWN);
@@ -197,7 +204,7 @@ export class InputEventSource
                 break;
             case InputType.POS:
                 {
-                    let inputs = this.inputs[deviceName];
+                    let inputs = this.keySources[deviceName];
                     let xAxis = inputs.PosX;
                     if (xAxis)
                     {
@@ -214,7 +221,7 @@ export class InputEventSource
                 break;
             case InputType.WHEEL:
                 {
-                    let inputs = this.inputs[deviceName];
+                    let inputs = this.keySources[deviceName];
                     let xAxis = inputs.WheelX;
                     if (xAxis)
                     {
@@ -236,6 +243,38 @@ export class InputEventSource
                 }
                 break;
         }
+    }
+    
+    /** @private */
+    onAnimationFrame(now)
+    {
+        if (!this._autopoll) return;
+        this._animationFrameHandle = requestAnimationFrame(this.onAnimationFrame);
+        this.poll(now);
+    }
+
+    set autopoll(value)
+    {
+        this._autopoll = value;
+
+        if (this._animationFrameHandle)
+        {
+            // Stop animation frame loop
+            cancelAnimationFrame(this._animationFrameHandle);
+            this._animationFrameHandle = null;
+        }
+
+        if (value)
+        {
+            // Start animation frame loop
+            this._animationFrameHandle = requestAnimationFrame(this.onAnimationFrame);
+        }
+    }
+
+    /** @returns {boolean} Whether to automatically poll on animation frame. */
+    get autopoll()
+    {
+        return this._autopoll;
     }
     
     /**
@@ -266,12 +305,12 @@ export class InputEventSource
             throw new Error(`Unknown key code '${keyCode}' for device ${deviceName}.`);
         }
 
-        let prev = this.inputs[deviceName][keyCode];
+        let prev = this.keySources[deviceName][keyCode];
         if (prev)
         {
             throw new Error('Cannot add duplicate key source for the same device and key code.');
         }
-        this.inputs[deviceName][keyCode] = result;
+        this.keySources[deviceName][keyCode] = result;
         return this;
     }
 
@@ -283,18 +322,18 @@ export class InputEventSource
      */
     deleteKeySource(deviceName, keyCode)
     {
-        let prev = this.inputs[deviceName][keyCode];
+        let prev = this.keySources[deviceName][keyCode];
         if (!prev)
         {
             throw new Error('Cannot delete missing key source for the device and key code.');
         }
-        delete this.inputs[deviceName][keyCode];
+        delete this.keySources[deviceName][keyCode];
     }
 
     /** @returns {Button|Axis} */
     getKeySource(deviceName, keyCode)
     {
-        return this.inputs[deviceName][keyCode];
+        return this.keySources[deviceName][keyCode];
     }
     
     /**
@@ -304,7 +343,7 @@ export class InputEventSource
      */
     hasKeySource(deviceName, keyCode)
     {
-        return deviceName in this.inputs && keyCode in this.inputs[deviceName];
+        return deviceName in this.keySources && keyCode in this.keySources[deviceName];
     }
 
     /**
@@ -314,7 +353,7 @@ export class InputEventSource
     {
         for(let deviceName in this.devices)
         {
-            this.inputs[deviceName] = {};
+            this.keySources[deviceName] = {};
         }
     }
 }

@@ -9,17 +9,6 @@ import { stringifyDeviceKeyCodePair } from '../adapter/Synthetic.js';
 import { Keyboard } from '../device/Keyboard.js';
 import { Mouse } from '../device/Mouse.js';
 
-function upgradeProperty(element, propertyName)
-{
-    if (Object.prototype.hasOwnProperty.call(element, propertyName))
-    {
-        let value = element[propertyName];
-        delete element[propertyName];
-        element[propertyName] = value;
-    }
-}
-
-
 /** This holds the ref count for each key source per input event source. */
 const KEY_SOURCE_REF_COUNT_KEY = Symbol('keySourceRefCount');
 
@@ -116,7 +105,6 @@ export class InputSource extends HTMLElement
     static get observedAttributes()
     {
         return [
-            'autopoll',
             // Listening for built-in attribs
             'id',
             'class',
@@ -126,8 +114,8 @@ export class InputSource extends HTMLElement
     static get [properties]()
     {
         return {
-            // autopoll: Boolean
-            for: String
+            for: String,
+            autopoll: Boolean,
         };
     }
 
@@ -174,11 +162,6 @@ export class InputSource extends HTMLElement
         this._keySourceRefCount = {};
 
         /** @private */
-        this._autopoll = false;
-        /** @private */
-        this._animationFrameHandle = null;
-
-        /** @private */
         this.onSourcePoll = this.onSourcePoll.bind(this);
         /** @private */
         this.onSourceInput = this.onSourceInput.bind(this);
@@ -186,8 +169,6 @@ export class InputSource extends HTMLElement
         this.onTargetFocus = this.onTargetFocus.bind(this);
         /** @private */
         this.onTargetBlur = this.onTargetBlur.bind(this);
-        /** @private */
-        this.onAnimationFrame = this.onAnimationFrame.bind(this);
 
         if (eventTarget)
         {
@@ -198,8 +179,6 @@ export class InputSource extends HTMLElement
     /** @override */
     connectedCallback()
     {
-        upgradeProperty(this, 'autopoll');
-
         // Allows this element to be focusable
         if (!this.hasAttribute('tabindex')) this.setAttribute('tabindex', 0);
 
@@ -224,9 +203,6 @@ export class InputSource extends HTMLElement
             case 'for':
                 this.setEventTarget(value ? document.getElementById(value) : this);
                 break;
-            case 'autopoll':
-                this.autopoll = value !== null;
-                break;
             // For debug info
             case 'id':
             case 'class':
@@ -239,30 +215,6 @@ export class InputSource extends HTMLElement
         }
     }
 
-    set autopoll(value)
-    {
-        this._autopoll = value;
-
-        if (this._animationFrameHandle)
-        {
-            // Stop animation frame loop
-            cancelAnimationFrame(this._animationFrameHandle);
-            this._animationFrameHandle = null;
-        }
-
-        if (value)
-        {
-            // Start animation frame loop
-            this._animationFrameHandle = requestAnimationFrame(this.onAnimationFrame);
-        }
-    }
-
-    /** @returns {boolean} Whether to automatically poll on animation frame. */
-    get autopoll()
-    {
-        return this._autopoll;
-    }
-
     /**
      * Poll input state from devices.
      * 
@@ -271,19 +223,6 @@ export class InputSource extends HTMLElement
     poll(now)
     {
         this._eventSource.poll(now);
-    }
-    
-    /** @private */
-    onAnimationFrame(now)
-    {
-        if (!this._autopoll) return;
-        this._animationFrameHandle = requestAnimationFrame(this.onAnimationFrame);
-
-        let eventSource = this._eventSource;
-        if (eventSource)
-        {
-            eventSource.poll(now);
-        }
     }
 
     /** @private */
@@ -362,6 +301,13 @@ export class InputSource extends HTMLElement
         }
         this._eventSource = eventSource;
         this._eventTarget = eventTarget;
+
+        // NOTE: Auto-poll can only be turned on and only during init.
+        let autopoll = this._autopoll;
+        if (autopoll)
+        {
+            this._eventSource.autopoll = autopoll;
+        }
         
         eventSource.addEventListener('poll', this.onSourcePoll);
         eventSource.addEventListener('input', this.onSourceInput);
@@ -447,5 +393,8 @@ export class InputSource extends HTMLElement
         eventSource.clearKeySources();
         clearKeySourceRefs(eventSource);
     }
+
+    get keySources() { return this._eventSource.keySources; }
+    get devices() { return this._eventSource.devices; }
 }
 window.customElements.define('input-source', InputSource);
