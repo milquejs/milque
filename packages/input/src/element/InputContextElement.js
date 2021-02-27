@@ -154,5 +154,15 @@ export class InputContextElement extends HTMLElement
 
     get src() { return this._mapElement.src; }
     set src(value) { this._mapElement.src = value; }
+
+    getInput(inputName)
+    {
+        return this._inputContext.getInput(inputName);
+    }
+
+    getInputValue(inputName)
+    {
+        return this._inputContext.getInputValue(inputName);
+    }
 }
 window.customElements.define('input-context', InputContextElement);
