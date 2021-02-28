@@ -9,7 +9,7 @@ import { createHitResult } from './IntersectionHelper.js';
  * @param {BoundingRadialLike} a The bounding radial to test against.
  * @param {number} x The center x position of the bounding radial.
  * @param {number} y The center y position of the bounding radial.
- * @param {number} y The radius of the bounding radial.
+ * @param {number} r The radius of the bounding radial.
  * @returns {HitResult|null} The hit result info, or null if not intersecting.
  */
 export function intersectBoundingRadial(a, x, y, r)

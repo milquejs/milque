@@ -96,7 +96,7 @@ const PLAYER_DASH_SPEED_MULTIPLIER = 5;
 const PLAYER_INTERACT_RADIUS = 24;
 
 const PLAYER_MOVE_SHAPE = new AxisAlignedBoundingBox(0, 0, 8, 8);
-const PLAYER_INTERACT_SHAPE = new BoundingRadial(0, 0, 16);
+const PLAYER_INTERACT_SHAPE = new BoundingRadial(0, 0, PLAYER_INTERACT_RADIUS);
 
 function createPlayer(world)
 {
@@ -205,8 +205,16 @@ function drawPlayer(player, ctx)
     let fx = Math.cos(radians) * PLAYER_INTERACT_RADIUS;
     let fy = Math.sin(radians) * PLAYER_INTERACT_RADIUS;
     ctx.fillStyle = '#AAAAAA';
-    ctx.fillRect(fx, fy, 4, 4);
-    
+    ctx.fillRect(fx - 2, fy - 2, 4, 4);
+
+    // Interaction Body
+    /*
+    ctx.strokeStyle = '#00FF00';
+    ctx.beginPath();
+    ctx.arc(0, 0, PLAYER_INTERACT_SHAPE.r, 0, TWO_PI);
+    ctx.stroke();
+    */
+
     ctx.translate(-x, -y);
 }
 
