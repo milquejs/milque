@@ -1,73 +1,27 @@
+import { EPSILON, clamp, createHitResult } from './IntersectionHelper.js';
+
 // https://noonat.github.io/intersect/
-const EPSILON = 1e-8;
 
 /**
- * @typedef AxisAlignedBoundingBox
- * @property {Number} x
- * @property {Number} y
- * @property {Number} rx
- * @property {Number} ry
- */
-
-/**
- * @typedef HitResult
- * @property {Number} x
- * @property {Number} y
- * @property {Number} dx
- * @property {Number} dy
- * @property {Number} nx
- * @property {Number} ny
- * @property {Number} time
+ * @typedef {import('../bounding/AxisAlignedBoundingBox.js').AxisAlignedBoundingBoxLike} AxisAlignedBoundingBoxLike
+ * @typedef {import('./IntersectionHelper.js').HitResult} HitResult
  */
 
 /**
  * @typedef SweepResult
- * @property {Number} x The next x-position the target should be at to satisfy constraints.
- * @property {Number} y The next y-position the target should be at to satisfy constraints.
- * @property {Number} dx The next x-motion the target should be travelling at.
- * @property {Number} dy The next y-motion the target should be travelling at.
- * @property {Number} time The time along the sweep segment the hit occurred.
- * @property {AxisAlignedBoundingBox} other The sweep hit box.
+ * @property {number} x The next x-position the target should be at to satisfy constraints.
+ * @property {number} y The next y-position the target should be at to satisfy constraints.
+ * @property {number} dx The next x-motion the target should be travelling at.
+ * @property {number} dy The next y-motion the target should be travelling at.
+ * @property {number} time The time along the sweep segment the hit occurred.
+ * @property {AxisAlignedBoundingBoxLike} other The sweep hit box.
  * @property {HitResult} hit The sweep hit info.
  */
 
 /**
- * Clamp the value between the given range.
- * 
- * @param {Number} value The value to be clamped.
- * @param {Number} min The minimum possible value, inclusive.
- * @param {Number} max The maximum possible value, inclusive.
- * @returns {Number} The clamped value.
- */
-function clamp(value, min, max)
-{
-    return Math.min(Math.max(value, min), max);
-}
-
-/**
- * @param {Number} x 
- * @param {Number} y 
- * @param {Number} dx 
- * @param {Number} dy 
- * @param {Number} nx 
- * @param {Number} ny 
- * @param {Number} time 
- * @returns {HitResult}
- */
-function createHitResult(x, y, dx, dy, nx, ny, time)
-{
-    return {
-        x, y,
-        dx, dy,
-        nx, ny,
-        time,
-    };
-}
-
-/**
- * @param {Number} x 
- * @param {Number} y 
- * @param {Number} time 
+ * @param {number} x 
+ * @param {number} y 
+ * @param {number} time 
  * @param {HitResult} hit 
  * @returns {SweepResult}
  */
@@ -83,11 +37,11 @@ function createSweepResult(x, y, dx, dy, time, other, hit)
 }
 
 /**
- * @param {Number} x
- * @param {Number} y
- * @param {Number} rx
- * @param {Number} ry
- * @returns {AxisAlignedBoundingBox}
+ * @param {number} x
+ * @param {number} y
+ * @param {number} rx
+ * @param {number} ry
+ * @returns {AxisAlignedBoundingBoxLike}
  */
 export function createAxisAlignedBoundingBox(x, y, rx, ry)
 {
@@ -101,9 +55,9 @@ export function createAxisAlignedBoundingBox(x, y, rx, ry)
  * Tests and gets the intersection info of a static axis-aligned bounding
  * box against a point.
  * 
- * @param {AxisAlignedBoundingBox} a The box to test against.
- * @param {Number} x The x position of the point.
- * @param {Number} y The y position of the point.
+ * @param {AxisAlignedBoundingBoxLike} a The box to test against.
+ * @param {number} x The x position of the point.
+ * @param {number} y The y position of the point.
  * @returns {HitResult|null} The hit result info.
  */
 export function intersectPoint(a, x, y)
@@ -130,13 +84,13 @@ export function intersectPoint(a, x, y)
  * Tests and gets the intersection info of a static axis-aligned bounding
  * box against a segment.
  * 
- * @param {AxisAlignedBoundingBox} a The box to test against.
- * @param {Number} x The x position of the root of the segment.
- * @param {Number} y The y position of the root of the segment.
- * @param {Number} dx The x-axis delta from the root of the segment.
- * @param {Number} dy The y-axis delta from the root of the segment.
- * @param {Number} px The x-axis padding away from the segment.
- * @param {Number} py The y-axis padding away from the segment.
+ * @param {AxisAlignedBoundingBoxLike} a The box to test against.
+ * @param {number} x The x position of the root of the segment.
+ * @param {number} y The y position of the root of the segment.
+ * @param {number} dx The x-axis delta from the root of the segment.
+ * @param {number} dy The y-axis delta from the root of the segment.
+ * @param {number} px The x-axis padding away from the segment.
+ * @param {number} py The y-axis padding away from the segment.
  * @returns {HitResult|null} The hit result info.
  */
 export function intersectSegment(a, x, y, dx, dy, px = 0, py = 0)
@@ -180,8 +134,8 @@ export function intersectSegment(a, x, y, dx, dy, px = 0, py = 0)
  * Tests and gets the intersection info of two static axis-aligned bounding
  * boxes.
  * 
- * @param {AxisAlignedBoundingBox} a The box to test against.
- * @param {AxisAlignedBoundingBox} b The other box.
+ * @param {AxisAlignedBoundingBoxLike} a The box to test against.
+ * @param {AxisAlignedBoundingBoxLike} b The other box.
  * @returns {HitResult|null} The hit result info.
  */
 export function intersectAxisAlignedBoundingBox(a, b)
@@ -208,10 +162,10 @@ export function intersectAxisAlignedBoundingBox(a, b)
  * Tests collision of a moving axis-aligned bounding box against other
  * boxes.
  * 
- * @param {AxisAlignedBoundingBox} a The box to test against.
- * @param {Number} dx The x-axis motion of the box.
- * @param {Number} dy The y-axis motion of the box.
- * @param {AxisAlignedBoundingBox} other The other box.
+ * @param {AxisAlignedBoundingBoxLike} a The box to test against.
+ * @param {number} dx The x-axis motion of the box.
+ * @param {number} dy The y-axis motion of the box.
+ * @param {AxisAlignedBoundingBoxLike} other The other box.
  * @returns {SweepResult} The collision result info.
  */
 export function sweepInto(a, dx, dy, others)
@@ -271,10 +225,10 @@ export function sweepInto(a, dx, dy, others)
 
 /**
  * @param {SweepResult} out The output to write the results to.
- * @param {AxisAlignedBoundingBox} a 
- * @param {Number} dx 
- * @param {Number} dy 
- * @param {AxisAlignedBoundingBox} b 
+ * @param {AxisAlignedBoundingBoxLike} a 
+ * @param {number} dx 
+ * @param {number} dy 
+ * @param {AxisAlignedBoundingBoxLike} b 
  * @returns {SweepResult} The output with new result values.
  */
 function sweep(out, a, dx, dy, b)

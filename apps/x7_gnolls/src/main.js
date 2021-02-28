@@ -2,11 +2,13 @@ import '@milque/display';
 import '@milque/input';
 import { InputContextElement } from '@milque/input';
 import { Random } from '@milque/random';
+import { AxisAlignedBoundingBox, BoundingRadial } from './bounding/index.js';
+import { intersectBoundingRadial } from './intersection/BoundingRadialIntersectionSolver.js';
 
 window.addEventListener('DOMContentLoaded', main);
 
-const DISPLAY_WIDTH = 640;
-const DISPLAY_HEIGHT = 480;
+const DISPLAY_WIDTH = 320;
+const DISPLAY_HEIGHT = 240;
 const INPUT_MAP = {
     MoveLeft: [ 'Keyboard:ArrowLeft', 'Keyboard:KeyA' ],
     MoveRight: [ 'Keyboard:ArrowRight', 'Keyboard:KeyD' ],
@@ -34,30 +36,41 @@ async function main()
 
     const ctx = display.canvas.getContext('2d');
 
-    let world = {};
+    let world = {
+        display,
+        input,
+        ctx,
+        entities: {},
+    };
 
-    let player = createPlayer();
+    let player = createPlayer(world);
     player.x = DISPLAY_WIDTH / 2;
     player.y = DISPLAY_HEIGHT / 2;
-    world.player = player;
+    world.entities.players = [player];
 
-    let item = createItem(64, 64);
-    world.items = [
-        item
-    ];
+    let item = createItem(world);
+    item.x = 64;
+    item.y = 64;
+    world.entities.items = [item];
 
     display.addEventListener('frame', e => {
         const dt = e.detail.deltaTime / 60;
 
-        controlPlayer(player, dt, input, world);
-        updatePlayer(player, dt);
+        controlPlayer(player, dt, world);
 
-        updateItem(item, dt);
+        updatePlayer(player, dt, world);
+        for(let item of world.entities.items)
+        {
+            updateItem(item, dt, world);
+        }
 
         ctx.fillStyle = '#000000';
         ctx.fillRect(0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT);
 
-        drawItem(item, ctx);
+        for(let item of world.entities.items)
+        {
+            drawItem(item, ctx);
+        }
         drawPlayer(player, ctx);
     });
 }
@@ -82,20 +95,28 @@ const PLAYER_DASH_SPEED_MULTIPLIER = 5;
 
 const PLAYER_INTERACT_RADIUS = 24;
 
-function createPlayer()
+const PLAYER_MOVE_SHAPE = new AxisAlignedBoundingBox(0, 0, 8, 8);
+const PLAYER_INTERACT_SHAPE = new BoundingRadial(0, 0, 16);
+
+function createPlayer(world)
 {
     let player = {
         x: 0, y: 0,
         radians: 0,
+
         motionX: 0,
         motionY: 0,
+
         holding: null,
         facing: 1,
         moving: false,
         dashing: false,
         dashProgress: 0,
         swingProgress: 0,
+
+        interactBody: { ...PLAYER_INTERACT_SHAPE },
     };
+    
     return player;
 }
 
@@ -189,8 +210,10 @@ function drawPlayer(player, ctx)
     ctx.translate(-x, -y);
 }
 
-function updatePlayer(player, dt)
+function updatePlayer(player, dt, world)
 {
+    const { entities } = world;
+
     let f = Math.pow(INV_PLAYER_FRICTION, dt);
     player.motionX *= f;
     player.motionY *= f;
@@ -200,13 +223,18 @@ function updatePlayer(player, dt)
     {
         multiplier *= PLAYER_DASH_SPEED_MULTIPLIER;
     }
-    
+
     player.x += player.motionX * multiplier * dt;
     player.y += player.motionY * multiplier * dt;
+
+    player.interactBody.x = player.x;
+    player.interactBody.y = player.y;
 }
 
-function controlPlayer(player, dt, input, world)
+function controlPlayer(player, dt, world)
 {
+    const { input, entities } = world;
+
     let dx = input.getInputValue('MoveRight') - input.getInputValue('MoveLeft');
     let dy = input.getInputValue('MoveDown') - input.getInputValue('MoveUp');
     let dash = input.getInputValue('Evade');
@@ -215,12 +243,26 @@ function controlPlayer(player, dt, input, world)
 
     if (interact)
     {
-        for(let item of world.items)
+        if (player.holding)
         {
-            if (intersects(item.x, item.y, 0, player.x, player.y, PLAYER_INTERACT_RADIUS))
+            player.holding = null;
+            let item = createItem(world);
+            item.x = player.x;
+            item.y = player.y;
+            entities.items.push(item);
+        }
+        else
+        {
+            for(let item of entities.items)
             {
-                player.holding = item;
-                break;
+                let result = intersectBoundingRadial(
+                    player.interactBody,
+                    item.x, item.y, HALF_ITEM_SIZE);
+                if (result)
+                {
+                    player.holding = item;
+                    break;
+                }
             }
         }
     }
@@ -284,11 +326,11 @@ function controlPlayer(player, dt, input, world)
 const ITEM_SIZE = 12;
 const HALF_ITEM_SIZE = ITEM_SIZE / 2;
 
-function createItem(x, y)
+function createItem(world)
 {
     let item = {
-        x: x,
-        y: y,
+        x: 0,
+        y: 0,
     };
     return item;
 }

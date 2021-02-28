@@ -1,4 +1,4 @@
-import { intersectAxisAlignedBoundingBox, sweepInto } from './AxisAlignedBoundingBoxIntersectionSolver.js';
+import { intersectAxisAlignedBoundingBox, sweepInto } from '../intersection/AxisAlignedBoundingBoxIntersectionSolver.js';
 import { QuadTree } from './QuadTree.js';
 
 /**
