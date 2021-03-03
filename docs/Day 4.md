@@ -13,3 +13,5 @@ I found this when I drawing a character with squares. Although primitive, I real
 For things like input, etc. it should be the same. When I add a click input, I want to be able to immediately click and see something.
 
 When I add an entity, I want to be able to see it in the game world immediately.
+
+Things should be clear where they connect. That is the only way things can be modular. And data-orientated as much as possible, so swapping modules does not require complete rewrites.
