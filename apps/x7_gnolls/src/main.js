@@ -1,9 +1,9 @@
 import '@milque/display';
 import '@milque/input';
-import { InputContextElement } from '@milque/input';
-import { Random } from '@milque/random';
-import { AxisAlignedBoundingBox, BoundingRadial } from './bounding/index.js';
-import { intersectBoundingRadial } from './intersection/BoundingRadialIntersectionSolver.js';
+
+import * as Player from './gameobject/player.js';
+import * as Item from './gameobject/item.js';
+import * as Appliances from './gameobject/appliance.js';
 
 window.addEventListener('DOMContentLoaded', main);
 
@@ -43,25 +43,30 @@ async function main()
         entities: {},
     };
 
-    let player = createPlayer(world);
+    let player = Player.createPlayer(world);
     player.x = DISPLAY_WIDTH / 2;
     player.y = DISPLAY_HEIGHT / 2;
     world.entities.players = [player];
 
-    let item = createItem(world);
+    let item = Item.createItem(world);
     item.x = 64;
     item.y = 64;
     world.entities.items = [item];
 
+    let dispenser = Appliances.createDispenser(world);
+    dispenser.x = 32;
+    dispenser.y = 64;
+    world.entities.dispensers = [dispenser];
+
     display.addEventListener('frame', e => {
         const dt = e.detail.deltaTime / 60;
 
-        controlPlayer(player, dt, world);
+        Player.controlPlayer(player, dt, world);
 
-        updatePlayer(player, dt, world);
+        Player.updatePlayer(player, dt, world);
         for(let item of world.entities.items)
         {
-            updateItem(item, dt, world);
+            Item.updateItem(item, dt, world);
         }
 
         ctx.fillStyle = '#000000';
@@ -69,302 +74,14 @@ async function main()
 
         for(let item of world.entities.items)
         {
-            drawItem(item, ctx);
+            Item.drawItem(item, ctx);
         }
-        drawPlayer(player, ctx);
-    });
-}
-
-/* * * * * * * * * * * * * * * * * * * * * * * * * * PLAYERS */
-
-const PLAYER_WIDTH = 16;
-const PLAYER_HEIGHT = 20;
-const HALF_PLAYER_WIDTH = PLAYER_WIDTH / 2;
-const HALF_PLAYER_HEIGHT = PLAYER_HEIGHT / 2;
-
-const PLAYER_SPEED = 2;
-const PLAYER_FRICTION = 0.6;
-const INV_PLAYER_FRICTION = 1 - PLAYER_FRICTION;
-
-const PLAYER_STEP_SWING_RANGE = Math.PI / 8;
-const PLAYER_STEP_SWING_DELTA = HALF_PLAYER_WIDTH / 2;
-const PLAYER_STEP_SWING_SPEED = 0.11;
-
-const PLAYER_DASH_DURATION = 10;
-const PLAYER_DASH_SPEED_MULTIPLIER = 5;
-
-const PLAYER_INTERACT_RADIUS = 24;
-
-const PLAYER_MOVE_SHAPE = new AxisAlignedBoundingBox(0, 0, 8, 8);
-const PLAYER_INTERACT_SHAPE = new BoundingRadial(0, 0, PLAYER_INTERACT_RADIUS);
-
-function createPlayer(world)
-{
-    let player = {
-        x: 0, y: 0,
-        radians: 0,
-
-        motionX: 0,
-        motionY: 0,
-
-        holding: null,
-        facing: 1,
-        moving: false,
-        dashing: false,
-        dashProgress: 0,
-        swingProgress: 0,
-
-        interactBody: { ...PLAYER_INTERACT_SHAPE },
-    };
-    
-    return player;
-}
-
-function drawPlayer(player, ctx)
-{
-    let x = Math.trunc(player.x);
-    let y = Math.trunc(player.y);
-
-    let mirror = player.facing < 0;
-    let dashing = player.dashing;
-    let dashRadians = 0;
-
-    if (dashing)
-    {
-        player.swingProgress = 0;
-        dashRadians = mirror ? -HALF_PI + PLAYER_STEP_SWING_RANGE : HALF_PI - PLAYER_STEP_SWING_RANGE;
-    }
-    else
-    {
-        if (player.moving)
-        {
-            player.swingProgress += PLAYER_SPEED * PLAYER_STEP_SWING_SPEED;
-            player.swingProgress %= Math.PI * 2;
-        }
-        else
-        {
-            if (player.swingProgress !== 0)
-            {
-                if (player.swingProgress > 0.1)
-                {
-                    player.swingProgress -= PLAYER_STEP_SWING_SPEED * 2;
-                }
-                else
-                {
-                    player.swingProgress = 0;
-                }
-            }
-        }
-    }
-
-    let swing = (mirror ? -1 : 1) * Math.sin(player.swingProgress);
-    let swingRadians = swing * PLAYER_STEP_SWING_RANGE;
-    let swingDelta = swing * PLAYER_STEP_SWING_DELTA;
-
-    ctx.translate(x + swingDelta, y);
-
-    // Shadow
-    ctx.fillStyle = 'rgba(100, 100, 100, 0.8)';
-    ctx.fillRect(-HALF_PLAYER_WIDTH - 3, HALF_PLAYER_HEIGHT - 1, PLAYER_WIDTH + 6, 4);
-
-    ctx.rotate(swingRadians);
-    if (dashing) ctx.rotate(dashRadians);
-    if (mirror) ctx.scale(-1, 1);
-    {
-        // Body
-        ctx.fillStyle = '#FFFFFF';
-        ctx.fillRect(-HALF_PLAYER_WIDTH, -HALF_PLAYER_HEIGHT, PLAYER_WIDTH, PLAYER_HEIGHT);
-
-        // Face
-        ctx.fillStyle = '#000000';
-        ctx.fillRect(3, -HALF_PLAYER_HEIGHT + 6, 2, 4);
-        ctx.fillRect(-2, -HALF_PLAYER_HEIGHT + 6, 2, 4);
-
-        // Holding Item
-        if (player.holding)
-        {
-            let item = player.holding;
-            let x = -item.x;
-            let y = -item.y - HALF_PLAYER_HEIGHT * 1.3;
-            ctx.translate(x, y);
-            {
-                drawItem(item, ctx);
-            }
-            ctx.translate(-x, -y);
-        }
-    }
-    if (mirror) ctx.scale(-1, 1);
-    if (dashing) ctx.rotate(-dashRadians);
-    ctx.rotate(-swingRadians);
-
-    // Stop swinging for facing marker
-    ctx.translate(-swingDelta, 0);
-
-    // Facing Marker
-    let radians = player.radians;
-    let fx = Math.cos(radians) * PLAYER_INTERACT_RADIUS;
-    let fy = Math.sin(radians) * PLAYER_INTERACT_RADIUS;
-    ctx.fillStyle = '#AAAAAA';
-    ctx.fillRect(fx - 2, fy - 2, 4, 4);
-
-    // Interaction Body
-    /*
-    ctx.strokeStyle = '#00FF00';
-    ctx.beginPath();
-    ctx.arc(0, 0, PLAYER_INTERACT_SHAPE.r, 0, TWO_PI);
-    ctx.stroke();
-    */
-
-    ctx.translate(-x, -y);
-}
-
-function updatePlayer(player, dt, world)
-{
-    const { entities } = world;
-
-    let f = Math.pow(INV_PLAYER_FRICTION, dt);
-    player.motionX *= f;
-    player.motionY *= f;
-
-    let multiplier = 1;
-    if (player.dashing)
-    {
-        multiplier *= PLAYER_DASH_SPEED_MULTIPLIER;
-    }
-
-    player.x += player.motionX * multiplier * dt;
-    player.y += player.motionY * multiplier * dt;
-
-    player.interactBody.x = player.x;
-    player.interactBody.y = player.y;
-}
-
-function controlPlayer(player, dt, world)
-{
-    const { input, entities } = world;
-
-    let dx = input.getInputValue('MoveRight') - input.getInputValue('MoveLeft');
-    let dy = input.getInputValue('MoveDown') - input.getInputValue('MoveUp');
-    let dash = input.getInputValue('Evade');
-    let interact = input.getInputValue('Interact');
-    let interacting = input.getInputValue('Interacting');
-
-    if (interact)
-    {
-        if (player.holding)
-        {
-            player.holding = null;
-            let item = createItem(world);
-            item.x = player.x;
-            item.y = player.y;
-            entities.items.push(item);
-        }
-        else
-        {
-            for(let item of entities.items)
-            {
-                let result = intersectBoundingRadial(
-                    player.interactBody,
-                    item.x, item.y, HALF_ITEM_SIZE);
-                if (result)
-                {
-                    player.holding = item;
-                    break;
-                }
-            }
-        }
-    }
-    
-    if (player.dashing)
-    {
-        let dr = player.radians;
-
-        // Move as normal
-        let speed = PLAYER_SPEED;
-        let rx = Math.cos(dr) * speed;
-        let ry = Math.sin(dr) * speed;
-        player.motionX += rx;
-        player.motionY += ry;
         
-        player.moving = true;
-        player.dashProgress += 1;
-        if (player.dashProgress >= PLAYER_DASH_DURATION)
+        Player.drawPlayer(player, ctx);
+
+        for(let dispenser of world.entities.dispensers)
         {
-            player.dashing = false;
+            Appliances.drawDispenser(ctx, world, dispenser);
         }
-    }
-    else
-    {
-        if (dash)
-        {
-            player.dashing = true;
-            player.dashProgress = 0;
-        }
-        else if (dx || dy)
-        {
-            let dr = Math.atan2(dy, dx);
-            player.radians = dr;
-    
-            let speed = PLAYER_SPEED;
-            let rx = Math.cos(dr) * speed;
-            let ry = Math.sin(dr) * speed;
-            player.motionX += rx;
-            player.motionY += ry;
-            player.moving = true;
-
-            let facing = Math.sign(Math.round(rx));
-            if (facing !== 0)
-            {
-                if (player.facing !== facing)
-                {
-                    player.facing = facing;
-                    player.swingProgress = 0;
-                }
-            }
-        }
-        else
-        {
-            player.moving = false;
-        }
-    }
-}
-
-/* * * * * * * * * * * * * * * * * * * * * * * * * * ITEMS */
-
-const ITEM_SIZE = 12;
-const HALF_ITEM_SIZE = ITEM_SIZE / 2;
-
-function createItem(world)
-{
-    let item = {
-        x: 0,
-        y: 0,
-    };
-    return item;
-}
-
-function drawItem(item, ctx)
-{
-    let x = item.x;
-    let y = item.y;
-    ctx.translate(x, y);
-    {
-        ctx.fillStyle = '#FF0000';
-        ctx.fillRect(-HALF_ITEM_SIZE, -HALF_ITEM_SIZE, ITEM_SIZE, ITEM_SIZE);
-    }
-    ctx.translate(-x, -y);
-}
-
-function updateItem(item, dt)
-{
-}
-
-function intersects(x1, y1, r1, x2, y2, r2)
-{
-    let dx = x2 - x1;
-    let dy = y2 - y1;
-    let radius = r1 + r2;
-    let radiusSqu = radius * radius;
-    let distanceSqu = dx * dx + dy * dy;
-    return distanceSqu < radiusSqu;
+    });
 }

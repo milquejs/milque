@@ -1,6 +1,5 @@
 /* global __dirname process */
 import path from 'path';
-import fs from 'fs/promises';
 
 import alias from '@rollup/plugin-alias';
 import babel from '@rollup/plugin-babel';
@@ -127,7 +126,39 @@ async function createLibraryConfig(packageJson, sourceAlias)
         external: [
             'gl-matrix'
         ],
-        plugins: plugins(outputRoot, sourceAlias, true),
+        plugins: [
+            // Linting
+            eslint(),
+            stylelint(),
+            // Including external packages
+            nodeResolve(),
+            // Clean output dir
+            clear({
+                targets: [ outputRoot ]
+            }),
+            // Import alias
+            alias({
+                entries: [
+                    { find: sourceAlias, replacement: path.join(packagePath, SOURCE_ROOT_PATH) }
+                ]
+            }),
+            // Import JSON
+            json(),
+            // Preprocess CSS (emit for plugin)
+            styles({ mode: 'emit' }),
+            // Import CSS & HTML as string
+            string({
+                include: [
+                    '**/*.template.html',
+                    '**/*.module.css'
+                ]
+            }),
+            // Transpile macros
+            babel({
+                babelHelpers: 'bundled',
+                plugins: ['macros']
+            }),
+        ]
     };
 }
 
@@ -161,45 +192,6 @@ function outputESM(outputPath)
         file: outputPath,
         format: 'esm',
     };
-}
-
-function plugins(outputDir, sourceAlias, test = false)
-{
-    return [
-        // Linting
-        ...(test ? [
-            eslint(),
-            stylelint(),
-        ] : []),
-        // Including external packages
-        nodeResolve(),
-        // Clean output dir
-        clear({
-            targets: [ outputDir ]
-        }),
-        // Import alias
-        alias({
-            entries: [
-                { find: sourceAlias, replacement: SOURCE_ROOT_PATH }
-            ]
-        }),
-        // Import JSON
-        json(),
-        // Preprocess CSS (emit for plugin)
-        styles({ mode: 'emit' }),
-        // Import CSS & HTML as string
-        string({
-            include: [
-                '**/*.template.html',
-                '**/*.module.css'
-            ]
-        }),
-        // Transpile macros
-        babel({
-            babelHelpers: 'bundled',
-            plugins: ['macros']
-        }),
-    ];
 }
 
 function resolveAsset(packagePath, assetPath)
@@ -253,7 +245,7 @@ async function createBrowserConfig(packageJson, sourceAlias, isDevelopment = fal
             // Import alias
             alias({
                 entries: [
-                    { find: sourceAlias, replacement: SOURCE_ROOT_PATH }
+                    { find: sourceAlias, replacement: path.join(packagePath, SOURCE_ROOT_PATH) }
                 ]
             }),
             // Import JSON
