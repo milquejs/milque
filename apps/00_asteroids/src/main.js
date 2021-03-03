@@ -79,7 +79,7 @@ let SHOW_COLLISION = false;
 
 async function load()
 {
-    const assetsDir = '';
+    const assetsDir = '../../../res/';
     sounds = {
         start: createSound(assetsDir + 'space/start.wav'),
         dead: createSound(assetsDir + 'space/dead.wav'),

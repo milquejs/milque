@@ -49,7 +49,7 @@ const SOUNDS = {};
 
 async function load(assets)
 {
-    const assetsDir = '';
+    const assetsDir = '../../../res/';
     SOUNDS.flick = await Audio.loadAudio(assetsDir + 'arroyo/flick.wav');
     SOUNDS.melt = await Audio.loadAudio(assetsDir + 'arroyo/melt.mp3');
 
