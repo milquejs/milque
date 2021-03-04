@@ -25,6 +25,10 @@ export class Axis extends Input
     /** @override */
     poll()
     {
+        // Update previous state.
+        this.prev = this.value;
+
+        // Update current state.
         this.delta = this.next.delta;
         this.next.delta = 0;
     }

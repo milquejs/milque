@@ -164,5 +164,10 @@ export class InputContextElement extends HTMLElement
     {
         return this._inputContext.getInputValue(inputName);
     }
+
+    getInputChanged(inputName)
+    {
+        return this._inputContext.getInputChanged(inputName);
+    }
 }
 window.customElements.define('input-context', InputContextElement);

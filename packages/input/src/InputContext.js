@@ -282,6 +282,24 @@ export class InputContext
             return 0;
         }
     }
+
+    getInputState(inputName)
+    {
+        return this.getInputValue(inputName);
+    }
+
+    getInputChanged(inputName)
+    {
+        if (inputName in this.inputs)
+        {
+            let input = this.inputs[inputName];
+            return input.value - input.prev;
+        }
+        else
+        {
+            return 0;
+        }
+    }
 }
 
 function resolveInputSource(inputSourceOrEventTarget)

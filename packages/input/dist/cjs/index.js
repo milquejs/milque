@@ -363,10 +363,20 @@ function createKeyCodeMap() {
   };
 }
 
+/**
+ * @typedef {import('../device/InputDevice.js').InputEventCode} InputEventCode
+ */
+
+/**
+ * A class to represent the basic input interface.
+ */
 class Input {
   constructor() {
     /** The current state of the input. */
     this.value = 0;
+    /** The previous state (after poll) of the input. */
+
+    this.prev = 0; // TODO: Do we need a next? How do you tell if the update is a PRESS vs a HOLD?
   }
 
   update(value) {
@@ -374,11 +384,12 @@ class Input {
   }
 
   poll() {
+    this.prev = this.value;
     this.value = 0;
   }
   /**
-   * @param {import('../device/InputDevice.js').InputEventCode} eventCode
-   * @returns {Number} The event state.
+   * @param {InputEventCode} eventCode
+   * @returns {number} The event state.
    */
 
 
@@ -388,6 +399,10 @@ class Input {
 
   getState() {
     return this.value;
+  }
+
+  getPrevState() {
+    return this.prev;
   }
 
 }
@@ -453,6 +468,9 @@ class Synthetic extends Input {
 
 
   poll(value, adapter) {
+    // Update previous state.
+    this.prev = this.value; // Poll current state.
+
     const adapterId = adapter.adapterId;
     let prevValue = this.values[adapterId];
     this.values[adapterId] = value;
@@ -471,6 +489,7 @@ class Synthetic extends Input {
   }
 
   reset() {
+    this.prev = 0;
     this.values.fill(0);
     this.value = 0;
     this.next.values.fill(0);
@@ -515,6 +534,9 @@ class Axis extends Input {
 
 
   poll() {
+    // Update previous state.
+    this.prev = this.value; // Update current state.
+
     this.delta = this.next.delta;
     this.next.delta = 0;
   }
@@ -563,6 +585,9 @@ class Button extends Input {
 
 
   poll() {
+    // Update previous state.
+    this.prev = this.value; // Poll current state.
+
     const {
       up: nextUp,
       down: nextDown
@@ -955,7 +980,7 @@ class InputEventSource {
 
 }
 
-var INNER_HTML = "<div>\r\n    <label id=\"title\">\r\n        input-source\r\n    </label>\r\n    <span>|</span>\r\n    <p>\r\n        <label for=\"poll\">poll</label>\r\n        <output id=\"poll\"></output>\r\n    </p>\r\n    <p>\r\n        <label for=\"focus\">focus</label>\r\n        <output id=\"focus\"></output>\r\n    </p>\r\n</div>\r\n";
+var INNER_HTML = "<div>\n    <label id=\"title\">\n        input-source\n    </label>\n    <span>|</span>\n    <p>\n        <label for=\"poll\">poll</label>\n        <output id=\"poll\"></output>\n    </p>\n    <p>\n        <label for=\"focus\">focus</label>\n        <output id=\"focus\"></output>\n    </p>\n</div>\n";
 
 var INNER_STYLE = ":host{display:inline-block}div{font-family:monospace;color:#666;outline:1px solid #666;padding:4px}p{display:inline;margin:0;padding:0}#focus:empty:after,#poll:empty:after{content:\"✗\";color:red}";
 
@@ -2125,6 +2150,19 @@ class InputContext {
     }
   }
 
+  getInputState(inputName) {
+    return this.getInputValue(inputName);
+  }
+
+  getInputChanged(inputName) {
+    if (inputName in this.inputs) {
+      let input = this.inputs[inputName];
+      return input.value - input.prev;
+    } else {
+      return 0;
+    }
+  }
+
 }
 
 function resolveInputSource(inputSourceOrEventTarget) {
@@ -2144,7 +2182,7 @@ function resolveInputSource(inputSourceOrEventTarget) {
   }
 }
 
-var INNER_HTML$1 = "<kbd>\r\n    <span id=\"key\"><slot></slot></span>\r\n    <span id=\"value\" class=\"hidden\"></span>\r\n</kbd>\r\n";
+var INNER_HTML$1 = "<kbd>\n    <span id=\"key\"><slot></slot></span>\n    <span id=\"value\" class=\"hidden\"></span>\n</kbd>\n";
 
 var INNER_STYLE$1 = "kbd{position:relative;display:inline-block;border-radius:3px;border:1px solid #888;font-size:.85em;font-weight:700;text-rendering:optimizeLegibility;line-height:12px;height:14px;padding:2px 4px;color:#444;background-color:#eee;box-shadow:inset 0 -3px 0 #aaa;overflow:hidden}kbd:empty:after{content:\"<?>\";opacity:.6}.disabled{opacity:.6;box-shadow:none;background-color:#aaa}.hidden{display:none}#value{position:absolute;top:0;bottom:0;right:0;font-size:.85em;padding:2px 4px 0;color:#ccc;background-color:#333;box-shadow:inset 0 3px 0 #222}";
 
@@ -2286,7 +2324,7 @@ class InputKeyElement extends HTMLElement {
 }
 window.customElements.define('input-key', InputKeyElement);
 
-var INNER_HTML$2 = "<table>\r\n    <thead>\r\n        <tr class=\"tableHeader\">\r\n            <th colspan=4>\r\n                <slot id=\"title\">input-map</slot>\r\n            </th>\r\n        </tr>\r\n        <tr class=\"colHeader\">\r\n            <th>name</th>\r\n            <th>key</th>\r\n            <th>mod</th>\r\n            <th>value</th>\r\n        </tr>\r\n    </thead>\r\n    <tbody>\r\n    </tbody>\r\n</table>\r\n";
+var INNER_HTML$2 = "<table>\n    <thead>\n        <tr class=\"tableHeader\">\n            <th colspan=4>\n                <slot id=\"title\">input-map</slot>\n            </th>\n        </tr>\n        <tr class=\"colHeader\">\n            <th>name</th>\n            <th>key</th>\n            <th>mod</th>\n            <th>value</th>\n        </tr>\n    </thead>\n    <tbody>\n    </tbody>\n</table>\n";
 
 var INNER_STYLE$2 = ":host{display:block}table{border-collapse:collapse}table,td,th{border:1px solid #666}td,th{padding:5px 10px}td{text-align:center}thead th{padding:0}.colHeader>th{font-size:.8em;padding:0 10px;letter-spacing:3px;background-color:#aaa;color:#666}.colHeader>th,output{font-family:monospace}output{border-radius:.3em;padding:3px}tr:not(.primary) .name,tr:not(.primary) .value{opacity:.3}tr:nth-child(2n){background-color:#eee}";
 
@@ -2549,7 +2587,7 @@ function createInputTableEntry(name, key, event, scale, value, primary = true) {
   return row;
 }
 
-var INNER_HTML$3 = "<input-map>\r\n    <slot></slot>\r\n    <input-source></input-source>\r\n</input-map>\r\n";
+var INNER_HTML$3 = "<input-map>\n    <slot></slot>\n    <input-source></input-source>\n</input-map>\n";
 
 var INNER_STYLE$3 = ":host{display:inline-block}";
 
@@ -2772,6 +2810,10 @@ class InputContextElement extends HTMLElement {
 
   getInputValue(inputName) {
     return this._inputContext.getInputValue(inputName);
+  }
+
+  getInputChanged(inputName) {
+    return this._inputContext.getInputChanged(inputName);
   }
 
 }
