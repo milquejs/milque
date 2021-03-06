@@ -9,10 +9,11 @@ const PLACE_SOUNDS = {};
 
 export async function load(assets)
 {
-    PLACE_SOUNDS.dirt = await Audio.loadAudio('arroyo/dirt.wav');
-    PLACE_SOUNDS.stone = await Audio.loadAudio('arroyo/stone.wav');
-    PLACE_SOUNDS.fluid = await Audio.loadAudio('arroyo/waterpop.wav');
-    PLACE_SOUNDS.metal = await Audio.loadAudio('arroyo/ding.wav');
+    const ASSET_DIR = '../../../res/';
+    PLACE_SOUNDS.dirt = await Audio.loadAudio(ASSET_DIR + 'arroyo/dirt.wav');
+    PLACE_SOUNDS.stone = await Audio.loadAudio(ASSET_DIR + 'arroyo/stone.wav');
+    PLACE_SOUNDS.fluid = await Audio.loadAudio(ASSET_DIR + 'arroyo/waterpop.wav');
+    PLACE_SOUNDS.metal = await Audio.loadAudio(ASSET_DIR + 'arroyo/ding.wav');
 }
 
 export function initialize(world) {}

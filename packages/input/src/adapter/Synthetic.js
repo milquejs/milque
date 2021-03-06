@@ -61,6 +61,10 @@ export class Synthetic extends Input
     /** @override */
     poll(value, adapter)
     {
+        // Update previous state.
+        this.prev = this.value;
+
+        // Poll current state.
         const adapterId = adapter.adapterId;
         let prevValue = this.values[adapterId];
         this.values[adapterId] = value;
@@ -81,6 +85,7 @@ export class Synthetic extends Input
 
     reset()
     {
+        this.prev = 0;
         this.values.fill(0);
         this.value = 0;
         this.next.values.fill(0);

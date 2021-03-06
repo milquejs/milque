@@ -9,9 +9,10 @@ const ASSETS = {
 
 export async function load()
 {
-    ASSETS.TILE_IMAGE = await ImageLoader('mines/tile.png');
-    ASSETS.NUMS_IMAGE = await ImageLoader('mines/nums.png');
-    ASSETS.MARK_IMAGE = await ImageLoader('mines/flag.png');
+    const ASSET_DIR = '../../../res/';
+    ASSETS.TILE_IMAGE = await ImageLoader(ASSET_DIR + 'mines/tile.png');
+    ASSETS.NUMS_IMAGE = await ImageLoader(ASSET_DIR + 'mines/nums.png');
+    ASSETS.MARK_IMAGE = await ImageLoader(ASSET_DIR + 'mines/flag.png');
     ASSETS.LOADED = true;
 }
 

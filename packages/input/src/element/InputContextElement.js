@@ -1,8 +1,10 @@
 import { attachShadowTemplate, properties } from '@milque/cuttle.macro';
 
-import { InputContext } from '../InputContext.js';
 import INNER_HTML from './InputContextElement.template.html';
 import INNER_STYLE from './InputContextElement.module.css';
+
+import { InputContext } from '../InputContext.js';
+import { hasInputEventSource, InputSource } from '../source/InputSource';
 
 function upgradeProperty(element, propertyName)
 {
@@ -19,9 +21,9 @@ export class InputContextElement extends HTMLElement
     static get [properties]()
     {
         return {
+            // src: A custom type,
             for: String,
             disabled: Boolean,
-            debug: Boolean,
         };
     }
 
@@ -54,16 +56,19 @@ export class InputContextElement extends HTMLElement
     }
 
     get context() { return this._inputContext; }
-    get source() { return this._sourceElement.source; }
+    get source() { return this._sourceElement; }
     get map() { return this._mapElement.map; }
 
     onInputMapLoad()
     {
-        let source = this._sourceElement.source;
+        let source = this._sourceElement;
         let map = this._mapElement.map;
         if (source && map)
         {
-            this._inputContext.setInputMap(map).attach(source);
+            this._inputContext
+                .setInputMap(map)
+                .setInputSource(source)
+                .attach();
             this._inputContext.disabled = this._disabled;
         }
     }
@@ -92,13 +97,34 @@ export class InputContextElement extends HTMLElement
         {
             case 'for':
                 {
-                    this._sourceElement.for = value;
+                    // TODO: Need to revisit whether this is a good way to set autopoll.
+                    let targetElement = document.getElementById(value);
+                    // Enable autopoll if input source is unset.
+                    let flag = hasInputEventSource(value ? targetElement : this._sourceElement);
+                    if (!flag)
+                    {
+                        this._sourceElement.autopoll = true;
+                    }
 
-                    let source = this._sourceElement.source;
+                    if (targetElement instanceof InputSource && targetElement._eventTarget)
+                    {
+                        this._sourceElement.setEventTarget(targetElement._eventTarget);
+                        this._sourceElement.className = targetElement.className;
+                        this._sourceElement.id = targetElement.id;
+                    }
+                    else
+                    {
+                        this._sourceElement.for = value;
+                    }
+
+                    let source = this._sourceElement;
                     let map = this._mapElement.map;
                     if (map)
                     {
-                        this._inputContext.setInputMap(map).attach(source);
+                        this._inputContext
+                            .setInputMap(map)
+                            .setInputSource(source)
+                            .attach();
                         this._inputContext.disabled = this._disabled;
                     }
                 }
@@ -108,16 +134,13 @@ export class InputContextElement extends HTMLElement
                 break;
             case 'disabled':
                 {
-                    let source = this._sourceElement.source;
+                    let source = this._sourceElement;
                     let map = this._mapElement.map;
                     if (source && map)
                     {
                         this._inputContext.disabled = this._disabled;
                     }
                 }
-                break;
-            case 'debug':
-                this._mapElement.classList.toggle('hidden', value === null);
                 break;
             // For debug info
             case 'id':
@@ -131,5 +154,20 @@ export class InputContextElement extends HTMLElement
 
     get src() { return this._mapElement.src; }
     set src(value) { this._mapElement.src = value; }
+
+    getInput(inputName)
+    {
+        return this._inputContext.getInput(inputName);
+    }
+
+    getInputValue(inputName)
+    {
+        return this._inputContext.getInputValue(inputName);
+    }
+
+    getInputChanged(inputName)
+    {
+        return this._inputContext.getInputChanged(inputName);
+    }
 }
 window.customElements.define('input-context', InputContextElement);

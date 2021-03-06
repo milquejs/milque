@@ -1,349 +1,401 @@
-import { InputEventCode, InputType, WILDCARD_KEY_MATCHER } from '../device/InputDevice.js';
+import { properties, customEvents, attachShadowTemplate } from '@milque/cuttle.macro';
+
+import INNER_HTML from './InputSource.template.html';
+import INNER_STYLE from './InputSource.module.css';
+
+import { InputEventSource } from './InputEventSource.js';
+
+import { stringifyDeviceKeyCodePair } from '../adapter/Synthetic.js';
 import { Keyboard } from '../device/Keyboard.js';
 import { Mouse } from '../device/Mouse.js';
 
-import { Axis } from './Axis.js';
-import { Button } from './Button.js';
+/** This holds the ref count for each key source per input event source. */
+const KEY_SOURCE_REF_COUNT_KEY = Symbol('keySourceRefCount');
 
-/**
- * @readonly
- * @enum {Number}
- */
-export const InputSourceStage = {
-    NULL: 0,
-    UPDATE: 1,
-    POLL: 2,
-};
-
-/**
- * Whether the given key code for device is an axis input.
- * 
- * @param {String} deviceName 
- * @param {String} keyCode 
- */
-export function isInputAxis(deviceName, keyCode)
+function initKeySourceRefs(eventSource)
 {
-    return deviceName === 'Mouse'
-        && (keyCode === 'PosX'
-        || keyCode === 'PosY'
-        || keyCode === 'WheelX'
-        || keyCode === 'WheelY'
-        || keyCode === 'WheelZ');
+    if (!(KEY_SOURCE_REF_COUNT_KEY in eventSource))
+    {
+        eventSource[KEY_SOURCE_REF_COUNT_KEY] = {};
+    }
 }
 
-/** This determines whether an element has an associated input source. */
-const INPUT_SOURCE_REF_KEY = Symbol('inputSource');
-
-/**
- * @typedef InputSourceInputEvent
- * @property {InputSourceStage} stage
- * @property {String} deviceName
- * @property {String} keyCode
- * @property {Axis|Button} input
- * 
- * @typedef InputSourcePollEvent
- * 
- * @callback InputSourceEventListener
- * @param {InputSourceInputEvent|InputSourcePollEvent} e
- */
-
-/**
- * A class to model the current input state with buttons and axes.
- */
-export class InputSource
+function addKeySourceRef(eventSource, deviceName, keyCode)
 {
+    const keyString = stringifyDeviceKeyCodePair(deviceName, keyCode);
+    let refCounts = eventSource[KEY_SOURCE_REF_COUNT_KEY];
+    let value = (refCounts[keyString] + 1) || 1;
+    refCounts[keyString] = value;
+    return value;
+}
+
+function removeKeySourceRef(eventSource, deviceName, keyCode)
+{
+    const keyString = stringifyDeviceKeyCodePair(deviceName, keyCode);
+    let refCounts = eventSource[KEY_SOURCE_REF_COUNT_KEY];
+    let value = (refCounts[keyString] - 1) || 0;
+    refCounts[keyString] = Math.max(value, 0);
+    return value;
+}
+
+function clearKeySourceRefs(eventSource)
+{
+    eventSource[KEY_SOURCE_REF_COUNT_KEY] = {};
+}
+
+/** This determines whether an element has an associated input event source. */
+const INPUT_EVENT_SOURCE_KEY = Symbol('inputEventSource');
+
+/**
+ * @param {EventTarget} eventTarget The target element to listen to.
+ * @returns {boolean} Whether the event target has an associated input source.
+ */
+export function hasInputEventSource(eventTarget)
+{
+    return Object.prototype.hasOwnProperty.call(eventTarget, INPUT_EVENT_SOURCE_KEY) && Object.getOwnPropertyDescriptor(eventTarget, INPUT_EVENT_SOURCE_KEY).value;
+}
+
+/**
+ * @param {EventTarget} eventTarget The target element to listen to.
+ * @returns {InputEventSource} The active input event source for the target element.
+ */
+export function getInputEventSource(eventTarget)
+{
+    return Object.getOwnPropertyDescriptor(eventTarget, INPUT_EVENT_SOURCE_KEY).value;
+}
+
+/**
+ * @param {EventTarget} eventTarget The target element to listen to.
+ * @param {InputSource} inputSource The input source to be associated with the event target element.
+ */
+export function setInputEventSource(eventTarget, inputEventSource)
+{
+    Object.defineProperty(eventTarget, INPUT_EVENT_SOURCE_KEY, {
+        value: inputEventSource,
+        configurable: true,
+    });
+}
+
+/**
+ * @param {EventTarget} eventTarget The target element listened to.
+ */
+export function deleteInputEventSource(eventTarget)
+{
+    Object.defineProperty(eventTarget, INPUT_EVENT_SOURCE_KEY, {
+        value: null,
+        configurable: true,
+    });
+}
+
+export class InputSource extends HTMLElement
+{
+    /**
+     * Get the associated input source for the given event target.
+     * 
+     * @param {EventTarget} eventTarget The target element to listen
+     * for all input events.
+     * @returns {InputSource} The input source for the given event target.
+     */
     static for(eventTarget)
     {
-        if (Object.prototype.hasOwnProperty.call(eventTarget, INPUT_SOURCE_REF_KEY))
+        return new InputSource(eventTarget);
+    }
+
+    /** @override */
+    static get observedAttributes()
+    {
+        return [
+            // Listening for built-in attribs
+            'id',
+            'class',
+        ];
+    }
+
+    static get [properties]()
+    {
+        return {
+            for: String,
+            autopoll: Boolean,
+        };
+    }
+
+    static get [customEvents]()
+    {
+        return [
+            'input',
+            'poll',
+        ];
+    }
+
+    /**
+     * @param {EventTarget} [eventTarget] The event target to listen for all input events.
+     */
+    constructor(eventTarget = undefined)
+    {
+        super();
+        attachShadowTemplate(this, INNER_HTML, INNER_STYLE, { mode: 'open' });
+
+        /** @private */
+        this._containerElement = this.shadowRoot.querySelector('div');
+        /** @private */
+        this._titleElement = this.shadowRoot.querySelector('#title');
+        /** @private */
+        this._pollElement = this.shadowRoot.querySelector('#poll');
+        /** @private */
+        this._focusElement = this.shadowRoot.querySelector('#focus');
+
+        /** @private */
+        this._pollCount = 0;
+        /** @private */
+        this._pollCountDelay = 0;
+
+        /**
+         * @private
+         * @type {EventTarget}
+         */
+        this._eventTarget = null;
+        /**
+         * @private
+         * @type {InputEventSource}
+         */
+        this._eventSource = null;
+        this._keySourceRefCount = {};
+
+        /** @private */
+        this.onSourcePoll = this.onSourcePoll.bind(this);
+        /** @private */
+        this.onSourceInput = this.onSourceInput.bind(this);
+        /** @private */
+        this.onTargetFocus = this.onTargetFocus.bind(this);
+        /** @private */
+        this.onTargetBlur = this.onTargetBlur.bind(this);
+
+        if (eventTarget)
         {
-            return eventTarget[INPUT_SOURCE_REF_KEY];
+            this.setEventTarget(eventTarget);
         }
-        else
+    }
+    
+    /** @override */
+    connectedCallback()
+    {
+        // Allows this element to be focusable
+        if (!this.hasAttribute('tabindex')) this.setAttribute('tabindex', 0);
+
+        // Initialize input source event target as self, if unset
+        if (!this.hasAttribute('for') && !this._eventTarget)
         {
-            let result = new InputSource([
+            this.setEventTarget(this);
+        }
+    }
+
+    /** @override */
+    disconnectedCallback()
+    {
+        this.clearEventTarget();
+    }
+
+    /** @override */
+    attributeChangedCallback(attribute, prev, value)
+    {
+        switch(attribute)
+        {
+            case 'for':
+                this.setEventTarget(value ? document.getElementById(value) : this);
+                break;
+            // For debug info
+            case 'id':
+            case 'class':
+                {
+                    let cname = this.className ? '.' + this.className : '';
+                    let iname = this.hasAttribute('id') ? '#' + this.getAttribute('id') : '';
+                    this._titleElement.innerHTML = cname + iname;
+                }
+                break;
+        }
+    }
+
+    /**
+     * Poll input state from devices.
+     * 
+     * @param {number} now The current time in milliseconds.
+     */
+    poll(now)
+    {
+        this._eventSource.poll(now);
+    }
+
+    /** @private */
+    onSourceInput({ stage, deviceName, keyCode, input })
+    {
+        this.dispatchEvent(new CustomEvent('input', {
+            composed: true, bubbles: false,
+            detail: {
+                stage,
+                deviceName,
+                keyCode,
+                input,
+            }
+        }));
+    }
+
+    /** @private */
+    onSourcePoll({ now })
+    {
+        this._pollCount += 1;
+        this.dispatchEvent(new CustomEvent('poll', {
+            composed: true, bubbles: false
+        }));
+
+        let dt = now - this._pollCountDelay;
+        if (dt > 1000)
+        {
+            this._pollCountDelay = now;
+            if (this._pollCount > 0)
+            {
+                this._pollElement.innerHTML = '✓';
+                this._pollCount = 0;
+            }
+            else
+            {
+                this._pollElement.innerHTML = '';
+            }
+        }
+    }
+
+    /** @private */
+    onTargetFocus()
+    {
+        this._focusElement.innerHTML = '✓';
+    }
+
+    /** @private */
+    onTargetBlur()
+    {
+        this._focusElement.innerHTML = '';
+    }
+
+    /** @private */
+    setEventTarget(eventTarget)
+    {
+        this.clearEventTarget();
+
+        if (!eventTarget)
+        {
+            throw new Error('Cannot set null as event target for input source.');
+        }
+
+        let eventSource;
+        if (!hasInputEventSource(eventTarget))
+        {
+            eventSource = new InputEventSource([
                 new Keyboard(eventTarget),
                 new Mouse(eventTarget),
             ]);
-            Object.defineProperty(eventTarget, INPUT_SOURCE_REF_KEY, { value: result });
-            return result;
-        }
-    }
-
-    constructor(deviceList)
-    {
-        /** @private */
-        this.onInputEvent = this.onInputEvent.bind(this);
-
-        let deviceMap = {};
-        let inputMap = {};
-        for(let device of deviceList)
-        {
-            const deviceName = device.deviceName;
-            deviceMap[deviceName] = device;
-            inputMap[deviceName] = {};
-            device.addInputListener(WILDCARD_KEY_MATCHER, this.onInputEvent);
-        }
-        this.devices = deviceMap;
-        this.inputs = inputMap;
-
-        /** @private */
-        this.listeners = {
-            poll: [],
-            update: [],
-        };
-
-        /** @private */
-        this._autopoll = false;
-        /** @private */
-        this._animationFrameHandle = null;
-
-        /** @private */
-        this.onAnimationFrame = this.onAnimationFrame.bind(this);
-    }
-
-    set autopoll(value)
-    {
-        this._autopoll = value;
-        if (value)
-        {
-            // Start animation frame loop
-            this._animationFrameHandle = requestAnimationFrame(this.onAnimationFrame);
+            setInputEventSource(eventTarget, eventSource);
+            initKeySourceRefs(eventSource);
         }
         else
         {
-            // Stop animation frame loop
-            cancelAnimationFrame(this._animationFrameHandle);
+            eventSource = getInputEventSource(eventTarget);
         }
-    }
+        this._eventSource = eventSource;
+        this._eventTarget = eventTarget;
 
-    get autopoll()
-    {
-        return this._autopoll;
-    }
-
-    destroy()
-    {
-        this.clear();
+        // TODO: Need to revisit whether this is a good way to set autopoll.
+        // NOTE: Auto-poll can only be turned on and only during init.
+        let autopoll = this.autopoll;
+        if (autopoll)
+        {
+            this._eventSource.autopoll = autopoll;
+        }
         
-        for(let deviceName in this.devices)
-        {
-            let device = this.devices[deviceName];
-            device.removeInputListener(WILDCARD_KEY_MATCHER, this.onInputEvent);
-            device.destroy();
-        }
-    }
-
-    /**
-     * Add listener to listen for event, in order by most
-     * recently added. In other words, this listener will
-     * be called BEFORE the previously added listener (if
-     * there exists one) and so on.
-     * 
-     * @param {String} event 
-     * @param {InputSourceEventListener} listener 
-     */
-    addEventListener(event, listener)
-    {
-        if (event in this.listeners)
-        {
-            this.listeners[event].unshift(listener);
-        }
-        else
-        {
-            this.listeners[event] = [listener];
-        }
-    }
-
-    /**
-     * Removes the listener from listening to the event.
-     * 
-     * @param {String} event 
-     * @param {InputSourceEventListener} listener 
-     */
-    removeEventListener(event, listener)
-    {
-        if (event in this.listeners)
-        {
-            let list = this.listeners[event];
-            let i = list.indexOf(listener);
-            list.splice(i, 1);
-        }
-    }
-
-    /**
-     * Dispatches an event to the listeners.
-     * 
-     * @param {String} eventName The name of the event.
-     * @param {InputSourceInputEvent|InputSourcePollEvent} event The event object to pass to listeners.
-     */
-    dispatchEvent(eventName, event)
-    {
-        for(let listener of this.listeners[eventName])
-        {
-            listener(event);
-        }
-    }
-
-    /**
-     * @private
-     * @param {InputSourceStage} stage 
-     * @param {String} deviceName 
-     * @param {String} keyCode 
-     * @param {Axis|Button} input 
-     */
-    _dispatchInputEvent(stage, deviceName, keyCode, input)
-    {
-        this.dispatchEvent('input', { stage, deviceName, keyCode, input });
+        eventSource.addEventListener('poll', this.onSourcePoll);
+        eventSource.addEventListener('input', this.onSourceInput);
+        eventTarget.addEventListener('focus', this.onTargetFocus);
+        eventTarget.addEventListener('blur', this.onTargetBlur);
     }
 
     /** @private */
-    _dispatchPollEvent(now)
+    clearEventTarget()
     {
-        this.dispatchEvent('poll', { now });
-    }
-    
-    /**
-     * Poll the devices and update the input state.
-     */
-    poll(now = performance.now())
-    {
-        for(const deviceName in this.inputs)
+        let eventTarget = this._eventTarget;
+        let eventSource = this._eventSource;
+        this._eventTarget = null;
+        this._eventSource = null;
+
+        if (eventTarget)
         {
-            const inputMap = this.inputs[deviceName];
-            for(const keyCode in inputMap)
+            eventTarget.removeEventListener('focus', this.onTargetFocus);
+            eventTarget.removeEventListener('blur', this.onTargetBlur);
+
+            // Event source should also exist if event target was setup.
+            eventSource.removeEventListener('poll', this.onSourcePoll);
+            eventSource.removeEventListener('input', this.onSourceInput);
+
+            // Clean up event source if no longer used.
+            if (eventSource.countEventListeners('input') <= 0)
             {
-                let input = inputMap[keyCode];
-                input.poll();
-                this._dispatchInputEvent(InputSourceStage.POLL, deviceName, keyCode, input);
+                eventSource.destroy();
+                deleteInputEventSource(eventTarget);
             }
         }
-        this._dispatchPollEvent(now);
     }
 
-    /** @private */
-    onAnimationFrame(now)
+    enableKeySource(deviceName, keyCode)
     {
-        if (!this._autopoll) return;
-        this._animationFrameHandle = requestAnimationFrame(this.onAnimationFrame);
-        this.poll(now);
-    }
-
-    /** @private */
-    onInputEvent(e)
-    {
-        const deviceName = e.deviceName;
-        switch(e.type)
+        if (!deviceName || !keyCode)
         {
-            case InputType.KEY:
-                {
-                    const keyCode = e.keyCode;
-                    let button = this.inputs[deviceName][keyCode];
-                    if (button)
-                    {
-                        button.update(e.event === InputEventCode.DOWN);
-                        this._dispatchInputEvent(InputSourceStage.UPDATE, deviceName, keyCode, button);
-                        return true;
-                    }
-                }
-                break;
-            case InputType.POS:
-                {
-                    let inputs = this.inputs[deviceName];
-                    let xAxis = inputs.PosX;
-                    if (xAxis)
-                    {
-                        xAxis.update(e.x, e.dx);
-                        this._dispatchInputEvent(InputSourceStage.UPDATE, deviceName, 'PosX', xAxis);
-                    }
-                    let yAxis = inputs.PosY;
-                    if (yAxis)
-                    {
-                        yAxis.update(e.y, e.dy);
-                        this._dispatchInputEvent(InputSourceStage.UPDATE, deviceName, 'PosY', yAxis);
-                    }
-                }
-                break;
-            case InputType.WHEEL:
-                {
-                    let inputs = this.inputs[deviceName];
-                    let xAxis = inputs.WheelX;
-                    if (xAxis)
-                    {
-                        xAxis.update(e.dx, e.dx);
-                        this._dispatchInputEvent(InputSourceStage.UPDATE, deviceName, 'WheelX', xAxis);
-                    }
-                    let yAxis = inputs.WheelY;
-                    if (yAxis)
-                    {
-                        yAxis.update(e.dy, e.dy);
-                        this._dispatchInputEvent(InputSourceStage.UPDATE, deviceName, 'WheelY', yAxis);
-                    }
-                    let zAxis = inputs.WheelZ;
-                    if (zAxis)
-                    {
-                        zAxis.update(e.dz, e.dz);
-                        this._dispatchInputEvent(InputSourceStage.UPDATE, deviceName, 'WheelZ', zAxis);
-                    }
-                }
-                break;
+            throw new Error('Invalid device name or key code for key source.');
+        }
+        let eventSource = this._eventSource;
+        let refCount = addKeySourceRef(eventSource, deviceName, keyCode);
+        if (refCount === 1)
+        {
+            eventSource.addKeySource(deviceName, keyCode);
         }
     }
-    
-    /**
-     * Add an input for the given device and key code.
-     * 
-     * @param {String} deviceName 
-     * @param {String} keyCode 
-     */
-    add(deviceName, keyCode)
+
+    disableKeySource(deviceName, keyCode)
     {
-        if (!(deviceName in this.devices))
+        if (!deviceName || !keyCode)
         {
-            throw new Error('Invalid device name - missing device with name in source.');
+            throw new Error('Invalid device name or key code for key source.');
         }
-
-        let result = isInputAxis(deviceName, keyCode)
-            ? new Axis()
-            : new Button();
-        this.inputs[deviceName][keyCode] = result;
-        return this;
-    }
-
-    /**
-     * Remove the input for the given device and key code.
-     * 
-     * @param {String} deviceName 
-     * @param {String} keyCode 
-     */
-    delete(deviceName, keyCode)
-    {
-        delete this.inputs[deviceName][keyCode];
-    }
-
-    /** @returns {Button|Axis} */
-    get(deviceName, keyCode)
-    {
-        return this.inputs[deviceName][keyCode];
-    }
-    
-    /**
-     * @param {String} deviceName 
-     * @param {String} keyCode 
-     * @returns {Boolean} Whether the device and key code has been added.
-     */
-    has(deviceName, keyCode)
-    {
-        return deviceName in this.inputs && keyCode in this.inputs[deviceName];
-    }
-
-    /**
-     * Removes all registered inputs from all devices.
-     */
-    clear()
-    {
-        for(let deviceName in this.devices)
+        let eventSource = this._eventSource;
+        let refCount = removeKeySourceRef(eventSource, deviceName, keyCode);
+        if (refCount === 0)
         {
-            this.inputs[deviceName] = {};
+            eventSource.deleteKeySource(deviceName, keyCode);
         }
     }
+
+    getKeySource(deviceName, keyCode)
+    {
+        if (!deviceName || !keyCode)
+        {
+            throw new Error('Invalid device name or key code for key source.');
+        }
+        return this._eventSource.getKeySource(deviceName, keyCode);
+    }
+
+    hasKeySource(deviceName, keyCode)
+    {
+        if (!deviceName || !keyCode)
+        {
+            throw new Error('Invalid device name or key code for key source.');
+        }
+        return this._eventSource.hasKeySource(deviceName, keyCode);
+    }
+
+    clearKeySources()
+    {
+        let eventSource = this._eventSource;
+        eventSource.clearKeySources();
+        clearKeySourceRefs(eventSource);
+    }
+
+    get keySources() { return this._eventSource.keySources; }
+    get devices() { return this._eventSource.devices; }
 }
+window.customElements.define('input-source', InputSource);

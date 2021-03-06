@@ -58,9 +58,9 @@ async function loadOBJ(filepath, opts) {
     const attempts = 10;
 
     for (let i = 0; i < attempts; ++i) {
-      let then = performance.now();
+      performance.now();
       parse(string);
-      let now = performance.now();
+      performance.now();
     } // console.log(sum / attempts);
 
   }
@@ -69,9 +69,9 @@ async function loadOBJ(filepath, opts) {
     const attempts = 10;
 
     for (let i = 0; i < attempts; ++i) {
-      let then = performance.now();
+      performance.now();
       parse2(string);
-      let now = performance.now();
+      performance.now();
     } // console.log(sum / attempts);
 
   }

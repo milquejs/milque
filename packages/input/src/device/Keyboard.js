@@ -13,6 +13,18 @@ import { InputDevice, InputType, InputEventCode } from './InputDevice.js';
  */
 export class Keyboard extends InputDevice
 {
+    /** @override */
+    static isAxis(keyCode)
+    {
+        return false;
+    }
+
+    /** @override */
+    static isButton(keyCode)
+    {
+        return true;
+    }
+
     /**
      * Constructs a listening keyboard with no listeners (yet).
      * 

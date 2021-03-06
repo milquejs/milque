@@ -1,0 +1,21 @@
+.container {
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background-color: tomato;
+    border-width: 0;
+    border-radius: 0.8rem;
+    box-shadow: 0 0 0.5rem rgba(0, 0, 0, 0.5);
+    min-width: 10rem;
+}
+
+h3 {
+    margin: 0;
+    text-decoration: underline;
+}
+
+p {
+    margin: 0;
+    padding: 0.5rem;
+    background-color: rgba(255, 255, 255, 0.2);
+}

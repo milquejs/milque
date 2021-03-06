@@ -80,6 +80,18 @@ export const WILDCARD_KEY_MATCHER = '*';
 
 export class InputDevice
 {
+    /** @abstract */
+    static isAxis(keyCode)
+    {
+        return false;
+    }
+
+    /** @abstract */
+    static isButton(keyCode)
+    {
+        return false;
+    }
+
     constructor(deviceName, eventTarget)
     {
         this.deviceName = deviceName;

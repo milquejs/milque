@@ -35,6 +35,10 @@ export class Button extends Input
     /** @override */
     poll()
     {
+        // Update previous state.
+        this.prev = this.value;
+
+        // Poll current state.
         const { up: nextUp, down: nextDown } = this.next;
         if (this.value)
         {

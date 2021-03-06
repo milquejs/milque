@@ -18,7 +18,7 @@ export const Restart = INPUT_CONTEXT.getInput('restart');
 export function attach()
 {
     const inputSource = InputSource.for(document.querySelector('#main'));
-    INPUT_CONTEXT.attach(inputSource);
+    INPUT_CONTEXT.setInputSource(inputSource).attach();
     return INPUT_CONTEXT;
 }
 

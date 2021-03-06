@@ -67,21 +67,21 @@ export default async function main()
             });
         
         console.log(`Dependencies found:\n=> ${result.map(packageJson => packageJson.name).join('\n=> ')}\n`);
-        return configure(result, isDevelopment);
+        return await configure(result, isDevelopment);
     }
     else
     {
         const result = await getPackageJsons();
-        return configure(result, isDevelopment);
+        return await configure(result, isDevelopment);
     }
 }
 
-function configure(packageJsons, isDevelopment)
+async function configure(packageJsons, isDevelopment)
 {
-    return cleanArray(packageJsons.map(packageJson => {
+    let promises = packageJsons.map(async packageJson => {
         if (packageJson.browser)
         {
-            return createBrowserConfig(packageJson, '@app', isDevelopment);
+            return await createBrowserConfig(packageJson, '@app', isDevelopment);
         }
         else
         {
@@ -92,13 +92,14 @@ function configure(packageJsons, isDevelopment)
             }
             else
             {
-                return createLibraryConfig(packageJson, '@module');
+                return await createLibraryConfig(packageJson, '@module');
             }
         }
-    }));
+    });
+    return cleanArray(await Promise.all(promises));
 }
 
-function createLibraryConfig(packageJson, sourceAlias)
+async function createLibraryConfig(packageJson, sourceAlias)
 {
     const {
         input = 'src/index.js',
@@ -125,7 +126,39 @@ function createLibraryConfig(packageJson, sourceAlias)
         external: [
             'gl-matrix'
         ],
-        plugins: plugins(outputRoot, sourceAlias, true),
+        plugins: [
+            // Linting
+            eslint(),
+            stylelint(),
+            // Including external packages
+            nodeResolve(),
+            // Clean output dir
+            clear({
+                targets: [ outputRoot ]
+            }),
+            // Import alias
+            alias({
+                entries: [
+                    { find: sourceAlias, replacement: path.join(packagePath, SOURCE_ROOT_PATH) }
+                ]
+            }),
+            // Import JSON
+            json(),
+            // Preprocess CSS (emit for plugin)
+            styles({ mode: 'emit' }),
+            // Import CSS & HTML as string
+            string({
+                include: [
+                    '**/*.template.html',
+                    '**/*.module.css'
+                ]
+            }),
+            // Transpile macros
+            babel({
+                babelHelpers: 'bundled',
+                plugins: ['macros']
+            }),
+        ]
     };
 }
 
@@ -161,52 +194,13 @@ function outputESM(outputPath)
     };
 }
 
-function plugins(outputDir, sourceAlias, test = false)
-{
-    return [
-        // Linting
-        ...(test ? [
-            eslint(),
-            stylelint(),
-        ] : []),
-        // Including external packages
-        nodeResolve(),
-        // Clean output dir
-        clear({
-            targets: [ outputDir ]
-        }),
-        // Import alias
-        alias({
-            entries: [
-                { find: sourceAlias, replacement: SOURCE_ROOT_PATH }
-            ]
-        }),
-        // Import JSON
-        json(),
-        // Preprocess CSS (emit for plugin)
-        styles({ mode: 'emit' }),
-        // Import CSS & HTML as string
-        string({
-            include: [
-                '**/*.template.html',
-                '**/*.module.css'
-            ]
-        }),
-        // Transpile macros
-        babel({
-            babelHelpers: 'bundled',
-            plugins: ['macros']
-        }),
-    ];
-}
-
 function resolveAsset(packagePath, assetPath)
 {
     // HACK: For some reason, the copy plugin REQUIRES unix path separators
     return path.join(packagePath, assetPath).replaceAll('\\', '/');
 }
 
-function createBrowserConfig(packageJson, sourceAlias, isDevelopment = false)
+async function createBrowserConfig(packageJson, sourceAlias, isDevelopment = false)
 {
     const {
         input = 'src/main.js',
@@ -251,7 +245,7 @@ function createBrowserConfig(packageJson, sourceAlias, isDevelopment = false)
             // Import alias
             alias({
                 entries: [
-                    { find: sourceAlias, replacement: SOURCE_ROOT_PATH }
+                    { find: sourceAlias, replacement: path.join(packagePath, SOURCE_ROOT_PATH) }
                 ]
             }),
             // Import JSON
