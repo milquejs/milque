@@ -1,0 +1,72 @@
+:host {
+    display: block;
+    height: 12rem;
+}
+
+fieldset {
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+    position: relative;
+    padding: 0.5em;
+    font-family: monospace;
+    background-color: #eeeeee;
+    height: inherit;
+}
+
+output {
+    flex: 1;
+    display: block;
+    overflow-x: hidden;
+    overflow-y: auto;
+    height: 100%;
+}
+
+p,
+pre {
+    margin: 0;
+}
+
+input {
+    flex: 1;
+    font-family: monospace;
+    border: none;
+    outline-color: currentColor;
+    background-color: transparent;
+    color: currentColor;
+}
+
+.inputContainer {
+    display: flex;
+    margin-top: 0.5em;
+}
+
+#scrollTop {
+    top: 2em;
+}
+
+#scrollBottom {
+    bottom: 3.5em;
+}
+
+.scrollButton {
+    font-family: monospace;
+    font-size: 0.5em;
+    position: absolute;
+    padding: 0.5em;
+    left: 0;
+    right: 0;
+    margin-left: auto;
+    margin-right: auto;
+    border-radius: 1em;
+    border: none;
+    outline-color: currentColor;
+    background-color: #cccccc;
+    color: currentColor;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+.hidden {
+    opacity: 0;
+}

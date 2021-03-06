@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Pupak</title>
+        <style>
+            html {
+                width: 100%;
+                height: 100%;
+            }
+
+            body {
+                margin: 0;
+                width: 100%;
+                height: 100%;
+            }
+        </style>
+    </head>
+    <body>
+        <display-port id="main" mode="fit" debug></display-port>
+        <input-context for="main"></input-context>
+        <div>
+            Errors?
+        </div>
+        <script>
+            window.addEventListener('error', e => {
+                //
+            }, true);
+            window.addEventListener('unhandledrejection', () => {
+                //
+            }, true);
+        </script>
+        <script src="index.js"></script>
+    </body>
+</html>
