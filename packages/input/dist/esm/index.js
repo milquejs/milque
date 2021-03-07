@@ -2,7 +2,7 @@
  * An enum for input types.
  * 
  * @readonly
- * @enum {Number}
+ * @enum {number}
  */
 const InputType = {
   NULL: 0,
@@ -14,7 +14,7 @@ const InputType = {
  * An enum for input events.
  * 
  * @readonly
- * @enum {Number}
+ * @enum {number}
  */
 
 const InputEventCode = {
@@ -48,35 +48,35 @@ const WILDCARD_KEY_MATCHER = '*';
 /**
  * @typedef InputEvent
  * @property {EventTarget} target
- * @property {String} deviceName
- * @property {String} keyCode
+ * @property {string} deviceName
+ * @property {string} keyCode
  * @property {InputEventCode} event
  * @property {InputType} type
- * @property {Number} [value] If type is `key`, it is defined to be the input
+ * @property {number} [value] If type is `key`, it is defined to be the input
  * value of the triggered event (usually this is 1). Otherwise, it is undefined.
- * @property {Boolean} [control] If type is `key`, it is defined to be true if
+ * @property {boolean} [control] If type is `key`, it is defined to be true if
  * any control key is down (false if up). Otherwise, it is undefined.
- * @property {Boolean} [shift] If type is `key`, it is defined to be true if
+ * @property {boolean} [shift] If type is `key`, it is defined to be true if
  * any shift key is down (false if up). Otherwise, it is undefined.
- * @property {Boolean} [alt] If type is `key`, it is defined to be true if any
+ * @property {boolean} [alt] If type is `key`, it is defined to be true if any
  * alt key is down (false if up). Otherwise, it is undefined.
- * @property {Number} [x] If type is `pos`, it is defined to be the x value
+ * @property {number} [x] If type is `pos`, it is defined to be the x value
  * of the position event. Otherwise, it is undefined.
- * @property {Number} [y] If type is `pos`, it is defined to be the y value
+ * @property {number} [y] If type is `pos`, it is defined to be the y value
  * of the position event. Otherwise, it is undefined.
- * @property {Number} [dx] If type is `pos` or `wheel`, it is defined to be
+ * @property {number} [dx] If type is `pos` or `wheel`, it is defined to be
  * the change in the x value from the previous to the current position.
  * Otherwise, it is undefined.
- * @property {Number} [dy] If type is `pos` or `wheel`, it is defined to be
+ * @property {number} [dy] If type is `pos` or `wheel`, it is defined to be
  * the change in the y value from the previous to the current position.
  * Otherwise, it is undefined.
- * @property {Number} [dz] If type is `wheel`, it is defined to be the change
+ * @property {number} [dz] If type is `wheel`, it is defined to be the change
  * in the z value from the previous to the current position. Otherwise, it
  * is undefined.
  * 
  * @callback InputDeviceListener
  * @param {InputEvent} e
- * @returns {Boolean} Whether to consume the input after all other
+ * @returns {boolean} Whether to consume the input after all other
  * listeners had a chance to handle the event.
  */
 
@@ -105,7 +105,7 @@ class InputDevice {
     this.listeners = {};
   }
   /**
-   * @param {String} keyMatcher
+   * @param {string} keyMatcher
    * @param {InputDeviceListener} listener
    */
 
@@ -121,7 +121,7 @@ class InputDevice {
     }
   }
   /**
-   * @param {String} keyMatcher
+   * @param {string} keyMatcher
    * @param {InputDeviceListener} listener
    */
 
@@ -136,7 +136,7 @@ class InputDevice {
   }
   /**
    * @param {InputEvent} e
-   * @returns {Boolean} Whether the input event should be consumed.
+   * @returns {boolean} Whether the input event should be consumed.
    */
 
 
@@ -669,8 +669,8 @@ const InputSourceEventStage = {
  * A class to model the current input state with buttons and axes for devices.
  */
 
-class InputSourceImpl {
-  constructor(deviceList) {
+class InputSourceState {
+  constructor(deviceList = []) {
     /** @private */
     this.onInputEvent = this.onInputEvent.bind(this);
     /** @private */
@@ -710,11 +710,26 @@ class InputSourceImpl {
     };
     /** @private */
 
+    this._lastPollTime = -1;
+    /** @private */
+
     this._autopoll = false;
     /** @private */
 
     this._animationFrameHandle = null;
   }
+  /**
+   * @returns {boolean} Whether in the last second this input source was polled.
+   */
+
+
+  get polling() {
+    return performance.now() - this._lastPollTime < 1000;
+  }
+  /**
+   * Destroys this source's devices and keys.
+   */
+
 
   destroy() {
     this.clearKeys();
@@ -744,6 +759,7 @@ class InputSourceImpl {
     }
 
     this.dispatchPollEvent(now);
+    this._lastPollTime = now;
   }
   /**
    * Add listener to listen for event, in order by most
@@ -921,7 +937,11 @@ class InputSourceImpl {
       this._animationFrameHandle = requestAnimationFrame(this.onAnimationFrame);
     }
   }
-  /** @returns {boolean} Whether to automatically poll on animation frame. */
+  /**
+   * If true, polling will be handled automatically through requestAnimationFrame().
+   * 
+   * @returns {boolean} Whether to automatically poll on animation frame.
+   */
 
 
   get autopoll() {
@@ -988,6 +1008,16 @@ class InputSourceImpl {
     }
   }
   /**
+   * @param {string} deviceName The name of the device.
+   * @param {string} keyCode The key code in the device.
+   * @returns {boolean} Whether the device and key code has been registered.
+   */
+
+
+  hasKey(deviceName, keyCode) {
+    return deviceName in this.keyMap && keyCode in this.keyMap[deviceName];
+  }
+  /**
    * Removes all registered inputs from all devices.
    */
 
@@ -1010,17 +1040,7 @@ class InputSourceImpl {
 
 
   getInputByKey(deviceName, keyCode) {
-    return this.keyMap[deviceName][keyCode];
-  }
-  /**
-   * @param {string} deviceName The name of the device.
-   * @param {string} keyCode The key code in the device.
-   * @returns {boolean} Whether the device and key code has been registered.
-   */
-
-
-  hasInputByKey(deviceName, keyCode) {
-    return deviceName in this.keyMap && keyCode in this.keyMap[deviceName];
+    return getKeyMapEntryInput(this.keyMap[deviceName][keyCode]);
   }
 
 }
@@ -1067,10 +1087,6 @@ function decrementKeyMapEntryRef(keyMapEntry) {
 function clearKeyMapEntryRef(keyMapEntry) {
   keyMapEntry.refs = 0;
 }
-
-var INNER_HTML = "<div>\n    <label id=\"title\">\n        input-source\n    </label>\n    <span>|</span>\n    <p>\n        <label for=\"poll\">poll</label>\n        <output id=\"poll\"></output>\n    </p>\n    <p>\n        <label for=\"focus\">focus</label>\n        <output id=\"focus\"></output>\n    </p>\n</div>\n";
-
-var INNER_STYLE = ":host{display:inline-block}div{font-family:monospace;color:#666;outline:1px solid #666;padding:4px}p{display:inline;margin:0;padding:0}#focus:empty:after,#poll:empty:after{content:\"✗\";color:red}";
 
 /**
  * Available Key Codes:
@@ -1463,520 +1479,110 @@ class Mouse extends InputDevice {
 
 }
 
-/**
- * @typedef {import('./InputSourceImpl.js').InputSourceImpl} InputSourceImpl
- */
-
 /** This determines whether an element has an associated input event source. */
 
-const INPUT_SOURCE_IMPL_KEY = Symbol('inputSourceImpl');
-class InputSource extends HTMLElement {
-  /** Generated by cuttle.js */
-  static get [Symbol.for("cuttleTemplate")]() {
-    let t = document.createElement("template");
-    t.innerHTML = INNER_HTML;
-    Object.defineProperty(this, Symbol.for("cuttleTemplate"), {
-      value: t
-    });
-    return t;
-  }
+const INPUT_SOURCE_STATE_KEY = Symbol('inputSourceState');
+/**
+ * This serves as a layer of abstraction to get unique sources of input events by target elements. Getting
+ * the input source for the same event target will return the same input source instance. This allows
+ * easier management of input source references without worrying about duplicates.
+ * 
+ * If you do not want this feature but still want the events managed, use `InputSourceState` directly instead.
+ */
 
-  /** Generated by cuttle.js */
-  static get [Symbol.for("cuttleStyle")]() {
-    let s = document.createElement("style");
-    s.innerHTML = INNER_STYLE;
-    Object.defineProperty(this, Symbol.for("cuttleStyle"), {
-      value: s
-    });
-    return s;
-  }
-
+class InputSource extends InputSourceState {
   /**
    * Get the associated input source for the given event target.
    * 
    * @param {EventTarget} eventTarget The target element to listen
    * for all input events.
-   * @returns {InputSource} The input source for the given event target.
+   * @returns {InputSourceState} The input source for the given event target.
    */
   static for(eventTarget) {
-    return new InputSource(eventTarget);
-  }
-
-  static get properties() {
-    return {
-      for: String,
-      autopoll: Boolean
-    };
-  }
-
-  get autopoll() {
-    return this._autopoll;
-  }
-
-  set autopoll(value) {
-    this.toggleAttribute("autopoll", value);
-  }
-
-  get for() {
-    return this._for;
-  }
-
-  set for(value) {
-    this.setAttribute("for", value);
-  }
-
-  static get customEvents() {
-    return ['input', 'poll'];
-  }
-  /**
-   * @param {EventTarget} [eventTarget] The event target to listen for all input events.
-   */
-
-
-  get onpoll() {
-    return this._onpoll;
-  }
-
-  set onpoll(value) {
-    if (this._onpoll) this.removeEventListener("poll", this._onpoll);
-    this._onpoll = value;
-    if (this._onpoll) this.addEventListener("poll", value);
-  }
-
-  get oninput() {
-    return this._oninput;
-  }
-
-  set oninput(value) {
-    if (this._oninput) this.removeEventListener("input", this._oninput);
-    this._oninput = value;
-    if (this._oninput) this.addEventListener("input", value);
-  }
-
-  constructor(eventTarget = undefined) {
-    super();
-    this.attachShadow({
-      mode: 'open'
-    });
-    this.shadowRoot.appendChild(this.constructor[Symbol.for("cuttleTemplate")].content.cloneNode(true));
-    this.shadowRoot.appendChild(this.constructor[Symbol.for("cuttleStyle")].cloneNode(true));
-    /** @private */
-
-    this._containerElement = this.shadowRoot.querySelector('div');
-    /** @private */
-
-    this._titleElement = this.shadowRoot.querySelector('#title');
-    /** @private */
-
-    this._pollElement = this.shadowRoot.querySelector('#poll');
-    /** @private */
-
-    this._focusElement = this.shadowRoot.querySelector('#focus');
-    /** @private */
-
-    this._pollCount = 0;
-    /** @private */
-
-    this._pollCountDelay = 0;
-    /**
-     * @private
-     * @type {EventTarget}
-     */
-
-    this._eventTarget = null;
-    /**
-     * @private
-     * @type {InputSourceImpl}
-     */
-
-    this._sourceImpl = null;
-    /** @private */
-
-    this.onSourcePoll = this.onSourcePoll.bind(this);
-    /** @private */
-
-    this.onSourceInput = this.onSourceInput.bind(this);
-    /** @private */
-
-    this.onTargetFocus = this.onTargetFocus.bind(this);
-    /** @private */
-
-    this.onTargetBlur = this.onTargetBlur.bind(this);
-
     if (eventTarget) {
-      this.setEventTarget(eventTarget);
-    }
-  }
-  /** @override */
-
-
-  connectedCallback() {
-    if (Object.prototype.hasOwnProperty.call(this, "oninput")) {
-      let value = this.oninput;
-      delete this.oninput;
-      this.oninput = value;
-    }
-
-    if (Object.prototype.hasOwnProperty.call(this, "onpoll")) {
-      let value = this.onpoll;
-      delete this.onpoll;
-      this.onpoll = value;
-    }
-
-    if (Object.prototype.hasOwnProperty.call(this, "for")) {
-      let value = this.for;
-      delete this.for;
-      this.for = value;
-    }
-
-    if (Object.prototype.hasOwnProperty.call(this, "autopoll")) {
-      let value = this.autopoll;
-      delete this.autopoll;
-      this.autopoll = value;
-    }
-
-    // Allows this element to be focusable
-    if (!this.hasAttribute('tabindex')) this.setAttribute('tabindex', 0); // Initialize input source event target as self, if unset
-
-    if (!this.hasAttribute('for') && !this._eventTarget) {
-      this.setEventTarget(this);
-    }
-  }
-
-  /** @override */
-  disconnectedCallback() {
-    this.clearEventTarget();
-  }
-  /** @override */
-
-
-  attributeChangedCallback(attribute, prev, value) {
-    /** Generated by cuttle.js */
-    switch (attribute) {
-      case "for":
-        this._for = value;
-        break;
-
-      case "autopoll":
-        {
-          this._autopoll = value !== null;
-        }
-        break;
-
-      case "oninput":
-        {
-          this.oninput = new Function('event', 'with(document){with(this){' + value + '}}').bind(this);
-        }
-        break;
-
-      case "onpoll":
-        {
-          this.onpoll = new Function('event', 'with(document){with(this){' + value + '}}').bind(this);
-        }
-        break;
-    }
-
-    ((attribute, prev, value) => {
-      switch (attribute) {
-        case 'for':
-          {
-            let target;
-            let name;
-
-            if (value) {
-              target = document.getElementById(value);
-              name = `${target.tagName.toLowerCase()}#${value}`;
-            } else {
-              target = this;
-              name = 'input-source';
-            }
-
-            this.setEventTarget(value ? document.getElementById(value) : this); // For debug info
-
-            this._titleElement.innerHTML = `for(${name})`;
-          }
-          break;
-      }
-    })(attribute, prev, value);
-  }
-
-  set autopoll(value) {
-    if (hasInputSourceImpl(this._eventTarget)) {
-      updateInputSourceImplAutopoll(this._eventTarget, value);
+      return obtainInputSourceState(eventTarget);
     } else {
-      this._autopoll = Boolean(value);
+      throw new Error('Cannot get input source for null event target.');
     }
   }
-
-  get autopoll() {
-    return this._autopoll;
-  }
   /**
-   * Poll input state from devices.
+   * Delete the associated input source for the given event target.
    * 
-   * @param {number} now The current time in milliseconds.
+   * @param {EventTarget} eventTarget The target element being listened to.
    */
 
 
-  poll(now) {
-    this._sourceImpl.poll(now);
-  }
-  /** @private */
-
-
-  onSourceInput({
-    stage,
-    deviceName,
-    keyCode,
-    input
-  }) {
-    this.dispatchEvent(new CustomEvent('input', {
-      composed: true,
-      bubbles: false,
-      detail: {
-        stage,
-        deviceName,
-        keyCode,
-        input
-      }
-    }));
-  }
-  /** @private */
-
-
-  onSourcePoll({
-    now
-  }) {
-    this._pollCount += 1;
-    this.dispatchEvent(new CustomEvent('poll', {
-      composed: true,
-      bubbles: false
-    }));
-    let dt = now - this._pollCountDelay;
-
-    if (dt > 1000) {
-      this._pollCountDelay = now;
-
-      if (this._pollCount > 0) {
-        this._pollElement.innerHTML = '✓';
-        this._pollCount = 0;
-      } else {
-        this._pollElement.innerHTML = '';
-      }
-    }
-  }
-  /** @private */
-
-
-  onTargetFocus() {
-    this._focusElement.innerHTML = '✓';
-  }
-  /** @private */
-
-
-  onTargetBlur() {
-    this._focusElement.innerHTML = '';
-  }
-  /** @private */
-
-
-  setEventTarget(eventTarget) {
-    this.clearEventTarget();
-
-    if (!eventTarget) {
-      throw new Error('Cannot set null as event target for input source.');
-    }
-
-    let sourceImpl = obtainInputSourceImpl(eventTarget, this);
-    this._sourceImpl = sourceImpl;
-    this._eventTarget = eventTarget;
-    updateInputSourceImplAutopoll(eventTarget, this.autopoll);
-    sourceImpl.addEventListener('poll', this.onSourcePoll);
-    sourceImpl.addEventListener('input', this.onSourceInput);
-    eventTarget.addEventListener('focus', this.onTargetFocus);
-    eventTarget.addEventListener('blur', this.onTargetBlur);
-  }
-  /** @private */
-
-
-  clearEventTarget() {
-    let eventTarget = this._eventTarget;
-    let sourceImpl = this._sourceImpl;
-    this._eventTarget = null;
-    this._sourceImpl = null;
-
+  static delete(eventTarget) {
     if (eventTarget) {
-      eventTarget.removeEventListener('focus', this.onTargetFocus);
-      eventTarget.removeEventListener('blur', this.onTargetBlur); // Event source also exists (and therefore should be removed) if event target was setup.
-
-      sourceImpl.removeEventListener('poll', this.onSourcePoll);
-      sourceImpl.removeEventListener('input', this.onSourceInput); // Clean up event source if no longer used.
-
-      releaseInputSourceImpl(eventTarget, this);
+      releaseInputSourceState(eventTarget);
     }
   }
-  /**
-   * Register and enable the source input to listen to for the given device
-   * and key code. Can be registered more than once to obtain active lease
-   * on the input, which guarantees it will be unregistered the same number
-   * of times before removal.
-   * 
-   * @param {string} deviceName The name of the device (case-sensitive).
-   * @param {string} keyCode The key code for the given key in the device.
-   */
+  /** @private */
 
 
-  registerKey(deviceName, keyCode) {
-    // An interface wrapper for InputSourceImpl
-    this._sourceImpl.registerKey(deviceName, keyCode);
-  }
-  /**
-   * Remove and disable the registered source for the given device and key code.
-   * 
-   * @param {string} deviceName The name of the device (case-sensitive).
-   * @param {string} keyCode The key code for the given key in the device.
-   */
+  constructor() {
+    super(); // NOTE: This is to enforce the for() and delete() structure.
 
-
-  unregisterKey(deviceName, keyCode) {
-    // An interface wrapper for InputSourceImpl
-    this._sourceImpl.unregisterKey(deviceName, keyCode);
-  }
-  /**
-   * Removes all registered inputs from all devices.
-   */
-
-
-  clearKeys() {
-    // An interface wrapper for InputSourceImpl
-    this._sourceImpl.clearKeys();
-  }
-  /**
-   * @returns {Button|Axis}
-   */
-
-
-  getInputByKey(deviceName, keyCode) {
-    // An interface wrapper for InputSourceImpl
-    return this._sourceImpl.getInputByKey(deviceName, keyCode);
-  }
-  /**
-   * Check whether an input is registered for the given device and key code.
-   * 
-   * @param {string} deviceName The name of the device.
-   * @param {string} keyCode The key code in the device.
-   * @returns {boolean} Whether the device and key code has been registered.
-   */
-
-
-  hasInputByKey(deviceName, keyCode) {
-    // An interface wrapper for InputSourceImpl
-    return this._sourceImpl.hasInputByKey(deviceName, keyCode);
-  }
-  /** A map of device names to devices. */
-
-
-  get devices() {
-    // An interface wrapper for InputSourceImpl
-    return this._sourceImpl.devices;
-  }
-
-  static get observedAttributes() {
-    return ["oninput", "onpoll", "for", "autopoll"];
+    throw new Error('Cannot construct InputSource with new - use InputSourceState() instead.');
   }
 
 }
-window.customElements.define('input-source', InputSource);
 /**
  * @param {EventTarget} eventTarget The target element to listen to.
  * @returns {boolean} Whether the event target has an associated input source.
  */
 
-function hasInputSourceImpl(eventTarget) {
-  return eventTarget && Object.prototype.hasOwnProperty.call(eventTarget, INPUT_SOURCE_IMPL_KEY) && Object.getOwnPropertyDescriptor(eventTarget, INPUT_SOURCE_IMPL_KEY).value;
+function hasAttachedInputSourceState(eventTarget) {
+  return Object.prototype.hasOwnProperty.call(eventTarget, INPUT_SOURCE_STATE_KEY) && Object.getOwnPropertyDescriptor(eventTarget, INPUT_SOURCE_STATE_KEY).value;
 }
 /**
- * @param {EventTarget} eventTarget The target element.
- * @returns {InputSourceImpl} The attached input source state.
- */
-
-
-function getInputSourceState(eventTarget) {
-  return Object.getOwnPropertyDescriptor(eventTarget, INPUT_SOURCE_IMPL_KEY).value.impl;
-}
-/**
- * @param {EventTarget} eventTarget The target element.
- * @returns {Array<InputSource>} A list of input sources holding leases to the source impl.
- */
-
-
-function getInputSourceRefs(eventTarget) {
-  return Object.getOwnPropertyDescriptor(eventTarget, INPUT_SOURCE_IMPL_KEY).value.refs;
-}
-/**
+ * Obtain a lease to the associated input source for the event target element.
+ * 
  * @param {EventTarget} eventTarget The target element to listen to.
- * @param {InputSource} inputSource The input source to be associated with the event target element.
  */
 
 
-function obtainInputSourceImpl(eventTarget, inputSource) {
-  if (!hasInputSourceImpl(eventTarget)) {
-    let impl = new InputSourceImpl([new Keyboard(eventTarget), new Mouse(eventTarget)]);
-    Object.defineProperty(eventTarget, INPUT_SOURCE_IMPL_KEY, {
+function obtainInputSourceState(eventTarget) {
+  if (!hasAttachedInputSourceState(eventTarget)) {
+    let state = new InputSourceState([new Keyboard(eventTarget), new Mouse(eventTarget)]);
+    Object.defineProperty(eventTarget, INPUT_SOURCE_STATE_KEY, {
       value: {
-        impl: impl,
-        refs: [inputSource]
+        state: state,
+        refs: 1
       },
       configurable: true
     });
-    return impl;
+    return state;
   } else {
-    return getInputSourceState(eventTarget);
+    let descriptor = Object.getOwnPropertyDescriptor(eventTarget, INPUT_SOURCE_STATE_KEY);
+    descriptor.value.refs += 1;
+    return descriptor.value.state;
   }
 }
 /**
- * @param {EventTarget} eventTarget The target element listening to.
- * @param {InputSource} inputSource The input source to be removed from the event target element.
+ * Release a single lease on the input source for the event target element.
+ * 
+ * @param {EventTarget} eventTarget The target element.
  */
 
 
-function releaseInputSourceImpl(eventTarget, inputSource) {
-  if (hasInputSourceImpl(eventTarget)) {
-    let {
-      impl,
-      refs
-    } = Object.getOwnPropertyDescriptor(eventTarget, INPUT_SOURCE_IMPL_KEY).value;
-    let index = refs.indexOf(inputSource);
+function releaseInputSourceState(eventTarget) {
+  if (hasAttachedInputSourceState(eventTarget)) {
+    let descriptor = Object.getOwnPropertyDescriptor(eventTarget, INPUT_SOURCE_STATE_KEY);
+    descriptor.value.refs -= 1;
 
-    if (index >= 0) {
-      refs.splice(index, 1);
-    }
-
-    if (refs.length <= 0) {
-      Object.defineProperty(eventTarget, INPUT_SOURCE_IMPL_KEY, {
-        value: null,
-        configurable: true
-      });
-      impl.destroy();
+    if (descriptor.value.refs <= 0) {
+      let state = descriptor.value.state;
+      delete eventTarget[INPUT_SOURCE_STATE_KEY];
+      state.destroy();
     }
   }
 }
 
-function updateInputSourceImplAutopoll(eventTarget, autopoll) {
-  let state = getInputSourceState(eventTarget);
-
-  if (autopoll) {
-    state.autopoll = true;
-  } else {
-    let autopoll = false;
-
-    for (let inputSource of getInputSourceRefs(eventTarget)) {
-      autopoll |= inputSource.autopoll;
-    }
-
-    state.autopoll = autopoll;
-  }
-}
+/**
+ * @typedef {import('./source/InputSourceState.js').InputSourceInputEvent} InputSourceInputEvent
+ * @typedef {import('./source/InputSourceState.js').InputSourcePollEvent} InputSourcePollEvent
+ */
 
 class InputContext {
   /**
@@ -2161,18 +1767,18 @@ class InputContext {
   }
   /**
    * @private
-   * @param {import('./source/InputEventSource.js').SourceInputEvent} e
+   * @param {InputSourceInputEvent} e
    */
 
 
   onSourceInput(e) {
-    if (!e.detail.consumed && !this._ignoreInput) {
+    if (!e.consumed && !this._ignoreInput) {
       const {
         stage,
         deviceName,
         keyCode,
         input
-      } = e.detail;
+      } = e;
 
       switch (stage) {
         case InputSourceEventStage.POLL:
@@ -2199,7 +1805,7 @@ class InputContext {
   }
   /**
    * @private
-   * @param {import('./source/InputEventSource.js').SourcePollEvent} e
+   * @param {InputSourcePollEvent} e
    */
 
 
@@ -2284,12 +1890,390 @@ class InputContext {
 }
 
 function resolveInputSource(inputSourceOrEventTarget) {
-  if (!(inputSourceOrEventTarget instanceof InputSource)) {
-    return new InputSource(inputSourceOrEventTarget);
+  if (!(inputSourceOrEventTarget instanceof InputSourceState)) {
+    return InputSource.for(inputSourceOrEventTarget);
   } else {
     return inputSourceOrEventTarget;
   }
 }
+
+var INNER_HTML = "<div>\n    <label id=\"title\">\n        input-source\n    </label>\n    <span>|</span>\n    <p>\n        <label for=\"poll\">poll</label>\n        <output id=\"poll\"></output>\n    </p>\n    <p>\n        <label for=\"focus\">focus</label>\n        <output id=\"focus\"></output>\n    </p>\n</div>\n";
+
+var INNER_STYLE = ":host{display:inline-block}div{font-family:monospace;color:#666;outline:1px solid #666;padding:4px}p{display:inline;margin:0;padding:0}#focus:empty:after,#poll:empty:after{content:\"✗\";color:red}";
+
+/**
+ * @typedef {import('./InputSourceState.js').InputSourceState} InputSourceState
+ */
+
+/** Poll status check interval in milliseconds. */
+
+const INTERVAL_DURATION = 1000;
+class InputSourceElement extends HTMLElement {
+  /** Generated by cuttle.js */
+  static get [Symbol.for("cuttleTemplate")]() {
+    let t = document.createElement("template");
+    t.innerHTML = INNER_HTML;
+    Object.defineProperty(this, Symbol.for("cuttleTemplate"), {
+      value: t
+    });
+    return t;
+  }
+
+  /** Generated by cuttle.js */
+  static get [Symbol.for("cuttleStyle")]() {
+    let s = document.createElement("style");
+    s.innerHTML = INNER_STYLE;
+    Object.defineProperty(this, Symbol.for("cuttleStyle"), {
+      value: s
+    });
+    return s;
+  }
+
+  static get properties() {
+    return {
+      for: String,
+
+      /**
+       * Whether to automatically poll the state on each frame. This is a shared
+       * state with all input sources that have the same event target. In other
+       * words, all input sources with the same event target must have the
+       * same autopoll value, otherwise behavior is undefined.
+       * 
+       * Implementation-wise, the closest and most recent autopoll value is used.
+       * This follows the standard HTML loading order.
+       */
+      autopoll: Boolean
+    };
+  }
+
+  /**
+               * Whether to automatically poll the state on each frame. This is a shared
+               * state with all input sources that have the same event target. In other
+               * words, all input sources with the same event target must have the
+               * same autopoll value, otherwise behavior is undefined.
+               * 
+               * Implementation-wise, the closest and most recent autopoll value is used.
+               * This follows the standard HTML loading order.
+               */
+  get autopoll() {
+    return this._autopoll;
+  }
+
+  set autopoll(value) {
+    this.toggleAttribute("autopoll", value);
+  }
+
+  get for() {
+    return this._for;
+  }
+
+  set for(value) {
+    this.setAttribute("for", value);
+  }
+
+  static get customEvents() {
+    return ['input', 'poll'];
+  }
+
+  get onpoll() {
+    return this._onpoll;
+  }
+
+  set onpoll(value) {
+    if (this._onpoll) this.removeEventListener("poll", this._onpoll);
+    this._onpoll = value;
+    if (this._onpoll) this.addEventListener("poll", value);
+  }
+
+  get oninput() {
+    return this._oninput;
+  }
+
+  set oninput(value) {
+    if (this._oninput) this.removeEventListener("input", this._oninput);
+    this._oninput = value;
+    if (this._oninput) this.addEventListener("input", value);
+  }
+
+  constructor() {
+    super();
+    this.attachShadow({
+      mode: 'open'
+    });
+    this.shadowRoot.appendChild(this.constructor[Symbol.for("cuttleTemplate")].content.cloneNode(true));
+    this.shadowRoot.appendChild(this.constructor[Symbol.for("cuttleStyle")].cloneNode(true));
+    /** @private */
+
+    this._containerElement = this.shadowRoot.querySelector('div');
+    /** @private */
+
+    this._titleElement = this.shadowRoot.querySelector('#title');
+    /** @private */
+
+    this._pollElement = this.shadowRoot.querySelector('#poll');
+    /** @private */
+
+    this._focusElement = this.shadowRoot.querySelector('#focus');
+    /**
+     * @private
+     * @type {EventTarget}
+     */
+
+    this._eventTarget = null;
+    /**
+     * @private
+     * @type {InputSource}
+     */
+
+    this._sourceState = null;
+    /** @private */
+
+    this.onSourcePoll = this.onSourcePoll.bind(this);
+    /** @private */
+
+    this.onSourceInput = this.onSourceInput.bind(this);
+    /** @private */
+
+    this.onTargetFocus = this.onTargetFocus.bind(this);
+    /** @private */
+
+    this.onTargetBlur = this.onTargetBlur.bind(this);
+    /** @private */
+
+    this.onPollStatusCheck = this.onPollStatusCheck.bind(this);
+    /** @private */
+
+    this._intervalHandle = 0;
+  }
+
+  get eventTarget() {
+    return this._eventTarget;
+  }
+
+  get source() {
+    return this._sourceState;
+  }
+  /** @override */
+
+
+  connectedCallback() {
+    if (Object.prototype.hasOwnProperty.call(this, "oninput")) {
+      let value = this.oninput;
+      delete this.oninput;
+      this.oninput = value;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(this, "onpoll")) {
+      let value = this.onpoll;
+      delete this.onpoll;
+      this.onpoll = value;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(this, "for")) {
+      let value = this.for;
+      delete this.for;
+      this.for = value;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(this, "autopoll")) {
+      let value = this.autopoll;
+      delete this.autopoll;
+      this.autopoll = value;
+    }
+
+    // Allows this element to be focusable
+    if (!this.hasAttribute('tabindex')) this.setAttribute('tabindex', 0); // Initialize input source event target as self, if unset
+
+    if (!this.hasAttribute('for') && !this._eventTarget) {
+      this.updateEventTarget(this);
+    }
+
+    this._intervalHandle = setInterval(this.onPollStatusCheck, INTERVAL_DURATION);
+  }
+
+  /** @override */
+  disconnectedCallback() {
+    this.clearEventTarget();
+    clearInterval(this._intervalHandle);
+  }
+  /** @override */
+
+
+  attributeChangedCallback(attribute, prev, value) {
+    /** Generated by cuttle.js */
+    switch (attribute) {
+      case "for":
+        this._for = value;
+        break;
+
+      case "autopoll":
+        {
+          this._autopoll = value !== null;
+        }
+        break;
+
+      case "oninput":
+        {
+          this.oninput = new Function('event', 'with(document){with(this){' + value + '}}').bind(this);
+        }
+        break;
+
+      case "onpoll":
+        {
+          this.onpoll = new Function('event', 'with(document){with(this){' + value + '}}').bind(this);
+        }
+        break;
+    }
+
+    ((attribute, prev, value) => {
+      switch (attribute) {
+        case 'for':
+          {
+            let target;
+            let name;
+
+            if (value) {
+              target = document.getElementById(value);
+              name = `${target.tagName.toLowerCase()}#${value}`;
+            } else {
+              target = this;
+              name = 'input-source';
+            }
+
+            this.updateEventTarget(value ? document.getElementById(value) : this); // For debug info
+
+            this._titleElement.innerHTML = `for(${name})`;
+          }
+          break;
+
+        case 'autopoll':
+          {
+            if (this._sourceState) {
+              this._sourceState.autopoll = this._autopoll;
+            }
+          }
+          break;
+      }
+    })(attribute, prev, value);
+  }
+  /**
+   * Poll input state from devices.
+   * 
+   * @param {number} now The current time in milliseconds.
+   */
+
+
+  poll(now) {
+    this._sourceState.poll(now);
+  }
+  /** @private */
+
+
+  onPollStatusCheck() {
+    if (this._sourceState.polling) {
+      this._pollElement.innerHTML = '✓';
+    } else {
+      this._pollElement.innerHTML = '';
+    }
+  }
+  /** @private */
+
+
+  onSourceInput({
+    stage,
+    deviceName,
+    keyCode,
+    input
+  }) {
+    this.dispatchEvent(new CustomEvent('input', {
+      composed: true,
+      bubbles: false,
+      detail: {
+        stage,
+        deviceName,
+        keyCode,
+        input
+      }
+    }));
+  }
+  /** @private */
+
+
+  onSourcePoll({
+    now
+  }) {
+    this.dispatchEvent(new CustomEvent('poll', {
+      composed: true,
+      bubbles: false,
+      detail: {
+        now
+      }
+    }));
+  }
+  /** @private */
+
+
+  onTargetFocus() {
+    this._focusElement.innerHTML = '✓';
+  }
+  /** @private */
+
+
+  onTargetBlur() {
+    this._focusElement.innerHTML = '';
+  }
+  /**
+   * Set event target to listen for input events.
+   * 
+   * @param {EventTarget} [eventTarget] The event target to listen for input events. If
+   * falsey, no target will be listened to.
+   */
+
+
+  updateEventTarget(eventTarget = undefined) {
+    this.clearEventTarget();
+
+    if (eventTarget) {
+      let sourceState = InputSource.for(eventTarget);
+      this._sourceState = sourceState;
+      this._eventTarget = eventTarget;
+      sourceState.autopoll = this.autopoll;
+      sourceState.addEventListener('poll', this.onSourcePoll);
+      sourceState.addEventListener('input', this.onSourceInput);
+      eventTarget.addEventListener('focus', this.onTargetFocus);
+      eventTarget.addEventListener('blur', this.onTargetBlur);
+    }
+  }
+  /**
+   * Stop listening to the current target for input events.
+   */
+
+
+  clearEventTarget() {
+    if (this._eventTarget) {
+      let eventTarget = this._eventTarget;
+      let sourceState = this._sourceState;
+      this._eventTarget = null;
+      this._sourceState = null;
+
+      if (eventTarget) {
+        eventTarget.removeEventListener('focus', this.onTargetFocus);
+        eventTarget.removeEventListener('blur', this.onTargetBlur); // Event source also exists (and therefore should be removed) if event target was setup.
+
+        sourceState.removeEventListener('poll', this.onSourcePoll);
+        sourceState.removeEventListener('input', this.onSourceInput); // Clean up event source if no longer used.
+
+        InputSource.delete(eventTarget);
+      }
+    }
+  }
+
+  static get observedAttributes() {
+    return ["oninput", "onpoll", "for", "autopoll"];
+  }
+
+}
+window.customElements.define('input-source', InputSourceElement);
 
 var INNER_HTML$1 = "<kbd>\n    <span id=\"key\"><slot></slot></span>\n    <span id=\"value\" class=\"hidden\"></span>\n</kbd>\n";
 
@@ -2784,7 +2768,7 @@ class InputContextElement extends HTMLElement {
   }
 
   get source() {
-    return this._sourceElement;
+    return this._sourceElement.source;
   }
 
   get map() {
@@ -2792,7 +2776,7 @@ class InputContextElement extends HTMLElement {
   }
 
   onInputMapLoad() {
-    let source = this._sourceElement;
+    let source = this._sourceElement.source;
     let map = this._mapElement.map;
 
     if (source && map) {
@@ -2860,7 +2844,7 @@ class InputContextElement extends HTMLElement {
               this._sourceElement.for = value;
             }
 
-            let source = this._sourceElement;
+            let source = this._sourceElement.source;
             let map = this._mapElement.map;
 
             if (map) {
@@ -2877,7 +2861,7 @@ class InputContextElement extends HTMLElement {
 
         case 'disabled':
           {
-            let source = this._sourceElement;
+            let source = this._sourceElement.source;
             let map = this._mapElement.map;
 
             if (source && map) {
@@ -2921,4 +2905,4 @@ class InputContextElement extends HTMLElement {
 }
 window.customElements.define('input-context', InputContextElement);
 
-export { AdapterManager, InputContext, InputContextElement, InputDevice, InputEventCode, InputKeyElement, InputMapElement, InputSource, InputSourceEventStage, InputType, Keyboard, Mouse, WILDCARD_DEVICE_MATCHER, WILDCARD_KEY_MATCHER };
+export { AdapterManager, InputContext, InputContextElement, InputDevice, InputEventCode, InputKeyElement, InputMapElement, InputSource, InputSourceElement, InputSourceEventStage, InputSourceState, InputType, Keyboard, Mouse, WILDCARD_DEVICE_MATCHER, WILDCARD_KEY_MATCHER };

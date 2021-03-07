@@ -1,5 +1,6 @@
 import '@milque/display';
 import '@milque/input';
+import { InputSource } from '@milque/input';
 
 window.addEventListener('DOMContentLoaded', main);
 
@@ -31,6 +32,15 @@ async function main()
     const input = document.querySelector('input-context');
     input.src = INPUT_MAP;
     input.source.autopoll = true;
+    
+    /*
+    const other = InputSource.for(display);
+    other.autopoll = true;
+
+    setTimeout(() => {
+        input.source.autopoll = false;
+    }, 4000);
+    */
 
     const ctx = display.canvas.getContext('2d');
 
@@ -43,7 +53,6 @@ async function main()
     };
 
     display.addEventListener('frame', e => {
-        
         if (input.getInputChanged('PointerX'))
         {
             drawArena(world);
