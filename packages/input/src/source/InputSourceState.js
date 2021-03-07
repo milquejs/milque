@@ -84,11 +84,17 @@ export class InputSourceState
         this._animationFrameHandle = null;
     }
 
+    /**
+     * @returns {boolean} Whether in the last second this input source was polled.
+     */
     get polling()
     {
         return performance.now() - this._lastPollTime < 1000;
     }
 
+    /**
+     * Destroys this source's devices and keys.
+     */
     destroy()
     {
         this.clearKeys();
@@ -294,7 +300,11 @@ export class InputSourceState
         }
     }
 
-    /** @returns {boolean} Whether to automatically poll on animation frame. */
+    /**
+     * If true, polling will be handled automatically through requestAnimationFrame().
+     * 
+     * @returns {boolean} Whether to automatically poll on animation frame.
+     */
     get autopoll()
     {
         return this._autopoll;

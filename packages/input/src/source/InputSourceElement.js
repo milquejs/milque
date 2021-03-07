@@ -18,6 +18,15 @@ export class InputSourceElement extends HTMLElement
     {
         return {
             for: String,
+            /**
+             * Whether to automatically poll the state on each frame. This is a shared
+             * state with all input sources that have the same event target. In other
+             * words, all input sources with the same event target must have the
+             * same autopoll value, otherwise behavior is undefined.
+             * 
+             * Implementation-wise, the closest and most recent autopoll value is used.
+             * This follows the standard HTML loading order.
+             */
             autopoll: Boolean,
         };
     }
