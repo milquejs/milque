@@ -1,7 +1,7 @@
 import { InputEventCode } from '../device/InputDevice.js';
-import { Input } from '../source/Input.js';
+import { AdapterManager } from '../adapter/AdapterManager.js';
 
-import { AdapterManager } from './AdapterManager.js';
+import { Input } from './Input.js';
 
 export const KEY_STRING_DEVICE_SEPARATOR = ':';
 

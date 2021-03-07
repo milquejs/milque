@@ -4,7 +4,7 @@ import INNER_HTML from './InputContextElement.template.html';
 import INNER_STYLE from './InputContextElement.module.css';
 
 import { InputContext } from '../InputContext.js';
-import { hasInputEventSource, InputSource } from '../source/InputSource';
+import { InputSource } from '../source/InputSource.js';
 
 function upgradeProperty(element, propertyName)
 {
@@ -97,14 +97,7 @@ export class InputContextElement extends HTMLElement
         {
             case 'for':
                 {
-                    // TODO: Need to revisit whether this is a good way to set autopoll.
                     let targetElement = document.getElementById(value);
-                    // Enable autopoll if input source is unset.
-                    let flag = hasInputEventSource(value ? targetElement : this._sourceElement);
-                    if (!flag)
-                    {
-                        this._sourceElement.autopoll = true;
-                    }
 
                     if (targetElement instanceof InputSource && targetElement._eventTarget)
                     {

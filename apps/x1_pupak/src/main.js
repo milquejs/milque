@@ -30,8 +30,9 @@ async function main()
     /** @type {import('@milque/input').InputContextElement} */
     const input = document.querySelector('input-context');
     input.src = INPUT_MAP;
+    input.source.autopoll = true;
 
-    const ctx = display.boo.getContext('2d');
+    const ctx = display.canvas.getContext('2d');
 
     let world = {
         display,
@@ -42,7 +43,11 @@ async function main()
     };
 
     display.addEventListener('frame', e => {
-        drawArena(world);
+        
+        if (input.getInputChanged('PointerX'))
+        {
+            drawArena(world);
+        }
     });
 }
 

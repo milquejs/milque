@@ -1,0 +1,16 @@
+{
+  "name": "pong",
+  "version": "1.0.0",
+  "description": "A game of pinging pongs.",
+  "browser": "dist/index.js",
+  "author": "Andrew Kuo",
+  "license": "MIT",
+  "keywords": [
+    "milque"
+  ],
+  "dependencies": {
+    "@milque/display": "^0.0.1",
+    "@milque/input": "^0.0.1",
+    "@milque/random": "^0.0.1"
+  }
+}

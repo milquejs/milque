@@ -1,7 +1,7 @@
 import { AdapterManager } from './adapter/AdapterManager.js';
-import { Synthetic } from './adapter/Synthetic.js';
-import { InputSourceEventStage } from './source/InputEventSource.js';
-import { InputSource, hasInputEventSource } from './source/InputSource.js';
+import { Synthetic } from './input/Synthetic.js';
+import { InputSourceEventStage } from './source/InputSourceImpl.js';
+import { InputSource } from './source/InputSource.js';
 
 export class InputContext
 {
@@ -122,7 +122,7 @@ export class InputContext
                 for(let adapter of adapters)
                 {
                     const { deviceName, keyCode } = adapter;
-                    prevInputSource.disableKeySource(deviceName, keyCode);
+                    prevInputSource.unregisterKey(deviceName, keyCode);
                 }
             }
 
@@ -158,7 +158,7 @@ export class InputContext
                 for(let adapter of adapters)
                 {
                     const { deviceName, keyCode } = adapter;
-                    inputSource.enableKeySource(deviceName, keyCode);
+                    inputSource.registerKey(deviceName, keyCode);
                 }
             }
 
@@ -306,15 +306,7 @@ function resolveInputSource(inputSourceOrEventTarget)
 {
     if (!(inputSourceOrEventTarget instanceof InputSource))
     {
-        let eventTarget = inputSourceOrEventTarget;
-        let flag = hasInputEventSource(eventTarget);
-        let result = new InputSource(eventTarget);
-        if (!flag)
-        {
-            // By default, all NEW input sources resolved from event targets should autopoll.
-            result.autopoll = true;
-        }
-        return result;
+        return new InputSource(inputSourceOrEventTarget);
     }
     else
     {
