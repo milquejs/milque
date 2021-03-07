@@ -38,9 +38,9 @@ export const InputSourceEventStage = {
 /**
  * A class to model the current input state with buttons and axes for devices.
  */
-export class InputSourceImpl
+export class InputSourceState
 {
-    constructor(deviceList)
+    constructor(deviceList = [])
     {
         /** @private */
         this.onInputEvent = this.onInputEvent.bind(this);
@@ -77,9 +77,16 @@ export class InputSourceImpl
         };
 
         /** @private */
+        this._lastPollTime = -1;
+        /** @private */
         this._autopoll = false;
         /** @private */
         this._animationFrameHandle = null;
+    }
+
+    get polling()
+    {
+        return performance.now() - this._lastPollTime < 1000;
     }
 
     destroy()
@@ -112,6 +119,7 @@ export class InputSourceImpl
             }
         }
         this.dispatchPollEvent(now);
+        this._lastPollTime = now;
     }
 
     /**
@@ -356,6 +364,16 @@ export class InputSourceImpl
             }
         }
     }
+    
+    /**
+     * @param {string} deviceName The name of the device.
+     * @param {string} keyCode The key code in the device.
+     * @returns {boolean} Whether the device and key code has been registered.
+     */
+    hasKey(deviceName, keyCode)
+    {
+        return deviceName in this.keyMap && keyCode in this.keyMap[deviceName];
+    }
 
     /**
      * Removes all registered inputs from all devices.
@@ -380,17 +398,7 @@ export class InputSourceImpl
      */
     getInputByKey(deviceName, keyCode)
     {
-        return this.keyMap[deviceName][keyCode];
-    }
-    
-    /**
-     * @param {string} deviceName The name of the device.
-     * @param {string} keyCode The key code in the device.
-     * @returns {boolean} Whether the device and key code has been registered.
-     */
-    hasInputByKey(deviceName, keyCode)
-    {
-        return deviceName in this.keyMap && keyCode in this.keyMap[deviceName];
+        return getKeyMapEntryInput(this.keyMap[deviceName][keyCode]);
     }
 }
 

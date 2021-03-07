@@ -1,7 +1,12 @@
 import { AdapterManager } from './adapter/AdapterManager.js';
 import { Synthetic } from './input/Synthetic.js';
-import { InputSourceEventStage } from './source/InputSourceImpl.js';
+import { InputSourceEventStage, InputSourceState } from './source/InputSourceState.js';
 import { InputSource } from './source/InputSource.js';
+
+/**
+ * @typedef {import('./source/InputSourceState.js').InputSourceInputEvent} InputSourceInputEvent
+ * @typedef {import('./source/InputSourceState.js').InputSourcePollEvent} InputSourcePollEvent
+ */
 
 export class InputContext
 {
@@ -176,13 +181,13 @@ export class InputContext
 
     /**
      * @private
-     * @param {import('./source/InputEventSource.js').SourceInputEvent} e
+     * @param {InputSourceInputEvent} e
      */
     onSourceInput(e)
     {
-        if (!e.detail.consumed && !this._ignoreInput)
+        if (!e.consumed && !this._ignoreInput)
         {
-            const { stage, deviceName, keyCode, input } = e.detail;
+            const { stage, deviceName, keyCode, input } = e;
             switch(stage)
             {
                 case InputSourceEventStage.POLL:
@@ -205,7 +210,7 @@ export class InputContext
 
     /**
      * @private
-     * @param {import('./source/InputEventSource.js').SourcePollEvent} e
+     * @param {InputSourcePollEvent} e
      */
     onSourcePoll(e)
     {
@@ -304,9 +309,9 @@ export class InputContext
 
 function resolveInputSource(inputSourceOrEventTarget)
 {
-    if (!(inputSourceOrEventTarget instanceof InputSource))
+    if (!(inputSourceOrEventTarget instanceof InputSourceState))
     {
-        return new InputSource(inputSourceOrEventTarget);
+        return InputSource.for(inputSourceOrEventTarget);
     }
     else
     {

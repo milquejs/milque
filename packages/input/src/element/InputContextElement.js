@@ -56,12 +56,12 @@ export class InputContextElement extends HTMLElement
     }
 
     get context() { return this._inputContext; }
-    get source() { return this._sourceElement; }
+    get source() { return this._sourceElement.source; }
     get map() { return this._mapElement.map; }
 
     onInputMapLoad()
     {
-        let source = this._sourceElement;
+        let source = this._sourceElement.source;
         let map = this._mapElement.map;
         if (source && map)
         {
@@ -110,7 +110,7 @@ export class InputContextElement extends HTMLElement
                         this._sourceElement.for = value;
                     }
 
-                    let source = this._sourceElement;
+                    let source = this._sourceElement.source;
                     let map = this._mapElement.map;
                     if (map)
                     {
@@ -127,7 +127,7 @@ export class InputContextElement extends HTMLElement
                 break;
             case 'disabled':
                 {
-                    let source = this._sourceElement;
+                    let source = this._sourceElement.source;
                     let map = this._mapElement.map;
                     if (source && map)
                     {
