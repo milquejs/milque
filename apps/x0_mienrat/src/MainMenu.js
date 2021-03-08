@@ -1,8 +1,9 @@
-const MAIN_MENU_INPUT_NAMES = {
-    MENU_UP: 'MenuUp',
-    MENU_DOWN: 'MenuDown',
-    MENU_SELECT: 'MenuSelect',
-};
+import { InputContext } from '@milque/input';
+
+export const MAIN_MENU_INPUT_CONTEXT = new InputContext();
+const MENU_UP = MAIN_MENU_INPUT_CONTEXT.getInput('MenuUp');
+const MENU_DOWN = MAIN_MENU_INPUT_CONTEXT.getInput('MenuDown');
+const MENU_SELECT = MAIN_MENU_INPUT_CONTEXT.getInput('MenuSelect');
 
 export class MainMenu
 {
@@ -14,17 +15,17 @@ export class MainMenu
 
     tick(world)
     {
-        if (world.input.getInputChanged(MAIN_MENU_INPUT_NAMES.MENU_UP) > 0)
+        if ((MENU_UP.value - MENU_UP.prev) > 0)
         {
             this.index -= 1;
         }
 
-        if (world.input.getInputChanged(MAIN_MENU_INPUT_NAMES.MENU_DOWN) > 0)
+        if ((MENU_DOWN.value - MENU_DOWN.prev) > 0)
         {
             this.index += 1;
         }
 
-        if (world.input.getInputChanged(MAIN_MENU_INPUT_NAMES.MENU_SELECT) > 0)
+        if ((MENU_SELECT.value - MENU_SELECT.prev) > 0)
         {
             switch(this.index)
             {
