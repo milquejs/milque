@@ -1,8 +1,27 @@
 import '@milque/display';
 import '@milque/input';
-import { InputSource } from '@milque/input';
+import { InputPort } from '@milque/input';
 
 window.addEventListener('DOMContentLoaded', main);
+
+window.addEventListener('unhandledrejection', error, true);
+window.addEventListener('error', error, true);
+
+function error(e)
+{
+    if (e instanceof PromiseRejectionEvent)
+    {
+        window.alert(e.reason.stack);
+    }
+    else if (e instanceof ErrorEvent)
+    {
+        window.alert(e.error.stack);
+    }
+    else
+    {
+        window.alert(JSON.stringify(e));
+    }
+}
 
 const DISPLAY_WIDTH = 320;
 const DISPLAY_HEIGHT = 240;
@@ -28,19 +47,13 @@ async function main()
     display.width = DISPLAY_WIDTH;
     display.height = DISPLAY_HEIGHT;
 
-    /** @type {import('@milque/input').InputContextElement} */
-    const input = document.querySelector('input-context');
+    const input = document.querySelector('input-port');
     input.src = INPUT_MAP;
-    input.source.autopoll = true;
-    
-    /*
-    const other = InputSource.for(display);
-    other.autopoll = true;
+    input.for = 'main';
+    input.autopoll = true;
+    input.for = 'other';
 
-    setTimeout(() => {
-        input.source.autopoll = false;
-    }, 4000);
-    */
+    const i1 = input.context.getInput('BOOM');
 
     const ctx = display.canvas.getContext('2d');
 
@@ -53,7 +66,7 @@ async function main()
     };
 
     display.addEventListener('frame', e => {
-        if (input.getInputChanged('PointerX'))
+        if (input.context.getInputChanged('PointerX'))
         {
             drawArena(world);
         }

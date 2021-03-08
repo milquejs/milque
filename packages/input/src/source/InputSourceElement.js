@@ -98,7 +98,7 @@ export class InputSourceElement extends HTMLElement
         // Initialize input source event target as self, if unset
         if (!this.hasAttribute('for') && !this._eventTarget)
         {
-            this.updateEventTarget(this);
+            // TODO: this.setEventTarget(this);
         }
 
         this._intervalHandle = setInterval(this.onPollStatusCheck, INTERVAL_DURATION);
@@ -130,7 +130,7 @@ export class InputSourceElement extends HTMLElement
                         target = this;
                         name = 'input-source';
                     }
-                    this.updateEventTarget(value ? document.getElementById(value) : this);
+                    this.setEventTarget(value ? document.getElementById(value) : this);
                     // For debug info
                     this._titleElement.innerHTML = `for(${name})`;
                 }
@@ -143,6 +143,60 @@ export class InputSourceElement extends HTMLElement
                     }
                 }
                 break;
+        }
+    }
+    
+    /**
+     * Set event target to listen for input events.
+     * 
+     * @param {EventTarget} [eventTarget] The event target to listen for input events. If
+     * falsey, no target will be listened to.
+     */
+    setEventTarget(eventTarget = undefined)
+    {
+        this.clearEventTarget();
+
+        if (eventTarget)
+        {
+            let sourceState = InputSource.for(eventTarget);
+            this._sourceState = sourceState;
+            this._eventTarget = eventTarget;
+    
+            sourceState.autopoll = this.autopoll;
+            
+            sourceState.addEventListener('poll', this.onSourcePoll);
+            sourceState.addEventListener('input', this.onSourceInput);
+            eventTarget.addEventListener('focus', this.onTargetFocus);
+            eventTarget.addEventListener('blur', this.onTargetBlur);
+        }
+
+        return this;
+    }
+
+    /**
+     * Stop listening to the current target for input events.
+     */
+    clearEventTarget()
+    {
+        if (this._eventTarget)
+        {
+            let eventTarget = this._eventTarget;
+            let sourceState = this._sourceState;
+            this._eventTarget = null;
+            this._sourceState = null;
+    
+            if (eventTarget)
+            {
+                eventTarget.removeEventListener('focus', this.onTargetFocus);
+                eventTarget.removeEventListener('blur', this.onTargetBlur);
+    
+                // Event source also exists (and therefore should be removed) if event target was setup.
+                sourceState.removeEventListener('poll', this.onSourcePoll);
+                sourceState.removeEventListener('input', this.onSourceInput);
+    
+                // Clean up event source if no longer used.
+                InputSource.delete(eventTarget);
+            }
         }
     }
 
@@ -159,7 +213,7 @@ export class InputSourceElement extends HTMLElement
     /** @private */
     onPollStatusCheck()
     {
-        if (this._sourceState.polling)
+        if (this._sourceState && this._sourceState.polling)
         {
             this._pollElement.innerHTML = '✓';
         }
@@ -201,58 +255,6 @@ export class InputSourceElement extends HTMLElement
     onTargetBlur()
     {
         this._focusElement.innerHTML = '';
-    }
-    
-    /**
-     * Set event target to listen for input events.
-     * 
-     * @param {EventTarget} [eventTarget] The event target to listen for input events. If
-     * falsey, no target will be listened to.
-     */
-    updateEventTarget(eventTarget = undefined)
-    {
-        this.clearEventTarget();
-
-        if (eventTarget)
-        {
-            let sourceState = InputSource.for(eventTarget);
-            this._sourceState = sourceState;
-            this._eventTarget = eventTarget;
-    
-            sourceState.autopoll = this.autopoll;
-            
-            sourceState.addEventListener('poll', this.onSourcePoll);
-            sourceState.addEventListener('input', this.onSourceInput);
-            eventTarget.addEventListener('focus', this.onTargetFocus);
-            eventTarget.addEventListener('blur', this.onTargetBlur);
-        }
-    }
-
-    /**
-     * Stop listening to the current target for input events.
-     */
-    clearEventTarget()
-    {
-        if (this._eventTarget)
-        {
-            let eventTarget = this._eventTarget;
-            let sourceState = this._sourceState;
-            this._eventTarget = null;
-            this._sourceState = null;
-    
-            if (eventTarget)
-            {
-                eventTarget.removeEventListener('focus', this.onTargetFocus);
-                eventTarget.removeEventListener('blur', this.onTargetBlur);
-    
-                // Event source also exists (and therefore should be removed) if event target was setup.
-                sourceState.removeEventListener('poll', this.onSourcePoll);
-                sourceState.removeEventListener('input', this.onSourceInput);
-    
-                // Clean up event source if no longer used.
-                InputSource.delete(eventTarget);
-            }
-        }
     }
 }
 window.customElements.define('input-source', InputSourceElement);

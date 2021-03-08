@@ -28,10 +28,7 @@ export class InputMapElement extends HTMLElement
     static get observedAttributes()
     {
         return [
-            'src',
-            // Listening for built-in attribs
-            'id',
-            'class',
+            'src'
         ];
     }
 
@@ -80,11 +77,6 @@ export class InputMapElement extends HTMLElement
                             .then(jsonData => this._setInputMap(jsonData));
                     }
                 }
-                break;
-            // For debug info
-            case 'id':
-            case 'class':
-                this._titleElement.innerHTML = `input-port${this.className ? '.' + this.className : ''}${this.hasAttribute('id') ? '#' + this.getAttribute('id') : ''}`;
                 break;
         }
     }

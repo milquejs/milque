@@ -26,6 +26,7 @@ export class Synthetic extends Input
 
     hydrate(adapterOptions)
     {
+        if (!adapterOptions) return;
         if (!Array.isArray(adapterOptions))
         {
             adapterOptions = [adapterOptions];

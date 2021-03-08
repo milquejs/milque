@@ -7,6 +7,8 @@ import { Button } from '../input/Button.js';
  */
 
 /**
+ * @typedef {'update'|'poll'} InputSourceEventTypes
+ * 
  * @typedef InputSourceInputEvent
  * @property {InputSourceEventStage} stage
  * @property {string} deviceName
@@ -14,11 +16,10 @@ import { Button } from '../input/Button.js';
  * @property {Axis|Button} input
  * 
  * @typedef InputSourcePollEvent
+ * @property {number} now
  * 
  * @callback InputSourceEventListener
  * @param {InputSourceInputEvent|InputSourcePollEvent} e
- * 
- * @typedef {'update'|'poll'} InputSourceEventTypes
  * 
  * @typedef KeyMapEntry
  * @property {number} refs The number of active references to this key.
