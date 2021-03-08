@@ -1,6 +1,6 @@
 import '@milque/display';
 import '@milque/input';
-import { InputPort } from '@milque/input';
+import { InputContext, InputSource } from '@milque/input';
 
 window.addEventListener('DOMContentLoaded', main);
 
@@ -47,13 +47,29 @@ async function main()
     display.width = DISPLAY_WIDTH;
     display.height = DISPLAY_HEIGHT;
 
-    const input = document.querySelector('input-port');
+    /** @type {import('@milque/input').InputPort} */
+    const input = document.querySelector('#input');
+    const other = document.querySelector('#other');
     input.src = INPUT_MAP;
-    input.for = 'main';
     input.autopoll = true;
+    input.for = 'main';
     input.for = 'other';
 
-    const i1 = input.context.getInput('BOOM');
+    /*
+    const inputSource = InputSource.for(display);
+    inputSource.autopoll = true;
+
+    const inputContext = new InputContext();
+    inputContext.setInputMapping(INPUT_MAP).attach(inputSource);
+
+    setTimeout(() => {
+        let source = InputSource.for(other);
+        source.autopoll = true;
+        inputContext.detach().attach(source);
+    }, 4000);
+
+    const i1 = inputContext.getInput('BOOM');
+    */
 
     const ctx = display.canvas.getContext('2d');
 
@@ -66,10 +82,17 @@ async function main()
     };
 
     display.addEventListener('frame', e => {
+        ctx.fillStyle = 'black';
+        ctx.fillRect(0, 0, display.width, display.height);
         if (input.context.getInputChanged('PointerX'))
         {
-            drawArena(world);
+            ctx.fillStyle = 'red';
         }
+        else
+        {
+            ctx.fillStyle = 'white';
+        }
+        ctx.fillText('' + input.context.getInputState('PointerX'), 64, 64);
     });
 }
 

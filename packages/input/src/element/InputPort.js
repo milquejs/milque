@@ -3,7 +3,7 @@ import { attachShadowTemplate, properties } from '@milque/cuttle.macro';
 import INNER_HTML from './InputPort.template.html';
 import INNER_STYLE from './InputPort.module.css';
 
-import { InputContext } from './InputContext.js';
+import { InputContext } from '../context/InputContext.js';
 import { InputSourceElement } from '../source/InputSourceElement.js';
 
 function upgradeProperty(element, propertyName)
@@ -48,12 +48,12 @@ export class InputPort extends HTMLElement
         this._src = '';
 
         /** @private */
-        this._context = inputContext || new InputContext();
-
-        /** @private */
         this._mapElement = this.shadowRoot.querySelector('input-map');
         /** @private */
         this._sourceElement = this.shadowRoot.querySelector('input-source');
+
+        /** @private */
+        this._context = inputContext || new InputContext();
 
         /** @private */
         this.onSourcePoll = this.onSourcePoll.bind(this);
@@ -66,7 +66,7 @@ export class InputPort extends HTMLElement
 
     get context() { return this._context; }
     get source() { return this._sourceElement.source; }
-    get mapping() { return this._context.mapping; }
+    get mapping() { return this._mapElement.map; }
 
     get src() { return this._src; }
     set src(value) { this.setAttribute('src', typeof value === 'string' ? value : JSON.stringify(value)); }
@@ -84,15 +84,15 @@ export class InputPort extends HTMLElement
         {
             case 'for':
                 {
-                    if (this._sourceElement instanceof InputSourceElement)
+                    let target = document.getElementById(value);
+                    if (target instanceof InputSourceElement)
                     {
-                        let target = document.getElementById(value);
-                        if (target instanceof InputSourceElement)
-                        {
-                            target = target.eventTarget;
-                        }
-                        this.updateSource(target);
+                        target = target.eventTarget;
                     }
+                    this._sourceElement.setEventTarget(target);
+                    if (this._context.source) this._context.detach();
+                    this._context.attach(this._sourceElement.source);
+                    this._context.disabled = this._disabled;
                 }
                 break;
             case 'src':
@@ -116,17 +116,12 @@ export class InputPort extends HTMLElement
                 this._sourceElement.autopoll = this._autopoll;
                 break;
             case 'disabled':
-                this.updateDisabled(this._disabled);
+                if (this._context.source)
+                {
+                    this._context.disabled = this._disabled;
+                }
                 break;
         }
-    }
-
-    /** @private */
-    updateSource(eventTarget)
-    {
-        this._sourceElement.setEventTarget(eventTarget);
-        this.updateAttachment(this._context);
-        this.updateDisabled(this._disabled);
     }
 
     /** @private */
@@ -134,36 +129,6 @@ export class InputPort extends HTMLElement
     {
         this._context.setInputMapping(inputMapping);
         this._mapElement.src = inputMapping;
-        this.updateAttachment(this._context);
-        this.updateDisabled(this._disabled);
-    }
-
-    /** @private */
-    updateDisabled(disabled)
-    {
-        if (this._context.source)
-        {
-            this._context.disabled = disabled;
-        }
-    }
-
-    /** @private */
-    updateAttachment(inputContext)
-    {
-        let source = this._sourceElement.source;
-        let mapping = this._mapElement.map;
-        if (mapping)
-        {
-            inputContext.setInputMapping(mapping);
-        }
-        if (source)
-        {
-            inputContext.attach(source);
-        }
-        else
-        {
-            inputContext.detach();
-        }
     }
 
     /** @private */

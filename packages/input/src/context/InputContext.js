@@ -130,7 +130,7 @@ export class InputContext
     {
         if (this.source)
         {
-            this.detach();
+            throw new Error('Already attached to existing input source.');
         }
         
         if (!inputSource)

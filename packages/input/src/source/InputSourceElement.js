@@ -98,7 +98,7 @@ export class InputSourceElement extends HTMLElement
         // Initialize input source event target as self, if unset
         if (!this.hasAttribute('for') && !this._eventTarget)
         {
-            // TODO: this.setEventTarget(this);
+            this.setEventTarget(this);
         }
 
         this._intervalHandle = setInterval(this.onPollStatusCheck, INTERVAL_DURATION);

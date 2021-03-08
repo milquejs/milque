@@ -403,111 +403,6 @@ class Input {
 
 }
 
-const KEY_STRING_DEVICE_SEPARATOR = ':';
-class Synthetic extends Input {
-  constructor() {
-    super();
-    this.update = this.update.bind(this);
-    /** @private */
-
-    this.adapters = [];
-    /** @private */
-
-    this.values = [];
-    /** @private */
-
-    this.next = {
-      values: [],
-      value: 0
-    };
-  }
-
-  hydrate(adapterOptions) {
-    if (!adapterOptions) return;
-
-    if (!Array.isArray(adapterOptions)) {
-      adapterOptions = [adapterOptions];
-    }
-
-    let adapterList = [];
-    let adapterId = 0;
-
-    for (let adapterOption of adapterOptions) {
-      if (typeof adapterOption === 'string') {
-        adapterOption = {
-          key: adapterOption
-        };
-      }
-
-      const {
-        key,
-        scale = 1,
-        event = 'null'
-      } = adapterOption;
-      const {
-        deviceName,
-        keyCode
-      } = parseKeyString(key);
-      const eventCode = InputEventCode.parse(event);
-      const scaleValue = Number(scale);
-      let adapter = AdapterManager.createAdapter(this, adapterId, deviceName, keyCode, scaleValue, eventCode);
-      adapterList.push(adapter);
-      ++adapterId;
-    }
-
-    this.adapters = adapterList;
-    this.values = new Array(adapterList.length).fill(0);
-    this.next = {
-      values: new Array(adapterList.length).fill(0),
-      value: 0
-    };
-  }
-  /** @override */
-
-
-  poll(value, adapter) {
-    // Update previous state.
-    this.prev = this.value; // Poll current state.
-
-    const adapterId = adapter.adapterId;
-    let prevValue = this.values[adapterId];
-    this.values[adapterId] = value;
-    this.value = this.value - prevValue + value;
-    this.next.values[adapterId] = 0;
-    this.next.value += value - prevValue;
-  }
-  /** @override */
-
-
-  update(value, adapter) {
-    const adapterId = adapter.adapterId;
-    let prevValue = this.next.values[adapterId];
-    this.next.values[adapterId] = value;
-    this.next.value += value - prevValue;
-  }
-
-  reset() {
-    this.prev = 0;
-    this.values.fill(0);
-    this.value = 0;
-    this.next.values.fill(0);
-    this.next.value = 0;
-  }
-
-}
-function parseKeyString(keyString) {
-  let i = keyString.indexOf(KEY_STRING_DEVICE_SEPARATOR);
-
-  if (i >= 0) {
-    return {
-      deviceName: keyString.substring(0, i),
-      keyCode: keyString.substring(i + 1)
-    };
-  } else {
-    throw new Error(`Invalid key string - missing device separator '${KEY_STRING_DEVICE_SEPARATOR}'.`);
-  }
-}
-
 /**
  * A stateful input for axis input interfaces, such as mouse positions,
  * scrolling, joysticks, etc. The unscaled `value` is a floating point
@@ -1091,6 +986,522 @@ function clearKeyMapEntryRef(keyMapEntry) {
   keyMapEntry.refs = 0;
 }
 
+const KEY_STRING_DEVICE_SEPARATOR = ':';
+class Synthetic extends Input {
+  constructor() {
+    super();
+    this.update = this.update.bind(this);
+    /** @private */
+
+    this.adapters = [];
+    /** @private */
+
+    this.values = [];
+    /** @private */
+
+    this.next = {
+      values: [],
+      value: 0
+    };
+  }
+
+  hydrate(adapterOptions) {
+    if (!adapterOptions) return;
+
+    if (!Array.isArray(adapterOptions)) {
+      adapterOptions = [adapterOptions];
+    }
+
+    let adapterList = [];
+    let adapterId = 0;
+
+    for (let adapterOption of adapterOptions) {
+      if (typeof adapterOption === 'string') {
+        adapterOption = {
+          key: adapterOption
+        };
+      }
+
+      const {
+        key,
+        scale = 1,
+        event = 'null'
+      } = adapterOption;
+      const {
+        deviceName,
+        keyCode
+      } = parseKeyString(key);
+      const eventCode = InputEventCode.parse(event);
+      const scaleValue = Number(scale);
+      let adapter = AdapterManager.createAdapter(this, adapterId, deviceName, keyCode, scaleValue, eventCode);
+      adapterList.push(adapter);
+      ++adapterId;
+    }
+
+    this.adapters = adapterList;
+    this.values = new Array(adapterList.length).fill(0);
+    this.next = {
+      values: new Array(adapterList.length).fill(0),
+      value: 0
+    };
+  }
+  /** @override */
+
+
+  poll(value, adapter) {
+    // Update previous state.
+    this.prev = this.value; // Poll current state.
+
+    const adapterId = adapter.adapterId;
+    let prevValue = this.values[adapterId];
+    this.values[adapterId] = value;
+    this.value = this.value - prevValue + value;
+    this.next.values[adapterId] = 0;
+    this.next.value += value - prevValue;
+  }
+  /** @override */
+
+
+  update(value, adapter) {
+    const adapterId = adapter.adapterId;
+    let prevValue = this.next.values[adapterId];
+    this.next.values[adapterId] = value;
+    this.next.value += value - prevValue;
+  }
+
+  reset() {
+    this.prev = 0;
+    this.values.fill(0);
+    this.value = 0;
+    this.next.values.fill(0);
+    this.next.value = 0;
+  }
+
+}
+function parseKeyString(keyString) {
+  let i = keyString.indexOf(KEY_STRING_DEVICE_SEPARATOR);
+
+  if (i >= 0) {
+    return {
+      deviceName: keyString.substring(0, i),
+      keyCode: keyString.substring(i + 1)
+    };
+  } else {
+    throw new Error(`Invalid key string - missing device separator '${KEY_STRING_DEVICE_SEPARATOR}'.`);
+  }
+}
+
+/**
+ * @typedef {import('./source/InputSourceState.js').InputSourceInputEvent} InputSourceInputEvent
+ * @typedef {import('./source/InputSourceState.js').InputSourcePollEvent} InputSourcePollEvent
+ */
+
+/**
+ * @typedef {string} InputEvent
+ * @typedef {string} InputKeyString
+ * 
+ * @typedef InputKeyOption
+ * @property {InputKeyString} key
+ * @property {InputEvent} [event]
+ * @property {number} [scale]
+ * 
+ * @typedef {InputKeyString|InputKeyOption} InputMappingEntryValue
+ * @typedef {InputMappingEntryValue|Array<InputMappingEntryValue>} InputMappingEntry
+ * @typedef {Record<string, InputMappingEntry>} InputMapping
+ * 
+ * @typedef {Record<string, Synthetic>} SyntheticMap 
+ */
+
+/**
+ * @typedef {'change'|'attach'|'detach'} InputContextEventTypes
+ * 
+ * @typedef InputContextChangeEvent
+ * @typedef InputContextAttachEvent
+ * @typedef InputContextDetachEvent
+ * 
+ * @callback InputContextEventListener
+ * @param {InputContextChangeEvent|InputContextAttachEvent|InputContextDetachEvent} e
+ */
+
+class InputContext {
+  /**
+   * Constructs a disabled InputContext.
+   */
+  constructor() {
+    /** @private */
+    this._source = null;
+    /** @private */
+
+    this._mapping = null;
+    /** @private */
+
+    this._disabled = true;
+    /** @private */
+
+    this._ignoreInputs = this._disabled;
+    /** @private */
+
+    this.adapters = new AdapterManager();
+    /**
+     * @private
+     * @type {SyntheticMap}
+     */
+
+    this.inputs = {};
+    /** @private */
+
+    this.listeners = {
+      change: [],
+      attach: [],
+      detach: []
+    };
+    /** @private */
+
+    this.onSourceInput = this.onSourceInput.bind(this);
+    /** @private */
+
+    this.onSourcePoll = this.onSourcePoll.bind(this);
+  }
+
+  get source() {
+    return this._source;
+  }
+
+  get mapping() {
+    return this._mapping;
+  }
+
+  get disabled() {
+    return this._disabled;
+  }
+
+  set disabled(value) {
+    this.toggle(!value);
+  }
+  /**
+   * @param {InputMapping} inputMapping
+   * @returns {InputContext}
+   */
+
+
+  setInputMapping(inputMapping) {
+    const prevDisabled = this.disabled;
+    this.disabled = true;
+    let prevSource = this.source;
+    let prevInputs = this.inputs; // Clean up previous state.
+
+    if (prevSource) {
+      unregisterInputKeys(prevSource, prevInputs);
+    }
+
+    this.adapters.clear(); // Set up next state.
+
+    let nextSource = this.source;
+    let nextInputs = {};
+
+    if (inputMapping) {
+      for (let inputName in inputMapping) {
+        let adapterOptions = inputMapping[inputName]; // NOTE: Preserve synthetics across restarts.
+
+        let synthetic = prevInputs[inputName] || new Synthetic();
+        synthetic.hydrate(adapterOptions);
+        let syntheticAdapters = synthetic.adapters;
+        this.adapters.add(syntheticAdapters);
+        nextInputs[inputName] = synthetic;
+      }
+
+      if (nextSource) {
+        registerInputKeys(nextSource, nextInputs);
+      }
+    }
+
+    this.inputs = nextInputs;
+    this._mapping = inputMapping;
+    this.dispatchChangeEvent(); // Force disable if missing required components, otherwise return to previous operating state.
+
+    this.disabled = this.source && this.inputs ? prevDisabled : true;
+    return this;
+  }
+
+  attach(inputSource) {
+    if (this.source) {
+      throw new Error('Already attached to existing input source.');
+    }
+
+    if (!inputSource) {
+      throw new Error('Missing input source to attach context.');
+    }
+
+    registerInputKeys(inputSource, this.inputs);
+    inputSource.addEventListener('poll', this.onSourcePoll);
+    inputSource.addEventListener('input', this.onSourceInput);
+    this._source = inputSource;
+    this.toggle(true);
+    this.dispatchAttachEvent();
+    return this;
+  }
+
+  detach() {
+    let prevSource = this.source;
+    let prevInputs = this.inputs;
+
+    if (prevSource) {
+      this.toggle(false);
+      prevSource.removeEventListener('poll', this.onSourcePoll);
+      prevSource.removeEventListener('input', this.onSourceInput);
+
+      if (prevInputs) {
+        unregisterInputKeys(prevSource, prevInputs);
+      }
+
+      this._source = null;
+      this.dispatchDetachEvent();
+    }
+
+    return this;
+  }
+  /**
+   * Add listener to listen for event, in order by most
+   * recently added. In other words, this listener will
+   * be called BEFORE the previously added listener (if
+   * there exists one) and so on.
+   * 
+   * @param {InputContextEventTypes} event The name of the event.
+   * @param {InputContextEventListener} listener The listener callback.
+   */
+
+
+  addEventListener(event, listener) {
+    if (event in this.listeners) {
+      this.listeners[event].unshift(listener);
+    } else {
+      this.listeners[event] = [listener];
+    }
+  }
+  /**
+   * Removes the listener from listening to the event.
+   * 
+   * @param {InputContextEventTypes} event The name of the event.
+   * @param {InputContextEventListener} listener The listener callback.
+   */
+
+
+  removeEventListener(event, listener) {
+    if (event in this.listeners) {
+      let list = this.listeners[event];
+      let i = list.indexOf(listener);
+      list.splice(i, 1);
+    }
+  }
+  /**
+   * @param {InputContextEventTypes} event The name of the event.
+   * @returns {number} The number of active listeners for the event.
+   */
+
+
+  countEventListeners(event) {
+    if (!(event in this.listeners)) {
+      throw new Error(`Cannot count listeners for unknown event '${event}'.`);
+    }
+
+    return this.listeners[event].length;
+  }
+  /**
+   * Dispatches an event to the listeners.
+   * 
+   * @protected
+   * @param {InputSourceEventTypes} event The name of the event.
+   * @param {InputSourceInputEvent|InputSourcePollEvent} eventOpts The event object to pass to listeners.
+   */
+
+
+  dispatchEvent(event, eventOpts) {
+    for (let listener of this.listeners[event]) {
+      listener(eventOpts);
+    }
+  }
+  /** @private */
+
+
+  dispatchChangeEvent() {
+    this.dispatchEvent('change', {});
+  }
+  /** @private */
+
+
+  dispatchAttachEvent() {
+    this.dispatchEvent('attach', {});
+  }
+  /** @private */
+
+
+  dispatchDetachEvent() {
+    this.dispatchEvent('detach', {});
+  }
+  /**
+   * @private
+   * @param {InputSourceInputEvent} e
+   */
+
+
+  onSourceInput(e) {
+    if (!e.consumed && !this._ignoreInputs) {
+      const {
+        stage,
+        deviceName,
+        keyCode,
+        input
+      } = e;
+
+      switch (stage) {
+        case InputSourceEventStage.POLL:
+          this.adapters.poll(deviceName, keyCode, input);
+          break;
+
+        case InputSourceEventStage.UPDATE:
+          this.adapters.update(deviceName, keyCode, input);
+          break;
+
+        default:
+          throw new Error('Unknown input source stage.');
+      }
+
+      e.consumed = true;
+    } else {
+      const {
+        deviceName,
+        keyCode,
+        input
+      } = e;
+      this.adapters.reset(deviceName, keyCode, input);
+    }
+  }
+  /**
+   * @private
+   * @param {InputSourcePollEvent} e
+   */
+
+
+  onSourcePoll(e) {
+    if (this._ignoreInputs !== this.disabled) {
+      this._ignoreInputs = this.disabled;
+    }
+  }
+  /**
+   * Set the context to enabled/disabled.
+   * 
+   * @param {Boolean} [force] If defined, the context is enabled if true,
+   * disabled if false. If undefined, it will toggle the current value.
+   * @returns {InputContext} Self for method chaining.
+   */
+
+
+  toggle(force = this._disabled) {
+    let result = !force;
+
+    if (!result) {
+      if (!this.source) {
+        throw new Error('Input source must be set before enabling input context.');
+      }
+    }
+
+    this._disabled = result;
+    return this;
+  }
+  /**
+   * @param {string} inputName The name of the input.
+   * @returns {boolean} Whether the input exists for the given name.
+   */
+
+
+  hasInput(inputName) {
+    return inputName in this.inputs && this.inputs[inputName].adapters.length > 0;
+  }
+  /**
+   * Get the synthetic input object by name.
+   * 
+   * @param {string} inputName The name of the input.
+   * @returns {Synthetic} The synthetic input for the given input name.
+   */
+
+
+  getInput(inputName) {
+    if (inputName in this.inputs) {
+      return this.inputs[inputName];
+    } else {
+      let synthetic = new Synthetic();
+      this.inputs[inputName] = synthetic;
+      this._mapping[inputName] = '';
+      this.dispatchChangeEvent();
+      return synthetic;
+    }
+  }
+  /**
+   * Get the current value of the input by name.
+   * 
+   * @param {String} inputName The name of the input.
+   * @returns {number} The input value.
+   */
+
+
+  getInputState(inputName) {
+    if (inputName in this.inputs) {
+      return this.inputs[inputName].value;
+    } else {
+      return 0;
+    }
+  }
+  /**
+   * Get the change in value of the input by name since last poll.
+   * 
+   * @param {String} inputName The name of the input.
+   * @returns {number} The input value.
+   */
+
+
+  getInputChanged(inputName) {
+    if (inputName in this.inputs) {
+      let input = this.inputs[inputName];
+      return input.value - input.prev;
+    } else {
+      return 0;
+    }
+  }
+
+}
+
+function registerInputKeys(inputSource, inputs) {
+  for (let inputName in inputs) {
+    let {
+      adapters
+    } = inputs[inputName];
+
+    for (let adapter of adapters) {
+      const {
+        deviceName,
+        keyCode
+      } = adapter;
+      inputSource.registerKey(deviceName, keyCode);
+    }
+  }
+}
+
+function unregisterInputKeys(inputSource, inputs) {
+  for (let inputName in inputs) {
+    let {
+      adapters
+    } = inputs[inputName];
+
+    for (let adapter of adapters) {
+      const {
+        deviceName,
+        keyCode
+      } = adapter;
+      inputSource.unregisterKey(deviceName, keyCode);
+    }
+  }
+}
+
 /**
  * Available Key Codes:
  * - This uses the `event.code` standard to reference each key.
@@ -1582,325 +1993,7 @@ function releaseInputSourceState(eventTarget) {
   }
 }
 
-/**
- * @typedef {import('./source/InputSourceState.js').InputSourceInputEvent} InputSourceInputEvent
- * @typedef {import('./source/InputSourceState.js').InputSourcePollEvent} InputSourcePollEvent
- */
-
-class InputContext {
-  /**
-   * Constructs a disabled InputContext with the given adapters and inputs.
-   * 
-   * @param {EventTarget|InputSource} [inputSource=null] The source of all inputs listened to.
-   * @param {Object} [inputMap=null] The input to adapter options object map.
-   * @param {Boolean} [disabled=true] Whether the context should start disabled.
-   */
-  constructor(inputSource = null, inputMap = null, disabled = true) {
-    /** @type {InputSource} */
-    this.source = null;
-    /** @private */
-
-    this._disabled = disabled;
-    /** @private */
-
-    this._ignoreInput = disabled;
-    /** @private */
-
-    this.adapters = new AdapterManager();
-    /** @private */
-
-    this.inputs = {};
-    /** @private */
-
-    this.onSourceInput = this.onSourceInput.bind(this);
-    /** @private */
-
-    this.onSourcePoll = this.onSourcePoll.bind(this);
-
-    if (inputSource || inputMap) {
-      this._setupInputs(resolveInputSource(inputSource), inputMap);
-    }
-
-    if (!disabled) {
-      this.attach();
-    }
-  }
-
-  get disabled() {
-    return this._disabled;
-  }
-
-  set disabled(value) {
-    this.toggle(!value);
-  }
-  /**
-   * @param {Object} inputMap The input to adapter options object map.
-   * @returns {InputContext} Self for method-chaining.
-   */
-
-
-  setInputMap(inputMap) {
-    this._setupInputs(this.source, inputMap);
-
-    return this;
-  }
-  /**
-   * @param {EventTarget|InputSource} inputSource The source of all inputs listened to.
-   * @returns {InputContext} Self for method-chaining.
-   */
-
-
-  setInputSource(inputSource) {
-    this._setupInputs(resolveInputSource(inputSource), null);
-
-    return this;
-  }
-  /**
-   * @returns {InputContext} Self for method-chaining.
-   */
-
-
-  attach() {
-    if (!this.source) {
-      throw new Error('Missing input source to attach context.');
-    }
-
-    this.toggle(true);
-    return this;
-  }
-  /**
-   * @returns {InputContext} Self for method-chaining.
-   */
-
-
-  detach() {
-    this.toggle(false);
-
-    this._setupInputs(null, null);
-
-    return this;
-  }
-  /**
-   * @private
-   * @param {InputSource} inputSource
-   * @param {object} inputMap
-   */
-
-
-  _setupInputs(inputSource, inputMap) {
-    // Make sure this context is disabled before changing it...
-    const prevDisabled = this.disabled;
-    this.disabled = true; // Prepare previous state...
-
-    /** @type {InputSource} */
-
-    const prevInputSource = this.source;
-    const prevInputs = this.inputs;
-    const isPrevSourceReplaced = prevInputSource !== inputSource && prevInputSource;
-    const isPrevInputsReplaced = this.inputs && inputMap; // Tear down
-
-    if (isPrevSourceReplaced || isPrevInputsReplaced) {
-      if (isPrevSourceReplaced) {
-        prevInputSource.removeEventListener('poll', this.onSourcePoll);
-        prevInputSource.removeEventListener('input', this.onSourceInput);
-      }
-
-      for (let inputName in prevInputs) {
-        let {
-          adapters
-        } = prevInputs[inputName];
-
-        for (let adapter of adapters) {
-          const {
-            deviceName,
-            keyCode
-          } = adapter;
-          prevInputSource.unregisterKey(deviceName, keyCode);
-        }
-      }
-
-      if (isPrevInputsReplaced) {
-        this.adapters.clear();
-        this.inputs = {};
-      }
-    } // Set up
-
-
-    if (inputMap) {
-      let inputs = {};
-
-      for (let inputName in inputMap) {
-        let adapterOptions = inputMap[inputName];
-        let synthetic = prevInputs[inputName] || new Synthetic();
-        synthetic.hydrate(adapterOptions);
-        let syntheticAdapters = synthetic.adapters;
-        this.adapters.add(syntheticAdapters);
-        inputs[inputName] = synthetic;
-      }
-
-      this.inputs = inputs;
-    }
-
-    if (inputSource) {
-      const inputs = this.inputs;
-
-      for (let inputName in inputs) {
-        let {
-          adapters
-        } = inputs[inputName];
-
-        for (let adapter of adapters) {
-          const {
-            deviceName,
-            keyCode
-          } = adapter;
-          inputSource.registerKey(deviceName, keyCode);
-        }
-      }
-
-      if (this.source !== inputSource) {
-        inputSource.addEventListener('poll', this.onSourcePoll);
-        inputSource.addEventListener('input', this.onSourceInput);
-        this.source = inputSource;
-      }
-    } // Make sure this context returns to its previous expected state...
-
-
-    this.disabled = prevDisabled;
-  }
-  /**
-   * @private
-   * @param {InputSourceInputEvent} e
-   */
-
-
-  onSourceInput(e) {
-    if (!e.consumed && !this._ignoreInput) {
-      const {
-        stage,
-        deviceName,
-        keyCode,
-        input
-      } = e;
-
-      switch (stage) {
-        case InputSourceEventStage.POLL:
-          this.adapters.poll(deviceName, keyCode, input);
-          break;
-
-        case InputSourceEventStage.UPDATE:
-          this.adapters.update(deviceName, keyCode, input);
-          break;
-
-        default:
-          throw new Error('Unknown input source stage.');
-      }
-
-      e.consumed = true;
-    } else {
-      const {
-        deviceName,
-        keyCode,
-        input
-      } = e;
-      this.adapters.reset(deviceName, keyCode, input);
-    }
-  }
-  /**
-   * @private
-   * @param {InputSourcePollEvent} e
-   */
-
-
-  onSourcePoll(e) {
-    if (this._ignoreInput !== this.disabled) {
-      this._ignoreInput = this.disabled;
-    }
-  }
-  /**
-   * Set the context to enabled/disabled.
-   * 
-   * @param {Boolean} [force] If defined, the context is enabled if true,
-   * disabled if false. If undefined, it will toggle the current value.
-   * @returns {InputContext} Self for method chaining.
-   */
-
-
-  toggle(force = this._disabled) {
-    if (force) {
-      if (!this.source) {
-        throw new Error('Input source must be set before enabling input context.');
-      }
-
-      if (Object.keys(this.inputs).length <= 0) {
-        console.warn('No inputs found for enabled input context - did you forget to setInputMap()?');
-      }
-    }
-
-    this._disabled = !force;
-    return this;
-  }
-  /**
-   * Get the synthetic input object by name.
-   * 
-   * @param {String} inputName 
-   * @returns {Synthetic} The synthetic input for the given input name.
-   */
-
-
-  getInput(inputName) {
-    if (inputName in this.inputs) {
-      return this.inputs[inputName];
-    } else {
-      let synthetic = new Synthetic();
-      this.inputs[inputName] = synthetic;
-      return synthetic;
-    }
-  }
-
-  hasInput(inputName) {
-    return inputName in this.inputs && this.inputs[inputName].adapters.length > 0;
-  }
-  /**
-   * Get the current value of the input by name.
-   * 
-   * @param {String} inputName
-   * @returns {Number} The input value.
-   */
-
-
-  getInputValue(inputName) {
-    if (inputName in this.inputs) {
-      return this.inputs[inputName].value;
-    } else {
-      return 0;
-    }
-  }
-
-  getInputState(inputName) {
-    return this.getInputValue(inputName);
-  }
-
-  getInputChanged(inputName) {
-    if (inputName in this.inputs) {
-      let input = this.inputs[inputName];
-      return input.value - input.prev;
-    } else {
-      return 0;
-    }
-  }
-
-}
-
-function resolveInputSource(inputSourceOrEventTarget) {
-  if (!(inputSourceOrEventTarget instanceof InputSourceState)) {
-    return InputSource.for(inputSourceOrEventTarget);
-  } else {
-    return inputSourceOrEventTarget;
-  }
-}
-
-var INNER_HTML = "<div>\r\n    <label id=\"title\">\r\n        input-source\r\n    </label>\r\n    <span>|</span>\r\n    <p>\r\n        <label for=\"poll\">poll</label>\r\n        <output id=\"poll\"></output>\r\n    </p>\r\n    <p>\r\n        <label for=\"focus\">focus</label>\r\n        <output id=\"focus\"></output>\r\n    </p>\r\n</div>\r\n";
+var INNER_HTML = "<div>\n    <label id=\"title\">\n        input-source\n    </label>\n    <span>|</span>\n    <p>\n        <label for=\"poll\">poll</label>\n        <output id=\"poll\"></output>\n    </p>\n    <p>\n        <label for=\"focus\">focus</label>\n        <output id=\"focus\"></output>\n    </p>\n</div>\n";
 
 var INNER_STYLE = ":host{display:inline-block}div{font-family:monospace;color:#666;outline:1px solid #666;padding:4px}p{display:inline;margin:0;padding:0}#focus:empty:after,#poll:empty:after{content:\"✗\";color:red}";
 
@@ -2087,7 +2180,9 @@ class InputSourceElement extends HTMLElement {
     // Allows this element to be focusable
     if (!this.hasAttribute('tabindex')) this.setAttribute('tabindex', 0); // Initialize input source event target as self, if unset
 
-    if (!this.hasAttribute('for') && !this._eventTarget) ;
+    if (!this.hasAttribute('for') && !this._eventTarget) {
+      this.setEventTarget(this);
+    }
 
     this._intervalHandle = setInterval(this.onPollStatusCheck, INTERVAL_DURATION);
   }
@@ -2278,7 +2373,7 @@ class InputSourceElement extends HTMLElement {
 }
 window.customElements.define('input-source', InputSourceElement);
 
-var INNER_HTML$1 = "<kbd>\r\n    <span id=\"key\"><slot></slot></span>\r\n    <span id=\"value\" class=\"hidden\"></span>\r\n</kbd>\r\n";
+var INNER_HTML$1 = "<kbd>\n    <span id=\"key\"><slot></slot></span>\n    <span id=\"value\" class=\"hidden\"></span>\n</kbd>\n";
 
 var INNER_STYLE$1 = "kbd{position:relative;display:inline-block;border-radius:3px;border:1px solid #888;font-size:.85em;font-weight:700;text-rendering:optimizeLegibility;line-height:12px;height:14px;padding:2px 4px;color:#444;background-color:#eee;box-shadow:inset 0 -3px 0 #aaa;overflow:hidden}kbd:empty:after{content:\"<?>\";opacity:.6}.disabled{opacity:.6;box-shadow:none;background-color:#aaa}.hidden{display:none}#value{position:absolute;top:0;bottom:0;right:0;font-size:.85em;padding:2px 4px 0;color:#ccc;background-color:#333;box-shadow:inset 0 3px 0 #222}";
 
@@ -2420,7 +2515,7 @@ class InputKeyElement extends HTMLElement {
 }
 window.customElements.define('input-key', InputKeyElement);
 
-var INNER_HTML$2 = "<table>\r\n    <thead>\r\n        <tr class=\"tableHeader\">\r\n            <th colspan=4>\r\n                <slot></slot>\r\n            </th>\r\n        </tr>\r\n        <tr class=\"colHeader\">\r\n            <th>name</th>\r\n            <th>key</th>\r\n            <th>mod</th>\r\n            <th>value</th>\r\n        </tr>\r\n    </thead>\r\n    <tbody>\r\n    </tbody>\r\n</table>\r\n";
+var INNER_HTML$2 = "<table>\n    <thead>\n        <tr class=\"tableHeader\">\n            <th colspan=4>\n                <slot></slot>\n            </th>\n        </tr>\n        <tr class=\"colHeader\">\n            <th>name</th>\n            <th>key</th>\n            <th>mod</th>\n            <th>value</th>\n        </tr>\n    </thead>\n    <tbody>\n    </tbody>\n</table>\n";
 
 var INNER_STYLE$2 = ":host{display:block}table{border-collapse:collapse}table,td,th{border:1px solid #666}td,th{padding:5px 10px}td{text-align:center}thead th{padding:0}.colHeader>th{font-size:.8em;padding:0 10px;letter-spacing:3px;background-color:#aaa;color:#666}.colHeader>th,output{font-family:monospace}output{border-radius:.3em;padding:3px}tr:not(.primary) .name,tr:not(.primary) .value{opacity:.3}tr:nth-child(2n){background-color:#eee}";
 
@@ -2676,7 +2771,7 @@ function createInputTableEntry(name, key, event, scale, value, primary = true) {
   return row;
 }
 
-var INNER_HTML$3 = "<input-map>\r\n    <slot></slot>\r\n    <input-source></input-source>\r\n</input-map>\r\n";
+var INNER_HTML$3 = "<input-map>\n    <slot></slot>\n    <input-source></input-source>\n</input-map>\n";
 
 var INNER_STYLE$3 = ":host{display:inline-block}";
 
@@ -2688,7 +2783,7 @@ function upgradeProperty$1(element, propertyName) {
   }
 }
 
-class InputContextElement extends HTMLElement {
+class InputPort extends HTMLElement {
   /** Generated by cuttle.js */
   static get [Symbol.for("cuttleTemplate")]() {
     let t = document.createElement("template");
@@ -2703,642 +2798,6 @@ class InputContextElement extends HTMLElement {
   static get [Symbol.for("cuttleStyle")]() {
     let s = document.createElement("style");
     s.innerHTML = INNER_STYLE$3;
-    Object.defineProperty(this, Symbol.for("cuttleStyle"), {
-      value: s
-    });
-    return s;
-  }
-
-  static get properties() {
-    return {
-      // src: A custom type,
-      for: String,
-      disabled: Boolean
-    };
-  }
-  /** @override */
-
-
-  get disabled() {
-    return this._disabled;
-  }
-
-  set disabled(value) {
-    this.toggleAttribute("disabled", value);
-  }
-
-  /* src: A custom type,*/
-  get for() {
-    return this._for;
-  }
-
-  set for(value) {
-    this.setAttribute("for", value);
-  }
-
-  static get observedAttributes() {
-    return ["for", "disabled", 'src', // Listening for built-in attribs
-    'id', 'class'];
-  }
-
-  constructor() {
-    super();
-    this.attachShadow({
-      mode: 'open'
-    });
-    this.shadowRoot.appendChild(this.constructor[Symbol.for("cuttleTemplate")].content.cloneNode(true));
-    this.shadowRoot.appendChild(this.constructor[Symbol.for("cuttleStyle")].cloneNode(true));
-    this._inputContext = new InputContext();
-    this._mapElement = this.shadowRoot.querySelector('input-map');
-    this._sourceElement = this.shadowRoot.querySelector('input-source');
-    this.onInputMapLoad = this.onInputMapLoad.bind(this);
-    this.onInputSourcePoll = this.onInputSourcePoll.bind(this);
-
-    this._mapElement.addEventListener('load', this.onInputMapLoad);
-
-    this._sourceElement.addEventListener('poll', this.onInputSourcePoll);
-  }
-
-  get context() {
-    return this._inputContext;
-  }
-
-  get source() {
-    return this._sourceElement.source;
-  }
-
-  get map() {
-    return this._mapElement.map;
-  }
-
-  onInputMapLoad() {
-    let source = this._sourceElement.source;
-    let map = this._mapElement.map;
-
-    if (source && map) {
-      this._inputContext.setInputMap(map).setInputSource(source).attach();
-
-      this._inputContext.disabled = this._disabled;
-    }
-  }
-
-  onInputSourcePoll() {
-    for (let [inputName, entries] of Object.entries(this._mapElement.mapElements)) {
-      let value = this._inputContext.getInputValue(inputName);
-
-      let primary = entries[0];
-      let outputElement = primary.querySelector('output');
-      outputElement.innerText = Number(value).toFixed(2);
-    }
-  }
-  /** @override */
-
-
-  connectedCallback() {
-    if (Object.prototype.hasOwnProperty.call(this, "for")) {
-      let value = this.for;
-      delete this.for;
-      this.for = value;
-    }
-
-    if (Object.prototype.hasOwnProperty.call(this, "disabled")) {
-      let value = this.disabled;
-      delete this.disabled;
-      this.disabled = value;
-    }
-
-    upgradeProperty$1(this, 'src');
-  }
-
-  /** @override */
-  attributeChangedCallback(attribute, prev, value) {
-    /** Generated by cuttle.js */
-    switch (attribute) {
-      case "for":
-        this._for = value;
-        break;
-
-      case "disabled":
-        {
-          this._disabled = value !== null;
-        }
-        break;
-    }
-
-    ((attribute, prev, value) => {
-      switch (attribute) {
-        case 'for':
-          {
-            let targetElement = document.getElementById(value);
-
-            if (targetElement instanceof InputSource && targetElement._eventTarget) {
-              this._sourceElement.setEventTarget(targetElement._eventTarget);
-
-              this._sourceElement.className = targetElement.className;
-              this._sourceElement.id = targetElement.id;
-            } else {
-              this._sourceElement.for = value;
-            }
-
-            let source = this._sourceElement.source;
-            let map = this._mapElement.map;
-
-            if (map) {
-              this._inputContext.setInputMap(map).setInputSource(source).attach();
-
-              this._inputContext.disabled = this._disabled;
-            }
-          }
-          break;
-
-        case 'src':
-          this._mapElement.src = value;
-          break;
-
-        case 'disabled':
-          {
-            let source = this._sourceElement.source;
-            let map = this._mapElement.map;
-
-            if (source && map) {
-              this._inputContext.disabled = this._disabled;
-            }
-          }
-          break;
-        // For debug info
-
-        case 'id':
-          this._sourceElement.id = value;
-          break;
-
-        case 'class':
-          this._sourceElement.className = value;
-          break;
-      }
-    })(attribute, prev, value);
-  }
-
-  get src() {
-    return this._mapElement.src;
-  }
-
-  set src(value) {
-    this._mapElement.src = value;
-  }
-
-  getInput(inputName) {
-    return this._inputContext.getInput(inputName);
-  }
-
-  getInputValue(inputName) {
-    return this._inputContext.getInputValue(inputName);
-  }
-
-  getInputChanged(inputName) {
-    return this._inputContext.getInputChanged(inputName);
-  }
-
-}
-window.customElements.define('input-context', InputContextElement);
-
-var INNER_HTML$4 = "<input-map>\r\n    <slot></slot>\r\n    <input-source></input-source>\r\n</input-map>\r\n";
-
-var INNER_STYLE$4 = ":host{display:inline-block}";
-
-/**
- * @typedef {import('./source/InputSourceState.js').InputSourceInputEvent} InputSourceInputEvent
- * @typedef {import('./source/InputSourceState.js').InputSourcePollEvent} InputSourcePollEvent
- */
-
-/**
- * @typedef {string} InputEvent
- * @typedef {string} InputKeyString
- * 
- * @typedef InputKeyOption
- * @property {InputKeyString} key
- * @property {InputEvent} [event]
- * @property {number} [scale]
- * 
- * @typedef {InputKeyString|InputKeyOption} InputMappingEntryValue
- * @typedef {InputMappingEntryValue|Array<InputMappingEntryValue>} InputMappingEntry
- * @typedef {Record<string, InputMappingEntry>} InputMapping
- * 
- * @typedef {Record<string, Synthetic>} SyntheticMap 
- */
-
-/**
- * @typedef {'change'|'attach'|'detach'} InputContextEventTypes
- * 
- * @typedef InputContextChangeEvent
- * @typedef InputContextAttachEvent
- * @typedef InputContextDetachEvent
- * 
- * @callback InputContextEventListener
- * @param {InputContextChangeEvent|InputContextAttachEvent|InputContextDetachEvent} e
- */
-
-class InputContext$1 {
-  /**
-   * Constructs a disabled InputContext.
-   */
-  constructor() {
-    /** @private */
-    this._source = null;
-    /** @private */
-
-    this._mapping = null;
-    /** @private */
-
-    this._disabled = true;
-    /** @private */
-
-    this._ignoreInputs = this._disabled;
-    /** @private */
-
-    this.adapters = new AdapterManager();
-    /**
-     * @private
-     * @type {SyntheticMap}
-     */
-
-    this.inputs = {};
-    /** @private */
-
-    this.listeners = {
-      change: [],
-      attach: [],
-      detach: []
-    };
-    /** @private */
-
-    this.onSourceInput = this.onSourceInput.bind(this);
-    /** @private */
-
-    this.onSourcePoll = this.onSourcePoll.bind(this);
-  }
-
-  get source() {
-    return this._source;
-  }
-
-  get mapping() {
-    return this._mapping;
-  }
-
-  get disabled() {
-    return this._disabled;
-  }
-
-  set disabled(value) {
-    this.toggle(!value);
-  }
-  /**
-   * @param {InputMapping} inputMapping
-   * @returns {InputContext}
-   */
-
-
-  setInputMapping(inputMapping) {
-    const prevDisabled = this.disabled;
-    this.disabled = true;
-    let prevSource = this.source;
-    let prevInputs = this.inputs; // Clean up previous state.
-
-    if (prevSource) {
-      unregisterInputKeys(prevSource, prevInputs);
-    }
-
-    this.adapters.clear(); // Set up next state.
-
-    let nextSource = this.source;
-    let nextInputs = {};
-
-    if (inputMapping) {
-      for (let inputName in inputMapping) {
-        let adapterOptions = inputMapping[inputName]; // NOTE: Preserve synthetics across restarts.
-
-        let synthetic = prevInputs[inputName] || new Synthetic();
-        synthetic.hydrate(adapterOptions);
-        let syntheticAdapters = synthetic.adapters;
-        this.adapters.add(syntheticAdapters);
-        nextInputs[inputName] = synthetic;
-      }
-
-      if (nextSource) {
-        registerInputKeys(nextSource, nextInputs);
-      }
-    }
-
-    this.inputs = nextInputs;
-    this._mapping = inputMapping;
-    this.dispatchChangeEvent(); // Force disable if missing required components, otherwise return to previous operating state.
-
-    this.disabled = this.source && this.inputs ? prevDisabled : true;
-    return this;
-  }
-
-  attach(inputSource) {
-    if (this.source) {
-      this.detach();
-    }
-
-    if (!inputSource) {
-      throw new Error('Missing input source to attach context.');
-    }
-
-    registerInputKeys(inputSource, this.inputs);
-    inputSource.addEventListener('poll', this.onSourcePoll);
-    inputSource.addEventListener('input', this.onSourceInput);
-    this._source = inputSource;
-    this.toggle(true);
-    this.dispatchAttachEvent();
-    return this;
-  }
-
-  detach() {
-    let prevSource = this.source;
-    let prevInputs = this.inputs;
-
-    if (prevSource) {
-      this.toggle(false);
-      prevSource.removeEventListener('poll', this.onSourcePoll);
-      prevSource.removeEventListener('input', this.onSourceInput);
-
-      if (prevInputs) {
-        unregisterInputKeys(prevSource, prevInputs);
-      }
-
-      this._source = null;
-      this.dispatchDetachEvent();
-    }
-
-    return this;
-  }
-  /**
-   * Add listener to listen for event, in order by most
-   * recently added. In other words, this listener will
-   * be called BEFORE the previously added listener (if
-   * there exists one) and so on.
-   * 
-   * @param {InputContextEventTypes} event The name of the event.
-   * @param {InputContextEventListener} listener The listener callback.
-   */
-
-
-  addEventListener(event, listener) {
-    if (event in this.listeners) {
-      this.listeners[event].unshift(listener);
-    } else {
-      this.listeners[event] = [listener];
-    }
-  }
-  /**
-   * Removes the listener from listening to the event.
-   * 
-   * @param {InputContextEventTypes} event The name of the event.
-   * @param {InputContextEventListener} listener The listener callback.
-   */
-
-
-  removeEventListener(event, listener) {
-    if (event in this.listeners) {
-      let list = this.listeners[event];
-      let i = list.indexOf(listener);
-      list.splice(i, 1);
-    }
-  }
-  /**
-   * @param {InputContextEventTypes} event The name of the event.
-   * @returns {number} The number of active listeners for the event.
-   */
-
-
-  countEventListeners(event) {
-    if (!(event in this.listeners)) {
-      throw new Error(`Cannot count listeners for unknown event '${event}'.`);
-    }
-
-    return this.listeners[event].length;
-  }
-  /**
-   * Dispatches an event to the listeners.
-   * 
-   * @protected
-   * @param {InputSourceEventTypes} event The name of the event.
-   * @param {InputSourceInputEvent|InputSourcePollEvent} eventOpts The event object to pass to listeners.
-   */
-
-
-  dispatchEvent(event, eventOpts) {
-    for (let listener of this.listeners[event]) {
-      listener(eventOpts);
-    }
-  }
-  /** @private */
-
-
-  dispatchChangeEvent() {
-    this.dispatchEvent('change', {});
-  }
-  /** @private */
-
-
-  dispatchAttachEvent() {
-    this.dispatchEvent('attach', {});
-  }
-  /** @private */
-
-
-  dispatchDetachEvent() {
-    this.dispatchEvent('detach', {});
-  }
-  /**
-   * @private
-   * @param {InputSourceInputEvent} e
-   */
-
-
-  onSourceInput(e) {
-    if (!e.consumed && !this._ignoreInputs) {
-      const {
-        stage,
-        deviceName,
-        keyCode,
-        input
-      } = e;
-
-      switch (stage) {
-        case InputSourceEventStage.POLL:
-          this.adapters.poll(deviceName, keyCode, input);
-          break;
-
-        case InputSourceEventStage.UPDATE:
-          this.adapters.update(deviceName, keyCode, input);
-          break;
-
-        default:
-          throw new Error('Unknown input source stage.');
-      }
-
-      e.consumed = true;
-    } else {
-      const {
-        deviceName,
-        keyCode,
-        input
-      } = e;
-      this.adapters.reset(deviceName, keyCode, input);
-    }
-  }
-  /**
-   * @private
-   * @param {InputSourcePollEvent} e
-   */
-
-
-  onSourcePoll(e) {
-    if (this._ignoreInputs !== this.disabled) {
-      this._ignoreInputs = this.disabled;
-    }
-  }
-  /**
-   * Set the context to enabled/disabled.
-   * 
-   * @param {Boolean} [force] If defined, the context is enabled if true,
-   * disabled if false. If undefined, it will toggle the current value.
-   * @returns {InputContext} Self for method chaining.
-   */
-
-
-  toggle(force = this._disabled) {
-    let result = !force;
-
-    if (!result) {
-      if (!this.source) {
-        throw new Error('Input source must be set before enabling input context.');
-      }
-    }
-
-    this._disabled = result;
-    return this;
-  }
-  /**
-   * @param {string} inputName The name of the input.
-   * @returns {boolean} Whether the input exists for the given name.
-   */
-
-
-  hasInput(inputName) {
-    return inputName in this.inputs && this.inputs[inputName].adapters.length > 0;
-  }
-  /**
-   * Get the synthetic input object by name.
-   * 
-   * @param {string} inputName The name of the input.
-   * @returns {Synthetic} The synthetic input for the given input name.
-   */
-
-
-  getInput(inputName) {
-    if (inputName in this.inputs) {
-      return this.inputs[inputName];
-    } else {
-      let synthetic = new Synthetic();
-      this.inputs[inputName] = synthetic;
-      this._mapping[inputName] = '';
-      this.dispatchChangeEvent();
-      return synthetic;
-    }
-  }
-  /**
-   * Get the current value of the input by name.
-   * 
-   * @param {String} inputName The name of the input.
-   * @returns {number} The input value.
-   */
-
-
-  getInputState(inputName) {
-    if (inputName in this.inputs) {
-      return this.inputs[inputName].value;
-    } else {
-      return 0;
-    }
-  }
-  /**
-   * Get the change in value of the input by name since last poll.
-   * 
-   * @param {String} inputName The name of the input.
-   * @returns {number} The input value.
-   */
-
-
-  getInputChanged(inputName) {
-    if (inputName in this.inputs) {
-      let input = this.inputs[inputName];
-      return input.value - input.prev;
-    } else {
-      return 0;
-    }
-  }
-
-}
-
-function registerInputKeys(inputSource, inputs) {
-  for (let inputName in inputs) {
-    let {
-      adapters
-    } = inputs[inputName];
-
-    for (let adapter of adapters) {
-      const {
-        deviceName,
-        keyCode
-      } = adapter;
-      inputSource.registerKey(deviceName, keyCode);
-    }
-  }
-}
-
-function unregisterInputKeys(inputSource, inputs) {
-  for (let inputName in inputs) {
-    let {
-      adapters
-    } = inputs[inputName];
-
-    for (let adapter of adapters) {
-      const {
-        deviceName,
-        keyCode
-      } = adapter;
-      inputSource.unregisterKey(deviceName, keyCode);
-    }
-  }
-}
-
-function upgradeProperty$2(element, propertyName) {
-  if (Object.prototype.hasOwnProperty.call(element, propertyName)) {
-    let value = element[propertyName];
-    delete element[propertyName];
-    element[propertyName] = value;
-  }
-}
-
-class InputPort extends HTMLElement {
-  /** Generated by cuttle.js */
-  static get [Symbol.for("cuttleTemplate")]() {
-    let t = document.createElement("template");
-    t.innerHTML = INNER_HTML$4;
-    Object.defineProperty(this, Symbol.for("cuttleTemplate"), {
-      value: t
-    });
-    return t;
-  }
-
-  /** Generated by cuttle.js */
-  static get [Symbol.for("cuttleStyle")]() {
-    let s = document.createElement("style");
-    s.innerHTML = INNER_STYLE$4;
     Object.defineProperty(this, Symbol.for("cuttleStyle"), {
       value: s
     });
@@ -3400,13 +2859,13 @@ class InputPort extends HTMLElement {
     this._src = '';
     /** @private */
 
-    this._context = inputContext || new InputContext$1();
-    /** @private */
-
     this._mapElement = this.shadowRoot.querySelector('input-map');
     /** @private */
 
     this._sourceElement = this.shadowRoot.querySelector('input-source');
+    /** @private */
+
+    this._context = inputContext || new InputContext();
     /** @private */
 
     this.onSourcePoll = this.onSourcePoll.bind(this);
@@ -3428,7 +2887,7 @@ class InputPort extends HTMLElement {
   }
 
   get mapping() {
-    return this._context.mapping;
+    return this._mapElement.map;
   }
 
   get src() {
@@ -3460,7 +2919,7 @@ class InputPort extends HTMLElement {
       this.disabled = value;
     }
 
-    upgradeProperty$2(this, 'src');
+    upgradeProperty$1(this, 'src');
   }
 
   /** @override */
@@ -3488,15 +2947,19 @@ class InputPort extends HTMLElement {
       switch (attribute) {
         case 'for':
           {
-            if (this._sourceElement instanceof InputSourceElement) {
-              let target = document.getElementById(value);
+            let target = document.getElementById(value);
 
-              if (target instanceof InputSourceElement) {
-                target = target.eventTarget;
-              }
-
-              this.updateSource(target);
+            if (target instanceof InputSourceElement) {
+              target = target.eventTarget;
             }
+
+            this._sourceElement.setEventTarget(target);
+
+            if (this._context.source) this._context.detach();
+
+            this._context.attach(this._sourceElement.source);
+
+            this._context.disabled = this._disabled;
           }
           break;
 
@@ -3519,19 +2982,13 @@ class InputPort extends HTMLElement {
           break;
 
         case 'disabled':
-          this.updateDisabled(this._disabled);
+          if (this._context.source) {
+            this._context.disabled = this._disabled;
+          }
+
           break;
       }
     })(attribute, prev, value);
-  }
-  /** @private */
-
-
-  updateSource(eventTarget) {
-    this._sourceElement.setEventTarget(eventTarget);
-
-    this.updateAttachment(this._context);
-    this.updateDisabled(this._disabled);
   }
   /** @private */
 
@@ -3540,33 +2997,6 @@ class InputPort extends HTMLElement {
     this._context.setInputMapping(inputMapping);
 
     this._mapElement.src = inputMapping;
-    this.updateAttachment(this._context);
-    this.updateDisabled(this._disabled);
-  }
-  /** @private */
-
-
-  updateDisabled(disabled) {
-    if (this._context.source) {
-      this._context.disabled = disabled;
-    }
-  }
-  /** @private */
-
-
-  updateAttachment(inputContext) {
-    let source = this._sourceElement.source;
-    let mapping = this._mapElement.map;
-
-    if (mapping) {
-      inputContext.setInputMapping(mapping);
-    }
-
-    if (source) {
-      inputContext.attach(source);
-    } else {
-      inputContext.detach();
-    }
   }
   /** @private */
 
@@ -3590,4 +3020,4 @@ class InputPort extends HTMLElement {
 }
 window.customElements.define('input-port', InputPort);
 
-export { AdapterManager, InputContext, InputContextElement, InputDevice, InputEventCode, InputKeyElement, InputMapElement, InputPort, InputSource, InputSourceElement, InputSourceEventStage, InputSourceState, InputType, Keyboard, Mouse, WILDCARD_DEVICE_MATCHER, WILDCARD_KEY_MATCHER };
+export { AdapterManager, InputContext, InputDevice, InputEventCode, InputKeyElement, InputMapElement, InputPort, InputSource, InputSourceElement, InputSourceEventStage, InputSourceState, InputType, Keyboard, Mouse, WILDCARD_DEVICE_MATCHER, WILDCARD_KEY_MATCHER };
