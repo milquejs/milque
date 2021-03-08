@@ -6,6 +6,9 @@ import INNER_STYLE from './InputPort.module.css';
 import { InputContext } from '../context/InputContext.js';
 import { InputSourceElement } from '../source/InputSourceElement.js';
 
+import '../source/InputSourceElement.js';
+import './InputMapElement.js';
+
 function upgradeProperty(element, propertyName)
 {
     if (Object.prototype.hasOwnProperty.call(element, propertyName))
@@ -36,10 +39,7 @@ export class InputPort extends HTMLElement
         ];
     }
 
-    /**
-     * @param {InputContext} [inputContext]
-     */
-    constructor(inputContext = undefined)
+    constructor(inputContext)
     {
         super();
         attachShadowTemplate(this, INNER_HTML, INNER_STYLE, { mode: 'open' });
@@ -58,9 +58,12 @@ export class InputPort extends HTMLElement
         /** @private */
         this.onSourcePoll = this.onSourcePoll.bind(this);
         /** @private */
+        this.onSourceChange = this.onSourceChange.bind(this);
+        /** @private */
         this.onContextChange = this.onContextChange.bind(this);
 
         this._sourceElement.addEventListener('poll', this.onSourcePoll);
+        this._sourceElement.addEventListener('change', this.onSourceChange);
         this._context.addEventListener('change', this.onContextChange);
     }
 
@@ -84,15 +87,7 @@ export class InputPort extends HTMLElement
         {
             case 'for':
                 {
-                    let target = document.getElementById(value);
-                    if (target instanceof InputSourceElement)
-                    {
-                        target = target.eventTarget;
-                    }
-                    this._sourceElement.setEventTarget(target);
-                    if (this._context.source) this._context.detach();
-                    this._context.attach(this._sourceElement.source);
-                    this._context.disabled = this._disabled;
+                    this._sourceElement.for = value;
                 }
                 break;
             case 'src':
@@ -140,6 +135,17 @@ export class InputPort extends HTMLElement
             let primary = entries[0];
             let outputElement = primary.querySelector('output');
             outputElement.innerText = Number(value).toFixed(2);
+        }
+    }
+
+    /** @private */
+    onSourceChange()
+    {
+        if (this._context.source) this._context.detach();
+        if (this._sourceElement.source)
+        {
+            this._context.attach(this._sourceElement.source);
+            this._context.disabled = this._disabled;
         }
     }
 

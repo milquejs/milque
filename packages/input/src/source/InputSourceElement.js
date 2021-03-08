@@ -36,6 +36,7 @@ export class InputSourceElement extends HTMLElement
         return [
             'input',
             'poll',
+            'change',
         ];
     }
 
@@ -149,6 +150,7 @@ export class InputSourceElement extends HTMLElement
     /**
      * Set event target to listen for input events.
      * 
+     * @protected
      * @param {EventTarget} [eventTarget] The event target to listen for input events. If
      * falsey, no target will be listened to.
      */
@@ -168,6 +170,10 @@ export class InputSourceElement extends HTMLElement
             sourceState.addEventListener('input', this.onSourceInput);
             eventTarget.addEventListener('focus', this.onTargetFocus);
             eventTarget.addEventListener('blur', this.onTargetBlur);
+
+            this.dispatchEvent(new CustomEvent('change', {
+                composed: true, bubbles: false
+            }));
         }
 
         return this;
@@ -175,6 +181,8 @@ export class InputSourceElement extends HTMLElement
 
     /**
      * Stop listening to the current target for input events.
+     * 
+     * @protected
      */
     clearEventTarget()
     {

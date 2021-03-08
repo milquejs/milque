@@ -2068,7 +2068,17 @@ class InputSourceElement extends HTMLElement {
   }
 
   static get customEvents() {
-    return ['input', 'poll'];
+    return ['input', 'poll', 'change'];
+  }
+
+  get onchange() {
+    return this._onchange;
+  }
+
+  set onchange(value) {
+    if (this._onchange) this.removeEventListener("change", this._onchange);
+    this._onchange = value;
+    if (this._onchange) this.addEventListener("change", value);
   }
 
   get onpoll() {
@@ -2165,6 +2175,12 @@ class InputSourceElement extends HTMLElement {
       this.onpoll = value;
     }
 
+    if (Object.prototype.hasOwnProperty.call(this, "onchange")) {
+      let value = this.onchange;
+      delete this.onchange;
+      this.onchange = value;
+    }
+
     if (Object.prototype.hasOwnProperty.call(this, "for")) {
       let value = this.for;
       delete this.for;
@@ -2219,6 +2235,12 @@ class InputSourceElement extends HTMLElement {
           this.onpoll = new Function('event', 'with(document){with(this){' + value + '}}').bind(this);
         }
         break;
+
+      case "onchange":
+        {
+          this.onchange = new Function('event', 'with(document){with(this){' + value + '}}').bind(this);
+        }
+        break;
     }
 
     ((attribute, prev, value) => {
@@ -2255,6 +2277,7 @@ class InputSourceElement extends HTMLElement {
   /**
    * Set event target to listen for input events.
    * 
+   * @protected
    * @param {EventTarget} [eventTarget] The event target to listen for input events. If
    * falsey, no target will be listened to.
    */
@@ -2272,12 +2295,18 @@ class InputSourceElement extends HTMLElement {
       sourceState.addEventListener('input', this.onSourceInput);
       eventTarget.addEventListener('focus', this.onTargetFocus);
       eventTarget.addEventListener('blur', this.onTargetBlur);
+      this.dispatchEvent(new CustomEvent('change', {
+        composed: true,
+        bubbles: false
+      }));
     }
 
     return this;
   }
   /**
    * Stop listening to the current target for input events.
+   * 
+   * @protected
    */
 
 
@@ -2367,7 +2396,7 @@ class InputSourceElement extends HTMLElement {
   }
 
   static get observedAttributes() {
-    return ["oninput", "onpoll", "for", "autopoll"];
+    return ["oninput", "onpoll", "onchange", "for", "autopoll"];
   }
 
 }
@@ -2842,12 +2871,8 @@ class InputPort extends HTMLElement {
   static get observedAttributes() {
     return ["for", "autopoll", "disabled", 'src'];
   }
-  /**
-   * @param {InputContext} [inputContext]
-   */
 
-
-  constructor(inputContext = undefined) {
+  constructor(inputContext) {
     super();
     this.attachShadow({
       mode: 'open'
@@ -2871,9 +2896,14 @@ class InputPort extends HTMLElement {
     this.onSourcePoll = this.onSourcePoll.bind(this);
     /** @private */
 
+    this.onSourceChange = this.onSourceChange.bind(this);
+    /** @private */
+
     this.onContextChange = this.onContextChange.bind(this);
 
     this._sourceElement.addEventListener('poll', this.onSourcePoll);
+
+    this._sourceElement.addEventListener('change', this.onSourceChange);
 
     this._context.addEventListener('change', this.onContextChange);
   }
@@ -2947,19 +2977,7 @@ class InputPort extends HTMLElement {
       switch (attribute) {
         case 'for':
           {
-            let target = document.getElementById(value);
-
-            if (target instanceof InputSourceElement) {
-              target = target.eventTarget;
-            }
-
-            this._sourceElement.setEventTarget(target);
-
-            if (this._context.source) this._context.detach();
-
-            this._context.attach(this._sourceElement.source);
-
-            this._context.disabled = this._disabled;
+            this._sourceElement.for = value;
           }
           break;
 
@@ -3008,6 +3026,18 @@ class InputPort extends HTMLElement {
       let primary = entries[0];
       let outputElement = primary.querySelector('output');
       outputElement.innerText = Number(value).toFixed(2);
+    }
+  }
+  /** @private */
+
+
+  onSourceChange() {
+    if (this._context.source) this._context.detach();
+
+    if (this._sourceElement.source) {
+      this._context.attach(this._sourceElement.source);
+
+      this._context.disabled = this._disabled;
     }
   }
   /** @private */

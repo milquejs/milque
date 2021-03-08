@@ -1,6 +1,6 @@
 import '@milque/display';
 import '@milque/input';
-import { InputContext, InputSource } from '@milque/input';
+import { InputContext, InputPort, InputSource } from '@milque/input';
 
 window.addEventListener('DOMContentLoaded', main);
 
@@ -48,12 +48,14 @@ async function main()
     display.height = DISPLAY_HEIGHT;
 
     /** @type {import('@milque/input').InputPort} */
-    const input = document.querySelector('#input');
+    const inputContext = new InputContext();
+    const input = new InputPort(inputContext);
     const other = document.querySelector('#other');
     input.src = INPUT_MAP;
     input.autopoll = true;
     input.for = 'main';
     input.for = 'other';
+    document.body.appendChild(input);
 
     /*
     const inputSource = InputSource.for(display);
