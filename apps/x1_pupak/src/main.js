@@ -48,30 +48,11 @@ async function main()
     display.height = DISPLAY_HEIGHT;
 
     /** @type {import('@milque/input').InputPort} */
-    const inputContext = new InputContext();
-    const input = new InputPort(inputContext);
-    const other = document.querySelector('#other');
+    const input = new InputPort();
+    input.for = 'main';
     input.src = INPUT_MAP;
     input.autopoll = true;
-    input.for = 'main';
-    input.for = 'other';
     document.body.appendChild(input);
-
-    /*
-    const inputSource = InputSource.for(display);
-    inputSource.autopoll = true;
-
-    const inputContext = new InputContext();
-    inputContext.setInputMapping(INPUT_MAP).attach(inputSource);
-
-    setTimeout(() => {
-        let source = InputSource.for(other);
-        source.autopoll = true;
-        inputContext.detach().attach(source);
-    }, 4000);
-
-    const i1 = inputContext.getInput('BOOM');
-    */
 
     const ctx = display.canvas.getContext('2d');
 
