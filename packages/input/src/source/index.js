@@ -1,5 +1,3 @@
-export { Axis } from './Axis.js';
-export { Button } from './Button.js';
-export { Input } from './Input.js';
 export { InputSource } from './InputSource.js';
-export { InputSourceEventStage } from './InputEventSource.js';
+export { InputSourceState, InputSourceEventStage } from './InputSourceState.js';
+export { InputSourceElement } from './InputSourceElement.js';

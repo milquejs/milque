@@ -1,7 +1,27 @@
 import '@milque/display';
 import '@milque/input';
+import { InputContext, InputPort, InputSource } from '@milque/input';
 
 window.addEventListener('DOMContentLoaded', main);
+
+window.addEventListener('unhandledrejection', error, true);
+window.addEventListener('error', error, true);
+
+function error(e)
+{
+    if (e instanceof PromiseRejectionEvent)
+    {
+        window.alert(e.reason.stack);
+    }
+    else if (e instanceof ErrorEvent)
+    {
+        window.alert(e.error.stack);
+    }
+    else
+    {
+        window.alert(JSON.stringify(e));
+    }
+}
 
 const DISPLAY_WIDTH = 320;
 const DISPLAY_HEIGHT = 240;
@@ -27,11 +47,14 @@ async function main()
     display.width = DISPLAY_WIDTH;
     display.height = DISPLAY_HEIGHT;
 
-    /** @type {import('@milque/input').InputContextElement} */
-    const input = document.querySelector('input-context');
+    /** @type {import('@milque/input').InputPort} */
+    const input = new InputPort();
+    input.for = 'main';
     input.src = INPUT_MAP;
+    input.autopoll = true;
+    document.body.appendChild(input);
 
-    const ctx = display.boo.getContext('2d');
+    const ctx = display.canvas.getContext('2d');
 
     let world = {
         display,
@@ -42,7 +65,17 @@ async function main()
     };
 
     display.addEventListener('frame', e => {
-        drawArena(world);
+        ctx.fillStyle = 'black';
+        ctx.fillRect(0, 0, display.width, display.height);
+        if (input.context.getInputChanged('PointerX'))
+        {
+            ctx.fillStyle = 'red';
+        }
+        else
+        {
+            ctx.fillStyle = 'white';
+        }
+        ctx.fillText('' + input.context.getInputState('PointerX'), 64, 64);
     });
 }
 

@@ -5,6 +5,24 @@ import { MainMenuState } from './MainMenuState';
 import * as OpenSimplexNoise from 'open-simplex-noise';
 
 window.addEventListener('DOMContentLoaded', main);
+window.addEventListener('unhandledrejection', error, true);
+window.addEventListener('error', error, true);
+
+function error(e)
+{
+    if (e instanceof PromiseRejectionEvent)
+    {
+        window.alert(e.reason.stack);
+    }
+    else if (e instanceof ErrorEvent)
+    {
+        window.alert(e.error.stack);
+    }
+    else
+    {
+        window.alert(JSON.stringify(e));
+    }
+}
 
 const DISPLAY_WIDTH = 320;
 const DISPLAY_HEIGHT = 240;
@@ -25,20 +43,22 @@ const TWO_PI = Math.PI * 2;
 async function main()
 {
     /** @type {import('@milque/display').DisplayPort} */
-    const display = document.querySelector('#main');
+    const display = document.querySelector('#display');
     display.width = DISPLAY_WIDTH;
     display.height = DISPLAY_HEIGHT;
 
-    /** @type {import('@milque/input').InputContextElement} */
-    const input = document.querySelector('input-context');
+    /** @type {import('@milque/input').InputPort} */
+    const input = document.querySelector('#input');
     input.src = INPUT_MAP;
-    input.source.autopoll = false;
+
+    const ctx = display.canvas.getContext('2d');
 
     let world = {
         started: false,
         running: false,
         display,
         input,
+        ctx,
         frames: 0,
         tickTime: 0,
         ticks: 0,

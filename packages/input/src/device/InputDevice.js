@@ -2,7 +2,7 @@
  * An enum for input types.
  * 
  * @readonly
- * @enum {Number}
+ * @enum {number}
  */
 export const InputType = {
     NULL: 0,
@@ -15,7 +15,7 @@ export const InputType = {
  * An enum for input events.
  * 
  * @readonly
- * @enum {Number}
+ * @enum {number}
  */
 export const InputEventCode = {
     NULL: 0,
@@ -46,35 +46,35 @@ export const WILDCARD_KEY_MATCHER = '*';
 /**
  * @typedef InputEvent
  * @property {EventTarget} target
- * @property {String} deviceName
- * @property {String} keyCode
+ * @property {string} deviceName
+ * @property {string} keyCode
  * @property {InputEventCode} event
  * @property {InputType} type
- * @property {Number} [value] If type is `key`, it is defined to be the input
+ * @property {number} [value] If type is `key`, it is defined to be the input
  * value of the triggered event (usually this is 1). Otherwise, it is undefined.
- * @property {Boolean} [control] If type is `key`, it is defined to be true if
+ * @property {boolean} [control] If type is `key`, it is defined to be true if
  * any control key is down (false if up). Otherwise, it is undefined.
- * @property {Boolean} [shift] If type is `key`, it is defined to be true if
+ * @property {boolean} [shift] If type is `key`, it is defined to be true if
  * any shift key is down (false if up). Otherwise, it is undefined.
- * @property {Boolean} [alt] If type is `key`, it is defined to be true if any
+ * @property {boolean} [alt] If type is `key`, it is defined to be true if any
  * alt key is down (false if up). Otherwise, it is undefined.
- * @property {Number} [x] If type is `pos`, it is defined to be the x value
+ * @property {number} [x] If type is `pos`, it is defined to be the x value
  * of the position event. Otherwise, it is undefined.
- * @property {Number} [y] If type is `pos`, it is defined to be the y value
+ * @property {number} [y] If type is `pos`, it is defined to be the y value
  * of the position event. Otherwise, it is undefined.
- * @property {Number} [dx] If type is `pos` or `wheel`, it is defined to be
+ * @property {number} [dx] If type is `pos` or `wheel`, it is defined to be
  * the change in the x value from the previous to the current position.
  * Otherwise, it is undefined.
- * @property {Number} [dy] If type is `pos` or `wheel`, it is defined to be
+ * @property {number} [dy] If type is `pos` or `wheel`, it is defined to be
  * the change in the y value from the previous to the current position.
  * Otherwise, it is undefined.
- * @property {Number} [dz] If type is `wheel`, it is defined to be the change
+ * @property {number} [dz] If type is `wheel`, it is defined to be the change
  * in the z value from the previous to the current position. Otherwise, it
  * is undefined.
  * 
  * @callback InputDeviceListener
  * @param {InputEvent} e
- * @returns {Boolean} Whether to consume the input after all other
+ * @returns {boolean} Whether to consume the input after all other
  * listeners had a chance to handle the event.
  */
 
@@ -108,7 +108,7 @@ export class InputDevice
     }
 
     /**
-     * @param {String} keyMatcher
+     * @param {string} keyMatcher
      * @param {InputDeviceListener} listener
      */
     addInputListener(keyMatcher, listener)
@@ -126,7 +126,7 @@ export class InputDevice
     }
 
     /**
-     * @param {String} keyMatcher
+     * @param {string} keyMatcher
      * @param {InputDeviceListener} listener
      */
     removeInputListener(keyMatcher, listener)
@@ -141,7 +141,7 @@ export class InputDevice
 
     /**
      * @param {InputEvent} e
-     * @returns {Boolean} Whether the input event should be consumed.
+     * @returns {boolean} Whether the input event should be consumed.
      */
     dispatchInput(e)
     {

@@ -1,7 +1,30 @@
 import { InputEventCode, InputType, WILDCARD_KEY_MATCHER } from '../device/InputDevice.js';
+import { Axis } from '../input/Axis.js';
+import { Button } from '../input/Button.js';
 
-import { Axis } from './Axis.js';
-import { Button } from './Button.js';
+/**
+ * @typedef {import('../device/InputDevice.js').InputDevice} InputDevice
+ */
+
+/**
+ * @typedef {'update'|'poll'} InputSourceEventTypes
+ * 
+ * @typedef InputSourceInputEvent
+ * @property {InputSourceEventStage} stage
+ * @property {string} deviceName
+ * @property {string} keyCode
+ * @property {Axis|Button} input
+ * 
+ * @typedef InputSourcePollEvent
+ * @property {number} now
+ * 
+ * @callback InputSourceEventListener
+ * @param {InputSourceInputEvent|InputSourcePollEvent} e
+ * 
+ * @typedef KeyMapEntry
+ * @property {number} refs The number of active references to this key.
+ * @property {Input} input The input object.
+ */
 
 /**
  * @readonly
@@ -14,24 +37,11 @@ export const InputSourceEventStage = {
 };
 
 /**
- * @typedef InputSourceInputEvent
- * @property {InputSourceEventStage} stage
- * @property {string} deviceName
- * @property {string} keyCode
- * @property {Axis|Button} input
- * 
- * @typedef InputSourcePollEvent
- * 
- * @callback InputSourceEventListener
- * @param {InputSourceInputEvent|InputSourcePollEvent} e
- */
-
-/**
  * A class to model the current input state with buttons and axes for devices.
  */
-export class InputEventSource
+export class InputSourceState
 {
-    constructor(deviceList)
+    constructor(deviceList = [])
     {
         /** @private */
         this.onInputEvent = this.onInputEvent.bind(this);
@@ -51,8 +61,15 @@ export class InputEventSource
             keyMap[deviceName] = {};
             device.addInputListener(WILDCARD_KEY_MATCHER, this.onInputEvent);
         }
+        /**
+         * @type {Record<string, InputDevice>}
+         */
         this.devices = deviceMap;
-        this.keySources = keyMap;
+        /**
+         * @private
+         * @type {Record<string, Record<string, KeyMapEntry>>}
+         */
+        this.keyMap = keyMap;
 
         /** @private */
         this.listeners = {
@@ -61,14 +78,27 @@ export class InputEventSource
         };
 
         /** @private */
+        this._lastPollTime = -1;
+        /** @private */
         this._autopoll = false;
         /** @private */
         this._animationFrameHandle = null;
     }
 
+    /**
+     * @returns {boolean} Whether in the last second this input source was polled.
+     */
+    get polling()
+    {
+        return performance.now() - this._lastPollTime < 1000;
+    }
+
+    /**
+     * Destroys this source's devices and keys.
+     */
     destroy()
     {
-        this.clearKeySources();
+        this.clearKeys();
         
         for(let deviceName in this.devices)
         {
@@ -85,17 +115,18 @@ export class InputEventSource
      */
     poll(now = performance.now())
     {
-        for(const deviceName in this.keySources)
+        for(const deviceName in this.keyMap)
         {
-            const keyMap = this.keySources[deviceName];
-            for(const keyCode in keyMap)
+            let deviceKeyMap = this.keyMap[deviceName];
+            for(const keyCode in deviceKeyMap)
             {
-                let keyInput = keyMap[keyCode];
-                keyInput.poll();
-                this.dispatchInputEvent(InputSourceEventStage.POLL, deviceName, keyCode, keyInput);
+                let input = getKeyMapEntryInput(deviceKeyMap[keyCode]);
+                input.poll();
+                this.dispatchInputEvent(InputSourceEventStage.POLL, deviceName, keyCode, input);
             }
         }
         this.dispatchPollEvent(now);
+        this._lastPollTime = now;
     }
 
     /**
@@ -104,8 +135,8 @@ export class InputEventSource
      * be called BEFORE the previously added listener (if
      * there exists one) and so on.
      * 
-     * @param {string} event 
-     * @param {InputSourceEventListener} listener 
+     * @param {InputSourceEventTypes} event The name of the event.
+     * @param {InputSourceEventListener} listener The listener callback.
      */
     addEventListener(event, listener)
     {
@@ -122,8 +153,8 @@ export class InputEventSource
     /**
      * Removes the listener from listening to the event.
      * 
-     * @param {string} event 
-     * @param {InputSourceEventListener} listener 
+     * @param {InputSourceEventTypes} event The name of the event.
+     * @param {InputSourceEventListener} listener The listener callback.
      */
     removeEventListener(event, listener)
     {
@@ -136,7 +167,7 @@ export class InputEventSource
     }
 
     /**
-     * @param {string} event The event name.
+     * @param {InputSourceEventTypes} event The name of the event.
      * @returns {number} The number of active listeners for the event.
      */
     countEventListeners(event)
@@ -152,14 +183,14 @@ export class InputEventSource
      * Dispatches an event to the listeners.
      * 
      * @protected
-     * @param {string} eventName The name of the event.
-     * @param {InputSourceInputEvent|InputSourcePollEvent} event The event object to pass to listeners.
+     * @param {InputSourceEventTypes} event The name of the event.
+     * @param {InputSourceInputEvent|InputSourcePollEvent} eventOpts The event object to pass to listeners.
      */
-    dispatchEvent(eventName, event)
+    dispatchEvent(event, eventOpts)
     {
-        for(let listener of this.listeners[eventName])
+        for(let listener of this.listeners[event])
         {
-            listener(event);
+            listener(eventOpts);
         }
     }
 
@@ -188,12 +219,13 @@ export class InputEventSource
     onInputEvent(e)
     {
         const deviceName = e.deviceName;
+        const deviceKeyMap = this.keyMap[deviceName];
         switch(e.type)
         {
             case InputType.KEY:
                 {
                     const keyCode = e.keyCode;
-                    let button = this.keySources[deviceName][keyCode];
+                    let button = getKeyMapEntryInput(deviceKeyMap[keyCode]);
                     if (button)
                     {
                         button.update(e.event === InputEventCode.DOWN);
@@ -204,14 +236,13 @@ export class InputEventSource
                 break;
             case InputType.POS:
                 {
-                    let inputs = this.keySources[deviceName];
-                    let xAxis = inputs.PosX;
+                    let xAxis = getKeyMapEntryInput(deviceKeyMap.PosX);
                     if (xAxis)
                     {
                         xAxis.update(e.x, e.dx);
                         this.dispatchInputEvent(InputSourceEventStage.UPDATE, deviceName, 'PosX', xAxis);
                     }
-                    let yAxis = inputs.PosY;
+                    let yAxis = getKeyMapEntryInput(deviceKeyMap.PosY);
                     if (yAxis)
                     {
                         yAxis.update(e.y, e.dy);
@@ -221,20 +252,19 @@ export class InputEventSource
                 break;
             case InputType.WHEEL:
                 {
-                    let inputs = this.keySources[deviceName];
-                    let xAxis = inputs.WheelX;
+                    let xAxis = getKeyMapEntryInput(deviceKeyMap.WheelX);
                     if (xAxis)
                     {
                         xAxis.update(e.dx, e.dx);
                         this.dispatchInputEvent(InputSourceEventStage.UPDATE, deviceName, 'WheelX', xAxis);
                     }
-                    let yAxis = inputs.WheelY;
+                    let yAxis = getKeyMapEntryInput(deviceKeyMap.WheelY);
                     if (yAxis)
                     {
                         yAxis.update(e.dy, e.dy);
                         this.dispatchInputEvent(InputSourceEventStage.UPDATE, deviceName, 'WheelY', yAxis);
                     }
-                    let zAxis = inputs.WheelZ;
+                    let zAxis = getKeyMapEntryInput(deviceKeyMap.WheelZ);
                     if (zAxis)
                     {
                         zAxis.update(e.dz, e.dz);
@@ -271,89 +301,158 @@ export class InputEventSource
         }
     }
 
-    /** @returns {boolean} Whether to automatically poll on animation frame. */
+    /**
+     * If true, polling will be handled automatically through requestAnimationFrame().
+     * 
+     * @returns {boolean} Whether to automatically poll on animation frame.
+     */
     get autopoll()
     {
         return this._autopoll;
     }
     
     /**
-     * Add an input for the given device and key code.
+     * Register and enable the source input to listen to for the given device
+     * and key code. Can be registered more than once to obtain active lease
+     * on the input, which guarantees it will be unregistered the same number
+     * of times before removal.
      * 
-     * @param {String} deviceName 
-     * @param {String} keyCode 
+     * @param {string} deviceName The name of the device (case-sensitive).
+     * @param {string} keyCode The key code for the given key in the device.
      */
-    addKeySource(deviceName, keyCode)
+    registerKey(deviceName, keyCode)
     {
         if (!(deviceName in this.devices))
         {
-            throw new Error('Invalid device name - missing device with name in source.');
+            throw new Error(`Invalid device name - missing device with name '${deviceName}' in source.`);
         }
 
-        let device = this.devices[deviceName];
-        let result;
-        if (device.constructor.isAxis(keyCode))
+        let deviceKeyMap = this.keyMap[deviceName];
+        if (keyCode in deviceKeyMap)
         {
-            result = new Axis();
-        }
-        else if (device.constructor.isButton(keyCode))
-        {
-            result = new Button();
+            incrementKeyMapEntryRef(deviceKeyMap[keyCode]);
         }
         else
         {
-            throw new Error(`Unknown key code '${keyCode}' for device ${deviceName}.`);
+            let device = this.devices[deviceName];
+            let result;
+            if (device.constructor.isAxis(keyCode))
+            {
+                result = new Axis();
+            }
+            else if (device.constructor.isButton(keyCode))
+            {
+                result = new Button();
+            }
+            else
+            {
+                throw new Error(`Unknown key code '${keyCode}' for device ${deviceName}.`);
+            }
+            deviceKeyMap[keyCode] = createKeyMapEntry(result);
         }
-
-        let prev = this.keySources[deviceName][keyCode];
-        if (prev)
-        {
-            throw new Error('Cannot add duplicate key source for the same device and key code.');
-        }
-        this.keySources[deviceName][keyCode] = result;
         return this;
     }
 
     /**
-     * Remove the input for the given device and key code.
+     * Remove and disable the registered source for the given device and key code.
      * 
-     * @param {String} deviceName 
-     * @param {String} keyCode 
+     * @param {string} deviceName The name of the device (case-sensitive).
+     * @param {string} keyCode The key code for the given key in the device.
      */
-    deleteKeySource(deviceName, keyCode)
+    unregisterKey(deviceName, keyCode)
     {
-        let prev = this.keySources[deviceName][keyCode];
-        if (!prev)
+        let deviceKeyMap = this.keyMap[deviceName];
+        if (deviceKeyMap)
         {
-            throw new Error('Cannot delete missing key source for the device and key code.');
+            let keyMapEntry = deviceKeyMap[keyCode];
+            if (keyMapEntry)
+            {
+                decrementKeyMapEntryRef(keyMapEntry);
+                if (keyMapEntry.refs <= 0)
+                {
+                    delete deviceKeyMap[keyCode];
+                }
+            }
         }
-        delete this.keySources[deviceName][keyCode];
-    }
-
-    /** @returns {Button|Axis} */
-    getKeySource(deviceName, keyCode)
-    {
-        return this.keySources[deviceName][keyCode];
     }
     
     /**
-     * @param {String} deviceName 
-     * @param {String} keyCode 
-     * @returns {Boolean} Whether the device and key code has been added.
+     * @param {string} deviceName The name of the device.
+     * @param {string} keyCode The key code in the device.
+     * @returns {boolean} Whether the device and key code has been registered.
      */
-    hasKeySource(deviceName, keyCode)
+    hasKey(deviceName, keyCode)
     {
-        return deviceName in this.keySources && keyCode in this.keySources[deviceName];
+        return deviceName in this.keyMap && keyCode in this.keyMap[deviceName];
     }
 
     /**
      * Removes all registered inputs from all devices.
      */
-    clearKeySources()
+    clearKeys()
     {
         for(let deviceName in this.devices)
         {
-            this.keySources[deviceName] = {};
+            let deviceKeyMap = this.keyMap[deviceName];
+            // Clean-up device key map.
+            for(let keyCode in deviceKeyMap)
+            {
+                clearKeyMapEntryRef(deviceKeyMap[keyCode]);
+            }
+            // Actually clear it from future references.
+            this.keyMap[deviceName] = {};
         }
     }
+
+    /**
+     * @returns {Button|Axis}
+     */
+    getInputByKey(deviceName, keyCode)
+    {
+        return getKeyMapEntryInput(this.keyMap[deviceName][keyCode]);
+    }
+}
+
+/**
+ * @param {Input} [input]
+ * @returns {KeyMapEntry}
+ */
+function createKeyMapEntry(input = null)
+{
+    return {
+        refs: 1,
+        input: input,
+    };
+}
+
+/**
+ * @param {KeyMapEntry} keyMapEntry 
+ */
+function getKeyMapEntryInput(keyMapEntry)
+{
+    return keyMapEntry ? keyMapEntry.input : null;
+}
+
+/**
+ * @param {KeyMapEntry} keyMapEntry 
+ */
+function incrementKeyMapEntryRef(keyMapEntry)
+{
+    keyMapEntry.refs += 1;
+}
+
+/**
+ * @param {KeyMapEntry} keyMapEntry
+ */
+function decrementKeyMapEntryRef(keyMapEntry)
+{
+    keyMapEntry.refs -= 1;
+}
+
+/**
+ * @param {KeyMapEntry} keyMapEntry 
+ */
+function clearKeyMapEntryRef(keyMapEntry)
+{
+    keyMapEntry.refs = 0;
 }

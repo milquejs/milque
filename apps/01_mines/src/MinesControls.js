@@ -7,7 +7,7 @@ export const INPUT_MAPPING = {
     cursorX: { key: 'Mouse:PosX', scale: 1 },
     cursorY: { key: 'Mouse:PosY', scale: 1 },
 };
-export const INPUT_CONTEXT = new InputContext().setInputMap(INPUT_MAPPING);
+export const INPUT_CONTEXT = new InputContext().setInputMapping(INPUT_MAPPING);
 
 export const CursorX = INPUT_CONTEXT.getInput('cursorX');
 export const CursorY = INPUT_CONTEXT.getInput('cursorY');
@@ -18,7 +18,7 @@ export const Restart = INPUT_CONTEXT.getInput('restart');
 export function attach()
 {
     const inputSource = InputSource.for(document.querySelector('#main'));
-    INPUT_CONTEXT.setInputSource(inputSource).attach();
+    INPUT_CONTEXT.attach(inputSource);
     return INPUT_CONTEXT;
 }
 

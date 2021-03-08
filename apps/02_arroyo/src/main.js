@@ -62,8 +62,7 @@ async function load(assets)
 async function main()
 {
     const display = document.querySelector('display-port');
-    const input = document.querySelector('input-context');
-    input.source.autopoll = true;
+    const input = document.querySelector('input-port');
 
     const CursorX = input.context.getInput('cursorX');
     const CursorY = input.context.getInput('cursorY');
