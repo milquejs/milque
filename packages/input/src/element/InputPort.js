@@ -39,7 +39,7 @@ export class InputPort extends HTMLElement
         ];
     }
 
-    constructor(inputContext)
+    constructor(inputContext = new InputContext())
     {
         super();
         attachShadowTemplate(this, INNER_HTML, INNER_STYLE, { mode: 'open' });
@@ -53,7 +53,7 @@ export class InputPort extends HTMLElement
         this._sourceElement = this.shadowRoot.querySelector('input-source');
 
         /** @private */
-        this._context = inputContext || new InputContext();
+        this._context = inputContext;
 
         /** @private */
         this.onSourcePoll = this.onSourcePoll.bind(this);
@@ -153,6 +153,26 @@ export class InputPort extends HTMLElement
     onContextChange()
     {
         this._mapElement.src = this._context.mapping;
+    }
+
+    hasInput(inputName)
+    {
+        return this._context.hasInput(inputName);
+    }
+
+    getInput(inputName)
+    {
+        return this._context.getInput(inputName);
+    }
+
+    getInputState(inputName)
+    {
+        return this._context.getInputState(inputName);
+    }
+
+    getInputChanged(inputName)
+    {
+        return this._context.getInputChanged(inputName);
     }
 }
 window.customElements.define('input-port', InputPort);
