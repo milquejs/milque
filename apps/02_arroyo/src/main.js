@@ -11,6 +11,7 @@ import {
 } from '@milque/util';
 
 import * as Audio from './Audio.js';
+import { INPUT_MAPPING } from './Input.js';
 
 import { CanvasView } from './view/CanvasView.js';
 import { Camera2D } from './view/Camera2D.js';
@@ -62,7 +63,9 @@ async function load(assets)
 async function main()
 {
     const display = document.querySelector('display-port');
+    /** @type {InputPort} */
     const input = document.querySelector('input-port');
+    input.src = INPUT_MAPPING;
 
     const CursorX = input.context.getInput('cursorX');
     const CursorY = input.context.getInput('cursorY');
