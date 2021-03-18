@@ -22,6 +22,19 @@ label {
     position: absolute;
 }
 
+#inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+}
+
 #title {
     left: 0.5rem;
     top: 0.5rem;
@@ -80,6 +93,10 @@ slot {
     top: 0;
     left: 0;
     pointer-events: none;
+}
+
+#inner > slot {
+    position: relative;
 }
 
 ::slotted(*) {
