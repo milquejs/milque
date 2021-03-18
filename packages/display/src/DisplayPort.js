@@ -128,6 +128,9 @@ export class DisplayPort extends HTMLElement
 
         /** @private */
         this._canvasElement = this.shadowRoot.querySelector('canvas');
+        /** @private */
+        this._contentElement = this.shadowRoot.querySelector('.content');
+        /** @private */
         this._innerElement = this.shadowRoot.querySelector('#inner');
 
         /** @private */
@@ -149,8 +152,6 @@ export class DisplayPort extends HTMLElement
 
         /** @private */
         this.update = this.update.bind(this);
-
-        // TODO: Put <canvas> and <slot> in a centered container, instead of updating slot position manually.
     }
 
     /** Get the canvas element. */
@@ -304,15 +305,16 @@ export class DisplayPort extends HTMLElement
         canvasWidth = Math.floor(canvasWidth);
         canvasHeight = Math.floor(canvasHeight);
 
+        let fontSize = Math.min(canvasWidth / this._width, canvasHeight / this._height) * 0.5;
         // NOTE: Update the inner container for the default slotted children.
         // To anchor children outside the canvas, use the slot named 'frame'.
-        this._innerElement.style = `width: ${canvasWidth}px; height: ${canvasHeight}px; left: ${canvas.offsetLeft}px; top: ${canvas.offsetTop}px`;
+        this._innerElement.style = `font-size: ${fontSize}em`;
 
         if (canvas.clientWidth !== canvasWidth || canvas.clientHeight !== canvasHeight)
         {
             canvas.width = this._width;
             canvas.height = this._height;
-            canvas.style = `width: ${canvasWidth}px; height: ${canvasHeight}px`;
+            this._contentElement.style = `width: ${canvasWidth}px; height: ${canvasHeight}px`;
 
             this.dispatchEvent(new CustomEvent('resize', { detail: { width: canvasWidth, height: canvasHeight }, bubbles: false, composed: true }));
         }

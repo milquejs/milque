@@ -10,16 +10,25 @@
     height: 100%;
 }
 
+.content {
+    position: relative;
+    margin: auto;
+}
+
+.content > * {
+    width: 100%;
+    height: 100%;
+}
+
 canvas {
     background: #000000;
-    margin: auto;
     image-rendering: pixelated;
 }
 
 label {
+    position: absolute;
     font-family: monospace;
     color: currentColor;
-    position: absolute;
 }
 
 #inner {
@@ -28,8 +37,6 @@ label {
     align-items: center;
     justify-content: center;
     position: absolute;
-    width: 100%;
-    height: 100%;
     top: 0;
     left: 0;
     pointer-events: none;
@@ -93,10 +100,6 @@ slot {
     top: 0;
     left: 0;
     pointer-events: none;
-}
-
-#inner > slot {
-    position: relative;
 }
 
 ::slotted(*) {
