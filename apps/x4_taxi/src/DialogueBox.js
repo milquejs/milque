@@ -1,8 +1,3 @@
-
-const CONTAINER_MARGIN_TOP = 8;
-const CONTAINER_MARGIN_LEFT = 64;
-const CONTAINER_HEIGHT = 48;
-
 function updateText(world, text)
 {
     world.dialogue.text = text;

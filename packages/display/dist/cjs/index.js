@@ -236,7 +236,7 @@ class DisplayPort extends HTMLElement {
     this._height = DEFAULT_HEIGHT;
     /** @private */
 
-    this.update = this.update.bind(this);
+    this.update = this.update.bind(this); // TODO: Put <canvas> and <slot> in a centered container, instead of updating slot position manually.
   }
   /** Get the canvas element. */
 

@@ -149,6 +149,8 @@ export class DisplayPort extends HTMLElement
 
         /** @private */
         this.update = this.update.bind(this);
+
+        // TODO: Put <canvas> and <slot> in a centered container, instead of updating slot position manually.
     }
 
     /** Get the canvas element. */
