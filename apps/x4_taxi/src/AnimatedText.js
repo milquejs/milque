@@ -199,7 +199,6 @@ class AnimatedTextState
                     if (!this.animatedNodes.has(child))
                     {
                         child.nodeValue = this.nodeContents.get(child);
-                        this.nodeContents.delete(child);
                         this.animatedNodes.add(child);
                     }
                 }
@@ -277,22 +276,34 @@ export const AnimatedText = {
     },
     pause(element)
     {
-        let state = element[ANIMATED_TEXT_STATE_KEY];
-        state.pause();
+        if (element && ANIMATED_TEXT_STATE_KEY in element)
+        {
+            let state = element[ANIMATED_TEXT_STATE_KEY];
+            state.pause();
+        }
     },
     resume(element)
     {
-        let state = element[ANIMATED_TEXT_STATE_KEY];
-        state.resume();
+        if (element && ANIMATED_TEXT_STATE_KEY in element)
+        {
+            let state = element[ANIMATED_TEXT_STATE_KEY];
+            state.resume();
+        }
     },
     skip(element)
     {
-        let state = element[ANIMATED_TEXT_STATE_KEY];
-        state.skipAll();
+        if (element && ANIMATED_TEXT_STATE_KEY in element)
+        {
+            let state = element[ANIMATED_TEXT_STATE_KEY];
+            state.skipAll();
+        }
     },
     toggle(element, force = undefined)
     {
-        let state = element[ANIMATED_TEXT_STATE_KEY];
-        state.toggle(force);
+        if (element && ANIMATED_TEXT_STATE_KEY in element)
+        {
+            let state = element[ANIMATED_TEXT_STATE_KEY];
+            state.toggle(force);
+        }
     }
 };

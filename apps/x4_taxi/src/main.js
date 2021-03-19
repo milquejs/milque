@@ -1,6 +1,7 @@
 import '@milque/display';
 import * as Background from './Background.js';
 import * as DialogueBox from './DialogueBox.js';
+import * as TaxiMeter from './TaxiMeter.js';
 
 window.addEventListener('DOMContentLoaded', main);
 window.addEventListener('error', error, true);
@@ -35,6 +36,7 @@ async function main()
 
     Background.load(world);
     DialogueBox.load(world);
+    TaxiMeter.load(world);
 
     display.addEventListener('frame', e => {
         const { deltaTime } = e.detail;
@@ -49,6 +51,7 @@ function update(dt, world)
 {
     Background.update(dt, world);
     DialogueBox.update(dt, world);
+    TaxiMeter.update(dt, world);
 }
 
 function render(ctx, world)
@@ -58,4 +61,5 @@ function render(ctx, world)
 
     Background.render(ctx, world);
     DialogueBox.render(ctx, world);
+    TaxiMeter.render(ctx, world);
 }

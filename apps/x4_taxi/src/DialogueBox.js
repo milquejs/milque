@@ -4,43 +4,35 @@ export function load(world)
 {
     let container = document.createElement('div');
     container.style.position = 'absolute';
-    container.style.bottom = '32px';
+    container.style.bottom = '0.8em';
+    container.style.right = '0.8em';
     container.innerHTML = `
         <style>
             .container {
-                background-color: #ffffff;
-                padding: 0.5em 1em;
-                width: 30em;
+                position: relative;
+                background-color: #091b3d;
+                color: #eeeeee;
+                padding: 0.5em;
+                width: 20em;
+                height: 5em;
+                overflow: auto;
+                font-family: monospace;
             }
         </style>
         <div class="container">
             <article>
-                <h2>The Cat Papers</h2>
-                <section>
-                    <h3>Some really BIG cats.</h3>
-                    <p>Sometimes you <b>just</b> need some big, big cats. You know?</p>
-                    <p>And other times...you need small ones. :)</p>
-                    <p>
-                    You know... I know, though not really, what kind of cat would
-                    be a car? Have you seen my cat? I think it's somewhere out
-                    there. Maybe it's on that hill over there? Oh NO! It's in a
-                    TREE!!!
-                    
-                    Help me go get it plea-- great... Now I need another cat.
-                    </p>
-                    (hello from the other side)
-                </section>
+                There is something amiss in Maird. There is not one corner of this town left
+                untainted
+                by the smell of foul blood. No windows unshattered. No doors unlocked.
             </article>
         </div>`;
 
     world.display.appendChild(container);
     let article = container.querySelector('article');
     article.addEventListener('click', () => {
-        AnimatedText.toggle(article);
+        AnimatedText.skip(article);
     });
-    AnimatedText.play(article).then(() => {
-        article.innerHTML = 'BOO!';
-    });
+    AnimatedText.play(article);
 
     world.dialogue = {
         text: '',
