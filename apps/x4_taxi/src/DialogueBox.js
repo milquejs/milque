@@ -21,9 +21,9 @@ export function load(world)
         </style>
         <div class="container">
             <article>
-                There is something amiss in Maird. There is not one corner of this town left
+                There is something amiss in Marde. The stench of unrest is baked into every nook and alley and not a corner is left
                 untainted
-                by the smell of foul blood. No windows unshattered. No doors unlocked.
+                by the foulness of its mindless residents. No windows unshattered. No doors unlocked.
             </article>
         </div>`;
 
