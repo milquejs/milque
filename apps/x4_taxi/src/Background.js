@@ -39,7 +39,7 @@ const BUILDING_HEIGHT_RAND = () => Math.trunc(BUILDING_RAND.range(36, 80));
 
 const RAILING_WIDTH = 80;
 const RAILING_HEIGHT = 8;
-const RAILING_SPEED = 10;
+const RAILING_SPEED = 6;
 
 const ROAD_HEIGHT = 64;
 

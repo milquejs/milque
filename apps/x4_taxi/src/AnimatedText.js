@@ -43,6 +43,7 @@ class AnimatedTextState
         this.targetText = '';
         this.index = -1;
 
+        this.disabled = true;
         this.complete = false;
         this.speed = speed;
         this.callback = null;
@@ -54,14 +55,31 @@ class AnimatedTextState
         this.onAnimationFrame = this.onAnimationFrame.bind(this);
     }
 
+    toggle(force = !this.disabled)
+    {
+        if (force)
+        {
+            this.pause();
+        }
+        else
+        {
+            this.resume();
+        }
+    }
+
     pause()
     {
+        this.disabled = true;
         cancelAnimationFrame(this.animationFrameHandle);
         this.animationFrameHandle = null;
+
+        // NOTE: Removes dead wait time after unpause to feel more impactful.
+        this.deltaTime = this.waitTime;
     }
 
     resume()
     {
+        this.disabled = false;
         if (!this.canSafelyResumeWithTarget(this.targetNode))
         {
             this.targetNode = null;
@@ -163,7 +181,7 @@ class AnimatedTextState
     {
         if (!node) return false;
         if (!node.isConnected) return false;
-        let content = this.nodeContents.get(node);
+        let content = node.nodeValue;
         let expected = this.targetText.substring(0, this.index + 1);
         if (content !== expected) return false;
         return true;
@@ -271,5 +289,10 @@ export const AnimatedText = {
     {
         let state = element[ANIMATED_TEXT_STATE_KEY];
         state.skipAll();
+    },
+    toggle(element, force = undefined)
+    {
+        let state = element[ANIMATED_TEXT_STATE_KEY];
+        state.toggle(force);
     }
 };
