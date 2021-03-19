@@ -128,6 +128,10 @@ export class DisplayPort extends HTMLElement
 
         /** @private */
         this._canvasElement = this.shadowRoot.querySelector('canvas');
+        /** @private */
+        this._contentElement = this.shadowRoot.querySelector('.content');
+        /** @private */
+        this._innerElement = this.shadowRoot.querySelector('#inner');
 
         /** @private */
         this._titleElement = this.shadowRoot.querySelector('#title');
@@ -214,7 +218,6 @@ export class DisplayPort extends HTMLElement
     update(now)
     {
         this._animationRequestHandle = requestAnimationFrame(this.update);
-
         this.updateCanvasSize();
         const deltaTime = now - this._prevAnimationFrameTime;
         this._prevAnimationFrameTime = now;
@@ -302,11 +305,17 @@ export class DisplayPort extends HTMLElement
         canvasWidth = Math.floor(canvasWidth);
         canvasHeight = Math.floor(canvasHeight);
 
+        let fontSize = Math.min(canvasWidth / this._width, canvasHeight / this._height) * 0.5;
+        // NOTE: Update the inner container for the default slotted children.
+        // To anchor children outside the canvas, use the slot named 'frame'.
+        this._innerElement.style = `font-size: ${fontSize}em`;
+
         if (canvas.clientWidth !== canvasWidth || canvas.clientHeight !== canvasHeight)
         {
             canvas.width = this._width;
             canvas.height = this._height;
-            canvas.style = `width: ${canvasWidth}px; height: ${canvasHeight}px`;
+            this._contentElement.style = `width: ${canvasWidth}px; height: ${canvasHeight}px`;
+
             this.dispatchEvent(new CustomEvent('resize', { detail: { width: canvasWidth, height: canvasHeight }, bubbles: false, composed: true }));
         }
     }

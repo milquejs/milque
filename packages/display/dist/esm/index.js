@@ -1,6 +1,6 @@
-var INNER_HTML = "<div class=\"container\">\n    <label class=\"hidden\" id=\"title\">display-port</label>\n    <label class=\"hidden\" id=\"fps\">00</label>\n    <label class=\"hidden\" id=\"dimension\">0x0</label>\n    <canvas></canvas>\n    <slot></slot>\n</div>";
+var INNER_HTML = "<div class=\"container\">\n    <label class=\"hidden\" id=\"title\">display-port</label>\n    <label class=\"hidden\" id=\"fps\">00</label>\n    <label class=\"hidden\" id=\"dimension\">0x0</label>\n    <div class=\"content\">\n        <canvas></canvas>\n        <slot id=\"inner\"></slot>\n    </div>\n    <slot name=\"frame\"></slot>\n</div>";
 
-var INNER_STYLE = ":host{display:inline-block;color:#555}.container{display:flex;position:relative;width:100%;height:100%}canvas{background:#000;margin:auto;-ms-interpolation-mode:nearest-neighbor;image-rendering:-moz-crisp-edges;image-rendering:pixelated}label{font-family:monospace;color:currentColor;position:absolute}#title{left:.5rem;top:.5rem}#fps{right:.5rem;top:.5rem}#dimension{left:.5rem;bottom:.5rem}.hidden{display:none}:host([debug]) .container{outline:6px dashed rgba(0,0,0,.1);outline-offset:-4px;background-color:rgba(0,0,0,.1)}:host([mode=noscale]) canvas{margin:0;top:0;left:0}:host([mode=center]),:host([mode=fit]),:host([mode=stretch]){width:100%;height:100%}:host([full]){width:100vw!important;height:100vh!important}:host([disabled]){display:none}slot{display:flex;flex-direction:column;align-items:center;justify-content:center;position:absolute;width:100%;height:100%;top:0;left:0;pointer-events:none}::slotted(*){pointer-events:auto}";
+var INNER_STYLE = ":host{display:inline-block;color:#555}.container{display:flex;position:relative;width:100%;height:100%}.content{position:relative;margin:auto}.content>*{width:100%;height:100%}canvas{background:#000;-ms-interpolation-mode:nearest-neighbor;image-rendering:-moz-crisp-edges;image-rendering:pixelated}label{font-family:monospace;color:currentColor}#inner,label{position:absolute}#inner{display:flex;flex-direction:column;align-items:center;justify-content:center;top:0;left:0;pointer-events:none}#title{left:.5rem;top:.5rem}#fps{right:.5rem;top:.5rem}#dimension{left:.5rem;bottom:.5rem}.hidden{display:none}:host([debug]) .container{outline:6px dashed rgba(0,0,0,.1);outline-offset:-4px;background-color:rgba(0,0,0,.1)}:host([mode=noscale]) canvas{margin:0;top:0;left:0}:host([mode=center]),:host([mode=fit]),:host([mode=stretch]){width:100%;height:100%}:host([full]){width:100vw!important;height:100vh!important}:host([disabled]){display:none}slot{display:flex;flex-direction:column;align-items:center;justify-content:center;position:absolute;width:100%;height:100%;top:0;left:0;pointer-events:none}::slotted(*){pointer-events:auto}";
 
 /**
  * No scaling is applied. The canvas size maintains a 1:1 pixel ratio to the defined
@@ -208,6 +208,12 @@ class DisplayPort extends HTMLElement {
     /** @private */
 
     this._canvasElement = this.shadowRoot.querySelector('canvas');
+    /** @private */
+
+    this._contentElement = this.shadowRoot.querySelector('.content');
+    /** @private */
+
+    this._innerElement = this.shadowRoot.querySelector('#inner');
     /** @private */
 
     this._titleElement = this.shadowRoot.querySelector('#title');
@@ -449,11 +455,15 @@ class DisplayPort extends HTMLElement {
 
     canvasWidth = Math.floor(canvasWidth);
     canvasHeight = Math.floor(canvasHeight);
+    let fontSize = Math.min(canvasWidth / this._width, canvasHeight / this._height) * 0.5; // NOTE: Update the inner container for the default slotted children.
+    // To anchor children outside the canvas, use the slot named 'frame'.
+
+    this._innerElement.style = `font-size: ${fontSize}em`;
 
     if (canvas.clientWidth !== canvasWidth || canvas.clientHeight !== canvasHeight) {
       canvas.width = this._width;
       canvas.height = this._height;
-      canvas.style = `width: ${canvasWidth}px; height: ${canvasHeight}px`;
+      this._contentElement.style = `width: ${canvasWidth}px; height: ${canvasHeight}px`;
       this.dispatchEvent(new CustomEvent('resize', {
         detail: {
           width: canvasWidth,
