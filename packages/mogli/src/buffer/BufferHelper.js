@@ -1,7 +1,7 @@
 /**
  * Creates a buffer source given the type and data.
  * 
- * @param {WebGLRenderingContext} gl The gl context.
+ * @param {WebGLRenderingContextBase} gl The gl context.
  * @param {GLenum} type The data type of the elements in the buffer. Usually,
  * this is `gl.FLOAT` for array buffers or `gl.UNSIGNED_SHORT` for element
  * array buffers. It must be either `gl.BYTE`, `gl.UNSIGNED_BYTE`, `gl.SHORT`,
@@ -13,6 +13,27 @@ export function createBufferSource(gl, type, data)
 {
     const TypedArray = getBufferTypedArray(gl, type);
     return new TypedArray(data);
+}
+
+/**
+ * Create a buffer with the given source.
+ * 
+ * @param {WebGLRenderingContextBase} gl The gl context.
+ * @param {GLenum} target The buffer bind target. Usually, this is `gl.ARRAY_BUFFER` or
+ * `gl.ELEMENT_ARRAY_BUFFER`.
+ * @param {BufferSource} bufferSource The typed array buffer containing the given data.
+ * For convenience, you can use `BufferHelper.createBufferSource()` to convert a data array
+ * to the appropriate typed array.
+ * @param {GLenum} usage The buffer usage hint. By default, this is `gl.STATIC_DRAW`.
+ * @returns {WebGLBuffer} The created and bound data buffer.
+ */
+export function createBuffer(gl, target, bufferSource, usage = undefined)
+{
+    let handle = gl.createBuffer();
+    gl.bindBuffer(target, handle);
+    if (!ArrayBuffer.isView(bufferSource)) throw new Error('Source data must be a typed array.');
+    gl.bufferData(target, bufferSource, usage || gl.STATIC_DRAW);
+    return handle;
 }
 
 export function getBufferTypedArray(gl, bufferType)

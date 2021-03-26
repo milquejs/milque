@@ -2,11 +2,6 @@ import { createShader, createShaderProgram } from './ProgramHelper.js';
 
 export class ProgramBuilder
 {
-    static from(gl, program = undefined)
-    {
-        return new ProgramBuilder(gl, program);
-    }
-
     constructor(gl, program = undefined)
     {
         this.handle = program || gl.createProgram();

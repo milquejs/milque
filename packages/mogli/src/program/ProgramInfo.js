@@ -1,26 +1,11 @@
 import { getActiveUniformsInfo } from './ProgramUniformInfo.js';
 import { getActiveAttribsInfo } from './ProgramAttributeInfo.js';
-import { ProgramBuilder } from '../program/ProgramBuilder.js';
-import { draw } from '../program/ProgramHelper.js';
-
-export class ProgramInfoBuilder extends ProgramBuilder
-{
-    constructor(gl)
-    {
-        super(gl);
-    }
-
-    /** @override */
-    link()
-    {
-        const handle = super.link();
-        return new ProgramInfo(this.gl, handle);
-    }
-}
+import { ProgramBuilder } from './ProgramBuilder.js';
+import { draw } from './ProgramHelper.js';
 
 export class ProgramInfo
 {
-    static from(gl)
+    static builder(gl)
     {
         return new ProgramInfoBuilder(gl);
     }
@@ -36,6 +21,13 @@ export class ProgramInfo
         this.drawContext = new ProgramInfoDrawContext(gl, this);
     }
 
+    /**
+     * Bind the program and prepare to draw. This returns the bound context
+     * that can modify the draw state.
+     * 
+     * @param {WebGLRenderingContextBase} gl 
+     * @returns {ProgramInfoDrawContext} The bound context to draw with.
+     */
     bind(gl)
     {
         gl.useProgram(this.handle);
@@ -103,14 +95,29 @@ export class ProgramInfoDrawContext
      * Draws using this program.
      * 
      * @param {WebGLRenderingContext} gl 
-     * @param {Number} mode 
-     * @param {Number} offset 
-     * @param {Number} count 
+     * @param {number} mode 
+     * @param {number} offset 
+     * @param {number} count 
      * @param {WebGLBuffer} elementBuffer 
      */
     draw(gl, mode, offset, count, elementBuffer = null)
     {
         draw(gl, mode, offset, count, elementBuffer);
         return this.parent;
+    }
+}
+
+export class ProgramInfoBuilder extends ProgramBuilder
+{
+    constructor(gl)
+    {
+        super(gl);
+    }
+
+    /** @override */
+    link()
+    {
+        const handle = super.link();
+        return new ProgramInfo(this.gl, handle);
     }
 }
