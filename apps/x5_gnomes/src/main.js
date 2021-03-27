@@ -1,16 +1,14 @@
 import '@milque/display';
 import '@milque/input';
 import { OrthographicCamera } from '@milque/scene';
-import { mat4, vec3 } from 'gl-matrix';
+import { mat4 } from 'gl-matrix';
 
-import { TexturedQuadRenderer } from './TexturedQuadRenderer.js';
-import { ColoredQuadRenderer } from './ColoredQuadRenderer.js';
+import { TexturedQuadRenderer } from './renderer/TexturedQuadRenderer.js';
+import { ColoredQuadRenderer } from './renderer/ColoredQuadRenderer.js';
 import * as WebGLTextureLoader from './WebGLTextureLoader.js';
 
-window.addEventListener('DOMContentLoaded', main);
 window.addEventListener('error', error, true);
 window.addEventListener('unhandledrejection', error, true);
-
 function error(e)
 {
     if (e instanceof PromiseRejectionEvent)
@@ -27,6 +25,7 @@ function error(e)
     }
 }
 
+window.addEventListener('DOMContentLoaded', main);
 async function main()
 {
     /** @type {import('@milque/display').DisplayPort}  */
@@ -54,10 +53,9 @@ async function main()
     gl.clearColor(0, 0, 0, 0);
 
     let projectionViewMatrix = mat4.create();
-    let colorVector = vec3.fromValues(0, 1, 0);
 
     let texture = WebGLTextureLoader.load('color.png', { gl });
-    let fontTexture = WebGLTextureLoader.load('font.png', { gl });
+    let fontTexture = WebGLTextureLoader.load('webgl/font.png', { gl });
 
     let texturedRenderer = new TexturedQuadRenderer(gl);
     let coloredRenderer = new ColoredQuadRenderer(gl);

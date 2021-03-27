@@ -1,10 +1,10 @@
 /**
  * @param {string} url The asset path.
  * @param {object} opts Additional options.
- * @param {WebGLRenderingContextBase} opts.gl The webgl context.
+ * @param {WebGLRenderingContext} opts.gl The webgl context.
  * @returns {WebGLTexture}
  */
-export function load(url, opts = {})
+export function load(url, opts)
 {
     const { gl } = opts;
 

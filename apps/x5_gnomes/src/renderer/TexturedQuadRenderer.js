@@ -1,6 +1,6 @@
 import { vec2, vec4 } from 'gl-matrix';
 import { ProgramInfo, BufferInfo, BufferHelper } from '@milque/mogli';
-import { AbstractQuadRenderer } from './AbstractQuadRenderer.js';
+import { QuadRendererBase } from './QuadRendererBase.js';
 
 const PROGRAM_INFO = Symbol('programInfo');
 const QUAD_POSITION_BUFFER_INFO = Symbol('quadPositionBufferInfo');
@@ -38,7 +38,7 @@ void main()
     gl_FragColor = texture2D(u_texture, texcoord);
 }`;
 
-export class TexturedQuadRenderer extends AbstractQuadRenderer
+export class TexturedQuadRenderer extends QuadRendererBase
 {
     /**
      * @protected
@@ -144,10 +144,11 @@ export class TexturedQuadRenderer extends AbstractQuadRenderer
     draw(posX = 0, posY = 0, scaleX = 1, scaleY = 1)
     {
         let gl = this.gl;
-        let programInfo = this.constructor.getProgramInfo(gl);
-        let positionBufferInfo = this.constructor.getQuadPositionBufferInfo(gl);
-        let texcoordBufferInfo = this.constructor.getQuadTexcoordBufferInfo(gl);
-        let projectionView = this._projectionViewMatrix;
+        let constructor = /** @type {typeof TexturedQuadRenderer} */ (this.constructor);
+        let programInfo = constructor.getProgramInfo(gl);
+        let positionBufferInfo = constructor.getQuadPositionBufferInfo(gl);
+        let texcoordBufferInfo = constructor.getQuadTexcoordBufferInfo(gl);
+        let projectionView = this.getProjectionViewMatrix();
         let model = this.updateModelMatrix(posX, posY, scaleX, scaleY);
         let sprite = this._spriteVector;
         let textureSize = this._textureSize;

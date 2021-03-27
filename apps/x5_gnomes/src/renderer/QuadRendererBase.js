@@ -1,13 +1,13 @@
 import { mat4, vec3 } from 'gl-matrix';
 
-export class AbstractQuadRenderer
+export class QuadRendererBase
 {
     /**
      * @param {WebGLRenderingContext} gl 
      */
     constructor(gl)
     {
-        /** @private */
+        /** @protected */
         this.gl = gl;
         
         /** @private */
@@ -27,10 +27,20 @@ export class AbstractQuadRenderer
         return this;
     }
 
+    getTransformationMatrix()
+    {
+        return this._transformMatrix;
+    }
+
     setProjectionViewMatrix(matrix)
     {
         mat4.copy(this._projectionViewMatrix, matrix);
         return this;
+    }
+
+    getProjectionViewMatrix()
+    {
+        return this._projectionViewMatrix;
     }
 
     /** @protected */

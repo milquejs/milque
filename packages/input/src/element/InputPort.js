@@ -85,7 +85,13 @@ export class InputPort extends HTMLElement
     get source() { return this._sourceElement.source; }
     get mapping() { return this._mapElement.map; }
 
+    /**
+     * @returns {string|object}
+     */
     get src() { return this._src; }
+    /**
+     * @param {string|object} value
+     */
     set src(value) { this.setAttribute('src', typeof value === 'string' ? value : JSON.stringify(value)); }
 
     /** @override */

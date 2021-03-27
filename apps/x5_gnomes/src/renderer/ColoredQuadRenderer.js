@@ -1,6 +1,6 @@
 import { vec3 } from 'gl-matrix';
 import { ProgramInfo, BufferInfo, BufferHelper } from '@milque/mogli';
-import { AbstractQuadRenderer } from './AbstractQuadRenderer.js';
+import { QuadRendererBase } from './QuadRendererBase.js';
 
 const PROGRAM_INFO = Symbol('programInfo');
 const QUAD_BUFFER_INFO = Symbol('quadBufferInfo');
@@ -26,7 +26,7 @@ void main()
     gl_FragColor = vec4(u_color.rgb, 1.0);
 }`;
 
-export class ColoredQuadRenderer extends AbstractQuadRenderer
+export class ColoredQuadRenderer extends QuadRendererBase
 {
     /**
      * @protected
@@ -96,9 +96,10 @@ export class ColoredQuadRenderer extends AbstractQuadRenderer
     draw(posX = 0, posY = 0, scaleX = 1, scaleY = 1)
     {
         let gl = this.gl;
-        let programInfo = this.constructor.getProgramInfo(gl);
-        let bufferInfo = this.constructor.getQuadBufferInfo(gl);
-        let projectionView = this._projectionViewMatrix;
+        let constructor = /** @type {typeof ColoredQuadRenderer} */ (this.constructor);
+        let programInfo = constructor.getProgramInfo(gl);
+        let bufferInfo = constructor.getQuadBufferInfo(gl);
+        let projectionView = this.getProjectionViewMatrix();
         let model = this.updateModelMatrix(posX, posY, scaleX, scaleY);
         let color = this._colorVector;
         programInfo.bind(gl)
