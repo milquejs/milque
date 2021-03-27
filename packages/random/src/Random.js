@@ -1,4 +1,4 @@
-import { MathRandomGenerator } from './generators/MathRandomGenerator.js';
+import { MathRandom } from './generators/MathRandom.js';
 import { Mulberry32 } from './generators/Mulberry32.js';
 
 export class Random
@@ -34,7 +34,7 @@ export class Random
         }
         else
         {
-            this.generator = new MathRandomGenerator();
+            this.generator = new MathRandom();
         }
     }
 
