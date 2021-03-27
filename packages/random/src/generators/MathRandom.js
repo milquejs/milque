@@ -1,6 +1,6 @@
-import { RandomNumberGeneratorBase } from './RandomNumberGeneratorBase.js';
+import { RandomBase } from './RandomBase.js';
 
-export class MathRandom extends RandomNumberGeneratorBase
+export class MathRandom extends RandomBase
 {
     /** @override */
     next()

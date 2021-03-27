@@ -1,11 +1,11 @@
-import { RandomNumberGeneratorBase } from './RandomNumberGeneratorBase.js';
+import { RandomBase } from './RandomBase.js';
 
 /**
  * A simple and fast 32-bit PRNG.
  * 
  * @see {@link https://github.com/bryc/code/blob/master/jshash/PRNGs.md}
  */
-export class Mulberry32 extends RandomNumberGeneratorBase
+export class Mulberry32 extends RandomBase
 {
     /**
      * @param {number} seed An unsigned 32-bit integer.

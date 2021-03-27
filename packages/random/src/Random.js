@@ -1,6 +1,11 @@
 import { MathRandom } from './generators/MathRandom.js';
 import { Mulberry32 } from './generators/Mulberry32.js';
 
+/**
+ * @typedef {import('./generators/RandomBase.js').RandomGeneratorLike} RandomGeneratorLike
+ * @typedef {import('./generators/RandomBase.js').RandomBase} RandomBase
+ */
+
 export class Random
 {
     /**
@@ -16,11 +21,11 @@ export class Random
     }
 
     /**
-     * @param {RandomNumberGeneratorBase|number} [randomGenerator] If typeof number,
-     * the param will be used as a seed for a Mulberry32 PRNG. Otherwise,
-     * it is the pseudo-random number generator object that provides the
-     * generated numbers through `next()`. By default, this will use the
-     * browser-specific `Math.random()` implementation.
+     * @param {RandomGeneratorLike|RandomBase|number} [randomGenerator]
+     * If number type, the param will be used as a seed for a Mulberry32 PRNG.
+     * Otherwise, it is the pseudo-random number generator object that provides
+     * the generated numbers through `next()`. By default, if undefined, this
+     * will use the browser-specific `Math.random()` implementation.
      */
     constructor(randomGenerator = undefined)
     {

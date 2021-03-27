@@ -1,2 +1,2 @@
 export { Random } from './Random.js';
-export * as RandomNumberGenerators from './generators/index.js';
+export * from './generators/index.js';
