@@ -5,6 +5,10 @@ import * as MainRender from './MainRender.js';
 
 import * as MinesControls from './MinesControls.js';
 
+/**
+ * @typedef {import('@milque/display').DisplayPort} DisplayPort
+ */
+
 /*
 
 What is good in Minesweeper?
@@ -52,6 +56,7 @@ function error(e)
 
 async function main()
 {
+    /** @type {DisplayPort} */
     const display = document.querySelector('display-port');
     const ctx = display.canvas.getContext('2d');
     ctx.imageSmoothingEnabled = false;

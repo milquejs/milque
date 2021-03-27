@@ -77,7 +77,7 @@ export class InputSourceElement extends HTMLElement
         this.onPollStatusCheck = this.onPollStatusCheck.bind(this);
 
         /** @private */
-        this._intervalHandle = 0;
+        this._intervalHandle = null;
     }
 
     get eventTarget()
@@ -94,7 +94,7 @@ export class InputSourceElement extends HTMLElement
     connectedCallback()
     {
         // Allows this element to be focusable
-        if (!this.hasAttribute('tabindex')) this.setAttribute('tabindex', 0);
+        if (!this.hasAttribute('tabindex')) this.setAttribute('tabindex', '0');
 
         // Initialize input source event target as self, if unset
         if (!this.hasAttribute('for') && !this._eventTarget)

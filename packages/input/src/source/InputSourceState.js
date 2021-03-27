@@ -4,16 +4,17 @@ import { Button } from '../input/Button.js';
 
 /**
  * @typedef {import('../device/InputDevice.js').InputDevice} InputDevice
+ * @typedef {import('../input/Input.js').Input} Input
  */
 
 /**
- * @typedef {'update'|'poll'} InputSourceEventTypes
+ * @typedef {'update'|'poll'|'input'} InputSourceEventTypes
  * 
  * @typedef InputSourceInputEvent
  * @property {InputSourceEventStage} stage
  * @property {string} deviceName
  * @property {string} keyCode
- * @property {Axis|Button} input
+ * @property {Axis|Button|Input} input
  * 
  * @typedef InputSourcePollEvent
  * @property {number} now
@@ -23,7 +24,7 @@ import { Button } from '../input/Button.js';
  * 
  * @typedef KeyMapEntry
  * @property {number} refs The number of active references to this key.
- * @property {Input} input The input object.
+ * @property {Axis|Button|Input} input The input object.
  */
 
 /**
@@ -48,7 +49,9 @@ export class InputSourceState
         /** @private */
         this.onAnimationFrame = this.onAnimationFrame.bind(this);
 
+        /** @type {Record<string, InputDevice>} */
         let deviceMap = {};
+        /** @type {Record<string, Record<string, KeyMapEntry>>} */
         let keyMap = {};
         for(let device of deviceList)
         {
@@ -199,7 +202,7 @@ export class InputSourceState
      * @param {InputSourceEventStage} stage The current input event stage.
      * @param {string} deviceName The device from which the input event was fired.
      * @param {string} keyCode The triggered key code for this input event.
-     * @param {Axis|Button} input The triggered input.
+     * @param {Axis|Button|Input} input The triggered input.
      */
     dispatchInputEvent(stage, deviceName, keyCode, input)
     {
@@ -335,12 +338,13 @@ export class InputSourceState
         else
         {
             let device = this.devices[deviceName];
+            let deviceClass = device.constructor;
             let result;
-            if (device.constructor.isAxis(keyCode))
+            if (deviceClass.isAxis(keyCode))
             {
                 result = new Axis();
             }
-            else if (device.constructor.isButton(keyCode))
+            else if (deviceClass.isButton(keyCode))
             {
                 result = new Button();
             }
@@ -405,7 +409,7 @@ export class InputSourceState
     }
 
     /**
-     * @returns {Button|Axis}
+     * @returns {Button|Axis|Input}
      */
     getInputByKey(deviceName, keyCode)
     {
