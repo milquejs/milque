@@ -1,3 +1,10 @@
+/**
+ * Get the number of expected elements in the attribute vertex type.
+ * 
+ * @param {WebGLRenderingContextBase} gl The gl context.
+ * @param {GLenum} attribType The attribute gl type.
+ * @returns {number} The number of expected elements in the attribute vertex type.
+ */
 export function getAttribVertexSize(gl, attribType)
 {
     // https://www.khronos.org/registry/OpenGL-Refpages/es2.0/xhtml/glGetActiveAttrib.xml

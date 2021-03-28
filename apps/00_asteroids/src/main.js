@@ -2,6 +2,11 @@ import '@milque/display';
 import { Random } from '@milque/random';
 import * as Starfield from './Starfield.js';
 
+/**
+ * @typedef {import('@milque/display').DisplayPort} DisplayPort
+ */
+
+/** @type {DisplayPort} */
 const display = document.querySelector('display-port');
 const canvas = display.canvas;
 const ctx = canvas.getContext('2d');
@@ -229,6 +234,10 @@ function start()
     document.addEventListener('keyup', e => onKeyUp.call(this, e.key));
 }
 
+/**
+ * @this {any}
+ * @param {number} dt The delta time spent on the previous frame.
+ */
 function update(dt)
 {
     if (this.gamePause)
@@ -739,6 +748,7 @@ function explode(scene, x, y, amount = 10, color)
     }
 }
 
+/** @this {any} */
 function onKeyDown(key)
 {
     if (this.gameWait)

@@ -1,7 +1,10 @@
+import { getActiveAttribsInfo } from './ProgramAttributeInfo.js';
+import { getActiveUniformsInfo } from './ProgramUniformInfo.js';
+
 /**
  * Create and compile shader from source text.
  * 
- * @param {WebGLRenderingContext} gl The webgl context.
+ * @param {WebGLRenderingContextBase} gl The webgl context.
  * @param {GLenum} type The type of the shader. This is usually `gl.VERTEX_SHADER`
  * or `gl.FRAGMENT_SHADER`.
  * @param {string} shaderSource The shader source text.
@@ -26,7 +29,7 @@ export function createShader(gl, shaderType, shaderSource)
 /**
  * Link the given shader program from list of compiled shaders.
  * 
- * @param {WebGLRenderingContext} gl The webgl context.
+ * @param {WebGLRenderingContextBase} gl The webgl context.
  * @param {WebGLProgram} program The type of the shader.
  * This is usually `gl.VERTEX_SHADER` or `gl.FRAGMENT_SHADER`.
  * @param {Array<WebGLShader>} shaders The list of compiled shaders
@@ -63,7 +66,7 @@ export function createShaderProgram(gl, program, shaders)
 /**
  * Get list of parameter infos for all active uniforms in the shader program.
  * 
- * @param {WebGLRenderingContext} gl The webgl context.
+ * @param {WebGLRenderingContextBase} gl The webgl context.
  * @param {WebGLProgram} program The program to get the active uniforms from.
  * @returns {Array<WebGLActiveInfo>} An array of active uniforms.
  */
@@ -83,7 +86,7 @@ export function getActiveUniforms(gl, program)
 /**
  * Get list of parameter infos for all active attributes in the shader program.
  * 
- * @param {WebGLRenderingContext} gl The webgl context.
+ * @param {WebGLRenderingContextBase} gl The webgl context.
  * @param {WebGLProgram} program The program to get the active attributes from.
  * @returns {Array<WebGLActiveInfo>} An array of active attributes.
  */
@@ -103,7 +106,7 @@ export function getActiveAttribs(gl, program)
 /**
  * Draw the currently bound render context.
  * 
- * @param {WebGLRenderingContext} gl 
+ * @param {WebGLRenderingContextBase} gl 
  * @param {Number} mode 
  * @param {Number} offset 
  * @param {Number} count 
@@ -120,4 +123,24 @@ export function draw(gl, mode, offset, count, elementBuffer = undefined)
     {
         gl.drawArrays(mode, offset, count);
     }
+}
+
+/**
+ * @param {WebGLRenderingContextBase} gl 
+ * @param {WebGLProgram} program 
+ */
+export function getProgramInfo(gl, program)
+{
+    return {
+        /** @type {GLboolean} */
+        linkStatus: gl.getProgramParameter(program, gl.LINK_STATUS),
+        /** @type {GLboolean} */
+        deleteStatus: gl.getProgramParameter(program, gl.DELETE_STATUS),
+        /** @type {GLboolean} */
+        validateStatus: gl.getProgramParameter(program, gl.VALIDATE_STATUS),
+        /** @type {string} */
+        validationLog: gl.getProgramInfoLog(program),
+        activeUniforms: getActiveUniformsInfo(gl, program),
+        activeAttributes: getActiveAttribsInfo(gl, program),
+    };
 }

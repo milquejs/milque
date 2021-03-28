@@ -78,6 +78,7 @@ export const WILDCARD_KEY_MATCHER = '*';
  * listeners had a chance to handle the event.
  */
 
+/** Represents an input device. */
 export class InputDevice
 {
     /** @abstract */
@@ -147,7 +148,7 @@ export class InputDevice
     {
         const { keyCode } = e;
         const listeners = this.listeners[keyCode];
-        let flag = false;
+        let flag = 0;
         if (listeners)
         {
             // KeyCode listeners
@@ -155,13 +156,13 @@ export class InputDevice
             {
                 flag |= listener(e);
             }
-            return flag;
+            return Boolean(flag);
         }
         // Wildcard listeners
         for(let listener of this.listeners[WILDCARD_KEY_MATCHER])
         {
             flag |= listener(e);
         }
-        return flag;
+        return Boolean(flag);
     }
 }

@@ -1,5 +1,5 @@
-import { getAttribVertexSize } from '../attribute/ProgramAttributeHelper.js';
-import { getActiveAttribs } from '../program/ProgramHelper.js';
+import { getAttribVertexSize } from './ProgramAttributeHelper.js';
+import { getActiveAttribs } from './ProgramHelper.js';
 
 /**
  * @typedef ActiveAttributeInfo

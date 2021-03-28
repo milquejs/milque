@@ -1,5 +1,6 @@
 import '@milque/display';
 import '@milque/input';
+import './ErrorBoundary.js';
 
 import { Random } from '@milque/random';
 import {
@@ -10,14 +11,9 @@ import {
     lerp
 } from '@milque/util';
 
-import * as Audio from './Audio.js';
-import { INPUT_MAPPING } from './Input.js';
-
-import { CanvasView } from './view/CanvasView.js';
 import { Camera2D } from './view/Camera2D.js';
 
 import { ChunkMap } from './chunk/ChunkMap.js';
-import * as ChunkMapRenderer from './chunk/ChunkMapRenderer.js';
 
 import * as Blocks from './block/Blocks.js';
 import * as WorldEvents from './block/WorldEvents.js';
@@ -32,6 +28,10 @@ import * as Placement from './tetromino/Placement.js';
 
 import * as WorldLoader from './WorldLoader.js';
 
+import { GameRenderer } from './GameRenderer.js';
+import { BLOCK_SIZE, MAX_BLOCK_TICKS, MAX_AUTO_SAVE_TICKS, CAMERA_SPEED } from './Config.js';
+import { ASSETS } from './asset/Assets.js';
+
 // TODO: Move the camera towards the placed block each time.
 // TODO: Regionize the block maps.
 // TODO: Multiple fluids?
@@ -39,52 +39,42 @@ import * as WorldLoader from './WorldLoader.js';
 // TODO: Trees? Plants?
 // TODO: Sunlight? Light map.
 
+/**
+ * @typedef {import('@milque/display').DisplayPort} DisplayPort
+ * @typedef {import('@milque/display').FrameEvent} FrameEvent
+ * @typedef {import('@milque/input').InputPort} InputPort
+ */
+
 document.addEventListener('DOMContentLoaded', main);
-
-const MAX_BLOCK_TICKS = 10;
-const MAX_AUTO_SAVE_TICKS = 100;
-const MAX_FADE_IN_TICKS = 300;
-const BLOCK_SIZE = 4;
-
-const SOUNDS = {};
 
 async function load(assets)
 {
-    const assetsDir = '../../../res/';
-    SOUNDS.flick = await Audio.loadAudio(assetsDir + 'arroyo/flick.wav');
-    SOUNDS.melt = await Audio.loadAudio(assetsDir + 'arroyo/melt.mp3');
-
-    SOUNDS.reset = SOUNDS.flick;
-    SOUNDS.background = SOUNDS.melt;
-
-    await ChunkMapRenderer.load();
+    // Load all assets
+    assets.registerAsset('audio', 'flick', 'arroyo/flick.wav');
+    assets.registerAsset('audio', 'melt', 'arroyo/melt.mp3');
+    assets.registerAsset('audio', 'reset', 'arroyo/flick.wav');
+    assets.registerAsset('audio', 'background', 'arroyo/melt.mp3');
+    await MaterialSystem.load(assets);
+    await assets.loadAssets();
 }
 
 async function main()
 {
-    const display = document.querySelector('display-port');
+    /** @type {DisplayPort} */
+    const display = document.querySelector('#display');
     /** @type {InputPort} */
-    const input = document.querySelector('input-port');
-    input.src = INPUT_MAPPING;
+    const input = document.querySelector('#input');
+    input.src = {
+        PointerX: 'Mouse:PosX',
+        PointerY: 'Mouse:PosY',
+        Place: 'Mouse:Button0',
+        Change: { key: 'Mouse:Button2', event: 'down' },
+        Reset: 'Keyboard:KeyR',
+        Save: 'Keyboard:KeyS',
+        Load: 'Keyboard:KeyL',
+    };
 
-    const CursorX = input.context.getInput('cursorX');
-    const CursorY = input.context.getInput('cursorY');
-    const Place = input.context.getInput('place');
-    const Rotate = input.context.getInput('rotate');
-    const Debug = input.context.getInput('debug');
-    const Reset = input.context.getInput('reset');
-    const Save = input.context.getInput('save');
-    const Load = input.context.getInput('load');
-
-    const ctx = display.canvas.getContext('2d');
-    ctx.imageSmoothingEnabled = false;
-
-    const assets = {};
-    await load(assets);
-    await MaterialSystem.load(assets);
-
-    const view = new CanvasView();
-    const camera = new Camera2D();
+    await load(ASSETS);
 
     // Initialize world
     const world = {
@@ -110,189 +100,140 @@ async function main()
     {
         initializeWorld(world, display);
     }
-
-    let blockTicks = 0;
-    let autoSaveTicks = 0;
-
-    const cameraSpeed = 0.1;
-    camera.moveTo(world.cameraX, world.cameraY);
-
     let placement = Placement.initialize();
 
+    const camera = new Camera2D();
+    camera.moveTo(world.cameraX, world.cameraY);
+
+    const game = {
+        display,
+        input,
+        world,
+        camera,
+        placement,
+        blockTicks: 0,
+        autoSaveTicks: 0,
+    };
+    const renderer = await GameRenderer(game);
+
     display.addEventListener('frame', e => {
-        const dt = e.detail.deltaTime / 1000 * 60;
+        const frameEvent = /** @type {FrameEvent} */ (e);
+        const dt = frameEvent.detail.deltaTime / 1000 * 60;
+
+        if (updateWorldControls(game)) return;
         
-        // Reset world
-        if (Reset.value)
-        {
-            localStorage.removeItem('worldData');
-            world.map.clear();
-            initializeWorld(world, display);
-            return;
-        }
-        // Save world
-        else if (Save.value)
-        {
-            let worldData = WorldLoader.saveWorld(world, {});
-            Downloader.downloadText('worldData.json', JSON.stringify(worldData));
-        }
-        // Load world
-        else if (Load.value)
-        {
-            Uploader.uploadFile(['.json'], false)
-                .then(fileBlob => fileBlob.text())
-                .then(textData => {
-                    let worldData = JSON.parse(textData);
-                    world.map.clear();
-                    if (!worldData || !WorldLoader.loadWorld(world, worldData))
-                    {
-                        initializeWorld(world, display);
-                    }
-                });
-        }
-        else
-        {
-            world.time += dt;
-        }
+        world.time += dt;
 
-        // Update camera
-        {
-            let aspectRatio = display.width / display.height;
-            let cw = aspectRatio <= 1 ? aspectRatio : 1;
-            let ch = aspectRatio <= 1 ? 1 : 1 / aspectRatio;
-            let cx = (CursorX.value - 0.5);
-            let cy = (CursorY.value - 0.5);
+        updateCamera(game, dt, camera);
+        updatePlacement(game, dt);
+        simulateWorld(game, dt);
+        updateAutoSave(game, dt);
 
-            const cameraOffsetAmount = 4;
-            let radian = Math.atan2(cy, cx);
-            let distance = distance2(0, 0, cx, cy);
-            let clampDist = distance < 0.3 ? 0 : distance - 0.3;
-            let cameraOffsetX = Math.cos(radian) * clampDist * BLOCK_SIZE * world.map.chunkWidth * cw * cameraOffsetAmount;
-            let cameraOffsetY = Math.sin(radian) * clampDist * BLOCK_SIZE * world.map.chunkWidth * ch * cameraOffsetAmount;
-            camera.moveTo(
-                lerp(camera.x, world.cameraX + cameraOffsetX, dt * cameraSpeed),
-                lerp(camera.y, world.cameraY + cameraOffsetY, dt * cameraSpeed)
-            );
-        }
-
-        let viewMatrix = camera.getViewMatrix();
-        let projectionMatrix = camera.getProjectionMatrix();
-
-        // Cursor worldPos
-        const [cursorX, cursorY] = Camera2D.screenToWorld(CursorX.value * display.width, CursorY.value * display.height, viewMatrix, projectionMatrix);
-        const nextPlaceX = Math.floor(cursorX / BLOCK_SIZE);
-        const nextPlaceY = Math.floor(cursorY / BLOCK_SIZE);
-
-        function onPlace(placeState)
-        {
-            // Move towards placement
-            const [centerX, centerY] = Camera2D.screenToWorld(display.width / 2, display.height / 2, viewMatrix, projectionMatrix);
-            const centerCoordX = Math.floor(centerX / BLOCK_SIZE);
-            const centerCoordY = Math.floor(centerY / BLOCK_SIZE);
-            let dx = Math.ceil((placeState.placeX - centerCoordX) / 4);
-            let dy = Math.ceil((placeState.placeY - centerCoordY) / 4);
-            world.cameraX += dx * BLOCK_SIZE;
-            world.cameraY += dy * BLOCK_SIZE;
-            world.score += 1;
-
-            MaterialSystem.playPlaceSound(placeState.value);
-
-            if (world.firstPlace)
-            {
-                world.firstPlace = false;
-                SOUNDS.background.play();
-            }
-        }
-
-        function onReset(placeState)
-        {
-            let [resetPlaceX, resetPlaceY] = Placement.getPlacementSpawnPosition(
-                CursorX.value, CursorY.value, BLOCK_SIZE,
-                display.width, display.height,
-                viewMatrix, projectionMatrix
-            );
-            placeState.placeX = resetPlaceX;
-            placeState.placeY = resetPlaceY;
-            SOUNDS.reset.play({ pitch: Random.range(-5, 5) });
-        }
-
-        Placement.update(dt, placement, Place, Rotate, world, nextPlaceX, nextPlaceY, onPlace, onReset);
-
-        WorldEvents.emitUpdateEvent(world);
-
-        // Compute block physics
-        if (blockTicks <= 0)
-        {
-            blockTicks = MAX_BLOCK_TICKS;
-
-            // if (Debug.value)
-            {
-                WorldEvents.emitWorldUpdateEvent(world);
-
-                const chunks = world.map.getLoadedChunks();
-                const chunkWidth = world.map.chunkWidth;
-                const chunkHeight = world.map.chunkHeight;
-                
-                let blockPos = world.map.at(0, 0);
-                for(let chunk of chunks)
-                {
-                    const chunkX = chunk.chunkCoordX * chunkWidth;
-                    const chunkY = chunk.chunkCoordY * chunkHeight;
-                    WorldEvents.emitChunkUpdateEvent(world, chunk);
-                    
-                    for(let y = 0; y < chunkHeight; ++y)
-                    {
-                        for(let x = 0; x < chunkWidth; ++x)
-                        {
-                            blockPos.set(x + chunkX, y + chunkY);
-                            WorldEvents.emitBlockUpdateEvent(world, chunk, blockPos);
-                        }
-                    }
-                }
-            }
-        }
-        else
-        {
-            blockTicks -= dt;
-        }
-
-        // AutoSave
-        if (autoSaveTicks <= 0)
-        {
-            autoSaveTicks = MAX_AUTO_SAVE_TICKS;
-            let worldData = WorldLoader.saveWorld(world, {});
-            localStorage.setItem('worldData', JSON.stringify(worldData));
-        }
-        else
-        {
-            autoSaveTicks -= dt;
-        }
-
-        ctx.clearRect(0, 0, display.width, display.height);
-        view.begin(ctx, viewMatrix, projectionMatrix);
-        {
-            ChunkMapRenderer.drawChunkMap(ctx, world.map, BLOCK_SIZE);
-
-            if (placement.placing)
-            {
-                ctx.translate(placement.placeX * BLOCK_SIZE, placement.placeY * BLOCK_SIZE);
-                {
-                    ChunkMapRenderer.drawPlacement(ctx, placement, BLOCK_SIZE);
-                }
-                ctx.translate(-placement.placeX * BLOCK_SIZE, -placement.placeY * BLOCK_SIZE);
-            }
-        }
-        view.end(ctx);
-
-        if (world.time < MAX_FADE_IN_TICKS)
-        {
-            ctx.fillStyle = `rgba(0, 0, 0, ${1 - (world.time / MAX_FADE_IN_TICKS)})`;
-            ctx.fillRect(0, 0, display.width, display.height);
-        }
-
-        ctx.fillStyle = 'white';
-        ctx.fillText(world.score, 4, 12);
+        renderer();
     });
+}
+
+function updatePlacement(game, dt)
+{
+    let world = game.world;
+    const display = game.display;
+    const input = game.input;
+    const camera = game.camera;
+    const placement = game.placement;
+
+    let viewMatrix = camera.getViewMatrix();
+    let projectionMatrix = camera.getProjectionMatrix();
+
+    // Cursor worldPos
+    const [cursorX, cursorY] = Camera2D.screenToWorld(
+        input.getInputState('PointerX') * display.width,
+        input.getInputState('PointerY') * display.height,
+        viewMatrix, projectionMatrix);
+    const nextPlaceX = Math.floor(cursorX / BLOCK_SIZE);
+    const nextPlaceY = Math.floor(cursorY / BLOCK_SIZE);
+
+    function onPlace(placeState)
+    {
+        // Move towards placement
+        const [centerX, centerY] = Camera2D.screenToWorld(display.width / 2, display.height / 2, viewMatrix, projectionMatrix);
+        const centerCoordX = Math.floor(centerX / BLOCK_SIZE);
+        const centerCoordY = Math.floor(centerY / BLOCK_SIZE);
+        let dx = Math.ceil((placeState.placeX - centerCoordX) / 4);
+        let dy = Math.ceil((placeState.placeY - centerCoordY) / 4);
+        world.cameraX += dx * BLOCK_SIZE;
+        world.cameraY += dy * BLOCK_SIZE;
+        world.score += 1;
+
+        MaterialSystem.playPlaceSound(placeState.value);
+
+        if (world.firstPlace)
+        {
+            world.firstPlace = false;
+            ASSETS.getAsset('audio', 'background').play();
+        }
+    }
+
+    function onReset(placeState)
+    {
+        let [resetPlaceX, resetPlaceY] = Placement.getPlacementSpawnPosition(
+            input.getInputState('PointerX'),
+            input.getInputState('PointerY'),
+            BLOCK_SIZE,
+            display.width, display.height,
+            viewMatrix, projectionMatrix
+        );
+        placeState.placeX = resetPlaceX;
+        placeState.placeY = resetPlaceY;
+        ASSETS.getAsset('audio', 'reset').play({ pitch: Random.range(-5, 5) });
+    }
+
+    Placement.update(
+        dt, placement,
+        input.getInput('Place'),
+        input.getInput('Rotate'),
+        world,
+        nextPlaceX, nextPlaceY,
+        onPlace, onReset);
+}
+
+function updateWorldControls(game)
+{
+    const world = game.world;
+    const display = game.display;
+    const input = game.input;
+
+    // Reset world
+    if (input.getInputState('Reset'))
+    {
+        localStorage.removeItem('worldData');
+        world.map.clear();
+        initializeWorld(world, display);
+        return true;
+    }
+    // Save world
+    else if (input.getInputState('Save'))
+    {
+        let worldData = WorldLoader.saveWorld(world, {});
+        Downloader.downloadText('worldData.json', JSON.stringify(worldData));
+        return true;
+    }
+    // Load world
+    else if (input.getInputState('Load'))
+    {
+        Uploader.uploadFile(['.json'], false)
+            .then(fileBlob => fileBlob.text())
+            .then(textData => {
+                let worldData = JSON.parse(textData);
+                world.map.clear();
+                if (!worldData || !WorldLoader.loadWorld(world, worldData))
+                {
+                    initializeWorld(world, display);
+                }
+            });
+        return true;
+    }
+
+    return false;
 }
 
 function initializeWorld(world, display)
@@ -311,4 +252,96 @@ function initializeWorld(world, display)
 
     world.cameraX = -display.width / 2;
     world.cameraY = -display.height / 2;
+}
+
+function simulateWorld(game, dt)
+{
+    let blockTicks = game.blockTicks || 0;
+    const world = game.world;
+
+    WorldEvents.emitUpdateEvent(world);
+
+    if (blockTicks <= 0)
+    {
+        blockTicks = MAX_BLOCK_TICKS;
+
+        // if (Debug.value)
+        {
+            WorldEvents.emitWorldUpdateEvent(world);
+
+            const chunks = world.map.getLoadedChunks();
+            const chunkWidth = world.map.chunkWidth;
+            const chunkHeight = world.map.chunkHeight;
+            
+            let blockPos = world.map.at(0, 0);
+            for(let chunk of chunks)
+            {
+                const chunkX = chunk.chunkCoordX * chunkWidth;
+                const chunkY = chunk.chunkCoordY * chunkHeight;
+                WorldEvents.emitChunkUpdateEvent(world, chunk);
+                
+                for(let y = 0; y < chunkHeight; ++y)
+                {
+                    for(let x = 0; x < chunkWidth; ++x)
+                    {
+                        blockPos.set(x + chunkX, y + chunkY);
+                        WorldEvents.emitBlockUpdateEvent(world, chunk, blockPos);
+                    }
+                }
+            }
+        }
+    }
+    else
+    {
+        blockTicks -= dt;
+    }
+
+    // Update blockTicks
+    game.blockTicks = blockTicks;
+}
+
+function updateAutoSave(game, dt)
+{
+    let autoSaveTicks = game.autoSaveTicks || 0;
+    let world = game.world;
+
+    if (autoSaveTicks <= 0)
+    {
+        autoSaveTicks = MAX_AUTO_SAVE_TICKS;
+        let worldData = WorldLoader.saveWorld(world, {});
+        localStorage.setItem('worldData', JSON.stringify(worldData));
+    }
+    else
+    {
+        autoSaveTicks -= dt;
+    }
+
+    // Update autoSaveTicks
+    game.autoSaveTicks = autoSaveTicks;
+}
+
+function updateCamera(game, dt, camera)
+{
+    const display = game.display;
+    const input = game.input;
+    const world = game.world;
+
+    const CursorX = input.getInput('PointerX');
+    const CursorY = input.getInput('PointerY');
+
+    let aspectRatio = display.width / display.height;
+    let cw = aspectRatio <= 1 ? aspectRatio : 1;
+    let ch = aspectRatio <= 1 ? 1 : 1 / aspectRatio;
+    let cx = (CursorX.value - 0.5);
+    let cy = (CursorY.value - 0.5);
+
+    const cameraOffsetAmount = 4;
+    let radian = Math.atan2(cy, cx);
+    let distance = distance2(0, 0, cx, cy);
+    let clampDist = distance < 0.3 ? 0 : distance - 0.3;
+    let cameraOffsetX = Math.cos(radian) * clampDist * BLOCK_SIZE * world.map.chunkWidth * cw * cameraOffsetAmount;
+    let cameraOffsetY = Math.sin(radian) * clampDist * BLOCK_SIZE * world.map.chunkWidth * ch * cameraOffsetAmount;
+    camera.moveTo(
+        lerp(camera.x, world.cameraX + cameraOffsetX, dt * CAMERA_SPEED),
+        lerp(camera.y, world.cameraY + cameraOffsetY, dt * CAMERA_SPEED));
 }

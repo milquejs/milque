@@ -1,4 +1,4 @@
-var INNER_HTML = "<div class=\"container\">\n    <label class=\"hidden\" id=\"title\">display-port</label>\n    <label class=\"hidden\" id=\"fps\">00</label>\n    <label class=\"hidden\" id=\"dimension\">0x0</label>\n    <div class=\"content\">\n        <canvas></canvas>\n        <slot id=\"inner\"></slot>\n    </div>\n    <slot name=\"frame\"></slot>\n</div>";
+var INNER_HTML = "<div class=\"container\">\n    <label class=\"hidden\" id=\"title\">display-port</label>\n    <label class=\"hidden\" id=\"fps\">00</label>\n    <label class=\"hidden\" id=\"dimension\">0x0</label>\n    <div class=\"content\">\n        <canvas>\n            Oh no! Your browser does not support canvas.\n        </canvas>\n        <slot id=\"inner\"></slot>\n    </div>\n    <slot name=\"frame\"></slot>\n</div>";
 
 var INNER_STYLE = ":host{display:inline-block;color:#555}.container{display:flex;position:relative;width:100%;height:100%}.content{position:relative;margin:auto}.content>*{width:100%;height:100%}canvas{background:#000;-ms-interpolation-mode:nearest-neighbor;image-rendering:-moz-crisp-edges;image-rendering:pixelated}label{font-family:monospace;color:currentColor}#inner,label{position:absolute}#inner{display:flex;flex-direction:column;align-items:center;justify-content:center;top:0;left:0;pointer-events:none}#title{left:.5rem;top:.5rem}#fps{right:.5rem;top:.5rem}#dimension{left:.5rem;bottom:.5rem}.hidden{display:none}:host([debug]) .container{outline:6px dashed rgba(0,0,0,.1);outline-offset:-4px;background-color:rgba(0,0,0,.1)}:host([mode=noscale]) canvas{margin:0;top:0;left:0}:host([mode=center]),:host([mode=fit]),:host([mode=stretch]){width:100%;height:100%}:host([full]){width:100vw!important;height:100vh!important}:host([disabled]){display:none}slot{display:flex;flex-direction:column;align-items:center;justify-content:center;position:absolute;width:100%;height:100%;top:0;left:0;pointer-events:none}::slotted(*){pointer-events:auto}";
 
@@ -290,7 +290,7 @@ class DisplayPort extends HTMLElement {
     }
 
     // Allows this element to be focusable
-    if (!this.hasAttribute('tabindex')) this.setAttribute('tabindex', 0);
+    if (!this.hasAttribute('tabindex')) this.setAttribute('tabindex', '0');
     this.updateCanvasSize();
     this.resume();
   }
@@ -390,22 +390,22 @@ class DisplayPort extends HTMLElement {
       // Update FPS...
       const frames = deltaTime <= 0 ? '--' : String(Math.round(1000 / deltaTime)).padStart(2, '0');
 
-      if (this._fpsElement.innerText !== frames) {
-        this._fpsElement.innerText = frames;
+      if (this._fpsElement.textContent !== frames) {
+        this._fpsElement.textContent = frames;
       } // Update dimensions...
 
 
       if (this.mode === MODE_NOSCALE) {
         let result = `${this._width}x${this._height}`;
 
-        if (this._dimensionElement.innerText !== result) {
-          this._dimensionElement.innerText = result;
+        if (this._dimensionElement.textContent !== result) {
+          this._dimensionElement.textContent = result;
         }
       } else {
         let result = `${this._width}x${this._height}|${this.shadowRoot.host.clientWidth}x${this.shadowRoot.host.clientHeight}`;
 
-        if (this._dimensionElement.innerText !== result) {
-          this._dimensionElement.innerText = result;
+        if (this._dimensionElement.textContent !== result) {
+          this._dimensionElement.textContent = result;
         }
       }
     }

@@ -4,11 +4,19 @@ import INNER_HTML from './InputPort.template.html';
 import INNER_STYLE from './InputPort.module.css';
 
 import { InputContext } from '../context/InputContext.js';
-import { InputSourceElement } from '../source/InputSourceElement.js';
 
 import '../source/InputSourceElement.js';
 import './InputMapElement.js';
 
+/**
+ * @typedef {import('./InputMapElement.js').InputMapElement} InputMapElement
+ * @typedef {import('../source/InputSourceElement.js').InputSourceElement} InputSourceElement
+ */
+
+/**
+ * @param {HTMLElement} element The target element.
+ * @param {string} propertyName The name of the property to upgrade.
+ */
 function upgradeProperty(element, propertyName)
 {
     if (Object.prototype.hasOwnProperty.call(element, propertyName))
@@ -47,9 +55,15 @@ export class InputPort extends HTMLElement
         /** @private */
         this._src = '';
 
-        /** @private */
+        /**
+         * @private
+         * @type {InputMapElement}
+         */
         this._mapElement = this.shadowRoot.querySelector('input-map');
-        /** @private */
+        /**
+         * @private
+         * @type {InputSourceElement}
+         */
         this._sourceElement = this.shadowRoot.querySelector('input-source');
 
         /** @private */
@@ -71,7 +85,13 @@ export class InputPort extends HTMLElement
     get source() { return this._sourceElement.source; }
     get mapping() { return this._mapElement.map; }
 
+    /**
+     * @returns {string|object}
+     */
     get src() { return this._src; }
+    /**
+     * @param {string|object} value
+     */
     set src(value) { this.setAttribute('src', typeof value === 'string' ? value : JSON.stringify(value)); }
 
     /** @override */

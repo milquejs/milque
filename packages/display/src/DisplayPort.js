@@ -161,7 +161,7 @@ export class DisplayPort extends HTMLElement
     connectedCallback()
     {
         // Allows this element to be focusable
-        if (!this.hasAttribute('tabindex')) this.setAttribute('tabindex', 0);
+        if (!this.hasAttribute('tabindex')) this.setAttribute('tabindex', '0');
 
         this.updateCanvasSize();
         this.resume();
@@ -227,26 +227,26 @@ export class DisplayPort extends HTMLElement
         {
             // Update FPS...
             const frames = deltaTime <= 0 ? '--' : String(Math.round(1000 / deltaTime)).padStart(2, '0');
-            if (this._fpsElement.innerText !== frames)
+            if (this._fpsElement.textContent !== frames)
             {
-                this._fpsElement.innerText = frames;
+                this._fpsElement.textContent = frames;
             }
 
             // Update dimensions...
             if (this.mode === MODE_NOSCALE)
             {
                 let result = `${this._width}x${this._height}`;
-                if (this._dimensionElement.innerText !== result)
+                if (this._dimensionElement.textContent !== result)
                 {
-                    this._dimensionElement.innerText = result;
+                    this._dimensionElement.textContent = result;
                 }
             }
             else
             {
                 let result = `${this._width}x${this._height}|${this.shadowRoot.host.clientWidth}x${this.shadowRoot.host.clientHeight}`;
-                if (this._dimensionElement.innerText !== result)
+                if (this._dimensionElement.textContent !== result)
                 {
-                    this._dimensionElement.innerText = result;
+                    this._dimensionElement.textContent = result;
                 }
             }
         }

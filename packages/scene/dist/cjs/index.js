@@ -76,29 +76,23 @@ function screenToWorldRay(normalizedScreenCoordX, normalizedScreenCoordY, projec
 }
 
 class Camera {
-  constructor(canvas, projectionMatrix, viewMatrix) {
-    this.canvas = canvas;
+  constructor(projectionMatrix, viewMatrix) {
     this.projectionMatrix = projectionMatrix;
     this.viewMatrix = viewMatrix;
-    this.resize = this.resize.bind(this);
-    canvas.addEventListener('resize', this.resize);
-    setTimeout(this.resize, 0);
-  }
-
-  destroy() {
-    this.canvas.removeEventListener('resize', this.resize);
   }
   /** @abstract */
 
 
-  resize() {}
+  resize(viewportWidth, viewportHeight) {
+    return this;
+  }
 
 }
 
 const DEFAULT_FOVY = Math.PI / 3;
 class PerspectiveCamera extends Camera {
-  constructor(canvas, fieldOfView = DEFAULT_FOVY, near = 0.1, far = 1000) {
-    super(canvas, glMatrix.mat4.create(), glMatrix.mat4.create());
+  constructor(fieldOfView = DEFAULT_FOVY, near = 0.1, far = 1000) {
+    super(glMatrix.mat4.create(), glMatrix.mat4.create());
     this.fieldOfView = fieldOfView;
     this.clippingPlane = {
       near,
@@ -108,20 +102,21 @@ class PerspectiveCamera extends Camera {
   /** @override */
 
 
-  resize() {
-    const aspectRatio = this.canvas.width / this.canvas.height;
+  resize(viewportWidth, viewportHeight) {
+    const aspectRatio = viewportWidth / viewportHeight;
     const {
       near,
       far
     } = this.clippingPlane;
     glMatrix.mat4.perspective(this.projectionMatrix, this.fieldOfView, aspectRatio, near, far);
+    return this;
   }
 
 }
 
 class OrthographicCamera extends Camera {
-  constructor(canvas, left, top, right, bottom, near, far) {
-    super(canvas, glMatrix.mat4.create(), glMatrix.mat4.create());
+  constructor(left, top, right, bottom, near, far) {
+    super(glMatrix.mat4.create(), glMatrix.mat4.create());
     this.bounds = {
       left,
       top,
@@ -136,8 +131,8 @@ class OrthographicCamera extends Camera {
   /** @override */
 
 
-  resize() {
-    const aspectRatio = this.canvas.width / this.canvas.height;
+  resize(viewportWidth, viewportHeight) {
+    const aspectRatio = viewportWidth / viewportHeight;
     const {
       near,
       far
@@ -149,6 +144,7 @@ class OrthographicCamera extends Camera {
       bottom
     } = this.bounds;
     glMatrix.mat4.ortho(this.projectionMatrix, left * aspectRatio, right * aspectRatio, bottom, top, near, far);
+    return this;
   }
 
 }

@@ -84,6 +84,8 @@ const WILDCARD_KEY_MATCHER = '*';
  * listeners had a chance to handle the event.
  */
 
+/** Represents an input device. */
+
 class InputDevice {
   /** @abstract */
   static isAxis(keyCode) {
@@ -149,7 +151,7 @@ class InputDevice {
       keyCode
     } = e;
     const listeners = this.listeners[keyCode];
-    let flag = false;
+    let flag = 0;
 
     if (listeners) {
       // KeyCode listeners
@@ -157,7 +159,7 @@ class InputDevice {
         flag |= listener(e);
       }
 
-      return flag;
+      return Boolean(flag);
     } // Wildcard listeners
 
 
@@ -165,7 +167,7 @@ class InputDevice {
       flag |= listener(e);
     }
 
-    return flag;
+    return Boolean(flag);
   }
 
 }
@@ -535,16 +537,17 @@ class Button extends Input {
 
 /**
  * @typedef {import('../device/InputDevice.js').InputDevice} InputDevice
+ * @typedef {import('../input/Input.js').Input} Input
  */
 
 /**
- * @typedef {'update'|'poll'} InputSourceEventTypes
+ * @typedef {'update'|'poll'|'input'} InputSourceEventTypes
  * 
  * @typedef InputSourceInputEvent
  * @property {InputSourceEventStage} stage
  * @property {string} deviceName
  * @property {string} keyCode
- * @property {Axis|Button} input
+ * @property {Axis|Button|Input} input
  * 
  * @typedef InputSourcePollEvent
  * @property {number} now
@@ -554,7 +557,7 @@ class Button extends Input {
  * 
  * @typedef KeyMapEntry
  * @property {number} refs The number of active references to this key.
- * @property {Input} input The input object.
+ * @property {Axis|Button|Input} input The input object.
  */
 
 /**
@@ -578,7 +581,11 @@ class InputSourceState {
     /** @private */
 
     this.onAnimationFrame = this.onAnimationFrame.bind(this);
+    /** @type {Record<string, InputDevice>} */
+
     let deviceMap = {};
+    /** @type {Record<string, Record<string, KeyMapEntry>>} */
+
     let keyMap = {};
 
     for (let device of deviceList) {
@@ -728,7 +735,7 @@ class InputSourceState {
    * @param {InputSourceEventStage} stage The current input event stage.
    * @param {string} deviceName The device from which the input event was fired.
    * @param {string} keyCode The triggered key code for this input event.
-   * @param {Axis|Button} input The triggered input.
+   * @param {Axis|Button|Input} input The triggered input.
    */
 
 
@@ -871,11 +878,12 @@ class InputSourceState {
       incrementKeyMapEntryRef(deviceKeyMap[keyCode]);
     } else {
       let device = this.devices[deviceName];
+      let deviceClass = device.constructor;
       let result;
 
-      if (device.constructor.isAxis(keyCode)) {
+      if (deviceClass.isAxis(keyCode)) {
         result = new Axis();
-      } else if (device.constructor.isButton(keyCode)) {
+      } else if (deviceClass.isButton(keyCode)) {
         result = new Button();
       } else {
         throw new Error(`Unknown key code '${keyCode}' for device ${deviceName}.`);
@@ -937,7 +945,7 @@ class InputSourceState {
     }
   }
   /**
-   * @returns {Button|Axis}
+   * @returns {Button|Axis|Input}
    */
 
 
@@ -1099,8 +1107,8 @@ function stringifyDeviceKeyCodePair(deviceName, keyCode) {
 }
 
 /**
- * @typedef {import('./source/InputSourceState.js').InputSourceInputEvent} InputSourceInputEvent
- * @typedef {import('./source/InputSourceState.js').InputSourcePollEvent} InputSourcePollEvent
+ * @typedef {import('../source/InputSourceState.js').InputSourceInputEvent} InputSourceInputEvent
+ * @typedef {import('../source/InputSourceState.js').InputSourcePollEvent} InputSourcePollEvent
  */
 
 /**
@@ -1122,9 +1130,9 @@ function stringifyDeviceKeyCodePair(deviceName, keyCode) {
 /**
  * @typedef {'change'|'attach'|'detach'} InputContextEventTypes
  * 
- * @typedef InputContextChangeEvent
- * @typedef InputContextAttachEvent
- * @typedef InputContextDetachEvent
+ * @typedef {object} InputContextChangeEvent
+ * @typedef {object} InputContextAttachEvent
+ * @typedef {object} InputContextDetachEvent
  * 
  * @callback InputContextEventListener
  * @param {InputContextChangeEvent|InputContextAttachEvent|InputContextDetachEvent} e
@@ -1992,14 +2000,14 @@ class InputKeyElement extends HTMLElement {
     ((attribute, prev, value) => {
       switch (attribute) {
         case 'name':
-          this._keyElement.innerText = value;
+          this._keyElement.textContent = value;
           break;
 
         case 'value':
           if (value !== null) {
             this._valueElement.classList.toggle('hidden', false);
 
-            this._valueElement.innerText = value;
+            this._valueElement.textContent = value;
             this._keyboardElement.style.paddingRight = `${this._valueElement.clientWidth + 4}px`;
           } else {
             this._valueElement.classList.toggle('hidden', true);
@@ -2558,7 +2566,7 @@ class InputSourceElement extends HTMLElement {
     this.onPollStatusCheck = this.onPollStatusCheck.bind(this);
     /** @private */
 
-    this._intervalHandle = 0;
+    this._intervalHandle = null;
   }
 
   get eventTarget() {
@@ -2603,7 +2611,7 @@ class InputSourceElement extends HTMLElement {
     }
 
     // Allows this element to be focusable
-    if (!this.hasAttribute('tabindex')) this.setAttribute('tabindex', 0); // Initialize input source event target as self, if unset
+    if (!this.hasAttribute('tabindex')) this.setAttribute('tabindex', '0'); // Initialize input source event target as self, if unset
 
     if (!this.hasAttribute('for') && !this._eventTarget) {
       this.setEventTarget(this);
@@ -2811,6 +2819,16 @@ class InputSourceElement extends HTMLElement {
 }
 window.customElements.define('input-source', InputSourceElement);
 
+/**
+ * @typedef {import('./InputMapElement.js').InputMapElement} InputMapElement
+ * @typedef {import('../source/InputSourceElement.js').InputSourceElement} InputSourceElement
+ */
+
+/**
+ * @param {HTMLElement} element The target element.
+ * @param {string} propertyName The name of the property to upgrade.
+ */
+
 function upgradeProperty$1(element, propertyName) {
   if (Object.prototype.hasOwnProperty.call(element, propertyName)) {
     let value = element[propertyName];
@@ -2889,10 +2907,16 @@ class InputPort extends HTMLElement {
     /** @private */
 
     this._src = '';
-    /** @private */
+    /**
+     * @private
+     * @type {InputMapElement}
+     */
 
     this._mapElement = this.shadowRoot.querySelector('input-map');
-    /** @private */
+    /**
+     * @private
+     * @type {InputSourceElement}
+     */
 
     this._sourceElement = this.shadowRoot.querySelector('input-source');
     /** @private */
@@ -2926,10 +2950,18 @@ class InputPort extends HTMLElement {
   get mapping() {
     return this._mapElement.map;
   }
+  /**
+   * @returns {string|object}
+   */
+
 
   get src() {
     return this._src;
   }
+  /**
+   * @param {string|object} value
+   */
+
 
   set src(value) {
     this.setAttribute('src', typeof value === 'string' ? value : JSON.stringify(value));

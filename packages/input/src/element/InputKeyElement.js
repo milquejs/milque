@@ -30,13 +30,13 @@ export class InputKeyElement extends HTMLElement
         switch(attribute)
         {
             case 'name':
-                this._keyElement.innerText = value;
+                this._keyElement.textContent = value;
                 break;
             case 'value':
                 if (value !== null)
                 {
                     this._valueElement.classList.toggle('hidden', false);
-                    this._valueElement.innerText = value;
+                    this._valueElement.textContent = value;
                     this._keyboardElement.style.paddingRight = `${this._valueElement.clientWidth + 4}px`;
                 }
                 else
