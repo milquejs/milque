@@ -1103,8 +1103,8 @@ function stringifyDeviceKeyCodePair(deviceName, keyCode) {
 }
 
 /**
- * @typedef {import('./source/InputSourceState.js').InputSourceInputEvent} InputSourceInputEvent
- * @typedef {import('./source/InputSourceState.js').InputSourcePollEvent} InputSourcePollEvent
+ * @typedef {import('../source/InputSourceState.js').InputSourceInputEvent} InputSourceInputEvent
+ * @typedef {import('../source/InputSourceState.js').InputSourcePollEvent} InputSourcePollEvent
  */
 
 /**
@@ -1126,9 +1126,9 @@ function stringifyDeviceKeyCodePair(deviceName, keyCode) {
 /**
  * @typedef {'change'|'attach'|'detach'} InputContextEventTypes
  * 
- * @typedef InputContextChangeEvent
- * @typedef InputContextAttachEvent
- * @typedef InputContextDetachEvent
+ * @typedef {object} InputContextChangeEvent
+ * @typedef {object} InputContextAttachEvent
+ * @typedef {object} InputContextDetachEvent
  * 
  * @callback InputContextEventListener
  * @param {InputContextChangeEvent|InputContextAttachEvent|InputContextDetachEvent} e

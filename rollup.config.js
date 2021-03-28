@@ -13,6 +13,7 @@ import { string } from 'rollup-plugin-string';
 import { terser } from 'rollup-plugin-terser';
 import stylelint from 'rollup-plugin-stylelint';
 import eslint from '@rollup/plugin-eslint';
+import replace from '@rollup/plugin-replace';
 
 // Development plugins
 import serve from 'rollup-plugin-serve';
@@ -153,6 +154,10 @@ async function createLibraryConfig(packageJson, sourceAlias)
                     '**/*.module.css'
                 ]
             }),
+            // Allow `process.env` access
+            replace({
+                'process.env.NODE_ENV': JSON.stringify('production'),
+            }),
             // Transpile macros
             babel({
                 babelHelpers: 'bundled',
@@ -213,7 +218,7 @@ async function createBrowserConfig(packageJson, sourceAlias, isDevelopment = fal
     const inputPath = path.join(packagePath, input);
     const outputRoot = path.join(packagePath, isDevelopment ? TEMP_OUTPUT_ROOT_PATH : OUTPUT_ROOT_PATH);
     const contentRoots = [
-        'res',
+        path.resolve(__dirname, 'res'),
         path.join(packagePath, 'res'),
     ];
     const staticAssets = [
@@ -258,6 +263,10 @@ async function createBrowserConfig(packageJson, sourceAlias, isDevelopment = fal
                     '**/*.template.html',
                     '**/*.module.css'
                 ]
+            }),
+            // Allow `process.env` access
+            replace({
+                'process.env.NODE_ENV': JSON.stringify(isDevelopment ? 'development' : 'production'),
             }),
             // Transpile macros
             babel({

@@ -3,8 +3,8 @@ import { InputSourceEventStage } from '../source/InputSourceState.js';
 import { Synthetic } from '../input/Synthetic.js';
 
 /**
- * @typedef {import('./source/InputSourceState.js').InputSourceInputEvent} InputSourceInputEvent
- * @typedef {import('./source/InputSourceState.js').InputSourcePollEvent} InputSourcePollEvent
+ * @typedef {import('../source/InputSourceState.js').InputSourceInputEvent} InputSourceInputEvent
+ * @typedef {import('../source/InputSourceState.js').InputSourcePollEvent} InputSourcePollEvent
  */
 
 /**
@@ -26,9 +26,9 @@ import { Synthetic } from '../input/Synthetic.js';
 /**
  * @typedef {'change'|'attach'|'detach'} InputContextEventTypes
  * 
- * @typedef InputContextChangeEvent
- * @typedef InputContextAttachEvent
- * @typedef InputContextDetachEvent
+ * @typedef {object} InputContextChangeEvent
+ * @typedef {object} InputContextAttachEvent
+ * @typedef {object} InputContextDetachEvent
  * 
  * @callback InputContextEventListener
  * @param {InputContextChangeEvent|InputContextAttachEvent|InputContextDetachEvent} e
