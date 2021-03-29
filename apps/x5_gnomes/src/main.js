@@ -3,9 +3,13 @@ import '@milque/input';
 import { OrthographicCamera } from '@milque/scene';
 import { mat4 } from 'gl-matrix';
 
+import './error.js';
+
 import { TexturedQuadRenderer } from './renderer/TexturedQuadRenderer.js';
 import { ColoredQuadRenderer } from './renderer/ColoredQuadRenderer.js';
-import * as WebGLTextureLoader from './WebGLTextureLoader.js';
+import { ASSETS } from './assets/Assets.js';
+
+import * as Player from './Player.js';
 
 /**
  * @typedef {import('@milque/display').DisplayPort} DisplayPort
@@ -13,25 +17,8 @@ import * as WebGLTextureLoader from './WebGLTextureLoader.js';
  * @typedef {import('@milque/input').InputPort} InputPort
  */
 
-window.addEventListener('error', error, true);
-window.addEventListener('unhandledrejection', error, true);
-function error(e)
-{
-    if (e instanceof PromiseRejectionEvent)
-    {
-        window.alert(e.reason.stack);
-    }
-    else if (e instanceof ErrorEvent)
-    {
-        window.alert(e.error.stack);
-    }
-    else
-    {
-        window.alert(JSON.stringify(e));
-    }
-}
-
 window.addEventListener('DOMContentLoaded', main);
+
 async function main()
 {
     /** @type {DisplayPort} */
@@ -63,8 +50,9 @@ async function main()
         world: {}
     };
 
-    const updater = worldUpdater(game);
-    const renderer = worldRenderer(game);
+    await GameAssetLoader(game);
+    const updater = GameUpdater(game);
+    const renderer = GameRenderer(game);
     
     display.addEventListener('frame', e => {
         const frameEvent = /** @type {FrameEvent} */(e);
@@ -77,18 +65,28 @@ async function main()
 
 /**
  * @param {Game} game 
+ */
+async function GameAssetLoader(game)
+{
+    let gl = game.display.canvas.getContext('webgl');
+    ASSETS.registerAsset('texture', 'font', 'webgl/font.png', { gl });
+    await ASSETS.loadAssets();
+}
+
+/**
+ * @param {Game} game 
  * @returns {Function}
  */
-function worldUpdater(game)
+function GameUpdater(game)
 {
     const world = game.world;
 
-    let player = createPlayer(game);
+    let player = Player.createPlayer(game);
     world.player = player;
     
     return function(dt)
     {
-        updatePlayer(game, player, dt);
+        Player.updatePlayer(player, game, dt);
     };
 }
 
@@ -96,7 +94,7 @@ function worldUpdater(game)
  * @param {Game} game 
  * @returns {Function}
  */
-function worldRenderer(game)
+function GameRenderer(game)
 {
     /** @type {DisplayPort} */
     const display = game.display;
@@ -105,11 +103,8 @@ function worldRenderer(game)
     let gl = display.canvas.getContext('webgl');
     gl.clearColor(0, 0, 0, 0);
 
-    let camera = new OrthographicCamera(0, 0, 10, 10, 0, 10);
+    let camera = new OrthographicCamera(-100, -100, 100, 100, 0, 100);
     let projectionViewMatrix = mat4.create();
-
-    let texture = WebGLTextureLoader.load('color.png', { gl });
-    let fontTexture = WebGLTextureLoader.load('webgl/font.png', { gl });
 
     let texturedRenderer = new TexturedQuadRenderer(gl);
     let coloredRenderer = new ColoredQuadRenderer(gl);
@@ -129,73 +124,47 @@ function worldRenderer(game)
         texturedRenderer.setProjectionViewMatrix(projectionViewMatrix);
         coloredRenderer.setProjectionViewMatrix(projectionViewMatrix);
 
-        coloredRenderer
-            .setColor(0, 1, 0)
-            .draw(1, 2, 2, 3);
-        coloredRenderer
-            .setColor(1, 0, 0)
-            .draw(4, 2, 2, 3);
+        let renderables = [
+            Player.renderPlayer(game.world.player),
+        ];
 
-        texturedRenderer
-            .setTexture(texture, 16, 16)
-            .setSprite(0, 0, 16, 16)
-            .draw(0, 0, 1, 1);
-        texturedRenderer
-            .setTexture(fontTexture, 64, 40)
-            .setSprite(0, 0, 8, 8)
-            .draw(1, 0, 1, 1);
+        for(let renderable of renderables)
+        {
+            switch(renderable.renderType)
+            {
+                case 'textured-quad':
+                    {
+                        let {
+                            sprite = { u: 0, v: 0, s: 0, t: 0 },
+                            texture = { handle: null, w: 0, h: 0 },
+                            transform = { matrix: mat4.create() },
+                            x = 0, y = 0, scaleX = 1, scaleY = 1
+                        } = renderable;
 
-        texturedRenderer.setTexture(fontTexture, 64, 40);
+                        texturedRenderer
+                            .setSprite(sprite.u, sprite.v, sprite.s, sprite.t)
+                            .setTexture(texture.handle, texture.w, texture.h)
+                            .setTransformationMatrix(transform.matrix)
+                            .draw(x, y, scaleX, scaleY);
+                    }
+                    break;
+                case 'colored-quad':
+                    {
+                        let {
+                            color = { r: 0, g: 0, b: 0 },
+                            transform = { matrix: mat4.create() },
+                            x = 0, y = 0, scaleX = 1, scaleY = 1,
+                        } = renderable;
 
-        // Draw player
-        renderPlayer(game, game.world.player, texturedRenderer, fontTexture);
-    };
-}
-
-/* == PLAYER ===================================================== */
-
-/**
- * @param {Game} game
- */
-function createPlayer(game)
-{
-    let player = {
-        x: 0, y: 0,
-        motionX: 0,
-        motionY: 0,
-        renderInfo: {
-            u: 56, v: 32,
+                        coloredRenderer
+                            .setColor(color.r, color.g, color.b)
+                            .setTransformationMatrix(transform.matrix)
+                            .draw(x, y, scaleX, scaleY);
+                    }
+                    break;
+                default:
+                    throw new Error('Unkown render type.');
+            }
         }
     };
-    return player;
-}
-
-/**
- * @param {Game} game
- */
-function updatePlayer(game, player, dt)
-{
-    let input = game.input;
-    let moveSpeed = 0.1;
-    let friction = 0.3;
-    let invFriction = 1 - friction;
-    let dx = input.getInputState('MoveRight') - input.getInputState('MoveLeft');
-    let dy = input.getInputState('MoveDown') - input.getInputState('MoveUp');
-    player.motionX += dx * moveSpeed * dt;
-    player.motionY += dy * moveSpeed * dt;
-    player.motionX *= invFriction;
-    player.motionY *= invFriction;
-    player.x += player.motionX;
-    player.y += player.motionY;
-}
-
-/**
- * @param {Game} game
- */
-function renderPlayer(game, player, texturedRenderer, fontTexture)
-{
-    texturedRenderer
-        .setTexture(fontTexture, 64, 40)
-        .setSprite(player.renderInfo.u, player.renderInfo.v, 8, 8)
-        .draw(player.x, player.y);
 }
