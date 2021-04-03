@@ -1,6 +1,6 @@
-var INNER_HTML = "<div class=\"container\">\n    <label class=\"hidden\" id=\"title\">display-port</label>\n    <label class=\"hidden\" id=\"fps\">00</label>\n    <label class=\"hidden\" id=\"dimension\">0x0</label>\n    <div class=\"content\">\n        <canvas>\n            Oh no! Your browser does not support canvas.\n        </canvas>\n        <slot id=\"inner\"></slot>\n    </div>\n    <slot name=\"frame\"></slot>\n</div>";
+var INNER_HTML = "<div class=\"container\">\r\n    <label class=\"hidden\" id=\"title\">display-port</label>\r\n    <label class=\"hidden\" id=\"fps\">00</label>\r\n    <label class=\"hidden\" id=\"dimension\">0x0</label>\r\n    <div class=\"content\">\r\n        <canvas>\r\n            Oh no! Your browser does not support canvas.\r\n        </canvas>\r\n        <slot id=\"inner\"></slot>\r\n    </div>\r\n    <slot name=\"frame\"></slot>\r\n</div>";
 
-var INNER_STYLE = ":host{display:inline-block;color:#555}.container{display:flex;position:relative;width:100%;height:100%}.content{position:relative;margin:auto}.content>*{width:100%;height:100%}canvas{background:#000;-ms-interpolation-mode:nearest-neighbor;image-rendering:-moz-crisp-edges;image-rendering:pixelated}label{font-family:monospace;color:currentColor}#inner,label{position:absolute}#inner{display:flex;flex-direction:column;align-items:center;justify-content:center;top:0;left:0;pointer-events:none}#title{left:.5rem;top:.5rem}#fps{right:.5rem;top:.5rem}#dimension{left:.5rem;bottom:.5rem}.hidden{display:none}:host([debug]) .container{outline:6px dashed rgba(0,0,0,.1);outline-offset:-4px;background-color:rgba(0,0,0,.1)}:host([mode=noscale]) canvas{margin:0;top:0;left:0}:host([mode=center]),:host([mode=fit]),:host([mode=stretch]){width:100%;height:100%}:host([full]){width:100vw!important;height:100vh!important}:host([disabled]){display:none}slot{display:flex;flex-direction:column;align-items:center;justify-content:center;position:absolute;width:100%;height:100%;top:0;left:0;pointer-events:none}::slotted(*){pointer-events:auto}";
+var INNER_STYLE = ":host{display:inline-block;color:#555}.container{display:flex;position:relative;width:100%;height:100%}.content{position:relative;margin:auto}.content>*{width:100%;height:100%}canvas{background:#000;-ms-interpolation-mode:nearest-neighbor;image-rendering:-moz-crisp-edges;image-rendering:pixelated}label{font-family:monospace;color:currentColor}#inner,label{position:absolute}#inner{display:flex;flex-direction:column;align-items:center;justify-content:center;top:0;left:0;pointer-events:none}#title{left:.5rem;top:.5rem}#fps{right:.5rem;top:.5rem}#dimension{left:.5rem;bottom:.5rem}.hidden{display:none}:host([debug]) .container{outline:6px dashed rgba(0,0,0,.1);outline-offset:-4px;background-color:rgba(0,0,0,.1)}:host([mode=noscale]) canvas{margin:0;top:0;left:0}:host([mode=center]),:host([mode=fit]),:host([mode=pixelfit]),:host([mode=stretch]){width:100%;height:100%}:host([full]){width:100vw!important;height:100vh!important}:host([disabled]){display:none}slot{display:flex;flex-direction:column;align-items:center;justify-content:center;position:absolute;width:100%;height:100%;top:0;left:0;pointer-events:none}::slotted(*){pointer-events:auto}";
 
 /**
  * No scaling is applied. The canvas size maintains a 1:1 pixel ratio to the defined
@@ -9,13 +9,22 @@ var INNER_STYLE = ":host{display:inline-block;color:#555}.container{display:flex
 
 const MODE_NOSCALE = 'noscale';
 /**
- * Scales the canvas to fill the entire viewport and maintains the same aspect ratio
- * with respect to the defined display dimensions. In effect, this will upscale and
- * downscale the pixel size depending on the viewport resolution and aspect ratio. This
- * is the default scaling mode.
+ * Scales the canvas to fill the entire viewport and maintains the same aspect ratio.
+ * This will adjust canvas resolution to fit the viewport dimensions. In other words,
+ * the canvas pixel size remains constant, but the number of pixels in the canvas will
+ * increase or decrease to compensate. This is the default scaling mode.
  */
 
 const MODE_FIT = 'fit';
+/**
+ * Scales the canvas to fill the entire viewport and maintains the same aspect ratio
+ * and pixel resolution. This will upscale and downscale the pixel size depending on
+ * the viewport dimentions in order to preserve the canvas pixel count. In other words,
+ * the number of pixels in the canvas remain constant but appear larger or smaller to
+ * compensate.
+ */
+
+const MODE_PIXELFIT = 'pixelfit';
 /**
  * Scales the canvas to fill the entire viewport. This does not maintain the aspect
  * ratio. If you care about aspect ratio, consider using 'fit' mode instead.
@@ -111,12 +120,14 @@ class DisplayPort extends HTMLElement {
        * The scaling mode.
        * - `noscale`: Does not perform scaling. This is effectively the same as a regular
        * canvas.
-       * - `center`: Does not perform pixel scaling but stretches the display to fill the
-       * entire viewport. The unscaled canvas is centered.
+       * - `center`: Does not perform scaling but stretches the display to fill the entire
+       * viewport. The unscaled canvas is centered.
        * - `fit`: Performs scaling to fill the entire viewport and maintains the aspect
-       * ratio. This is the default behavior.
+       * ratio. The pixel resolution changes to match. This is the default behavior.
        * - `stretch`: Performs scaling to fill the entire viewport but does not maintain
        * aspect ratio.
+       * - `pixelfit`: Performs scaling to fill the entire viewport and maintains the
+       * aspect ratio and resolution. The pixel resolution remains constant.
        */
       mode: {
         type: String,
@@ -130,12 +141,14 @@ class DisplayPort extends HTMLElement {
                * The scaling mode.
                * - `noscale`: Does not perform scaling. This is effectively the same as a regular
                * canvas.
-               * - `center`: Does not perform pixel scaling but stretches the display to fill the
-               * entire viewport. The unscaled canvas is centered.
+               * - `center`: Does not perform scaling but stretches the display to fill the entire
+               * viewport. The unscaled canvas is centered.
                * - `fit`: Performs scaling to fill the entire viewport and maintains the aspect
-               * ratio. This is the default behavior.
+               * ratio. The pixel resolution changes to match. This is the default behavior.
                * - `stretch`: Performs scaling to fill the entire viewport but does not maintain
                * aspect ratio.
+               * - `pixelfit`: Performs scaling to fill the entire viewport and maintains the
+               * aspect ratio and resolution. The pixel resolution remains constant.
                */
   get mode() {
     return this.getAttribute("mode");
@@ -437,7 +450,7 @@ class DisplayPort extends HTMLElement {
       canvasWidth = clientWidth;
       canvasHeight = clientHeight;
     } else if (mode !== MODE_NOSCALE) {
-      let flag = clientWidth < canvasWidth || clientHeight < canvasHeight || mode === MODE_FIT;
+      let flag = clientWidth < canvasWidth || clientHeight < canvasHeight || mode === MODE_FIT || mode == MODE_PIXELFIT;
 
       if (flag) {
         let ratioX = clientWidth / canvasWidth;
@@ -461,8 +474,14 @@ class DisplayPort extends HTMLElement {
     this._innerElement.style = `font-size: ${fontSize}em`;
 
     if (canvas.clientWidth !== canvasWidth || canvas.clientHeight !== canvasHeight) {
-      canvas.width = this._width;
-      canvas.height = this._height;
+      if (mode === MODE_PIXELFIT) {
+        canvas.width = this._width;
+        canvas.height = this._height;
+      } else {
+        canvas.width = canvasWidth;
+        canvas.height = canvasHeight;
+      }
+
       this._contentElement.style = `width: ${canvasWidth}px; height: ${canvasHeight}px`;
       this.dispatchEvent(new CustomEvent('resize', {
         detail: {

@@ -17,12 +17,21 @@ export const MODE_NOSCALE = 'noscale';
 export const MODE_CENTER = 'center';
 
 /**
- * Scales the canvas to fill the entire viewport and maintains the same aspect ratio
- * with respect to the defined display dimensions. In effect, this will upscale and
- * downscale the pixel size depending on the viewport resolution and aspect ratio. This
- * is the default scaling mode.
+ * Scales the canvas to fill the entire viewport and maintains the same aspect ratio.
+ * This will adjust canvas resolution to fit the viewport dimensions. In other words,
+ * the canvas pixel size remains constant, but the number of pixels in the canvas will
+ * increase or decrease to compensate. This is the default scaling mode.
  */
 export const MODE_FIT = 'fit';
+
+/**
+ * Scales the canvas to fill the entire viewport and maintains the same aspect ratio
+ * and pixel resolution. This will upscale and downscale the pixel size depending on
+ * the viewport dimentions in order to preserve the canvas pixel count. In other words,
+ * the number of pixels in the canvas remain constant but appear larger or smaller to
+ * compensate.
+ */
+export const MODE_PIXELFIT = 'pixelfit';
 
 /**
  * Scales the canvas to fill the entire viewport. This does not maintain the aspect
@@ -102,12 +111,14 @@ export class DisplayPort extends HTMLElement
              * The scaling mode.
              * - `noscale`: Does not perform scaling. This is effectively the same as a regular
              * canvas.
-             * - `center`: Does not perform pixel scaling but stretches the display to fill the
-             * entire viewport. The unscaled canvas is centered.
+             * - `center`: Does not perform scaling but stretches the display to fill the entire
+             * viewport. The unscaled canvas is centered.
              * - `fit`: Performs scaling to fill the entire viewport and maintains the aspect
-             * ratio. This is the default behavior.
+             * ratio. The pixel resolution changes to match. This is the default behavior.
              * - `stretch`: Performs scaling to fill the entire viewport but does not maintain
              * aspect ratio.
+             * - `pixelfit`: Performs scaling to fill the entire viewport and maintains the
+             * aspect ratio and resolution. The pixel resolution remains constant.
              */
             mode: { type: String, value: DEFAULT_MODE, observed: false },
         };
@@ -283,7 +294,7 @@ export class DisplayPort extends HTMLElement
         }
         else if (mode !== MODE_NOSCALE)
         {
-            let flag = clientWidth < canvasWidth || clientHeight < canvasHeight || mode === MODE_FIT;
+            let flag = clientWidth < canvasWidth || clientHeight < canvasHeight || mode === MODE_FIT || mode == MODE_PIXELFIT;
             if (flag)
             {
                 let ratioX = clientWidth / canvasWidth;
@@ -312,8 +323,16 @@ export class DisplayPort extends HTMLElement
 
         if (canvas.clientWidth !== canvasWidth || canvas.clientHeight !== canvasHeight)
         {
-            canvas.width = this._width;
-            canvas.height = this._height;
+            if (mode === MODE_PIXELFIT)
+            {
+                canvas.width = this._width;
+                canvas.height = this._height;
+            }
+            else
+            {
+                canvas.width = canvasWidth;
+                canvas.height = canvasHeight;
+            }
             this._contentElement.style = `width: ${canvasWidth}px; height: ${canvasHeight}px`;
 
             this.dispatchEvent(new CustomEvent('resize', { detail: { width: canvasWidth, height: canvasHeight }, bubbles: false, composed: true }));

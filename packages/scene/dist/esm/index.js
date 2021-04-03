@@ -26,27 +26,29 @@ function lookAt(viewMatrix, x, y, z = 0, dt = 1) {
  * NOTE: In addition to some scaling, the y component from a pointer's
  * position usually has to be flipped to match the normalized screen
  * coordinate space, which assumes a range of [-1, 1] for both x and y,
- * where (0, 0) is the CENTER and (-1, -1) is the BOTTOM-LEFT of the
+ * where (0, 0) is the center and (-1, -1) is the bottom-left of the
  * screen.
  * 
  * Typical Device Screen Coordinate Space:
- * 
+ * ```
  * (0,0)------------(w,0)
  *    |               |
  *    |   (w/2,h/2)   |
  *    |               |
  * (0,w)------------(w,h)
+ * ```
  * 
  * Normalized Screen Coordinate Space:
- * 
+ * ```
  * (-1,+1)---------(+1,+1)
  *    |               |
  *    |     (0,0)     |
  *    |               |
  * (-1,-1)---------(+1,-1)
+ * ```
  * 
- * @param {Number} normalizedScreenCoordX The X screen coordinate normalized to [-1, 1], where 0 is the left side of the screen.
- * @param {Number} normalizedScreenCoordY The Y screen coordinate normalized to [-1, 1], where 0 is the bottom side of the screen.
+ * @param {Number} normalizedScreenCoordX The X screen coordinate normalized to [-1, 1], where -1 is the left side of the screen.
+ * @param {Number} normalizedScreenCoordY The Y screen coordinate normalized to [-1, 1], where -1 is the bottom side of the screen.
  * @param {mat4} projectionMatrix The projection matrix of the world camera.
  * @param {mat4} viewMatrix The view matrix of the world camera.
  * @returns {vec3} The normalized ray direction in the world space.
