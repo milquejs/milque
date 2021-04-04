@@ -17,8 +17,9 @@ uniform mat4 u_model;
 
 void main()
 {
-    gl_Position = u_projection_view * u_model * vec4(a_position.xy, 0.0, 1.0);
+    vec4 position = u_projection_view * u_model * vec4(a_position.xy, 0.0, 1.0);
     v_texcoord = a_texcoord;
+    gl_Position = position;
 }`;
 
 const WEBGL_FRAGMENT_SHADER_SOURCE = `

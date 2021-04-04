@@ -1,6 +1,6 @@
 import '@milque/display';
 import '@milque/input';
-import './ErrorBoundary.js';
+import './error.js';
 
 import { Random } from '@milque/random';
 import {

@@ -1,6 +1,7 @@
 window.addEventListener('error', error, true);
 window.addEventListener('unhandledrejection', error, true);
-function error(e)
+
+export function error(e)
 {
     if (e instanceof PromiseRejectionEvent)
     {

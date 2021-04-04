@@ -19,7 +19,7 @@ export function renderPlayer(player)
     let renderInfo = {
         renderType: 'textured-quad',
         x: player.x, y: player.y,
-        scaleX: 64, scaleY: 64,
+        scaleX: 8, scaleY: 8,
         texture: {
             handle: ASSETS.getAsset('texture', 'font'),
             w: 64,

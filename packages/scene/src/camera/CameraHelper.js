@@ -26,7 +26,7 @@ export function lookAt(viewMatrix, x, y, z = 0, dt = 1)
     mat4.lookAt(viewMatrix, position, target, UP);
 
     let targetRotation = quat.create();
-    mat4.getRotation(viewMatrix, targetRotation);
+    mat4.getRotation(targetRotation, viewMatrix);
     quat.slerp(rotation, rotation, targetRotation, dt);
 
     mat4.fromRotationTranslation(viewMatrix, rotation, position);
@@ -42,7 +42,7 @@ export function lookAt(viewMatrix, x, y, z = 0, dt = 1)
  * where (0, 0) is the center and (-1, -1) is the bottom-left of the
  * screen.
  * 
- * Typical Device Screen Coordinate Space:
+ * ### Typical Device Screen Coordinate Space:
  * ```
  * (0,0)------------(w,0)
  *    |               |
@@ -51,7 +51,7 @@ export function lookAt(viewMatrix, x, y, z = 0, dt = 1)
  * (0,w)------------(w,h)
  * ```
  * 
- * Normalized Screen Coordinate Space:
+ * ### Normalized Screen Coordinate Space:
  * ```
  * (-1,+1)---------(+1,+1)
  *    |               |
@@ -60,13 +60,21 @@ export function lookAt(viewMatrix, x, y, z = 0, dt = 1)
  * (-1,-1)---------(+1,-1)
  * ```
  * 
- * @param {Number} normalizedScreenCoordX The X screen coordinate normalized to [-1, 1], where -1 is the left side of the screen.
- * @param {Number} normalizedScreenCoordY The Y screen coordinate normalized to [-1, 1], where -1 is the bottom side of the screen.
+ * ### Example Conversion from Device to Normalized:
+ * ```
+ * let normalizedScreenX = (canvasClientX / canvasWidth) * 2 - 1;
+ * let normalizedScreenY = 1 - (canvasClientY / canvasHeight) * 2;
+ * ```
+ * 
+ * @param {vec3} out The output vector.
+ * @param {number} normalizedScreenCoordX The X screen coordinate normalized to [-1, 1], where -1 is the left side of the screen.
+ * @param {number} normalizedScreenCoordY The Y screen coordinate normalized to [-1, 1], where -1 is the bottom side of the screen.
  * @param {mat4} projectionMatrix The projection matrix of the world camera.
  * @param {mat4} viewMatrix The view matrix of the world camera.
- * @returns {vec3} The normalized ray direction in the world space.
+ * @param {boolean} [normalized=false] Whether to normalize the result. Usually true for non-orthogonal projections.
+ * @returns {vec3} The ray direction in the world space. By default, this is not normalized.
  */
-export function screenToWorldRay(normalizedScreenCoordX, normalizedScreenCoordY, projectionMatrix, viewMatrix)
+export function screenToWorldRay(out, normalizedScreenCoordX, normalizedScreenCoordY, projectionMatrix, viewMatrix, normalized = false)
 {
     // https://antongerdelan.net/opengl/raycasting.html
     // To homogeneous clip coords
@@ -80,8 +88,13 @@ export function screenToWorldRay(normalizedScreenCoordX, normalizedScreenCoordY,
     // To world coords
     mat4.invert(m, viewMatrix);
     vec4.transformMat4(v, v, m);
+    out[0] = v[0];
+    out[1] = v[1];
+    out[2] = v[2];
     // Normalized as directional ray
-    let result = vec3.fromValues(v[0], v[1], v[2]);
-    vec3.normalize(result, result);
-    return result;
+    if (normalized)
+    {
+        vec3.normalize(out, out);
+    }
+    return out;
 }
