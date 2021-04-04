@@ -1,7 +1,7 @@
 {
-  "name": "mines",
+  "name": "gravitywell",
   "version": "1.0.0",
-  "description": "A game of mines.",
+  "description": "A game of one gravity well.",
   "browser": "dist/index.js",
   "author": "Andrew Kuo",
   "license": "MIT",
@@ -14,7 +14,7 @@
     "@milque/input": "^0.0.1",
     "@milque/random": "^0.0.1",
     "@milque/scene": "^0.0.1",
-    "@milque/util": "^0.0.1",
-    "@milque/asset": "^0.0.1"
+    "@milque/mogli": "^0.0.1",
+    "@milque/cuttle.macro": "^0.0.1"
   }
 }

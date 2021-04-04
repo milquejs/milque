@@ -23,6 +23,7 @@ async function main()
 {
     /** @type {DisplayPort} */
     const display = document.querySelector('#display');
+
     /** @type {InputPort} */
     const input = document.querySelector('#input');
     input.src = {
