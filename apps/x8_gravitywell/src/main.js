@@ -2,6 +2,8 @@ import '@milque/display';
 import '@milque/input';
 import './error.js';
 
+import { Random } from '@milque/random';
+
 import { vec2, vec3, vec4, mat4, quat } from 'gl-matrix';
 import { OrthographicCamera, screenToWorldRay } from '@milque/scene';
 
@@ -100,6 +102,10 @@ function GameUpdater(game)
     };
 
     let tileMap = new TileMap(16);
+    for(let i = 0; i < tileMap.length; ++i)
+    {
+        tileMap.data[i] = Random.choose([2, 3]);
+    }
     let tileMapView = new TileMapView(tileMap, 32, 32);
     world.tileMap = tileMap;
     world.tileMapView = tileMapView;
@@ -133,7 +139,7 @@ function GameUpdater(game)
     };
 }
 
-const CURSOR_SIZE = 4;
+const CURSOR_SIZE = 3;
 function GameRenderer(game)
 {
     const {
@@ -182,11 +188,12 @@ function GameRenderer(game)
             cartesianToUnitIsometric(v, v[0], v[1]);
             let tileMapView = world.tileMapView;
             drawTileMap(tileMapView, quadRenderer, v[0], v[1]);
+            
+            // Draw Cursor
+            mat4.identity(quadRenderer.viewMatrix);
+            quadRenderer.drawColoredQuad(0xFF00FF, cursor.x, cursor.y, 100, CURSOR_SIZE, CURSOR_SIZE);
         }
         QuadRenderer.toggleWireframe(true);
-        
-        mat4.identity(quadRenderer.viewMatrix);
-        quadRenderer.drawColoredQuad(0xFF00FF, cursor.x, cursor.y, 100, CURSOR_SIZE, CURSOR_SIZE);
     };
 }
 
@@ -200,17 +207,35 @@ function drawTileMap(tileMapView, quadRenderer, cursorX, cursorY)
 {
     quadRenderer
         .setTexture(ASSETS.getAsset('texture', 'font'), 256, 256)
-        .setSpriteVector(0, 0, 33, 33);
+        .setSpriteVector(34, 0, 33, 33);
 
     const width = tileMapView.tileMap.width;
     const height = tileMapView.tileMap.height;
     const tileView = tileMapView.at(tileMapView.offsetX, tileMapView.offsetY);
+    const tileMap = tileMapView.tileMap;
 
     const v = vec2.create();
     for(let y = height - 1; y >= 0; --y)
     {
         for(let x = width - 1; x >= 0; --x)
         {
+            let value = tileMap.get(x, y);
+            switch(value)
+            {
+                case 0:
+                    continue;
+                case 1:
+                    quadRenderer.setSpriteVector(0, 0, 33, 33);
+                    break;
+                case 2:
+                    quadRenderer.setSpriteVector(34, 0, 33, 33);
+                    break;
+                case 3:
+                    quadRenderer.setSpriteVector(68, 0, 33, 33);
+                    break;
+                default:
+                    continue;
+            }
             unitIsometricToCartesian(v, x, y);
             let drawX = v[0];
             let drawY = v[1];
@@ -362,5 +387,15 @@ class TileMap
         this.height = height;
         this.length = length;
         this.data = new Uint32Array(length);
+    }
+
+    get(x = 0, y = 0)
+    {
+        return this.data[x + y * this.width];
+    }
+
+    set(x = 0, y = 0, value = 1)
+    {
+        this.data[x + y * this.width] = value;
     }
 }
