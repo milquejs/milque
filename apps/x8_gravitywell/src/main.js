@@ -6,8 +6,7 @@ import { vec2, vec3, vec4, mat4, quat } from 'gl-matrix';
 import { OrthographicCamera, screenToWorldRay } from '@milque/scene';
 
 import { ASSETS } from './assets/Assets.js';
-import { TexturedQuadRenderer } from './renderer/TexturedQuadRenderer.js';
-import { ColoredQuadRenderer } from './renderer/ColoredQuadRenderer.js';
+import { QuadRenderer } from './QuadRenderer.js';
 
 /**
  * @typedef {import('@milque/display').DisplayPort} DisplayPort
@@ -28,13 +27,20 @@ async function main()
         CursorY: 'Mouse:PosY',
         CursorInteract: 'Mouse:Button0',
     };
-    const camera = new OrthographicCamera(-10, -10, 10, 10, -10, 10);
+    const assets = {
+        texture: {
+            monster: 'cloud/monster.png',
+            font: 'cloud/cube.png',
+        }
+    };
+    const camera = new OrthographicCamera(-100, -100, 100, 100, -100, 100);
     
     const game = {
         display,
         input,
         camera,
         world: {},
+        assets,
         loader: null,
         updater: null,
         renderer: null,
@@ -60,7 +66,16 @@ function GameLoader(game)
 
     return async function()
     {
-        ASSETS.registerAsset('texture', 'font', 'cloud/cube.png', { gl });
+        let opts = { gl };
+        for(let assetLoaderType of Object.keys(game.assets))
+        {
+            let group = game.assets[assetLoaderType];
+            for(let assetName of Object.keys(group))
+            {
+                let url = group[assetName];
+                ASSETS.registerAsset(assetLoaderType, assetName, url, opts);
+            }
+        }
         await ASSETS.loadAssets();
     };
 }
@@ -78,7 +93,6 @@ function GameUpdater(game)
         let screenY = 1 - game.input.getInputState('CursorY') * 2;
         let [cursorX, cursorY, cursorZ] = screenToWorldRay(vec3.create(),
             screenX, screenY, camera.projectionMatrix, camera.viewMatrix);
-        
     };
 }
 
@@ -92,11 +106,11 @@ function GameRenderer(game)
 
     /** @type {WebGLRenderingContext} */
     const gl = display.canvas.getContext('webgl');
-    gl.clearColor(0.1, 0.1, 0.1, 1);
-    TexturedQuadRenderer.enableTransparencyBlend(gl);
-
-    const texturedRenderer = new TexturedQuadRenderer(gl);
-    const coloredRenderer = new ColoredQuadRenderer(gl);
+    QuadRenderer
+        .setClearColor(gl, 0x111111)
+        .enableDepthTest(gl)
+        .toggleWireframe(true);
+    const quadRenderer = new QuadRenderer(gl);
 
     return function()
     {
@@ -107,13 +121,23 @@ function GameRenderer(game)
 
         camera.resize(viewportWidth, viewportHeight);
 
-        texturedRenderer
-            .setProjectionMatrix(camera.projectionMatrix)
-            .setViewMatrix(camera.viewMatrix);
-        coloredRenderer
+        quadRenderer
             .setProjectionMatrix(camera.projectionMatrix)
             .setViewMatrix(camera.viewMatrix);
         
-        coloredRenderer.draw(0, 0, 1, 1);
+        quadRenderer
+            .setTexture(ASSETS.getAsset('texture', 'font'), 256, 256)
+            .setSpriteVector(0, 0, 33, 33)
+            .drawQuad(0, 0, 0);
+
+        quadRenderer
+            .setTexture(ASSETS.getAsset('texture', 'monster'), 256, 256)
+            .setSpriteVector(0, 0, 32, 48)
+            .drawQuad(-32, -64, 0);
+        quadRenderer
+            .drawQuad(-64, 0, 1);
+        
+        quadRenderer
+            .drawColoredQuad(0xFF, 16, 0, 0, 33, 33);
     };
 }
