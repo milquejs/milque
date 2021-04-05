@@ -155,6 +155,31 @@ export class QuadRenderer
         /** @private */
         this._vector = vec4.create();
     }
+    
+    get projectionMatrix()
+    {
+        return this._projectionMatrix;
+    }
+
+    get viewMatrix()
+    {
+        return this._viewMatrix;
+    }
+
+    get modelMatrix()
+    {
+        return this._modelMatrix;
+    }
+
+    get colorVector()
+    {
+        return this._colorVector;
+    }
+
+    get spriteVector()
+    {
+        return this._spriteVector;
+    }
 
     setProjectionMatrix(matrix)
     {
@@ -272,7 +297,7 @@ export class QuadRenderer
         return out;
     }
 
-    drawColoredQuad(colorHex = 0xFF00FF, x = 0, y = 0, z = 0, scaleX = 1, scaleY = scaleX)
+    drawColoredQuad(colorHex = 0xFF00FF, x = 0, y = 0, z = 0, width = 16, height = 16)
     {
         let prevSprite = vec3.copy(this._vector, this._spriteVector);
         let prevColor = this.getColorHex();
@@ -285,7 +310,7 @@ export class QuadRenderer
         this.setSpriteVector(0, 0, 0, 0);
         this.setColorHex(colorHex, 1.0);
         {
-            this.drawQuad(x, y, z, scaleX, scaleY);
+            this.drawQuad(x, y, z, width, height);
         }
         this.setColorHex(prevColor, prevAlpha);
         this.setSpriteVector(prevSprite);
@@ -331,6 +356,10 @@ export class QuadRenderer
         v[1] = scaleY * aspectHeight;
         v[2] = 1;
         mat4.scale(m, m, v);
+        v[0] = -0.5;
+        v[1] = -0.5;
+        v[2] = 0;
+        mat4.translate(m, m, v);
 
         // Update sprite coordinates
         if (usingTexture)
