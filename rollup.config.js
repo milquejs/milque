@@ -156,7 +156,10 @@ async function createLibraryConfig(packageJson, sourceAlias)
             }),
             // Allow `process.env` access
             replace({
-                'process.env.NODE_ENV': JSON.stringify('production'),
+                values: {
+                    'process.env.NODE_ENV': JSON.stringify('production'),
+                },
+                preventAssignment: true,
             }),
             // Transpile macros
             babel({
@@ -266,7 +269,10 @@ async function createBrowserConfig(packageJson, sourceAlias, isDevelopment = fal
             }),
             // Allow `process.env` access
             replace({
-                'process.env.NODE_ENV': JSON.stringify(isDevelopment ? 'development' : 'production'),
+                values: {
+                    'process.env.NODE_ENV': JSON.stringify(isDevelopment ? 'development' : 'production'),
+                },
+                preventAssignment: true,
             }),
             // Transpile macros
             babel({
