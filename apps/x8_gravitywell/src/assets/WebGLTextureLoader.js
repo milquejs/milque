@@ -4,7 +4,7 @@
  * @param {WebGLRenderingContext} opts.gl The webgl context.
  * @returns {WebGLTexture}
  */
-export function load(url, opts)
+export async function loadWebGLTexture(url, opts)
 {
     const { gl } = opts;
 
