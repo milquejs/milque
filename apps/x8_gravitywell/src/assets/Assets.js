@@ -1,7 +1,7 @@
 import { AssetManager } from './AssetManager.js';
-import { loadAudio } from './Audio.js';
-import { load as loadWebGLTexture } from './WebGLTextureLoader.js';
+import { loadWebGLTexture } from './WebGLTextureLoader.js';
+import { Sound } from './Sound.js';
 
 export const ASSETS = new AssetManager()
-    .registerLoader('audio', loadAudio)
+    .registerLoader('sound', Sound.loadSound)
     .registerLoader('texture', loadWebGLTexture);
