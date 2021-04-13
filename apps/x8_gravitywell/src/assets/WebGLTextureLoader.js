@@ -1,3 +1,5 @@
+import { loadImage } from './ImageLoader.js';
+
 /**
  * @param {string} url The asset path.
  * @param {object} opts Additional options.
@@ -29,8 +31,7 @@ export async function loadWebGLTexture(url, opts)
         width, height, border, srcFormat, srcType,
         pixel);
     
-    let image = new Image();
-    image.onload = () => {
+    loadImage(url).then(image => {
         gl.bindTexture(gl.TEXTURE_2D, handle);
         gl.texImage2D(
             gl.TEXTURE_2D, level, internalFormat,
@@ -45,8 +46,7 @@ export async function loadWebGLTexture(url, opts)
         {
             gl.generateMipmap(gl.TEXTURE_2D);
         }
-    };
-    image.src = url;
+    });
 
     return handle;
 }
