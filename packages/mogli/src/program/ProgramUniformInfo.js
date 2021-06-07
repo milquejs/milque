@@ -1,5 +1,5 @@
 import { getUniformFunction, getUniformFunctionForArray } from './ProgramUniformFunctions.js';
-import { getActiveUniforms } from './ProgramHelper.js';
+import { getActiveUniforms } from './ProgramActives.js';
 
 /**
  * @typedef {import('./UniformTypeInfo.js').UniformFunction} UniformFunction

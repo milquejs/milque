@@ -1,14 +1,35 @@
 {
-  "name": "@milque/asset",
-  "version": "0.0.1",
-  "description": "The asset module for milque.js",
-  "module": "dist/esm/index.js",
-  "main": "dist/cjs/index.js",
-  "bundle": "dist/index.js",
-  "author": "Andrew Kuo",
-  "license": "MIT",
-  "keywords": [
-    "milque",
-    "asset"
-  ]
+    "name": "@milque/asset",
+    "version": "0.0.1",
+    "description": "The asset module for milque.js",
+    "main": "./dist/cjs/index.js",
+    "module": "./dist/esm/index.js",
+    "browser": "./dist/index.js",
+    "types": "./dist/types/index.d.ts",
+    "exports": {
+        ".": {
+            "require": "./dist/cjs/index.js",
+            "import": "./dist/esm/index.js"
+        },
+        "./package.json": "./package.json"
+    },
+    "author": "Andrew Kuo",
+    "license": "MIT",
+    "keywords": [
+        "milque",
+        "asset"
+    ],
+    "scripts": {
+        "build": "rollup -c --silent",
+        "lint": "eslint **/*.js"
+    },
+    "dependencies": {
+        "fflate": "~0.6.10",
+        "picomatch": "~2.3.0"
+    },
+    "devDependencies": {
+        "@milque-dev/build-tools": "~1.0.0",
+        "eslint": "~7.25.0",
+        "rollup": "~2.47.0"
+    }
 }

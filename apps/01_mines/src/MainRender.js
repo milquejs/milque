@@ -2,16 +2,16 @@ import { clamp } from '@milque/util';
 
 import * as MainScene from './MainScene.js';
 
-import * as MinesControls from './MinesControls.js';
+import { INPUTS as MinesControls } from './MinesControls.js';
 import * as MinesRenderer from './MinesRenderer.js';
 import { Camera2D } from './Camera2D.js';
 
 const HEALTH_X = 0;
 const HEALTH_Y = 0;
 
-export async function load()
+export async function load(assets)
 {
-    await MinesRenderer.load();
+    await MinesRenderer.load(assets);
 }
 
 export function unload()

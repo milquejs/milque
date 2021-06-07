@@ -16,6 +16,13 @@ export class Random
     static get RAND()
     {
         let instance = new (this)();
+        
+        this.next = this.next.bind(this);
+        this.choose = this.choose.bind(this);
+        this.range = this.range.bind(this);
+        this.rangeInt = this.rangeInt.bind(this);
+        this.sign = this.sign.bind(this);
+
         Object.defineProperty(this, 'RAND', { value: instance });
         return instance;
     }
@@ -41,6 +48,12 @@ export class Random
         {
             this.generator = new MathRandom();
         }
+
+        this.next = this.next.bind(this);
+        this.choose = this.choose.bind(this);
+        this.range = this.range.bind(this);
+        this.rangeInt = this.rangeInt.bind(this);
+        this.sign = this.sign.bind(this);
     }
 
     static next() { return this.RAND.next(); }

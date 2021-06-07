@@ -1,12 +1,17 @@
 import '@milque/display';
+import '@milque/input';
+import '@milque/asset';
+import './error.js';
 
 import * as MainScene from './MainScene.js';
 import * as MainRender from './MainRender.js';
 
-import * as MinesControls from './MinesControls.js';
+import { attach } from './MinesControls.js';
 
 /**
  * @typedef {import('@milque/display').DisplayPort} DisplayPort
+ * @typedef {import('@milque/input').InputPort} InputPort
+ * @typedef {import('@milque/asset').AssetPack} AssetPack
  */
 
 /*
@@ -33,27 +38,8 @@ Maybe:
 // Either chance it, use a life, or use a scanner.
 
 */
+
 document.addEventListener('DOMContentLoaded', main);
-
-window.addEventListener('unhandledrejection', error, true);
-window.addEventListener('error', error, true);
-
-function error(e)
-{
-    if (e instanceof PromiseRejectionEvent)
-    {
-        window.alert(e.reason.stack);
-    }
-    else if (e instanceof ErrorEvent)
-    {
-        window.alert(e.error.stack);
-    }
-    else
-    {
-        window.alert(JSON.stringify(e));
-    }
-}
-
 async function main()
 {
     /** @type {DisplayPort} */
@@ -61,17 +47,26 @@ async function main()
     const ctx = display.canvas.getContext('2d');
     ctx.imageSmoothingEnabled = false;
     
-    MinesControls.attach();
+    /** @type {InputPort} */
+    const inputs = document.querySelector('input-port');
+    attach(inputs);
+
+    /** @type {AssetPack} */
+    const assets = document.querySelector('asset-pack');
+    await new Promise((resolve, reject) => {
+        assets.addEventListener('load', resolve);
+        assets.addEventListener('error', reject);
+    });
 
     const world = { display };
-    await MainRender.load.call(world);
+    await MainRender.load.call(world, assets);
     MainScene.onStart.call(world);
 
     display.addEventListener('frame', e => {
         const dt = e.detail.deltaTime / 1000;
 
         MainScene.onPreUpdate.call(world, dt);
-        MinesControls.poll();
+        inputs.poll();
         MainScene.onUpdate.call(world, dt);
 
         const view = {

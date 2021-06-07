@@ -1,7 +1,7 @@
 import { clamp } from '@milque/util';
 
 import { Mines } from './Mines.js';
-import * as MinesControls from './MinesControls.js';
+import { INPUTS as MinesControls } from './MinesControls.js';
 import { Camera2D } from './Camera2D.js';
 import { CanvasView } from './CanvasView.js';
 
@@ -35,7 +35,7 @@ export function onPreUpdate(dt)
 export function onUpdate(dt)
 {
     // Check if restarting...
-    if (MinesControls.Restart.value)
+    if (MinesControls.Restart.released)
     {
         restart(this);
         return;
@@ -62,7 +62,7 @@ export function onUpdate(dt)
         }
 
         let flag = false;
-        if (MinesControls.Activate.value)
+        if (MinesControls.Activate.released)
         {
             let mouseX = MinesControls.CursorX.value * worldWidth;
             let mouseY = MinesControls.CursorY.value * worldHeight;
@@ -85,7 +85,7 @@ export function onUpdate(dt)
             flag = true;
         }
 
-        if (MinesControls.Mark.value)
+        if (MinesControls.Mark.released)
         {
             let mouseX = MinesControls.CursorX.value * worldWidth;
             let mouseY = MinesControls.CursorY.value * worldHeight;

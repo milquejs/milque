@@ -1,3 +1,3 @@
 # Random
 
-Handles all random utilities.
+A package of random number generators.

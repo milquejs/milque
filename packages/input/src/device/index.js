@@ -1,8 +1,3 @@
-export {
-    InputDevice,
-    InputType,
-    InputEventCode,
-    WILDCARD_KEY_MATCHER
-} from './InputDevice.js';
-export { Keyboard } from './Keyboard.js';
-export { Mouse } from './Mouse.js';
+export * from './InputDevice.js';
+export * from './KeyboardDevice.js';
+export * from './MouseDevice.js';

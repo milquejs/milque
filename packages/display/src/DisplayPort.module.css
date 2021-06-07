@@ -74,7 +74,7 @@ label {
 }
 
 :host([mode="fit"]),
-:host([mode="pixelfit"]),
+:host([mode="scale"]),
 :host([mode="center"]),
 :host([mode="stretch"]) {
     width: 100%;

@@ -1,5 +1,9 @@
 import '@milque/display';
+import '@milque/asset';
 import { Random } from '@milque/random';
+import './error.js';
+
+import { loadSounds, sounds } from './assets.js';
 import * as Starfield from './Starfield.js';
 
 /**
@@ -7,27 +11,23 @@ import * as Starfield from './Starfield.js';
  */
 
 /** @type {DisplayPort} */
-const display = document.querySelector('display-port');
+const display = document.querySelector('#display');
 const canvas = display.canvas;
 const ctx = canvas.getContext('2d');
-
-// Will be initialized on load().
-let audioContext = new AudioContext();
-let sounds;
 
 let prevFrameTime = 0;
 let mainScene = { load, start, update, render };
 
-function main()
-{
+window.addEventListener('DOMContentLoaded', main);
+
+function main() {
     mainScene.load().then(() => {
         mainScene.start();
         run(prevFrameTime = performance.now());
     });
 }
 
-function run(now)
-{
+function run(now) {
     requestAnimationFrame(run);
     const dt = now - prevFrameTime;
     prevFrameTime = now;
@@ -57,9 +57,9 @@ const PARTICLE_RADIUS = 4;
 const PARTICLE_SPEED = 2;
 const MAX_PARTICLE_AGE = 600;
 const ASTEROID_BREAK_DAMP_FACTOR = 0.1;
-const PLAYER_EXPLODE_PARTICLE_COLORS = [ 'red', 'red', 'red', 'yellow', 'orange' ];
-const ASTEROID_EXPLODE_PARTICLE_COLORS = [ 'blue', 'blue', 'blue', 'dodgerblue', 'gray', 'darkgray', 'yellow' ];
-const PLAYER_MOVE_PARTICLE_COLORS = [ 'gray', 'darkgray', 'lightgray' ];
+const PLAYER_EXPLODE_PARTICLE_COLORS = ['red', 'red', 'red', 'yellow', 'orange'];
+const ASTEROID_EXPLODE_PARTICLE_COLORS = ['blue', 'blue', 'blue', 'dodgerblue', 'gray', 'darkgray', 'yellow'];
+const PLAYER_MOVE_PARTICLE_COLORS = ['gray', 'darkgray', 'lightgray'];
 const INSTRUCTION_HINT_TEXT = '[ wasd_ ]';
 const PLAYER_MOVE_PARTICLE_OFFSET_RANGE = [-2, 2];
 const PLAYER_MOVE_PARTICLE_DAMP_FACTOR = 1.5;
@@ -76,7 +76,7 @@ const BULLET_COLOR = 'gold';
 
 const POWER_UP_SPAWN_RATE = [10000, 30000];
 const POWER_UP_RADIUS = 4;
-const POWER_UP_EXPLODE_PARTICLE_COLORS = [ 'violet', 'white', 'violet' ];
+const POWER_UP_EXPLODE_PARTICLE_COLORS = ['white', 'violet', 'violet'];
 const POWER_UP_AMOUNT = 30;
 const POWER_UP_SPAWN_CHANCE = 0.7;
 
@@ -84,19 +84,19 @@ let SHOW_COLLISION = false;
 
 async function load()
 {
-    const assetsDir = '../../../res/';
-    sounds = {
-        start: createSound(assetsDir + 'space/start.wav'),
-        dead: createSound(assetsDir + 'space/dead.wav'),
-        pop: createSound(assetsDir + 'space/boop.wav'),
-        music: createSound(assetsDir + 'space/music.wav', true),
-        shoot: createSound(assetsDir + 'space/click.wav'),
-        boom: createSound(assetsDir + 'space/boom.wav'),
-    };
+    console.log('Loading...');
+    const assets = document.querySelector('#assets');
+    const promise = new Promise((resolve, reject) => {
+        assets.addEventListener('load', resolve);
+        assets.addEventListener('error', reject);
+    });
+    assets.src = 'res.pack';
+    await promise;
+    await loadSounds(assets);
+    console.log('...loading complete!');
 }
 
-function start()
-{
+function start() {
     this.level = 0;
     this.score = 0;
     this.highScore = Number(localStorage.getItem('highscore'));
@@ -118,14 +118,11 @@ function start()
         down: 0,
         cooldown: 0,
         powerMode: 0,
-        shoot()
-        {
+        shoot() {
             if (this.scene.bullets.length > MAX_BULLET_COUNT) return;
             if (this.cooldown > 0) return;
-            if (this.powerMode > 0)
-            {
-                for(let i = -1; i <= 1; ++i)
-                {
+            if (this.powerMode > 0) {
+                for (let i = -1; i <= 1; ++i) {
                     let rotation = this.rotation + i * Math.PI / 4;
                     let bullet = createBullet(
                         this.scene,
@@ -138,8 +135,7 @@ function start()
                 }
                 --this.powerMode;
             }
-            else
-            {
+            else {
                 let bullet = createBullet(
                     this.scene,
                     this.x - Math.cos(this.rotation) * PLAYER_RADIUS,
@@ -150,7 +146,7 @@ function start()
                 this.scene.bullets.push(bullet);
             }
             this.cooldown = PLAYER_SHOOT_COOLDOWN;
-            sounds.shoot.play();
+            sounds().shoot.play();
         }
     };
 
@@ -158,12 +154,10 @@ function start()
     this.asteroidSpawner = {
         scene: this,
         spawnTicks: ASTEROID_SPAWN_RATE[1],
-        reset()
-        {
+        reset() {
             this.spawnTicks = ASTEROID_SPAWN_RATE[1];
         },
-        spawn()
-        {
+        spawn() {
             if (this.scene.asteroids.length > MAX_ASTEROID_COUNT) return;
             let spawnRange = Random.choose(ASTEROID_SPAWN_RANGES);
             let asteroid = createAsteroid(
@@ -178,13 +172,10 @@ function start()
             );
             this.scene.asteroids.push(asteroid);
         },
-        update(dt)
-        {
-            if (!this.scene.gamePause)
-            {
+        update(dt) {
+            if (!this.scene.gamePause) {
                 this.spawnTicks -= dt;
-                if (this.spawnTicks <= 0)
-                {
+                if (this.spawnTicks <= 0) {
                     this.spawn();
                     this.spawnTicks = Random.range(...ASTEROID_SPAWN_RATE);
                 }
@@ -198,12 +189,10 @@ function start()
     this.powerUps = [];
     this.powerUpSpawner = {
         scene: this,
-        reset()
-        {
+        reset() {
             // Do nothing.
         },
-        spawn()
-        {
+        spawn() {
             let spawnRange = Random.choose(ASTEROID_SPAWN_RANGES);
             let powerUp = createPowerUp(
                 this.scene,
@@ -216,8 +205,7 @@ function start()
             );
             this.scene.powerUps.push(powerUp);
         },
-        update(dt)
-        {
+        update(dt) {
             // Do nothing.
         }
     };
@@ -238,23 +226,18 @@ function start()
  * @this {any}
  * @param {number} dt The delta time spent on the previous frame.
  */
-function update(dt)
-{
-    if (this.gamePause)
-    {
+function update(dt) {
+    if (this.gamePause) {
         // Update particle motion
-        for(let particle of this.particles)
-        {
+        for (let particle of this.particles) {
             particle.age += dt;
-            if (particle.age > MAX_PARTICLE_AGE)
-            {
+            if (particle.age > MAX_PARTICLE_AGE) {
                 particle.destroy();
             }
-            else
-            {
+            else {
                 particle.x += particle.dx;
                 particle.y += particle.dy;
-        
+
                 // Wrap around
                 wrapAround(particle, PARTICLE_RADIUS * 2, PARTICLE_RADIUS * 2);
             }
@@ -289,56 +272,47 @@ function update(dt)
     wrapAround(this.player, PLAYER_RADIUS * 2, PLAYER_RADIUS * 2);
 
     // Whether to fire a bullet
-    if (fireControl)
-    {
+    if (fireControl) {
         this.player.shoot();
         this.flashShootDelta = 1;
     }
 
     // Whether to spawn thruster particles
-    if (moveControl)
-    {
-        thrust(this, this.player.x, this.player.y, 
+    if (moveControl) {
+        thrust(this, this.player.x, this.player.y,
             -moveControl * Math.cos(this.player.rotation) * PLAYER_MOVE_PARTICLE_DAMP_FACTOR,
-            -moveControl * Math.sin(this.player.rotation) * PLAYER_MOVE_PARTICLE_DAMP_FACTOR, 
+            -moveControl * Math.sin(this.player.rotation) * PLAYER_MOVE_PARTICLE_DAMP_FACTOR,
             Random.choose.bind(null, PLAYER_MOVE_PARTICLE_COLORS));
     }
 
     // Update bullet motion
-    for(let bullet of this.bullets)
-    {
+    for (let bullet of this.bullets) {
         bullet.age += dt;
-        if (bullet.age > MAX_BULLET_AGE)
-        {
+        if (bullet.age > MAX_BULLET_AGE) {
             bullet.destroy();
         }
-        else
-        {
+        else {
             bullet.x += bullet.dx;
             bullet.y += bullet.dy;
-    
+
             // Wrap around
             wrapAround(bullet, BULLET_RADIUS * 2, BULLET_RADIUS * 2);
         }
     }
 
     // Update bullet collision
-    for(let bullet of this.bullets)
-    {
-        for(let asteroid of this.asteroids)
-        {
-            if (withinRadius(bullet, asteroid, asteroid.size))
-            {
+    for (let bullet of this.bullets) {
+        for (let asteroid of this.asteroids) {
+            if (withinRadius(bullet, asteroid, asteroid.size)) {
                 this.flashScore = 1;
                 this.score++;
-                if (this.score > this.highScore)
-                {
+                if (this.score > this.highScore) {
                     this.flashHighScore = this.score - this.highScore;
                     this.highScore = this.score;
                     localStorage.setItem('highscore', this.highScore);
                 }
                 explode(this, asteroid.x, asteroid.y, 10, Random.choose.bind(null, ASTEROID_EXPLODE_PARTICLE_COLORS));
-                sounds.pop.play();
+                sounds().pop.play();
                 bullet.destroy();
                 asteroid.breakUp(bullet.dx * ASTEROID_BREAK_DAMP_FACTOR, bullet.dy * ASTEROID_BREAK_DAMP_FACTOR);
                 break;
@@ -347,26 +321,22 @@ function update(dt)
     }
 
     // Update particle motion
-    for(let particle of this.particles)
-    {
+    for (let particle of this.particles) {
         particle.age += dt;
-        if (particle.age > MAX_PARTICLE_AGE)
-        {
+        if (particle.age > MAX_PARTICLE_AGE) {
             particle.destroy();
         }
-        else
-        {
+        else {
             particle.x += particle.dx;
             particle.y += particle.dy;
-    
+
             // Wrap around
             wrapAround(particle, PARTICLE_RADIUS * 2, PARTICLE_RADIUS * 2);
         }
     }
 
     // Update asteroid motion
-    for(let asteroid of this.asteroids)
-    {
+    for (let asteroid of this.asteroids) {
         asteroid.x += asteroid.dx;
         asteroid.y += asteroid.dy;
 
@@ -375,10 +345,8 @@ function update(dt)
     }
 
     // Update asteroid collision
-    for(let asteroid of this.asteroids)
-    {
-        if (withinRadius(asteroid, this.player, asteroid.size + PLAYER_RADIUS))
-        {
+    for (let asteroid of this.asteroids) {
+        if (withinRadius(asteroid, this.player, asteroid.size + PLAYER_RADIUS)) {
             explode(this, asteroid.x, asteroid.y, 10, Random.choose.bind(null, ASTEROID_EXPLODE_PARTICLE_COLORS));
             asteroid.destroy();
             killPlayer(this);
@@ -387,8 +355,7 @@ function update(dt)
     }
 
     // Update power-up motion
-    for(let powerUp of this.powerUps)
-    {
+    for (let powerUp of this.powerUps) {
         powerUp.x += powerUp.dx;
         powerUp.y += powerUp.dy;
 
@@ -397,10 +364,8 @@ function update(dt)
     }
 
     // Update power-up collision
-    for(let powerUp of this.powerUps)
-    {
-        if (withinRadius(powerUp, this.player, POWER_UP_RADIUS + PLAYER_RADIUS))
-        {
+    for (let powerUp of this.powerUps) {
+        if (withinRadius(powerUp, this.player, POWER_UP_RADIUS + PLAYER_RADIUS)) {
             explode(this, powerUp.x, powerUp.y, 10, Random.choose.bind(null, POWER_UP_EXPLODE_PARTICLE_COLORS));
             powerUp.destroy();
             this.player.powerMode += POWER_UP_AMOUNT;
@@ -415,17 +380,15 @@ function update(dt)
     this.asteroidSpawner.update(dt);
     this.powerUpSpawner.update(dt);
 
-    if (!this.gamePause && this.asteroids.length <= 0)
-    {
+    if (!this.gamePause && this.asteroids.length <= 0) {
         this.gamePause = true;
         this.showPlayer = true;
-        sounds.start.play();
+        sounds().start.play();
         setTimeout(() => this.gameWait = true, 1000);
     }
 }
 
-function render(ctx)
-{
+function render(ctx) {
     // Draw background
     ctx.fillStyle = 'black';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -441,24 +404,20 @@ function render(ctx)
     ctx.fillText(this.hint, canvas.width / 2, canvas.height / 2 - 32);
 
     // Draw score
-    if (this.flashScore > 0)
-    {
+    if (this.flashScore > 0) {
         ctx.fillStyle = `rgba(255, 255, 255, ${this.flashScore + 0.2})`;
         this.flashScore -= FLASH_TIME_STEP;
     }
-    else
-    {
+    else {
         ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
     }
     ctx.font = '48px sans-serif';
     ctx.fillText('= ' + String(this.score).padStart(2, '0') + ' =', canvas.width / 2, canvas.height / 2);
-    if (this.flashHighScore > 0)
-    {
+    if (this.flashHighScore > 0) {
         ctx.fillStyle = `rgba(255, 255, 255, ${this.flashHighScore + 0.2})`;
         this.flashHighScore -= FLASH_TIME_STEP;
     }
-    else
-    {
+    else {
         ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
     }
     ctx.font = '16px sans-serif';
@@ -471,8 +430,7 @@ function render(ctx)
     ctx.fillText(Math.ceil(this.asteroidSpawner.spawnTicks / 1000), canvas.width, canvas.height - 12);
 
     // Draw asteroid
-    for(let asteroid of this.asteroids)
-    {
+    for (let asteroid of this.asteroids) {
         ctx.translate(asteroid.x, asteroid.y);
         ctx.rotate(asteroid.rotation);
         ctx.fillStyle = 'slategray';
@@ -483,8 +441,7 @@ function render(ctx)
     }
 
     // Draw power-up
-    for(let powerUp of this.powerUps)
-    {
+    for (let powerUp of this.powerUps) {
         ctx.translate(powerUp.x, powerUp.y);
         ctx.rotate(powerUp.rotation);
         ctx.beginPath();
@@ -501,8 +458,7 @@ function render(ctx)
     }
 
     // Draw bullet
-    for(let bullet of this.bullets)
-    {
+    for (let bullet of this.bullets) {
         ctx.translate(bullet.x, bullet.y);
         ctx.rotate(bullet.rotation);
         ctx.fillStyle = BULLET_COLOR;
@@ -513,8 +469,7 @@ function render(ctx)
     }
 
     // Draw particle
-    for(let particle of this.particles)
-    {
+    for (let particle of this.particles) {
         ctx.translate(particle.x, particle.y);
         ctx.rotate(particle.rotation);
         ctx.fillStyle = particle.color;
@@ -524,8 +479,7 @@ function render(ctx)
     }
 
     // Draw player
-    if (this.showPlayer)
-    {
+    if (this.showPlayer) {
         ctx.translate(this.player.x, this.player.y);
         ctx.rotate(this.player.rotation);
         ctx.fillStyle = 'white';
@@ -534,15 +488,13 @@ function render(ctx)
         let xOffset = -1;
         let yOffset = 0;
         let sizeOffset = 0;
-        if (this.flashShootDelta > 0)
-        {
+        if (this.flashShootDelta > 0) {
             ctx.fillStyle = `rgb(${200 * this.flashShootDelta + 55 * Math.sin(performance.now() / (PLAYER_SHOOT_COOLDOWN * 2))}, 0, 0)`;
             this.flashShootDelta -= FLASH_TIME_STEP;
             sizeOffset = this.flashShootDelta * 2;
             xOffset = this.flashShootDelta;
         }
-        else
-        {
+        else {
             ctx.fillStyle = 'black';
         }
         ctx.fillRect(-size - sizeOffset / 2 + xOffset, -(size / 4) - sizeOffset / 2 + yOffset, size + sizeOffset, size / 2 + sizeOffset);
@@ -552,23 +504,20 @@ function render(ctx)
     drawCollisionCircle(ctx, this.player.x, this.player.y, PLAYER_RADIUS);
 }
 
-function wrapAround(position, width, height)
-{
+function wrapAround(position, width, height) {
     if (position.x < -width) position.x = canvas.width;
     if (position.y < -height) position.y = canvas.height;
     if (position.x > canvas.width + width / 2) position.x = -width;
     if (position.y > canvas.height + height / 2) position.y = -height;
 }
 
-function withinRadius(from, to, radius)
-{
+function withinRadius(from, to, radius) {
     const dx = from.x - to.x;
     const dy = from.y - to.y;
     return dx * dx + dy * dy <= radius * radius;
 }
 
-function drawCollisionCircle(ctx, x, y, radius)
-{
+function drawCollisionCircle(ctx, x, y, radius) {
     if (!SHOW_COLLISION) return;
     ctx.translate(x, y);
     ctx.beginPath();
@@ -578,33 +527,28 @@ function drawCollisionCircle(ctx, x, y, radius)
     ctx.setTransform(1, 0, 0, 1, 0, 0);
 }
 
-function createPowerUp(scene, x, y, dx, dy)
-{
+function createPowerUp(scene, x, y, dx, dy) {
     return {
         scene,
         x, y,
         dx, dy,
         rotation: Math.atan2(dy, dx),
-        destroy()
-        {
+        destroy() {
             this.scene.powerUps.splice(this.scene.powerUps.indexOf(this), 1);
         }
     };
 }
 
-function createAsteroid(scene, x, y, dx, dy, size)
-{
+function createAsteroid(scene, x, y, dx, dy, size) {
     return {
         scene,
         x, y,
         dx, dy,
         size,
         rotation: Math.atan2(dy, dx),
-        breakUp(dx = 0, dy = 0)
-        {
+        breakUp(dx = 0, dy = 0) {
             this.destroy();
-            if (this.size > SMALL_ASTEROID_RADIUS)
-            {
+            if (this.size > SMALL_ASTEROID_RADIUS) {
                 let children = [];
                 children.push(createAsteroid(
                     this.scene,
@@ -641,30 +585,26 @@ function createAsteroid(scene, x, y, dx, dy, size)
                 this.scene.asteroids.push(...children);
             }
         },
-        destroy()
-        {
+        destroy() {
             this.scene.asteroids.splice(this.scene.asteroids.indexOf(this), 1);
         }
     };
 }
 
-function createBullet(scene, x, y, dx, dy)
-{
+function createBullet(scene, x, y, dx, dy) {
     return {
         scene,
         x, y,
         dx, dy,
         rotation: Math.atan2(dy, dx),
         age: 0,
-        destroy()
-        {
+        destroy() {
             this.scene.bullets.splice(this.scene.bullets.indexOf(this), 1);
         }
     };
 }
 
-function createParticle(scene, x, y, dx, dy, color)
-{
+function createParticle(scene, x, y, dx, dy, color) {
     if (typeof color === 'function') color = color.call(null);
     return {
         scene,
@@ -673,15 +613,13 @@ function createParticle(scene, x, y, dx, dy, color)
         rotation: Math.atan2(dy, dx),
         age: 0,
         color,
-        destroy()
-        {
+        destroy() {
             this.scene.particles.splice(this.scene.particles.indexOf(this), 1);
         }
     };
 }
 
-function nextLevel(scene)
-{
+function nextLevel(scene) {
     scene.bullets.length = 0;
     scene.asteroids.length = 0;
     scene.particles.length = 0;
@@ -693,33 +631,28 @@ function nextLevel(scene)
     scene.gamePause = false;
     scene.showPlayer = true;
 
-    for(let i = 0; i < ASTEROID_SPAWN_INIT_COUNT * scene.level; ++i)
-    {
+    for (let i = 0; i < ASTEROID_SPAWN_INIT_COUNT * scene.level; ++i) {
         scene.asteroidSpawner.spawn();
     }
 
-    if (Random.next() > POWER_UP_SPAWN_CHANCE)
-    {
+    if (Random.next() > POWER_UP_SPAWN_CHANCE) {
         scene.powerUpSpawner.spawn();
     }
-    
-    if (!sounds.music.playing) sounds.music.play();
+
+    if (!sounds().music.isPlaying()) sounds().music.play({ loop: true });
 }
 
-function killPlayer(scene)
-{
+function killPlayer(scene) {
     scene.gamePause = true;
     scene.showPlayer = false;
     explode(scene, scene.player.x, scene.player.y, 100, Random.choose.bind(null, PLAYER_EXPLODE_PARTICLE_COLORS));
-    sounds.dead.play();
-    sounds.boom.play();
+    sounds().dead.play();
+    sounds().boom.play();
     setTimeout(() => scene.gameStart = scene.gameWait = true, 1000);
 }
 
-function thrust(scene, x, y, dx, dy, color)
-{
-    if (Random.next() > 0.3)
-    {
+function thrust(scene, x, y, dx, dy, color) {
+    if (Random.next() > 0.3) {
         let particle = createParticle(
             scene,
             x + Random.range(...PLAYER_MOVE_PARTICLE_OFFSET_RANGE),
@@ -732,10 +665,8 @@ function thrust(scene, x, y, dx, dy, color)
     }
 }
 
-function explode(scene, x, y, amount = 10, color)
-{
-    for(let i = 0; i < amount; ++i)
-    {
+function explode(scene, x, y, amount = 10, color) {
+    for (let i = 0; i < amount; ++i) {
         scene.particles.push(
             createParticle(
                 scene,
@@ -749,13 +680,10 @@ function explode(scene, x, y, amount = 10, color)
 }
 
 /** @this {any} */
-function onKeyDown(key)
-{
-    if (this.gameWait)
-    {
-        if (this.gameStart)
-        {
-            sounds.music.play();
+function onKeyDown(key) {
+    if (this.gameWait) {
+        if (this.gameStart) {
+            sounds().music.play();
             this.score = 0;
             this.flashScore = true;
             this.level = 0;
@@ -769,8 +697,7 @@ function onKeyDown(key)
         nextLevel(this);
     }
 
-    switch(key)
-    {
+    switch (key) {
         case 'w':
         case 'ArrowUp':
             this.player.up = 1;
@@ -797,10 +724,8 @@ function onKeyDown(key)
     }
 }
 
-function onKeyUp(key)
-{
-    switch(key)
-    {
+function onKeyUp(key) {
+    switch (key) {
         case 'w':
         case 'ArrowUp':
             this.player.up = 0;
@@ -827,52 +752,3 @@ function onKeyUp(key)
             console.log(key);
     }
 }
-
-function createSound(filepath, loop = false)
-{
-    const result = {
-        _playing: false,
-        _data: null,
-        _source: null,
-        play()
-        {
-            if (!this._data) return;
-            if (this._source) this.destroy();
-
-            let source = audioContext.createBufferSource();
-            source.loop = loop;
-            source.buffer = this._data;
-            source.addEventListener('ended', () => {
-                this._playing = false;
-            });
-            source.connect(audioContext.destination);
-            source.start(0);
-
-            this._source = source;
-            this._playing = true;
-        },
-        pause()
-        {
-            this._source.stop();
-            this._playing = false;
-        },
-        destroy()
-        {
-            if (this._source) this._source.disconnect();
-            this._source = null;
-        },
-        isPaused()
-        {
-            return !this._playing;
-        }
-    };
-
-    fetch(filepath)
-        .then(response => response.arrayBuffer())
-        .then(buffer => audioContext.decodeAudioData(buffer))
-        .then(data => result._data = data);
-
-    return result;
-}
-
-main();

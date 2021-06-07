@@ -1,12 +1,13 @@
 import '@milque/display';
 import '@milque/input';
+import '@milque/asset';
 import './error.js';
 
 import { Random } from '@milque/random';
 import {
     Eventable,
-    Downloader,
-    Uploader,
+    downloadText,
+    uploadFile,
     distance2,
     lerp
 } from '@milque/util';
@@ -31,6 +32,7 @@ import * as WorldLoader from './WorldLoader.js';
 import { GameRenderer } from './GameRenderer.js';
 import { BLOCK_SIZE, MAX_BLOCK_TICKS, MAX_AUTO_SAVE_TICKS, CAMERA_SPEED } from './Config.js';
 import { ASSETS } from './asset/Assets.js';
+import { loadAudio } from './asset/Audio.js';
 
 // TODO: Move the camera towards the placed block each time.
 // TODO: Regionize the block maps.
@@ -43,19 +45,18 @@ import { ASSETS } from './asset/Assets.js';
  * @typedef {import('@milque/display').DisplayPort} DisplayPort
  * @typedef {import('@milque/display').FrameEvent} FrameEvent
  * @typedef {import('@milque/input').InputPort} InputPort
+ * @typedef {import('@milque/asset').AssetPack} AssetPack
  */
 
 document.addEventListener('DOMContentLoaded', main);
 
 async function load(assets)
 {
-    // Load all assets
-    assets.registerAsset('audio', 'flick', 'arroyo/flick.wav');
-    assets.registerAsset('audio', 'melt', 'arroyo/melt.mp3');
-    assets.registerAsset('audio', 'reset', 'arroyo/flick.wav');
-    assets.registerAsset('audio', 'background', 'arroyo/melt.mp3');
+    ASSETS['audio:flick'] = await loadAudio(assets.files.get('res/flick.wav'));
+    ASSETS['audio:melt'] = await loadAudio(assets.files.get('res/melt.mp3'));
+    ASSETS['audio:reset'] = ASSETS['audio:flick'];
+    ASSETS['audio:background'] = ASSETS['audio:melt'];
     await MaterialSystem.load(assets);
-    await assets.loadAssets();
 }
 
 async function main()
@@ -63,18 +64,23 @@ async function main()
     /** @type {DisplayPort} */
     const display = document.querySelector('#display');
     /** @type {InputPort} */
-    const input = document.querySelector('#input');
-    input.src = {
-        PointerX: 'Mouse:PosX',
-        PointerY: 'Mouse:PosY',
-        Place: 'Mouse:Button0',
-        Change: { key: 'Mouse:Button2', event: 'down' },
-        Reset: 'Keyboard:KeyR',
-        Save: 'Keyboard:KeyS',
-        Load: 'Keyboard:KeyL',
-    };
-
-    await load(ASSETS);
+    const inputs = document.querySelector('#inputs');
+    inputs.bindAxis('PointerX', 'Mouse', 'PosX');
+    inputs.bindAxis('PointerY', 'Mouse', 'PosY');
+    inputs.bindButton('Place', 'Mouse', 'Button0');
+    inputs.bindButton('Change', 'Mouse', 'Button2');
+    inputs.bindButton('Reset', 'Keyboard', 'KeyR');
+    inputs.bindButton('Rotate', 'Keyboard', 'KeyQ');
+    inputs.bindButton('Save', 'Keyboard', 'KeyS');
+    inputs.bindButton('Load', 'Keyboard', 'KeyL');
+    
+    /** @type {AssetPack} */
+    const assets = document.querySelector('#assets');
+    await new Promise((resolve, reject) => {
+        assets.addEventListener('load', resolve);
+        assets.addEventListener('error', reject);
+    });
+    await load(assets);
 
     // Initialize world
     const world = {
@@ -107,7 +113,7 @@ async function main()
 
     const game = {
         display,
-        input,
+        input: inputs,
         world,
         camera,
         placement,
@@ -146,8 +152,8 @@ function updatePlacement(game, dt)
 
     // Cursor worldPos
     const [cursorX, cursorY] = Camera2D.screenToWorld(
-        input.getInputState('PointerX') * display.width,
-        input.getInputState('PointerY') * display.height,
+        input.getInputValue('PointerX') * display.width,
+        input.getInputValue('PointerY') * display.height,
         viewMatrix, projectionMatrix);
     const nextPlaceX = Math.floor(cursorX / BLOCK_SIZE);
     const nextPlaceY = Math.floor(cursorY / BLOCK_SIZE);
@@ -169,22 +175,22 @@ function updatePlacement(game, dt)
         if (world.firstPlace)
         {
             world.firstPlace = false;
-            ASSETS.getAsset('audio', 'background').play();
+            ASSETS['audio:background'].play();
         }
     }
 
     function onReset(placeState)
     {
         let [resetPlaceX, resetPlaceY] = Placement.getPlacementSpawnPosition(
-            input.getInputState('PointerX'),
-            input.getInputState('PointerY'),
+            input.getInputValue('PointerX'),
+            input.getInputValue('PointerY'),
             BLOCK_SIZE,
             display.width, display.height,
             viewMatrix, projectionMatrix
         );
         placeState.placeX = resetPlaceX;
         placeState.placeY = resetPlaceY;
-        ASSETS.getAsset('audio', 'reset').play({ pitch: Random.range(-5, 5) });
+        ASSETS['audio:reset'].play({ pitch: Random.range(-5, 5) });
     }
 
     Placement.update(
@@ -203,7 +209,7 @@ function updateWorldControls(game)
     const input = game.input;
 
     // Reset world
-    if (input.getInputState('Reset'))
+    if (input.isButtonReleased('Reset'))
     {
         localStorage.removeItem('worldData');
         world.map.clear();
@@ -211,16 +217,16 @@ function updateWorldControls(game)
         return true;
     }
     // Save world
-    else if (input.getInputState('Save'))
+    else if (input.isButtonReleased('Save'))
     {
         let worldData = WorldLoader.saveWorld(world, {});
-        Downloader.downloadText('worldData.json', JSON.stringify(worldData));
+        downloadText('worldData.json', JSON.stringify(worldData));
         return true;
     }
     // Load world
-    else if (input.getInputState('Load'))
+    else if (input.isButtonReleased('Load'))
     {
-        Uploader.uploadFile(['.json'], false)
+        uploadFile(['.json'], false)
             .then(fileBlob => fileBlob.text())
             .then(textData => {
                 let worldData = JSON.parse(textData);

@@ -5,11 +5,18 @@ import { draw } from './ProgramHelper.js';
 
 export class ProgramInfo
 {
+    /**
+     * @param {WebGLRenderingContextBase} gl
+     */
     static builder(gl)
     {
         return new ProgramInfoBuilder(gl);
     }
 
+    /**
+     * @param {WebGLRenderingContextBase} gl 
+     * @param {WebGLProgram} program 
+     */
     constructor(gl, program)
     {
         this.handle = program;
@@ -109,12 +116,18 @@ export class ProgramInfoDrawContext
 
 export class ProgramInfoBuilder extends ProgramBuilder
 {
+    /**
+     * @param {WebGLRenderingContextBase} gl
+     */
     constructor(gl)
     {
         super(gl);
     }
 
-    /** @override */
+    /**
+     * @override
+     * @returns {ProgramInfo}
+     */
     link()
     {
         const handle = super.link();

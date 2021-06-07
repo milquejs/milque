@@ -1,17 +1,33 @@
 {
-  "name": "@milque/display",
-  "version": "0.0.1",
-  "description": "The display module for milque.js",
-  "module": "dist/esm/index.js",
-  "main": "dist/cjs/index.js",
-  "bundle": "dist/index.js",
-  "author": "Andrew Kuo",
-  "license": "MIT",
-  "keywords": [
-    "milque",
-    "display"
-  ],
-  "dependencies": {
-    "@milque/cuttle.macro": "^0.0.1"
-  }
+    "name": "@milque/display",
+    "version": "0.0.1",
+    "description": "The display module for milque.js",
+    "main": "./dist/cjs/index.js",
+    "module": "./dist/esm/index.js",
+    "browser": "./dist/index.js",
+    "types": "./dist/types/index.d.ts",
+    "exports": {
+        ".": {
+            "require": "./dist/cjs/index.js",
+            "import": "./dist/esm/index.js"
+        },
+        "./package.json": "./package.json"
+    },
+    "author": "Andrew Kuo",
+    "license": "MIT",
+    "keywords": [
+        "milque",
+        "display"
+    ],
+    "scripts": {
+        "build": "rollup -c --silent",
+        "lint": "eslint **/*.js && stylelint **/*.css"
+    },
+    "devDependencies": {
+        "@milque-dev/build-tools": "~1.0.0",
+        "eslint": "~7.25.0",
+        "stylelint": "~13.13.1",
+        "stylelint-config-standard": "~22.0.0",
+        "rollup": "~2.47.0"
+    }
 }

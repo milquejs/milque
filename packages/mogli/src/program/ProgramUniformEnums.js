@@ -1,5 +1,5 @@
 // https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API/Constants
-export default {
+export const ProgramUniformEnums = {
     // WebGL1
     FLOAT:                          0x1406,
     FLOAT_VEC2:                     0x8B50,

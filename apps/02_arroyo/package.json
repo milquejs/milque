@@ -2,19 +2,33 @@
   "name": "arroyo",
   "version": "1.0.0",
   "description": "A calm game, unlike tetris.",
-  "browser": "dist/index.js",
+  "type": "module",
+  "browser": "public/main.js",
   "author": "Andrew Kuo",
   "license": "MIT",
   "keywords": [
     "milque"
   ],
+  "scripts": {
+    "munge": "node munge.js",
+    "start": "node build.js --dev",
+    "build": "node build.js",
+    "lint": "eslint **/*.js && stylelint **/*.css"
+  },
   "dependencies": {
-    "gl-matrix": "^3.3.0",
-    "@milque/display": "^0.0.1",
-    "@milque/input": "^0.0.1",
-    "@milque/random": "^0.0.1",
-    "@milque/util": "^0.0.1",
-    "@milque/scene": "^0.0.1",
-    "@milque/mogli": "^0.0.1"
+    "gl-matrix": "~3.3.0",
+    "@milque/display": "~0.0.1",
+    "@milque/input": "~0.0.1",
+    "@milque/random": "~0.0.1",
+    "@milque/scene": "~0.0.1",
+    "@milque/util": "~0.0.1",
+    "@milque/mogli": "~0.0.1",
+    "@milque/asset": "~0.0.1"
+  },
+  "devDependencies": {
+    "@milque/toolkit": "~0.0.1",
+    "eslint": "~7.25.0",
+    "stylelint": "~13.13.1",
+    "stylelint-config-standard": "~22.0.0"
   }
 }

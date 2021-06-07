@@ -1,8 +1,6 @@
 import { mat4, quat, vec3, vec4 } from 'gl-matrix';
 
 const UP = vec3.fromValues(0, 1, 0);
-const HALF_PI = Math.PI / 2;
-const PI2 = Math.PI * 2;
 
 export function panTo(viewMatrix, x, y, z = 0, dt = 1)
 {

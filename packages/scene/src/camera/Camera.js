@@ -6,8 +6,14 @@ export class Camera
         this.viewMatrix = viewMatrix;
     }
 
-    /** @abstract */
-    resize(viewportWidth, viewportHeight)
+    /**
+     * @abstract
+     * @param {number} [viewportWidth]
+     * @param {number} [viewportHeight]
+     * @returns {Camera}
+     */
+    // eslint-disable-next-line no-unused-vars
+    resize(viewportWidth = undefined, viewportHeight = undefined)
     {
         return this;
     }

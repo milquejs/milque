@@ -1,57 +1,84 @@
-import { properties, customEvents, attachShadowTemplate } from '@milque/cuttle.macro';
-
 import INNER_HTML from './DisplayPort.template.html';
 import INNER_STYLE from './DisplayPort.module.css';
 
 /**
- * No scaling is applied. The canvas size maintains a 1:1 pixel ratio to the defined
- * display dimensions.
+ * No scaling is applied. The canvas size maintains a
+ * 1:1 pixel ratio to the defined display dimensions.
  */
 export const MODE_NOSCALE = 'noscale';
 
 /**
- * No scaling is applied, but the element fills the entire viewport. The canvas size
- * maintains a 1:1 pixel ratio to the defined display dimensions and is centered
- * inside the scaled element.
+ * No scaling is applied, but the element fills the
+ * entire viewport. The canvas size maintains a 1:1
+ * pixel ratio to the defined display dimensions and
+ * is centered inside the scaled element.
  */
 export const MODE_CENTER = 'center';
 
 /**
- * Scales the canvas to fill the entire viewport and maintains the same aspect ratio.
- * This will adjust canvas resolution to fit the viewport dimensions. In other words,
- * the canvas pixel size remains constant, but the number of pixels in the canvas will
- * increase or decrease to compensate. This is the default scaling mode.
+ * Scales the canvas to fill the entire viewport and
+ * maintains the same aspect ratio. This will adjust
+ * canvas resolution to fit the viewport dimensions.
+ * In other words, the canvas pixel size remains
+ * constant, but the number of pixels in the canvas
+ * will increase or decrease to compensate. This is
+ * the default scaling mode.
  */
 export const MODE_FIT = 'fit';
 
 /**
- * Scales the canvas to fill the entire viewport and maintains the same aspect ratio
- * and pixel resolution. This will upscale and downscale the pixel size depending on
- * the viewport dimentions in order to preserve the canvas pixel count. In other words,
- * the number of pixels in the canvas remain constant but appear larger or smaller to
+ * Scales the canvas to fill the entire viewport and
+ * maintains the same aspect ratio and pixel
+ * resolution. This will upscale and downscale the
+ * pixel size depending on the viewport dimentions
+ * in order to preserve the canvas pixel count. In
+ * other words, the number of pixels in the canvas
+ * remain constant but appear larger or smaller to
  * compensate.
  */
-export const MODE_PIXELFIT = 'pixelfit';
+export const MODE_SCALE = 'scale';
 
 /**
- * Scales the canvas to fill the entire viewport. This does not maintain the aspect
- * ratio. If you care about aspect ratio, consider using 'fit' mode instead.
+ * Scales the canvas to fill the entire viewport.
+ * This does not maintain the aspect ratio. If you
+ * care about aspect ratio, consider using 'fit'
+ * mode instead.
  */
 export const MODE_STRETCH = 'stretch';
 
-// The default display dimensions. This is the same as the canvas element default.
+/**
+ * The default display x dimensions. This is
+ * the same as the canvas element default.
+ */
 const DEFAULT_WIDTH = 300;
+/**
+ * The default display y dimensions. This is
+ * the same as the canvas element default.
+ */
 const DEFAULT_HEIGHT = 150;
 
-// The default display scaling mode.
+/** The default display scaling mode. */
 const DEFAULT_MODE = MODE_FIT;
 
 /**
  * @typedef {CustomEvent} FrameEvent
- * @property {number} detail.now The current time in milliseconds.
- * @property {number} detail.prevTime The previous frame time in milliseconds.
- * @property {number} detail.deltaTime The time taken between the current and previous frame in milliseconds.
- * @property {HTMLCanvasElement} detail.canvas The canvas element.
+ * @property {number} detail.now
+ * The current time in milliseconds.
+ * @property {number} detail.prevTime
+ * The previous frame time in milliseconds.
+ * @property {number} detail.deltaTime
+ * The time taken between the current and previous
+ * frame in milliseconds.
+ * @property {HTMLCanvasElement} detail.canvas
+ * The canvas element.
+ */
+
+/**
+ * @typedef {MODE_CENTER
+ *          |MODE_FIT
+ *          |MODE_NOSCALE
+ *          |MODE_SCALE
+ *          |MODE_STRETCH} DisplayScaling
  */
 
 /**
@@ -87,61 +114,155 @@ const DEFAULT_MODE = MODE_FIT;
  */
 export class DisplayPort extends HTMLElement
 {
+    /** @private */
+    static get [Symbol.for('templateNode')]()
+    {
+        let t = document.createElement('template');
+        t.innerHTML = INNER_HTML;
+        Object.defineProperty(this, Symbol.for('templateNode'), { value: t });
+        return t;
+    }
+
+    /** @private */
+    static get [Symbol.for('styleNode')]()
+    {
+        let t = document.createElement('style');
+        t.innerHTML = INNER_STYLE;
+        Object.defineProperty(this, Symbol.for('styleNode'), { value: t });
+        return t;
+    }
+
+    static define(customElements = window.customElements)
+    {
+        customElements.define('display-port', this);
+    }
+
     /** @override */
     static get observedAttributes()
     {
         return [
+            'debug',
+            'disabled',
+            // 'mode',
+            'width',
+            'height',
+            'onframe',
+            // Built-in attributes
             'id',
             'class',
         ];
     }
 
-    static get [properties]()
+    /**
+     * The scaling mode.
+     * - `noscale`: Does not perform scaling. This is effectively the same as a regular
+     * canvas.
+     * - `center`: Does not perform scaling but stretches the display to fill the entire
+     * viewport. The unscaled canvas is centered.
+     * - `fit`: Performs scaling to fill the entire viewport and maintains the aspect
+     * ratio. The pixel resolution changes to match. This is the default behavior.
+     * - `stretch`: Performs scaling to fill the entire viewport but does not maintain
+     * aspect ratio.
+     * - `pixelfit`: Performs scaling to fill the entire viewport and maintains the
+     * aspect ratio and resolution. The pixel resolution remains constant.
+     * @returns {DisplayScaling} The current scaling mode.
+     */
+    get mode()
     {
-        return {
-            /** The canvas width in pixels. This determines the aspect ratio and canvas buffer size. */
-            width: Number,
-            /** The canvas height in pixels. This determines the aspect ratio and canvas buffer size. */
-            height: Number,
-            /** If disabled, animation frames will not fire. */
-            disabled: Boolean,
-            /** Enable for debug information. */
-            debug: Boolean,
-            /**
-             * The scaling mode.
-             * - `noscale`: Does not perform scaling. This is effectively the same as a regular
-             * canvas.
-             * - `center`: Does not perform scaling but stretches the display to fill the entire
-             * viewport. The unscaled canvas is centered.
-             * - `fit`: Performs scaling to fill the entire viewport and maintains the aspect
-             * ratio. The pixel resolution changes to match. This is the default behavior.
-             * - `stretch`: Performs scaling to fill the entire viewport but does not maintain
-             * aspect ratio.
-             * - `pixelfit`: Performs scaling to fill the entire viewport and maintains the
-             * aspect ratio and resolution. The pixel resolution remains constant.
-             */
-            mode: { type: String, value: DEFAULT_MODE, observed: false },
-        };
+        return /** @type {DisplayScaling} */(this.getAttribute('mode'));
     }
 
-    static get [customEvents]()
+    set mode(value)
     {
-        return [
-            /** Fired every animation frame. */
-            'frame'
-        ];
+        this.setAttribute('mode', value);
+    }
+
+    /**
+     * Set to true for debug information.
+     * @returns {boolean}
+     */
+    get debug()
+    {
+        return this._debug;
+    }
+
+    set debug(value)
+    {
+        this.toggleAttribute('debug', value);
+    }
+
+    /**
+     * If disabled, animation frames will not fire.
+     * @returns {boolean}
+     */
+    get disabled()
+    {
+        return this._disabled;
+    }
+
+    set disabled(value)
+    {
+        this.toggleAttribute('disabled', value);
+    }
+
+    /**
+     * The canvas width in pixels. This determines the aspect ratio and canvas buffer size.
+     * @returns {number}
+     */
+    get width()
+    {
+        return this._width;
+    }
+
+    set width(value)
+    {
+        this.setAttribute('width', String(value));
+    }
+
+    /**
+     * The canvas height in pixels. This determines the aspect ratio and canvas buffer size.
+     */
+    get height()
+    {
+        return this._height;
+    }
+
+    set height(value)
+    {
+        this.setAttribute('height', String(value));
+    }
+
+    /** Fired every animation frame. */
+    get onframe()
+    {
+        return this._onframe;
+    }
+
+    set onframe(value)
+    {
+        if (this._onframe) this.removeEventListener('frame', this._onframe);
+        this._onframe = value;
+        if (this._onframe) this.addEventListener('frame', value);
     }
 
     constructor()
     {
         super();
-        attachShadowTemplate(this, INNER_HTML, INNER_STYLE, { mode: 'open' });
-
+        this.attachShadow({ mode: 'open' });
+        this.shadowRoot.appendChild(this.constructor[Symbol.for('templateNode')].content.cloneNode(true));
+        this.shadowRoot.appendChild(this.constructor[Symbol.for('styleNode')].cloneNode(true));
+        
         /** @private */
         this._canvasElement = this.shadowRoot.querySelector('canvas');
-        /** @private */
+        /**
+         * @private
+         * @type {HTMLDivElement}
+         */
         this._contentElement = this.shadowRoot.querySelector('.content');
-        /** @private */
+        /**
+         * @private
+         * @type {HTMLSlotElement}
+         */
         this._innerElement = this.shadowRoot.querySelector('#inner');
 
         /** @private */
@@ -152,14 +273,20 @@ export class DisplayPort extends HTMLElement
         this._dimensionElement = this.shadowRoot.querySelector('#dimension');
 
         /** @private */
-        this._animationRequestHandle = 0;
+        this._debug = false;
         /** @private */
-        this._prevAnimationFrameTime = 0;
-
+        this._disabled = false;
         /** @private */
         this._width = DEFAULT_WIDTH;
         /** @private */
         this._height = DEFAULT_HEIGHT;
+        /** @private */
+        this._onframe = undefined;
+
+        /** @private */
+        this._animationRequestHandle = 0;
+        /** @private */
+        this._prevAnimationFrameTime = 0;
 
         /** @private */
         this.update = this.update.bind(this);
@@ -171,8 +298,23 @@ export class DisplayPort extends HTMLElement
     /** @override */
     connectedCallback()
     {
+        upgradeProperty(this, 'mode');
+        upgradeProperty(this, 'debug');
+        upgradeProperty(this, 'disabled');
+        upgradeProperty(this, 'width');
+        upgradeProperty(this, 'height');
+        upgradeProperty(this, 'onframe');
+
+        if (!this.hasAttribute('mode'))
+        {
+            this.setAttribute('mode', DEFAULT_MODE);
+        }
+
         // Allows this element to be focusable
-        if (!this.hasAttribute('tabindex')) this.setAttribute('tabindex', '0');
+        if (!this.hasAttribute('tabindex'))
+        {
+            this.setAttribute('tabindex', '0');
+        }
 
         this.updateCanvasSize();
         this.resume();
@@ -187,29 +329,57 @@ export class DisplayPort extends HTMLElement
     /** @override */
     attributeChangedCallback(attribute, prev, value)
     {
-        switch(attribute)
-        {
-            case 'disabled':
-                if (value)
-                {
-                    this.update(0);
-                    this.pause();
-                }
-                else
-                {
-                    this.resume();
-                }
-                break;
-            // NOTE: For debugging purposes...
-            case 'id':
-            case 'class':
-                this._titleElement.innerHTML = `display-port${this.className ? '.' + this.className : ''}${this.hasAttribute('id') ? '#' + this.getAttribute('id') : ''}`;
-                break;
-            case 'debug':
-                this._titleElement.classList.toggle('hidden', value);
-                this._fpsElement.classList.toggle('hidden', value);
-                this._dimensionElement.classList.toggle('hidden', value);
-                break;
+        switch(attribute) {
+        case 'debug':
+            {
+                this._debug = value !== null;
+            }
+            break;
+        case 'disabled':
+            {
+                this._disabled = value !== null;
+            }
+            break;
+        case 'width':
+            {
+                this._width = Number(value);
+            }
+            break;
+        case 'height':
+            {
+                this._height = Number(value);
+            }
+            break;
+        case 'onframe':
+            {
+                this.onframe = new Function('event',
+                    'with(document){with(this){' + value + '}}').bind(this);
+            }
+            break;
+        }
+
+        switch(attribute) {
+        case 'disabled':
+            if (value)
+            {
+                this.update(0);
+                this.pause();
+            }
+            else
+            {
+                this.resume();
+            }
+            break;
+        // NOTE: For debugging purposes...
+        case 'id':
+        case 'class':
+            this._titleElement.innerHTML = `display-port${this.className ? '.' + this.className : ''}${this.hasAttribute('id') ? '#' + this.getAttribute('id') : ''}`;
+            break;
+        case 'debug':
+            this._titleElement.classList.toggle('hidden', value);
+            this._fpsElement.classList.toggle('hidden', value);
+            this._dimensionElement.classList.toggle('hidden', value);
+            break;
         }
     }
 
@@ -234,17 +404,20 @@ export class DisplayPort extends HTMLElement
         this._prevAnimationFrameTime = now;
 
         // NOTE: For debugging purposes...
-        if (this.debug)
+        if (this._debug)
         {
             // Update FPS...
-            const frames = deltaTime <= 0 ? '--' : String(Math.round(1000 / deltaTime)).padStart(2, '0');
+            const frames = deltaTime <= 0
+                ? '--'
+                : String(Math.round(1000 / deltaTime)).padStart(2, '0');
             if (this._fpsElement.textContent !== frames)
             {
                 this._fpsElement.textContent = frames;
             }
 
             // Update dimensions...
-            if (this.mode === MODE_NOSCALE)
+            const mode = this.mode;
+            if (mode === MODE_NOSCALE)
             {
                 let result = `${this._width}x${this._height}`;
                 if (this._dimensionElement.textContent !== result)
@@ -286,7 +459,6 @@ export class DisplayPort extends HTMLElement
         let canvasHeight = this._height;
 
         const mode = this.mode;
-
         if (mode === MODE_STRETCH)
         {
             canvasWidth = clientWidth;
@@ -294,8 +466,10 @@ export class DisplayPort extends HTMLElement
         }
         else if (mode !== MODE_NOSCALE)
         {
-            let flag = clientWidth < canvasWidth || clientHeight < canvasHeight || mode === MODE_FIT || mode == MODE_PIXELFIT;
-            if (flag)
+            if (clientWidth < canvasWidth
+                || clientHeight < canvasHeight
+                || mode === MODE_FIT
+                || mode == MODE_SCALE)
             {
                 let ratioX = clientWidth / canvasWidth;
                 let ratioY = clientHeight / canvasHeight;
@@ -316,14 +490,17 @@ export class DisplayPort extends HTMLElement
         canvasWidth = Math.floor(canvasWidth);
         canvasHeight = Math.floor(canvasHeight);
 
-        let fontSize = Math.min(canvasWidth / this._width, canvasHeight / this._height) * 0.5;
+        let fontSize = Math.min(
+            canvasWidth / this._width,
+            canvasHeight / this._height) * 0.5;
         // NOTE: Update the inner container for the default slotted children.
         // To anchor children outside the canvas, use the slot named 'frame'.
-        this._innerElement.style = `font-size: ${fontSize}em`;
+        this._innerElement.style.fontSize = `font-size: ${fontSize}em`;
 
-        if (canvas.clientWidth !== canvasWidth || canvas.clientHeight !== canvasHeight)
+        if (canvas.clientWidth !== canvasWidth
+            || canvas.clientHeight !== canvasHeight)
         {
-            if (mode === MODE_PIXELFIT)
+            if (mode === MODE_SCALE)
             {
                 canvas.width = this._width;
                 canvas.height = this._height;
@@ -333,10 +510,31 @@ export class DisplayPort extends HTMLElement
                 canvas.width = canvasWidth;
                 canvas.height = canvasHeight;
             }
-            this._contentElement.style = `width: ${canvasWidth}px; height: ${canvasHeight}px`;
+            let contentStyle = this._contentElement.style;
+            contentStyle.width = `${canvasWidth}px`;
+            contentStyle.height = `${canvasHeight}px`;
 
-            this.dispatchEvent(new CustomEvent('resize', { detail: { width: canvasWidth, height: canvasHeight }, bubbles: false, composed: true }));
+            if (mode === MODE_FIT)
+            {
+                this._width = canvasWidth;
+                this._height = canvasHeight;
+            }
+
+            this.dispatchEvent(new CustomEvent('resize', { detail: {
+                width: canvasWidth,
+                height: canvasHeight
+            }, bubbles: false, composed: true }));
         }
     }
 }
-window.customElements.define('display-port', DisplayPort);
+DisplayPort.define();
+
+function upgradeProperty(element, propertyName)
+{
+    if (Object.prototype.hasOwnProperty.call(element, propertyName))
+    {
+        let value = element[propertyName];
+        delete element[propertyName];
+        element[propertyName] = value;
+    }
+}

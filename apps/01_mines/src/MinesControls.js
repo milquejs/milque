@@ -1,29 +1,21 @@
-import { InputContext, InputSource } from '@milque/input';
+/** @typedef {import('@milque/input').InputPort} InputPort */
 
-export const INPUT_MAPPING = {
-    activate: { key: 'Mouse:Button0', event: 'up' },
-    mark: { key: 'Mouse:Button2', event: 'up' },
-    restart: { key: 'Keyboard:KeyR', event: 'up' },
-    cursorX: { key: 'Mouse:PosX', scale: 1 },
-    cursorY: { key: 'Mouse:PosY', scale: 1 },
-};
-export const INPUT_CONTEXT = new InputContext().setInputMapping(INPUT_MAPPING);
+export const INPUTS = {};
 
-export const CursorX = INPUT_CONTEXT.getInput('cursorX');
-export const CursorY = INPUT_CONTEXT.getInput('cursorY');
-export const Activate = INPUT_CONTEXT.getInput('activate');
-export const Mark = INPUT_CONTEXT.getInput('mark');
-export const Restart = INPUT_CONTEXT.getInput('restart');
-
-export function attach()
+/**
+ * @param {InputPort} inputs 
+ */
+export function attach(inputs)
 {
-    const inputSource = InputSource.for(document.querySelector('#main'));
-    INPUT_CONTEXT.attach(inputSource);
-    return INPUT_CONTEXT;
-}
+    inputs.bindAxis('CursorX', 'Mouse', 'PosX');
+    inputs.bindAxis('CursorY', 'Mouse', 'PosY');
+    inputs.bindButton('Activate', 'Mouse', 'Button0');
+    inputs.bindButton('Mark', 'Mouse', 'Button2');
+    inputs.bindButton('Restart', 'Keyboard', 'KeyR');
 
-export function poll()
-{
-    INPUT_CONTEXT.source.poll();
-    return INPUT_CONTEXT;
+    INPUTS.CursorX = inputs.getInput('CursorX');
+    INPUTS.CursorY = inputs.getInput('CursorY');
+    INPUTS.Activate = inputs.getInput('Activate');
+    INPUTS.Mark = inputs.getInput('Mark');
+    INPUTS.Restart = inputs.getInput('Restart');
 }

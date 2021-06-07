@@ -1,5 +1,5 @@
 // Bresenham's Line Algorithm
-export function line(fromX, fromY, toX, toY, callback)
+export function bresenhamLine(fromX, fromY, toX, toY, callback)
 {
     let fx = Math.floor(fromX);
     let fy = Math.floor(fromY);

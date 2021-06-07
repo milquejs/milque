@@ -141,7 +141,7 @@ const EventableInstance = {
  * @param {Object} [context] The context used for the event handlers.
  * @return {Eventable} The created eventable object.
  */
-export function create(context = undefined)
+function create(context = undefined)
 {
     const result = Object.create(EventableInstance);
     result.__events = new Map();
@@ -156,7 +156,7 @@ export function create(context = undefined)
  * @param {Object} [context] The context used for the event handlers.
  * @return {Eventable} The resultant eventable object.
  */
-export function assign(dst, context = undefined)
+function assign(dst, context = undefined)
 {
     const result = Object.assign(dst, EventableInstance);
     result.__events = new Map();
@@ -171,7 +171,7 @@ export function assign(dst, context = undefined)
  * @param {Object} [context] The context used for the event handlers.
  * @return {Class<Eventable>} The resultant eventable-mixed-in class.
  */
-export function mixin(targetClass, context = undefined)
+function mixin(targetClass, context = undefined)
 {
     const targetPrototype = targetClass.prototype;
     Object.assign(targetPrototype, EventableInstance);
@@ -180,8 +180,8 @@ export function mixin(targetClass, context = undefined)
     return targetPrototype;
 }
 
-export default {
+export const Eventable = {
     create,
     assign,
-    mixin
+    mixin,
 };

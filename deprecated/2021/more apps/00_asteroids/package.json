@@ -1,0 +1,16 @@
+{
+  "name": "asteroids",
+  "version": "1.0.0",
+  "description": "A game of asteroids.",
+  "browser": "dist/index.js",
+  "author": "Andrew Kuo",
+  "license": "MIT",
+  "keywords": [
+    "milque"
+  ],
+  "dependencies": {
+    "@milque/display": "^0.0.1",
+    "@milque/random": "^0.0.1",
+    "fflate": "^0.6.9"
+  }
+}

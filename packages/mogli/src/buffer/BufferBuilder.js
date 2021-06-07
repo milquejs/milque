@@ -85,6 +85,7 @@ export class BufferBuilder extends BufferDataContext
         gl.bindBuffer(target, this.handle);
     }
     
+    /** @returns {WebGLBuffer} */
     build()
     {
         return this.handle;

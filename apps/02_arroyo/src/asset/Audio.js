@@ -2,13 +2,12 @@ export const AUDIO_CONTEXT = new AudioContext();
 autoUnlock(AUDIO_CONTEXT);
 
 export const AUDIO_ASSET_TAG = 'audio';
-export async function loadAudio(filepath, opts = {})
+export async function loadAudio(buffer, opts = {})
 {
     const ctx = AUDIO_CONTEXT;
-
-    let result = await fetch(filepath);
-    let buffer = await result.arrayBuffer();
-    let data = await ctx.decodeAudioData(buffer);
+    let buf = new ArrayBuffer(buffer.byteLength);
+    new Uint8Array(buf).set(buffer);
+    let data = await ctx.decodeAudioData(buf);
     return new Sound(ctx, data, Boolean(opts.loop));
 }
 

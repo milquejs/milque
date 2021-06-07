@@ -9,17 +9,17 @@ export class PerspectiveCamera extends Camera
     {
         super(mat4.create(), mat4.create());
 
-        this.fieldOfView = fieldOfView;
+        this.fieldOfView = Number(fieldOfView);
         this.clippingPlane = {
-            near,
-            far,
+            near: Number(near),
+            far: Number(far),
         };
     }
 
     /** @override */
-    resize(viewportWidth, viewportHeight)
+    resize(viewportWidth = undefined, viewportHeight = undefined)
     {
-        const aspectRatio = viewportWidth / viewportHeight;
+        const aspectRatio = typeof viewportWidth === 'undefined' ? 1 : viewportWidth / viewportHeight;
         const { near, far } = this.clippingPlane;
         mat4.perspective(this.projectionMatrix, this.fieldOfView, aspectRatio, near, far);
         return this;

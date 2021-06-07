@@ -1,5 +1,5 @@
 // https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/vertexAttribPointer
-export default {
+export const ProgramAttributeEnums = {
     // WebGL1
     BYTE:                           0x1400,
     UNSIGNED_BYTE:                  0x1401,

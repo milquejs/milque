@@ -1,1 +1,1 @@
-export * from './loaders/index.js';
+export { AssetPack } from './AssetPack.js';

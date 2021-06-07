@@ -1,165 +1,126 @@
 /**
- * An enum for input types.
- * 
- * @readonly
- * @enum {number}
- */
-export const InputType = {
-    NULL: 0,
-    KEY: 1,
-    POS: 2,
-    WHEEL: 3,
-};
-
-/**
- * An enum for input events.
- * 
- * @readonly
- * @enum {number}
- */
-export const InputEventCode = {
-    NULL: 0,
-    DOWN: 1,
-    UP: 2,
-    MOVE: 3,
-    parse(string)
-    {
-        if (typeof string === 'string')
-        {
-            switch(string.toLowerCase())
-            {
-                case 'down': return InputEventCode.DOWN;
-                case 'up': return InputEventCode.UP;
-                case 'move': return InputEventCode.MOVE;
-                default: return InputEventCode.NULL;
-            }
-        }
-        else
-        {
-            return InputEventCode.NULL;
-        }
-    }
-};
-
-export const WILDCARD_KEY_MATCHER = '*';
-
-/**
- * @typedef InputEvent
+ * @typedef InputDeviceEvent
  * @property {EventTarget} target
- * @property {string} deviceName
- * @property {string} keyCode
- * @property {InputEventCode} event
- * @property {InputType} type
- * @property {number} [value] If type is `key`, it is defined to be the input
- * value of the triggered event (usually this is 1). Otherwise, it is undefined.
- * @property {boolean} [control] If type is `key`, it is defined to be true if
- * any control key is down (false if up). Otherwise, it is undefined.
- * @property {boolean} [shift] If type is `key`, it is defined to be true if
- * any shift key is down (false if up). Otherwise, it is undefined.
- * @property {boolean} [alt] If type is `key`, it is defined to be true if any
- * alt key is down (false if up). Otherwise, it is undefined.
- * @property {number} [x] If type is `pos`, it is defined to be the x value
- * of the position event. Otherwise, it is undefined.
- * @property {number} [y] If type is `pos`, it is defined to be the y value
- * of the position event. Otherwise, it is undefined.
- * @property {number} [dx] If type is `pos` or `wheel`, it is defined to be
- * the change in the x value from the previous to the current position.
- * Otherwise, it is undefined.
- * @property {number} [dy] If type is `pos` or `wheel`, it is defined to be
- * the change in the y value from the previous to the current position.
- * Otherwise, it is undefined.
- * @property {number} [dz] If type is `wheel`, it is defined to be the change
- * in the z value from the previous to the current position. Otherwise, it
- * is undefined.
+ * @property {string} device
+ * @property {string} code
+ * @property {string} event
+ * @property {number} [value] The input value of the triggered event (usually this is 1).
+ * @property {number} [movement] The change in value for the triggered event.
+ * @property {boolean} [control] Whether any control keys are down (false if up).
+ * @property {boolean} [shift] Whether any shift keys are down (false if up).
+ * @property {boolean} [alt] Whether any alt keys are down (false if up).
  * 
- * @callback InputDeviceListener
- * @param {InputEvent} e
- * @returns {boolean} Whether to consume the input after all other
- * listeners had a chance to handle the event.
+ * @callback InputDeviceEventListener
+ * @param {InputDeviceEvent} e
  */
 
-/** Represents an input device. */
+/**
+ * A class that represents a raw system device that
+ * emits input events.
+ */
 export class InputDevice
 {
     /** @abstract */
-    static isAxis(keyCode)
+    // eslint-disable-next-line no-unused-vars
+    static isAxis(code)
     {
         return false;
     }
 
     /** @abstract */
-    static isButton(keyCode)
+    // eslint-disable-next-line no-unused-vars
+    static isButton(code)
     {
         return false;
     }
 
+    /**
+     * @param {string} deviceName 
+     * @param {EventTarget} eventTarget 
+     */
     constructor(deviceName, eventTarget)
     {
-        this.deviceName = deviceName;
+        if (!eventTarget)
+        {
+            throw new Error(`Missing event target for device ${deviceName}.`);
+        }
+
+        this.name = deviceName;
         this.eventTarget = eventTarget;
 
-        /** @private */
-        this.listeners = {};
+        /**
+         * @private
+         * @type {Record<string, Array<InputDeviceEventListener>>}
+         */
+        this.listeners = {
+            input: []
+        };
+    }
+
+    /**
+     * @param {EventTarget} eventTarget 
+     */
+    setEventTarget(eventTarget)
+    {
+        if (!eventTarget)
+        {
+            throw new Error(`Missing event target for device ${this.name}.`);
+        }
+        this.eventTarget = eventTarget;
     }
 
     destroy()
     {
-        /** @private */
-        this.listeners = {};
+        let listeners = this.listeners;
+        for(let event in listeners)
+        {
+            listeners[event].length = 0;
+        }
     }
 
     /**
-     * @param {string} keyMatcher
-     * @param {InputDeviceListener} listener
+     * @param {string} event 
+     * @param {InputDeviceEventListener} listener 
      */
-    addInputListener(keyMatcher, listener)
+    addEventListener(event, listener)
     {
-        let inputListeners = this.listeners[keyMatcher];
-        if (!inputListeners)
+        let listeners = this.listeners;
+        if (event in listeners)
         {
-            inputListeners = [listener];
-            this.listeners[keyMatcher] = inputListeners;
+            listeners[event].push(listener);
         }
         else
         {
-            inputListeners.push(listener);
+            listeners[event] = [listener];
         }
     }
 
     /**
-     * @param {string} keyMatcher
-     * @param {InputDeviceListener} listener
+     * @param {string} event 
+     * @param {InputDeviceEventListener} listener 
      */
-    removeInputListener(keyMatcher, listener)
+    removeEventListener(event, listener)
     {
-        let inputListeners = this.listeners[keyMatcher];
-        if (inputListeners)
+        let listeners = this.listeners;
+        if (event in listeners)
         {
-            inputListeners.indexOf(listener);
-            inputListeners.splice(listener, 1);
+            let list = listeners[event];
+            let i = list.indexOf(listener);
+            if (i >= 0)
+            {
+                list.splice(i, 1);
+            }
         }
     }
 
     /**
-     * @param {InputEvent} e
+     * @param {InputDeviceEvent} e
      * @returns {boolean} Whether the input event should be consumed.
      */
-    dispatchInput(e)
+    dispatchInputEvent(e)
     {
-        const { keyCode } = e;
-        const listeners = this.listeners[keyCode];
         let flag = 0;
-        if (listeners)
-        {
-            // KeyCode listeners
-            for(let listener of listeners)
-            {
-                flag |= listener(e);
-            }
-            return Boolean(flag);
-        }
-        // Wildcard listeners
-        for(let listener of this.listeners[WILDCARD_KEY_MATCHER])
+        for(let listener of this.listeners.input)
         {
             flag |= listener(e);
         }

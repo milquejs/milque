@@ -1,5 +1,5 @@
 // https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API/Constants
-export default {
+export const BufferEnums = {
     // WebGL1
     BYTE:                           0x1400,
     UNSIGNED_BYTE:                  0x1401,

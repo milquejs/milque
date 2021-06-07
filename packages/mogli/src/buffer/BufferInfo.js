@@ -7,6 +7,7 @@ export class BufferInfo
      * @param {WebGLRenderingContextBase} gl The gl context.
      * @param {GLenum} target The buffer bind target. Usually, this is
      * `gl.ARRAY_BUFFER` or `gl.ELEMENT_ARRAY_BUFFER`.
+     * @returns {BufferInfoBuilder}
      */
     static builder(gl, target)
     {

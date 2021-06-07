@@ -1,5 +1,6 @@
 import { Random } from '@milque/random';
 
+import { loadAudio } from '../../asset/Audio.js';
 import { ASSETS } from '../../asset/Assets.js';
 import { BLOCKS } from '../BlockRegistry.js';
 
@@ -7,10 +8,10 @@ export const MATERIAL_COMPONENT = 'material';
 
 export async function load(assets)
 {
-    assets.registerAsset('audio', 'dirt', 'arroyo/dirt.wav');
-    assets.registerAsset('audio', 'stone', 'arroyo/stone.wav');
-    assets.registerAsset('audio', 'fluid', 'arroyo/waterpop.wav');
-    assets.registerAsset('audio', 'metal', 'arroyo/ding.wav');
+    ASSETS['audio:dirt'] = await loadAudio(assets.files.get('res/dirt.wav'));
+    ASSETS['audio:stone'] = await loadAudio(assets.files.get('res/stone.wav'));
+    ASSETS['audio:fluid'] = await loadAudio(assets.files.get('res/waterpop.wav'));
+    ASSETS['audio:metal'] = await loadAudio(assets.files.get('res/ding.wav'));
 }
 
 export function initialize(world) {}
@@ -21,17 +22,17 @@ export function playPlaceSound(blockId)
     switch(material)
     {
         case 'dirt':
-            ASSETS.getAsset('audio', 'dirt').play({ pitch: Random.range(-5, 5) });
+            ASSETS['audio:dirt'].play({ pitch: Random.range(-5, 5) });
             break;
         case 'fluid':
-            ASSETS.getAsset('audio', 'fluid').play({ pitch: Random.range(-5, 5) });
+            ASSETS['audio:fluid'].play({ pitch: Random.range(-5, 5) });
             break;
         case 'metal':
-            ASSETS.getAsset('audio', 'metal').play({ gain: 4, pitch: Random.range(-5, 5) });
+            ASSETS['audio:metal'].play({ gain: 4, pitch: Random.range(-5, 5) });
             break;
         case 'stone':
         default:
-            ASSETS.getAsset('audio', 'stone').play({ gain: 1.5, pitch: Random.range(-5, 5) });
+            ASSETS['audio:stone'].play({ gain: 1.5, pitch: Random.range(-5, 5) });
             break;
     }
 }
@@ -47,4 +48,3 @@ export function getMaterial(blockId)
         return 'stone';
     }
 }
-

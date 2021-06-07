@@ -274,45 +274,45 @@ export function getPlacementSpawnPosition(
     switch(quadIndex)
     {
         case 0: // TopLeft
-        {
-            let corner = Camera2D.screenToWorld(
-                0, 0,
-                viewMatrix, projectionMatrix
-            );
-            resultX = corner[0];
-            resultY = corner[1];
-        }
-        break;
+            {
+                let corner = Camera2D.screenToWorld(
+                    0, 0,
+                    viewMatrix, projectionMatrix
+                );
+                resultX = corner[0];
+                resultY = corner[1];
+            }
+            break;
         case 1: // BottomLeft
-        {
-            let corner = Camera2D.screenToWorld(
-                0, displayHeight,
-                viewMatrix, projectionMatrix
-            );
-            resultX = corner[0];
-            resultY = corner[1];
-        }
-        break;
+            {
+                let corner = Camera2D.screenToWorld(
+                    0, displayHeight,
+                    viewMatrix, projectionMatrix
+                );
+                resultX = corner[0];
+                resultY = corner[1];
+            }
+            break;
         case 2: // TopRight
-        {
-            let corner = Camera2D.screenToWorld(
-                displayWidth, 0,
-                viewMatrix, projectionMatrix
-            );
-            resultX = corner[0];
-            resultY = corner[1];
-        }
-        break;
+            {
+                let corner = Camera2D.screenToWorld(
+                    displayWidth, 0,
+                    viewMatrix, projectionMatrix
+                );
+                resultX = corner[0];
+                resultY = corner[1];
+            }
+            break;
         case 3: // BottomRight
-        {
-            let corner = Camera2D.screenToWorld(
-                displayWidth, displayHeight,
-                viewMatrix, projectionMatrix
-            );
-            resultX = corner[0];
-            resultY = corner[1];
-        }
-        break;
+            {
+                let corner = Camera2D.screenToWorld(
+                    displayWidth, displayHeight,
+                    viewMatrix, projectionMatrix
+                );
+                resultX = corner[0];
+                resultY = corner[1];
+            }
+            break;
     }
 
     return [
