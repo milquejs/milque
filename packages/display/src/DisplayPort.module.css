@@ -76,7 +76,8 @@ label {
 :host([mode="fit"]),
 :host([mode="scale"]),
 :host([mode="center"]),
-:host([mode="stretch"]) {
+:host([mode="stretch"]),
+:host([mode="fill"]) {
     width: 100%;
     height: 100%;
 }

@@ -39,10 +39,20 @@ export const MODE_FIT = 'fit';
 export const MODE_SCALE = 'scale';
 
 /**
+ * Resizes the canvas to fill the entire viewport.
+ * This does not maintain the aspect ratio nor pixel
+ * count (adds and removes pixels to fill size). If you
+ * care about aspect ratio but not pixel count, consider
+ * using 'fit' mode instead.
+ */
+export const MODE_FILL = 'fill';
+
+/**
  * Scales the canvas to fill the entire viewport.
- * This does not maintain the aspect ratio. If you
- * care about aspect ratio, consider using 'fit'
- * mode instead.
+ * This does not maintain the aspect ratio but
+ * does preserve pixel count (by stretching the pixel
+ * size). If you care about aspect ratio and pixel
+ * count, consider using 'scale' mode instead.
  */
 export const MODE_STRETCH = 'stretch';
 
@@ -155,15 +165,16 @@ export class DisplayPort extends HTMLElement
 
     /**
      * The scaling mode.
-     * - `noscale`: Does not perform scaling. This is effectively the same as a regular
-     * canvas.
-     * - `center`: Does not perform scaling but stretches the display to fill the entire
+     * - `noscale`: Do not perform scaling.
+     * - `center`: Do not perform scaling but stretch the display to fill the entire
      * viewport. The unscaled canvas is centered.
-     * - `fit`: Performs scaling to fill the entire viewport and maintains the aspect
-     * ratio. The pixel resolution changes to match. This is the default behavior.
-     * - `stretch`: Performs scaling to fill the entire viewport but does not maintain
+     * - `fit`: Resize resolution to fill the entire viewport and maintains the aspect
+     * ratio. The pixel resolution is changed. This is the default behavior.
+     * - `fill`: Resize resolution to fill the entire viewport but does not maintain
      * aspect ratio.
-     * - `pixelfit`: Performs scaling to fill the entire viewport and maintains the
+     * - `stretch`: Perform scaling to fill the entire viewport but does not maintain
+     * aspect ratio.
+     * - `scale`: Perform scaling to fill the entire viewport and maintains the
      * aspect ratio and resolution. The pixel resolution remains constant.
      * @returns {DisplayScaling} The current scaling mode.
      */
@@ -330,56 +341,56 @@ export class DisplayPort extends HTMLElement
     attributeChangedCallback(attribute, prev, value)
     {
         switch(attribute) {
-        case 'debug':
-            {
-                this._debug = value !== null;
-            }
-            break;
-        case 'disabled':
-            {
-                this._disabled = value !== null;
-            }
-            break;
-        case 'width':
-            {
-                this._width = Number(value);
-            }
-            break;
-        case 'height':
-            {
-                this._height = Number(value);
-            }
-            break;
-        case 'onframe':
-            {
-                this.onframe = new Function('event',
-                    'with(document){with(this){' + value + '}}').bind(this);
-            }
-            break;
+            case 'debug':
+                {
+                    this._debug = value !== null;
+                }
+                break;
+            case 'disabled':
+                {
+                    this._disabled = value !== null;
+                }
+                break;
+            case 'width':
+                {
+                    this._width = Number(value);
+                }
+                break;
+            case 'height':
+                {
+                    this._height = Number(value);
+                }
+                break;
+            case 'onframe':
+                {
+                    this.onframe = new Function('event',
+                        'with(document){with(this){' + value + '}}').bind(this);
+                }
+                break;
         }
 
         switch(attribute) {
-        case 'disabled':
-            if (value)
-            {
-                this.update(0);
-                this.pause();
-            }
-            else
-            {
-                this.resume();
-            }
-            break;
-        // NOTE: For debugging purposes...
-        case 'id':
-        case 'class':
-            this._titleElement.innerHTML = `display-port${this.className ? '.' + this.className : ''}${this.hasAttribute('id') ? '#' + this.getAttribute('id') : ''}`;
-            break;
-        case 'debug':
-            this._titleElement.classList.toggle('hidden', value);
-            this._fpsElement.classList.toggle('hidden', value);
-            this._dimensionElement.classList.toggle('hidden', value);
-            break;
+            case 'disabled':
+                if (value)
+                {
+                    this.update(0);
+                    this.pause();
+                }
+                else
+                {
+                    this.resume();
+                }
+                break;
+            // NOTE: For debugging purposes...
+            case 'id':
+            case 'class':
+                this._titleElement.innerHTML = `display-port${this.className ? '.' + this.className : ''}${this.hasAttribute('id') ? '#' + this.getAttribute('id') : ''}`;
+                break;
+            case 'debug':
+                this._titleElement.classList.toggle('hidden', value);
+                this._fpsElement.classList.toggle('hidden', value);
+                this._dimensionElement.classList.toggle('hidden', value);
+                break;
         }
     }
 
@@ -459,7 +470,7 @@ export class DisplayPort extends HTMLElement
         let canvasHeight = this._height;
 
         const mode = this.mode;
-        if (mode === MODE_STRETCH)
+        if (mode === MODE_STRETCH || mode === MODE_FILL)
         {
             canvasWidth = clientWidth;
             canvasHeight = clientHeight;
@@ -500,7 +511,7 @@ export class DisplayPort extends HTMLElement
         if (canvas.clientWidth !== canvasWidth
             || canvas.clientHeight !== canvasHeight)
         {
-            if (mode === MODE_SCALE)
+            if (mode === MODE_SCALE || mode === MODE_STRETCH)
             {
                 canvas.width = this._width;
                 canvas.height = this._height;
@@ -514,7 +525,7 @@ export class DisplayPort extends HTMLElement
             contentStyle.width = `${canvasWidth}px`;
             contentStyle.height = `${canvasHeight}px`;
 
-            if (mode === MODE_FIT)
+            if (mode === MODE_FIT || mode === MODE_FILL)
             {
                 this._width = canvasWidth;
                 this._height = canvasHeight;

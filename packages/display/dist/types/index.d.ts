@@ -55,15 +55,16 @@ declare class DisplayPort extends HTMLElement {
     set mode(arg: DisplayScaling);
     /**
      * The scaling mode.
-     * - `noscale`: Does not perform scaling. This is effectively the same as a regular
-     * canvas.
-     * - `center`: Does not perform scaling but stretches the display to fill the entire
+     * - `noscale`: Do not perform scaling.
+     * - `center`: Do not perform scaling but stretch the display to fill the entire
      * viewport. The unscaled canvas is centered.
-     * - `fit`: Performs scaling to fill the entire viewport and maintains the aspect
-     * ratio. The pixel resolution changes to match. This is the default behavior.
-     * - `stretch`: Performs scaling to fill the entire viewport but does not maintain
+     * - `fit`: Resize resolution to fill the entire viewport and maintains the aspect
+     * ratio. The pixel resolution is changed. This is the default behavior.
+     * - `fill`: Resize resolution to fill the entire viewport but does not maintain
      * aspect ratio.
-     * - `pixelfit`: Performs scaling to fill the entire viewport and maintains the
+     * - `stretch`: Perform scaling to fill the entire viewport but does not maintain
+     * aspect ratio.
+     * - `scale`: Perform scaling to fill the entire viewport and maintains the
      * aspect ratio and resolution. The pixel resolution remains constant.
      * @returns {DisplayScaling} The current scaling mode.
      */
