@@ -9,6 +9,19 @@ import alias from 'esbuild-plugin-alias';
 import { NodeModulesPolyfillPlugin } from '@esbuild-plugins/node-modules-polyfill';
 import open from 'open';
 
+async function exists(filePath)
+{
+    try
+    {
+        await fs.stat(filePath);
+    }
+    catch(e)
+    {
+        return false;
+    }
+    return true;
+}
+
 async function verifyFile(filePath)
 {
     let stats;
@@ -53,30 +66,64 @@ async function deleteFiles(filePath)
     await fs.rm(filePath, { recursive: true, force: true });
 }
 
+function crc32c(crc, bytes)
+{
+    var POLY = 0x82f63b78;
+    crc ^= 0xffffffff;
+    for (let n = 0; n < bytes.length; n++)
+    {
+        crc ^= bytes[n];
+        crc = crc & 1 ? (crc >>> 1) ^ POLY : crc >>> 1;
+        crc = crc & 1 ? (crc >>> 1) ^ POLY : crc >>> 1;
+        crc = crc & 1 ? (crc >>> 1) ^ POLY : crc >>> 1;
+        crc = crc & 1 ? (crc >>> 1) ^ POLY : crc >>> 1;
+        crc = crc & 1 ? (crc >>> 1) ^ POLY : crc >>> 1;
+        crc = crc & 1 ? (crc >>> 1) ^ POLY : crc >>> 1;
+        crc = crc & 1 ? (crc >>> 1) ^ POLY : crc >>> 1;
+        crc = crc & 1 ? (crc >>> 1) ^ POLY : crc >>> 1;
+    }
+    return crc ^ 0xffffffff;
+}
+
+/**
+ * @typedef ZipManifest
+ * @property {number} totalBytes
+ * @property {number} checksum
+ * @property {Record<string, {bytes: number, checksum: number}>} files
+ */
+
 async function createZip(outFile, inDir)
 {
     let files = await forFiles(inDir);
     let outDir = path.dirname(outFile);
     await fs.mkdir(outDir, { recursive: true });
     let ws = createWriteStream(outFile);
-    await zipFiles(files, ws);
+    return await zipFiles(files, ws);
 }
 
 async function createUnzip(inFile, outDir)
 {
     await fs.mkdir(outDir, { recursive: true });
     let rs = createReadStream(inFile);
-    await unzipFiles(outDir, rs);
+    return await unzipFiles(outDir, rs);
 }
 
 /**
  * @param {Array<string>} files 
  * @param {import('stream').Writable} writable 
- * @param {import('fflate').DeflateOptions} deflateOptions
+ * @param {import('fflate').DeflateOptions} zipOpts
+ * @returns {ZipManifest}
  */
-async function zipFiles(files, writable, deflateOptions = undefined)
+async function zipFiles(files, writable, zipOpts = {})
 {
-    return new Promise((resolve, reject) => {
+    /** @type {ZipManifest} */
+    let manifest = {
+        files: [],
+        totalBytes: 0,
+        checksum: 0,
+    };
+    await new Promise((resolve, reject) => {
+        writable.on('error', reject);
         let zip = new Zip();
         zip.ondata = (err, data, final) => {
             if (err)
@@ -86,110 +133,214 @@ async function zipFiles(files, writable, deflateOptions = undefined)
             else
             {
                 writable.write(data, err => {
-                    if (!err && final)
+                    if (err)
                     {
-                        writable.end(resolve);
+                        reject(err);
+                    }
+                    else
+                    {
+                        if (final)
+                        {
+                            writable.end(resolve);
+                        }
                     }
                 });
             }
         };
-        writable.on('error', reject);
-        // Register all files with zip
-        let fileStreams = files.map(filePath => {
-            // If string, read chunks from file
-            if (typeof filePath === 'string')
+        let promise = (async () => {
+            for(let file of files)
             {
-                let fileStream = new AsyncZipDeflate(filePath, deflateOptions);
-                zip.add(fileStream);
-                return fileStream;
+                if (typeof file === 'string')
+                {
+                    const filePath = file;
+                    let bytes = 0;
+                    let crc = 0;
+                    let fileStream = new AsyncZipDeflate(filePath, zipOpts);
+                    zip.add(fileStream);
+                    await new Promise((resolve, reject) => {
+                        let readable = createReadStream(filePath);
+                        readable.on('error', reject);
+                        readable.on('end', () => {
+                            manifest.files.push({
+                                name: filePath,
+                                bytes,
+                                crc,
+                            });
+                            manifest.totalBytes += bytes;
+                            fileStream.push(new Uint8Array(), true);
+                            resolve();
+                        });
+                        readable.on('data', chunk => {
+                            crc = crc32c(crc, chunk);
+                            bytes += chunk.byteLength;
+                            fileStream.push(chunk);
+                        });
+                    });
+                }
+                else if (Array.isArray(file))
+                {
+                    const [filePath, ...chunks] = file;
+                    let bytes = 0;
+                    let crc = 0;
+                    let fileStream = new AsyncZipDeflate(filePath, zipOpts);
+                    zip.add(fileStream);
+                    for(let chunk of chunks)
+                    {
+                        crc = crc32c(crc, chunk);
+                        bytes += chunk.byteLength;
+                        fileStream.push(chunk);
+                    }
+                    manifest.files.push({
+                        name: filePath,
+                        bytes,
+                        crc,
+                    });
+                    manifest.totalBytes += bytes;
+                    fileStream.push(new Uint8Array(), true);
+                }
             }
-            // If array, read chunks from given buffer
-            else if (Array.isArray(filePath))
-            {
-                let fileStream = new AsyncZipDeflate(filePath[0], deflateOptions);
-                zip.add(fileStream);
-                return [fileStream, ...filePath.slice(1)];
-            }
-        });
-        // Ready for chunks
-        zip.end();
-        // Read in the chunks
-        Promise.all(fileStreams.map(fileStream => new Promise((resolve, reject) => {
-            // If array, read chunks from given buffer
-            if (Array.isArray(fileStream))
-            {
-                const [ stream, buffer ] = fileStream;
-                stream.push(buffer, true);
-                resolve();
-            }
-            // Otherwise, read chunks from file
-            else
-            {
-                let name = fileStream.filename;
-                let readStream = createReadStream(name);
-                readStream.on('error', reject);
-                readStream.on('end', () => {
-                    let emptyChunk = new Uint8Array();
-                    fileStream.push(emptyChunk, true);
-                    resolve();
-                });
-                readStream.on('data', chunk => {
-                    fileStream.push(chunk);
-                });
-            }
-        })))
-        .then(resolve)
-        .catch(reject);
+        })();
+        promise.then(() => zip.end()).catch(reject);
     });
+    manifest.files.sort((a, b) => a.name.localeCompare(b.name));
+    manifest.checksum = crc32c(manifest.checksum, new TextEncoder().encode(JSON.stringify(manifest)));
+    return manifest;
 }
 
 /**
  * @param {import('stream').Readable} readable
+ * @returns {ZipManifest}
  */
 async function unzipFiles(outputDir, readable)
 {
-    return new Promise((resolve, reject) => {
+    /** @type {ZipManifest} */
+    let manifest = {
+        files: [],
+        totalBytes: 0,
+        checksum: 0,
+    };
+    await new Promise((resolve, reject) => {
         let promises = [];
         let unzip = new Unzip();
         unzip.register(AsyncUnzipInflate);
-        unzip.onfile = fileStream => promises.push(
-            fs.mkdir(path.join(outputDir, path.dirname(fileStream.name)), { recursive: true })
-                .then(() => new Promise((resolve, reject) => {
-                    console.log(fileStream.name, fileStream.originalSize, fileStream.size);
-                    let writeStream = createWriteStream(path.join(outputDir, fileStream.name));
-                    writeStream.on('error', err => {
-                        fileStream.terminate();
-                        reject(err);
-                    });
-                    fileStream.ondata = (err, data, final) => {
-                        if (err)
-                        {
-                            writeStream.destroy();
-                            reject(err);
-                        }
-                        else
-                        {
-                            writeStream.write(data, err => {
-                                if (!err && final)
+        unzip.onfile = fileStream => {
+            let promise = fs.mkdir(path.join(outputDir, path.dirname(fileStream.name)), { recursive: true });
+            promise = promise.then(() => new Promise((resolve, reject) => {
+                console.log(`${fileStream.name} [${fileStream.originalSize} => ${fileStream.size}]`);
+                let writable = createWriteStream(path.join(outputDir, fileStream.name));
+                writable.on('error', err => {
+                    fileStream.terminate();
+                    reject(err);
+                });
+                let bytes = 0;
+                let crc = 0;
+                fileStream.ondata = (err, data, final) => {
+                    if (err)
+                    {
+                        writable.destroy(err);
+                    }
+                    else
+                    {
+                        crc = crc32c(crc, data);
+                        bytes += data.byteLength;
+                        writable.write(data, (err) => {
+                            if (err)
+                            {
+                                writable.destroy(err);
+                            }
+                            else
+                            {
+                                if (final)
                                 {
-                                    writeStream.end(resolve);
+                                    manifest.files.push({
+                                        name: fileStream.name,
+                                        bytes,
+                                        crc,
+                                    });
+                                    manifest.totalBytes += bytes;
+                                    writable.end(resolve);
                                 }
-                            });
-                        }
-                    };
-                    fileStream.start();
-                })));
+                            }
+                        });
+                    }
+                };
+                fileStream.start();
+            }));
+            promises.push(promise);
+        };
         readable.on('error', reject);
         readable.on('end', () => {
             unzip.push(new Uint8Array(), true);
-            // NOTE: We have read the last chunk, so no new files
-            // will be discovered. Wait and close the streams.
-            Promise.all(promises).then(resolve).catch(reject);
+            Promise.all(promises).then(() => {
+                manifest.files.sort((a, b) => a.name.localeCompare(b.name));
+                manifest.checksum = crc32c(manifest.checksum, new TextEncoder().encode(JSON.stringify(manifest)));
+                resolve();
+            }).catch(reject);
         });
         readable.on('data', data => {
             unzip.push(data);
         });
     });
+    return manifest;
+}
+
+/**
+ * @param {string} inFile
+ * @returns {Promise<ZipManifest>}
+ */
+async function getZipManifest(inFile)
+{
+    /** @type {ZipManifest} */
+    let manifest = {
+        files: [],
+        totalBytes: 0,
+        checksum: 0,
+    };
+    await new Promise((resolve, reject) => {
+        let readable = createReadStream(inFile);
+        let promises = [];
+        let unzip = new Unzip();
+        unzip.register(AsyncUnzipInflate);
+        unzip.onfile = fileStream => promises.push(new Promise((resolve, reject) => {
+            let bytes = 0;
+            let crc = 0;
+            fileStream.ondata = (err, data, final) => {
+                if (err)
+                {
+                    reject(err);
+                }
+                else
+                {
+                    crc = crc32c(crc, data);
+                    bytes += data.byteLength;
+                    if (final)
+                    {
+                        manifest.files.push({
+                            name: fileStream.name,
+                            bytes,
+                            crc,
+                        });
+                        manifest.totalBytes += bytes;
+                        resolve();
+                    }
+                }
+            };
+            fileStream.start();
+        }));
+        readable.on('error', reject);
+        readable.on('end', () => {
+            unzip.push(new Uint8Array(), true);
+            Promise.all(promises).then(() => {
+                manifest.files.sort((a, b) => a.name.localeCompare(b.name));
+                manifest.checksum = crc32c(manifest.checksum, new TextEncoder().encode(JSON.stringify(manifest)));
+                resolve();
+            }).catch(reject);
+        });
+        readable.on('data', data => {
+            unzip.push(data);
+        });
+    });
+    return manifest;
 }
 
 /**
@@ -679,30 +830,94 @@ class BuildManager extends FileManager
     }
 }
 
-async function munge(inputFile, outputDir = undefined, reset = false)
+async function munge(inFile, outDir, opts = {})
 {
-    // Start munge time
-    console.time('munge');
-    if (typeof outputDir === 'undefined')
+    const packFile = path.basename(inFile);
+    const packExt = path.extname(inFile);
+    const packName = packFile.substring(0, packFile.length - packExt.length);
+    const packDir = outDir;
+    const packZip = inFile;
+    const packRC = `${packName}.packrc`;
+    const date = new Date();
+    const backupDir = 'tmp';
+    const backupName = `${
+        date.getFullYear()}-${
+            String(date.getMonth()).padStart(2, '0')}-${
+                String(date.getDate()).padStart(2, '0')}-${
+                    String(date.getHours()).padStart(2, '0')}-${
+                        String(date.getMinutes()).padStart(2, '0')}-${
+                            String(date.getSeconds()).padStart(2, '0')}`;
+    const backupZip = path.join(backupDir, `${backupName}.${packName}.pack.backup`);
+
+    const hasZip = await exists(packZip);
+    const hasDir = await exists(packDir);
+    
+    let manifest = null;
+
+    // Copy the backup if nothing exists
+    if (!hasZip)
     {
-        let ext = path.extname(inputFile);
-        let name = path.basename(inputFile, ext);
-        outputDir = path.join(path.dirname(inputFile), name);
+        console.log('Creating packfile...');
+        await fs.mkdir(packDir, { recursive: true });
+        manifest = await createZip(packZip, packDir);
     }
-    await fs.mkdir(outputDir, { recursive: true });
-    if (reset)
+    // If zip exists, but no source files. Extract!
+    else if (!hasDir)
     {
-        // Sync asset files from zip
-        // TODO: In the future, we should diff this instead of just overwrite
-        await createUnzip(path.join('..', inputFile), outputDir);
+        console.log('Extracting packfile...');
+        manifest = await createUnzip(packZip, '.');
     }
+    // If zip and source exists. Diff!
     else
     {
-        // Munge asset files to zip
-        await createZip(inputFile, outputDir);
+        console.log('Diffing packfile...');
+        const tempDir = backupDir;
+        const tempZip = path.join(backupDir, 'tmp.pack');
+        await fs.mkdir(tempDir, { recursive: true });
+        await createZip(tempZip, packDir);
+        let zipManifest = await getZipManifest(packZip);
+        let srcManifest = await getZipManifest(tempZip);
+
+        // If different, overwrite zip with source
+        if (zipManifest.checksum !== srcManifest.checksum)
+        {
+            console.log('Updating packfile...');
+            // Always make backup first
+            await fs.mkdir(backupDir, { recursive: true });
+            await fs.copyFile(packZip, backupZip);
+            // Then continue...
+            await fs.copyFile(tempZip, packZip);
+            manifest = srcManifest;
+        }
+        else
+        {
+            await fs.rm(tempZip);
+            manifest = zipManifest;
+        }
     }
-    // End munge time
-    console.timeEnd('munge');
+    
+    // Write to .packrc
+    let packConfig = {
+        version: '1.0.0',
+        manifest,
+    };
+    if (await exists(packRC))
+    {
+        let config;
+        try
+        {
+            config = JSON.parse(await fs.readFile(packRC));
+        }
+        catch(e)
+        {
+            config = {};
+        }
+        packConfig = {
+            ...config,
+            ...packConfig,
+        };
+    }
+    await fs.writeFile(packRC, JSON.stringify(packConfig, undefined, 4));
 }
 
-export { BuildManager, FileManager, build, loadPackageJson, munge, start };
+export { BuildManager, FileManager, build, exists, getZipManifest, loadPackageJson, munge, start, createUnzip as unzip, createZip as zip };

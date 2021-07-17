@@ -17,7 +17,7 @@ export async function munge(inputFile, outputDir = undefined, reset = false)
     {
         // Sync asset files from zip
         // TODO: In the future, we should diff this instead of just overwrite
-        await createUnzip(path.join('..', inputFile), outputDir);
+        await createUnzip(path.join('.', inputFile), outputDir);
     }
     else
     {
