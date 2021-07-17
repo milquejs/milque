@@ -1,4 +1,5 @@
 import { BuildManager } from '@milque/toolkit';
+import './munge.js';
 
 async function main(args)
 {
@@ -10,7 +11,7 @@ async function main(args)
         let fm = new BuildManager(outputDir, watchMode);
         await fm.clearOutput();
         await fm.copy('src/template.html', 'index.html');
-        await fm.zip('res', 'res.pack');
+        await fm.copy('res.pack', 'res.pack');
         await fm.build([ 'src/main.js' ]);
         await fm.close();
     }

@@ -1,0 +1,74 @@
+{
+    "version": "1.0.0",
+    "manifest": {
+        "files": [
+            {
+                "name": "res/cube.aseprite",
+                "bytes": 703,
+                "crc": 823822015
+            },
+            {
+                "name": "res/cube.png",
+                "bytes": 350,
+                "crc": -1475014004
+            },
+            {
+                "name": "res/cube.png.meta",
+                "bytes": 214,
+                "crc": -1564594739
+            },
+            {
+                "name": "res/dungeon.atlas",
+                "bytes": 4983,
+                "crc": 1346116805
+            },
+            {
+                "name": "res/dungeon.png",
+                "bytes": 35383,
+                "crc": 1540253337
+            },
+            {
+                "name": "res/font.atlas",
+                "bytes": 420,
+                "crc": 1225781864
+            },
+            {
+                "name": "res/font.png",
+                "bytes": 912,
+                "crc": -751127985
+            },
+            {
+                "name": "res/pop.wav",
+                "bytes": 87676,
+                "crc": 53799162
+            },
+            {
+                "name": "res/slime.aseprite",
+                "bytes": 1218,
+                "crc": -400400322
+            },
+            {
+                "name": "res/slime.atlas",
+                "bytes": 245,
+                "crc": -490059392
+            },
+            {
+                "name": "res/slime.png",
+                "bytes": 1064,
+                "crc": 1571288211
+            },
+            {
+                "name": "res/toast.aseprite",
+                "bytes": 615,
+                "crc": -391701269
+            },
+            {
+                "name": "res/toast.png",
+                "bytes": 198,
+                "crc": -630160006
+            }
+        ],
+        "totalBytes": 133981,
+        "checksum": -1239582149
+    }
+}

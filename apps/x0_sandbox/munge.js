@@ -4,7 +4,7 @@ async function main(args)
 {
     try
     {
-        await munge('res.pack', undefined, args.includes('--reset'));
+        await munge('res.pack', 'res');
     }
     catch(e)
     {
