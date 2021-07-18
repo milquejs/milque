@@ -38,6 +38,11 @@
                 "crc": -751127985
             },
             {
+                "name": "res/pea.png",
+                "bytes": 163,
+                "crc": -2102375727
+            },
+            {
                 "name": "res/pop.wav",
                 "bytes": 87676,
                 "crc": 53799162
@@ -66,9 +71,14 @@
                 "name": "res/toast.png",
                 "bytes": 198,
                 "crc": -630160006
+            },
+            {
+                "name": "res/water_tile.png",
+                "bytes": 257,
+                "crc": -842706858
             }
         ],
-        "totalBytes": 133981,
-        "checksum": -1239582149
+        "totalBytes": 134401,
+        "checksum": -791891162
     }
 }

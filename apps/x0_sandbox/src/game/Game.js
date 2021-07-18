@@ -1,7 +1,7 @@
 /**
  * @typedef {import('@milque/asset').AssetPack} AssetPack
  * @typedef {import('@milque/display').DisplayPort} DisplayPort
- * @typedef {import('@milque/input').InputPort} InputPort
+ * @typedef {import('@milque/input').InputContext} InputContext
  */
 
 import { Eventable } from '@milque/util';
@@ -10,7 +10,7 @@ export class Game
 {
     /**
      * @param {DisplayPort} display 
-     * @param {InputPort} inputs 
+     * @param {InputContext} inputs 
      * @param {AssetPack} assets 
      */
     constructor(display, inputs, assets)

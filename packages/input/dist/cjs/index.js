@@ -1385,6 +1385,78 @@ class AutoPoller
     }
 }
 
+/** @typedef {import('./InputBindings.js').InputBindings} InputBindings */
+
+/**
+ * A class to listen and transform device events through
+ * each mapped bindings into an input state.
+ * 
+ * It requires onPoll() to be called to keep the input
+ * state up to date. This is usually called from 
+ * requestAnimationFrame() or using the AutoPoller.
+ */
+class DeviceInputAdapter
+{
+    /**
+     * @param {InputBindings} bindings 
+     */
+    constructor(bindings)
+    {
+        /** @private */
+        this.onInput = this.onInput.bind(this);
+        this.onPoll = this.onPoll.bind(this);
+        
+        this.bindings = bindings;
+    }
+
+    onPoll(now)
+    {
+        for(let input of this.bindings.getInputs())
+        {
+            input.onPoll(now);
+        }
+    }
+
+    onInput(e)
+    {
+        const {
+            device, code, event,
+            value, movement,
+            // eslint-disable-next-line no-unused-vars
+            control, shift, alt,
+        } = e;
+        let bindings = this.bindings.getBindings(device, code);
+        switch(event)
+        {
+            case 'pressed':
+                for(let { input, index } of bindings)
+                {
+                    input.onUpdate(index, 1, 1);
+                }
+                break;
+            case 'released':
+                for(let { input, index } of bindings)
+                {
+                    input.onUpdate(index, 0, -1);
+                }
+                break;
+            case 'move':
+                for(let { input, index } of bindings)
+                {
+                    input.onUpdate(index, value, movement);
+                }
+                break;
+            case 'wheel':
+                for(let { input, index } of bindings)
+                {
+                    input.onUpdate(index, undefined, movement);
+                }
+                break;
+        }
+        return bindings.length > 0;
+    }
+}
+
 /**
  * @typedef {import('./axisbutton/InputBase.js').InputBase} InputBase
  * @typedef {import('./axisbutton/InputBase.js').BindingOptions} BindingOptions
@@ -1559,78 +1631,6 @@ class InputBindings
     }
 }
 
-/** @typedef {import('./InputBindings.js').InputBindings} InputBindings */
-
-/**
- * A class to listen and transform device events through
- * each mapped bindings into an input state.
- * 
- * It requires onPoll() to be called to keep the input
- * state up to date. This is usually called from 
- * requestAnimationFrame() or using the AutoPoller.
- */
-class DeviceInputAdapter
-{
-    /**
-     * @param {InputBindings} bindings 
-     */
-    constructor(bindings)
-    {
-        /** @private */
-        this.onInput = this.onInput.bind(this);
-        this.onPoll = this.onPoll.bind(this);
-        
-        this.bindings = bindings;
-    }
-
-    onPoll(now)
-    {
-        for(let input of this.bindings.getInputs())
-        {
-            input.onPoll(now);
-        }
-    }
-
-    onInput(e)
-    {
-        const {
-            device, code, event,
-            value, movement,
-            // eslint-disable-next-line no-unused-vars
-            control, shift, alt,
-        } = e;
-        let bindings = this.bindings.getBindings(device, code);
-        switch(event)
-        {
-            case 'pressed':
-                for(let { input, index } of bindings)
-                {
-                    input.onUpdate(index, 1, 1);
-                }
-                break;
-            case 'released':
-                for(let { input, index } of bindings)
-                {
-                    input.onUpdate(index, 0, -1);
-                }
-                break;
-            case 'move':
-                for(let { input, index } of bindings)
-                {
-                    input.onUpdate(index, value, movement);
-                }
-                break;
-            case 'wheel':
-                for(let { input, index } of bindings)
-                {
-                    input.onUpdate(index, undefined, movement);
-                }
-                break;
-        }
-        return bindings.length > 0;
-    }
-}
-
 /**
  * @typedef {import('../device/InputDevice.js').InputDevice} InputDevice
  * @typedef {import('../device/InputDevice.js').InputDeviceEvent} InputDeviceEvent
@@ -1642,174 +1642,96 @@ class DeviceInputAdapter
  * @typedef {string} InputName
  */
 
-class InputPort extends HTMLElement
+/**
+ * @typedef {'bind'|'unbind'|'focus'|'blur'} InputContextEventType
+ * @typedef {(e: InputContextEvent) => boolean} InputContextEventListener
+ * @typedef InputContextEvent
+ * @property {InputContextEventType} type
+ */
+
+class InputContext
 {
-    /** @protected */
-    static get [Symbol.for('templateNode')]()
+    /**
+     * @param {EventTarget} eventTarget 
+     * @param {object} [opts]
+     */
+    constructor(eventTarget, opts = {})
     {
-        let t = document.createElement('template');
-        t.innerHTML = INNER_HTML;
-        Object.defineProperty(this, Symbol.for('templateNode'), { value: t });
-        return t;
-    }
-
-    /** @protected */
-    static get [Symbol.for('styleNode')]()
-    {
-        let t = document.createElement('style');
-        t.innerHTML = INNER_STYLE;
-        Object.defineProperty(this, Symbol.for('styleNode'), { value: t });
-        return t;
-    }
-
-    static define(customElements = window.customElements)
-    {
-        customElements.define('input-port', this);
-    }
-
-    /** @override */
-    static get observedAttributes()
-    {
-        return [
-            'autopoll',
-            'for',
-        ];
-    }
-
-    /** @returns {boolean} */
-    get autopoll()
-    {
-        return this._autopoll;
-    }
-
-    set autopoll(value)
-    {
-        this.toggleAttribute('autopoll', value);
-    }
-
-    /** @returns {string} */
-    get for()
-    {
-        return this._for;
-    }
-
-    set for(value)
-    {
-        this.setAttribute('for', value);
-    }
-
-    constructor()
-    {
-        super();
-        this.attachShadow({ mode: 'open' });
-        this.shadowRoot.appendChild(this.constructor[Symbol.for('templateNode')].content.cloneNode(true));
-        this.shadowRoot.appendChild(this.constructor[Symbol.for('styleNode')].cloneNode(true));
-
-        /** @private */
-        this._titleElement = this.shadowRoot.querySelector('#title');
-        /** @private */
-        this._pollElement = this.shadowRoot.querySelector('#poll');
-        /** @private */
-        this._focusElement = this.shadowRoot.querySelector('#focus');
-        /** @private */
-        this._bodyElement = this.shadowRoot.querySelector('tbody');
-        /** @private */
-        this._outputElements = {};
-
-        /** @private */
-        this.onAnimationFrame = this.onAnimationFrame.bind(this);
-        /** @private */
-        this.animationFrameHandle = null;
-
-        const eventTarget = this;
-        /** @private */
-        this._for = '';
-        /** @private */
-        this._eventTarget = eventTarget;
-        /** @private */
-        this._autopoll = false;
-
         /**
-         * @private
          * @type {Record<string, Axis|Button>}
          */
         this.inputs = {};
         /**
-         * @private
          * @type {Array<InputDevice>}
          */
         this.devices = [
             new MouseDevice('Mouse', eventTarget),
             new KeyboardDevice('Keyboard', eventTarget),
         ];
-
-        /** @private */
         this.bindings = new InputBindings();
-        /** @private */
         this.adapter = new DeviceInputAdapter(this.bindings);
-        /** @private */
         this.autopoller = new AutoPoller(this.adapter);
-        
-        /** @private */
+
+        /** @protected */
+        this.eventTarget = eventTarget;
+        /** @protected */
         this.anyButton = new Button(1);
-        /** @private */
+        /** @protected */
         this.anyButtonDevice = '';
-        /** @private */
+        /** @protected */
         this.anyButtonCode = '';
-        /** @private */
+        /** @protected */
         this.anyAxis = new Axis(1);
-        /** @private */
+        /** @protected */
         this.anyAxisDevice = '';
-        /** @private */
+        /** @protected */
         this.anyAxisCode = '';
 
+        /**
+         * @private
+         * @type {Record<InputContextEventType, Array<InputContextEventListener>>}
+         */
+        this.listeners = {
+            bind: [],
+            unbind: [],
+            focus: [],
+            blur: [],
+        };
+
+        // Prepare listeners
         /** @private */
         this.onInput = this.onInput.bind(this);
         /** @private */
-        this.onEventTargetFocus = this.onEventTargetFocus.bind(this);
-        /** @private */
         this.onEventTargetBlur = this.onEventTargetBlur.bind(this);
-    }
-    
-    /** @override */
-    connectedCallback()
-    {
-        if (Object.prototype.hasOwnProperty.call(this, 'for'))
-        {
-            let value = this.for;
-            delete this.for;
-            this.for = value;
-        }
+        /** @private */
+        this.onEventTargetFocus = this.onEventTargetFocus.bind(this);
 
-        if (Object.prototype.hasOwnProperty.call(this, 'autopoll'))
-        {
-            let value = this.autopoll;
-            delete this.autopoll;
-            this.autopoll = value;
-        }
-
-        let eventTarget = this._eventTarget;
+        // Attach listeners
         eventTarget.addEventListener('focus', this.onEventTargetFocus);
         eventTarget.addEventListener('blur', this.onEventTargetBlur);
         for(let device of this.devices)
         {
-            device.setEventTarget(eventTarget);
             device.addEventListener('input', this.onInput);
         }
-        if (this._autopoll)
-        {
-            this.autopoller.start();
-        }
-
-        // Make sure the table and values are up to date
-        this.updateTable();
-        this.updateTableValues();
-        this.animationFrameHandle = requestAnimationFrame(this.onAnimationFrame);
     }
 
-    /** @override */
-    disconnectedCallback()
+    get autopoll()
     {
+        return this.autopoller.running;
+    }
+
+    set autopoll(value = undefined)
+    {
+        this.toggleAutoPoll(value);
+    }
+
+    destroy()
+    {
+        let listeners = this.listeners;
+        for(let event in listeners)
+        {
+            listeners[event].length = 0;
+        }
         if (this.autopoller.running)
         {
             this.autopoller.stop();
@@ -1819,56 +1741,101 @@ class InputPort extends HTMLElement
             device.removeEventListener('input', this.onInput);
             device.destroy();
         }
-        let eventTarget = this._eventTarget;
+        let eventTarget = this.eventTarget;
         eventTarget.removeEventListener('focus', this.onEventTargetFocus);
         eventTarget.removeEventListener('blur', this.onEventTargetBlur);
     }
 
-    /** @override */
-    attributeChangedCallback(attribute, prev, value)
+    setEventTarget(eventTarget)
     {
-        switch (attribute)
+        let oldEventTarget = this.eventTarget;
+        oldEventTarget.removeEventListener('focus', this.onEventTargetFocus);
+        oldEventTarget.removeEventListener('blur', this.onEventTargetBlur);
+        
+        this.eventTarget = eventTarget;
+        for(let device of this.devices)
         {
-            case 'for':
-                {
-                    this._for = value;
-                    let target;
-                    let name;
-                    if (value)
-                    {
-                        target = document.getElementById(value);
-                        name = `${target.tagName.toLowerCase()}#${value}`;
-                    }
-                    else
-                    {
-                        target = this;
-                        name = 'input-port';
-                    }
-                    this.updateEventTarget(target);
-                    // For debug info
-                    this._titleElement.innerHTML = `for ${name}`;
-                }
-                break;
-            case 'autopoll':
-                this._autopoll = value !== null;
-                if (this._autopoll)
-                {
-                    this.autopoller.start();
-                }
-                else
-                {
-                    this.autopoller.stop();
-                }
-                break;
+            device.setEventTarget(eventTarget);
+        }
+        eventTarget.addEventListener('focus', this.onEventTargetFocus);
+        eventTarget.addEventListener('blur', this.onEventTargetBlur);
+    }
+
+    toggleAutoPoll(force = undefined)
+    {
+        let current = this.autopoller.running;
+        let next = typeof force === 'undefined' ? !current : Boolean(force);
+        if (next === current) return;
+        if (next)
+        {
+            this.autopoller.start();
+        }
+        else
+        {
+            this.autopoller.stop();
         }
     }
 
-    /** @private */
-    onAnimationFrame()
+    /**
+     * @param {InputContextEventType} event
+     * @param {InputContextEventListener} listener 
+     */
+    addEventListener(event, listener)
     {
-        this.animationFrameHandle = requestAnimationFrame(this.onAnimationFrame);
-        this.updateTableValues();
-        this.updatePollStatus();
+        let listeners = this.listeners;
+        if (event in listeners)
+        {
+            listeners[event].push(listener);
+        }
+        else
+        {
+            listeners[event] = [listener];
+        }
+    }
+
+    /**
+     * @param {InputContextEventType} event 
+     * @param {InputContextEventListener} listener
+     */
+    removeEventListener(event, listener)
+    {
+        let listeners = this.listeners;
+        if (event in listeners)
+        {
+            let list = listeners[event];
+            let i = list.indexOf(listener);
+            if (i >= 0)
+            {
+                list.splice(i, 1);
+            }
+        }
+    }
+
+    /**
+     * @param {InputContextEvent} e
+     * @returns {boolean} Whether the event should be consumed.
+     */
+    dispatchEvent(e)
+    {
+        const { type } = e;
+        let flag = 0;
+        for(let listener of this.listeners[type])
+        {
+            flag |= listener(e);
+        }
+        return Boolean(flag);
+    }
+
+    /**
+     * @param {number} now 
+     */
+    poll(now = performance.now())
+    {
+        if (this.autopoller.running)
+        {
+            throw new Error('Should not manually poll() while autopolling.');
+        }
+        this.onPoll(now);
     }
 
     /**
@@ -1914,25 +1881,30 @@ class InputPort extends HTMLElement
     /** @private */
     onBind()
     {
-        this.updateTable();
+        this.dispatchEvent({
+            type: 'bind'
+        });
     }
 
     /** @private */
     onUnbind()
     {
-        this.updateTable();
+        this.dispatchEvent({
+            type: 'unbind'
+        });
     }
 
     /** @private */
     onEventTargetFocus()
     {
-        this._focusElement.innerHTML = '✓';
+        this.dispatchEvent({
+            type: 'focus'
+        });
     }
 
     /** @private */
     onEventTargetBlur()
     {
-        this._focusElement.innerHTML = '';
         // Clear all input states.
         for(let input of this.bindings.getInputs())
         {
@@ -1940,18 +1912,9 @@ class InputPort extends HTMLElement
         }
         this.anyButton.onStatus(0, 0);
         this.anyAxis.onStatus(0, 0);
-    }
-
-    /**
-     * @param {number} now 
-     */
-    poll(now = performance.now())
-    {
-        if (this.autopoller.running)
-        {
-            throw new Error('Should not manually poll() while autopolling.');
-        }
-        this.onPoll(now);
+        this.dispatchEvent({
+            type: 'blur'
+        });
     }
 
     /**
@@ -2304,6 +2267,249 @@ class InputPort extends HTMLElement
     {
         return this.devices[1];
     }
+}
+
+/**
+ * @typedef {import('../device/InputDevice.js').InputDevice} InputDevice
+ * @typedef {import('../device/InputDevice.js').InputDeviceEvent} InputDeviceEvent
+ * @typedef {import('../axisbutton/InputBase.js').InputBase} InputBase
+ * @typedef {import('../InputBindings.js').DeviceName} DeviceName
+ * @typedef {import('../InputBindings.js').KeyCode} KeyCode
+ * @typedef {import('../InputBindings.js').BindingOptions} BindingOptions
+ * 
+ * @typedef {string} InputName
+ */
+
+class InputPort extends HTMLElement
+{
+    /** @protected */
+    static get [Symbol.for('templateNode')]()
+    {
+        let t = document.createElement('template');
+        t.innerHTML = INNER_HTML;
+        Object.defineProperty(this, Symbol.for('templateNode'), { value: t });
+        return t;
+    }
+
+    /** @protected */
+    static get [Symbol.for('styleNode')]()
+    {
+        let t = document.createElement('style');
+        t.innerHTML = INNER_STYLE;
+        Object.defineProperty(this, Symbol.for('styleNode'), { value: t });
+        return t;
+    }
+
+    static define(customElements = window.customElements)
+    {
+        customElements.define('input-port', this);
+    }
+
+    /** @override */
+    static get observedAttributes()
+    {
+        return [
+            'autopoll',
+            'for',
+        ];
+    }
+
+    /** @returns {boolean} */
+    get autopoll()
+    {
+        return this._autopoll;
+    }
+
+    set autopoll(value)
+    {
+        this.toggleAttribute('autopoll', value);
+    }
+
+    /** @returns {string} */
+    get for()
+    {
+        return this._for;
+    }
+
+    set for(value)
+    {
+        this.setAttribute('for', value);
+    }
+
+    constructor()
+    {
+        super();
+        this.attachShadow({ mode: 'open' });
+        this.shadowRoot.appendChild(this.constructor[Symbol.for('templateNode')].content.cloneNode(true));
+        this.shadowRoot.appendChild(this.constructor[Symbol.for('styleNode')].cloneNode(true));
+
+        /** @private */
+        this._titleElement = this.shadowRoot.querySelector('#title');
+        /** @private */
+        this._pollElement = this.shadowRoot.querySelector('#poll');
+        /** @private */
+        this._focusElement = this.shadowRoot.querySelector('#focus');
+        /** @private */
+        this._bodyElement = this.shadowRoot.querySelector('tbody');
+        /** @private */
+        this._outputElements = {};
+
+        /** @private */
+        this.onAnimationFrame = this.onAnimationFrame.bind(this);
+        /** @private */
+        this.animationFrameHandle = null;
+
+        const eventTarget = this;
+        /** @private */
+        this._for = '';
+        /** @private */
+        this._eventTarget = eventTarget;
+        /** @private */
+        this._autopoll = false;
+
+        /** @private */
+        this._context = null;
+        this.onInputContextBind = this.onInputContextBind.bind(this);
+        this.onInputContextUnbind = this.onInputContextUnbind.bind(this);
+        this.onInputContextFocus = this.onInputContextFocus.bind(this);
+        this.onInputContextBlur = this.onInputContextBlur.bind(this);
+    }
+    
+    /** @override */
+    connectedCallback()
+    {
+        if (Object.prototype.hasOwnProperty.call(this, 'for'))
+        {
+            let value = this.for;
+            delete this.for;
+            this.for = value;
+        }
+
+        if (Object.prototype.hasOwnProperty.call(this, 'autopoll'))
+        {
+            let value = this.autopoll;
+            delete this.autopoll;
+            this.autopoll = value;
+        }
+
+        // Make sure the table and values are up to date
+        this.updateTable();
+        this.updateTableValues();
+        this.animationFrameHandle = requestAnimationFrame(this.onAnimationFrame);
+    }
+
+    /** @override */
+    disconnectedCallback()
+    {
+        if (this._context)
+        {
+            this._context.removeEventListener('bind', this.onInputContextBind);
+            this._context.removeEventListener('unbind', this.onInputContextUnbind);
+            this._context.removeEventListener('blur', this.onInputContextBlur);
+            this._context.removeEventListener('focus', this.onInputContextFocus);
+            this._context.destroy();
+            this._context = null;
+        }
+    }
+
+    /** @override */
+    attributeChangedCallback(attribute, prev, value)
+    {
+        switch (attribute)
+        {
+            case 'for':
+                {
+                    this._for = value;
+                    let target;
+                    let name;
+                    if (value)
+                    {
+                        target = document.getElementById(value);
+                        name = `${target.tagName.toLowerCase()}#${value}`;
+                    }
+                    else
+                    {
+                        target = this;
+                        name = 'input-port';
+                    }
+                    this._eventTarget = target;
+                    if (this._context)
+                    {
+                        this._context.setEventTarget(this._eventTarget);
+                    }
+                    // For debug info
+                    this._titleElement.innerHTML = `for ${name}`;
+                }
+                break;
+            case 'autopoll':
+                this._autopoll = value !== null;
+                if (this._context)
+                {
+                    this._context.toggleAutoPoll(this._autopoll);
+                }
+                break;
+        }
+    }
+
+    /** @private */
+    onAnimationFrame()
+    {
+        this.animationFrameHandle = requestAnimationFrame(this.onAnimationFrame);
+        this.updateTableValues();
+        this.updatePollStatus();
+    }
+
+    /** @private */
+    onInputContextBind()
+    {
+        this.updateTable();
+    }
+
+    /** @private */
+    onInputContextUnbind()
+    {
+        this.updateTable();
+    }
+
+    /** @private */
+    onInputContextFocus()
+    {
+        this._focusElement.innerHTML = '✓';
+    }
+
+    /** @private */
+    onInputContextBlur()
+    {
+        this._focusElement.innerHTML = '';
+    }
+
+    /**
+     * @param {'axisbutton'} [contextId]
+     * @param {object} [options]
+     * @returns {InputContext}
+     */
+    getContext(contextId = 'axisbutton', options = undefined)
+    {
+        switch(contextId)
+        {
+            case 'axisbutton':
+                if (!this._context)
+                {
+                    this._context = new InputContext(this._eventTarget, options);
+                    this._context.addEventListener('bind', this.onInputContextBind);
+                    this._context.addEventListener('unbind', this.onInputContextUnbind);
+                    this._context.addEventListener('blur', this.onInputContextBlur);
+                    this._context.addEventListener('focus', this.onInputContextFocus);
+                    if (this._autopoll)
+                    {
+                        this._context.toggleAutoPoll(true);
+                    }
+                }
+                return this._context;
+            default:
+                throw new Error(`Input context id '${contextId}' is not supported.`);
+        }
+    }
 
     /** @private */
     updateTable()
@@ -2313,33 +2519,45 @@ class InputPort extends HTMLElement
             // Don't update the DOM if not connected to any :(
             return;
         }
-        let primaryElements = {};
-        let entries = [];
-        for(let name of Object.keys(this.inputs))
+        else if (!this._context)
         {
-            let input = this.inputs[name];
-            let bindings = this.bindings.getBindingsByInput(input);
-            let primary = true;
-            for(let binding of bindings)
+            // Clear all values if no context is available
+            this._outputElements = {};
+            this._bodyElement.innerHTML = '';
+            return;
+        }
+        else
+        {
+            let context = this._context;
+            let inputs = context.inputs;
+            let bindings = context.bindings;
+            let primaryElements = {};
+            let entries = [];
+            for(let name of Object.keys(inputs))
             {
-                let element = createInputTableEntry(
-                    `${input.constructor.name}.${name}`,
-                    `${binding.device}.${binding.code}`,
-                    0,
-                    primary);
-                entries.push(element);
-                if (primary)
+                let input = inputs[name];
+                let primary = true;
+                for(let binding of bindings.getBindingsByInput(input))
                 {
-                    primaryElements[name] = element.querySelector('output');
-                    primary = false;
+                    let element = createInputTableEntry(
+                        `${input.constructor.name}.${name}`,
+                        `${binding.device}.${binding.code}`,
+                        0,
+                        primary);
+                    entries.push(element);
+                    if (primary)
+                    {
+                        primaryElements[name] = element.querySelector('output');
+                        primary = false;
+                    }
                 }
             }
-        }
-        this._outputElements = primaryElements;
-        this._bodyElement.innerHTML = '';
-        for (let entry of entries)
-        {
-            this._bodyElement.appendChild(entry);
+            this._outputElements = primaryElements;
+            this._bodyElement.innerHTML = '';
+            for (let entry of entries)
+            {
+                this._bodyElement.appendChild(entry);
+            }
         }
     }
 
@@ -2351,46 +2569,56 @@ class InputPort extends HTMLElement
             // Don't update the DOM if not connected to any :(
             return;
         }
-        for(let name of Object.keys(this._outputElements))
+        else if (!this._context)
         {
-            let element = this._outputElements[name];
-            let value = this.inputs[name].value;
-            element.innerText = Number(value).toFixed(2);
+            // Clear all values if no context is available
+            for(let name of Object.keys(this._outputElements))
+            {
+                let element = this._outputElements[name];
+                element.innerText = '---';
+            }
+            return;
+        }
+        else
+        {
+            let context = this._context;
+            let inputs = context.inputs;
+            for(let name of Object.keys(this._outputElements))
+            {
+                let element = this._outputElements[name];
+                let value = inputs[name].value;
+                element.innerText = Number(value).toFixed(2);
+            }
         }
     }
 
     /** @private */
     updatePollStatus()
     {
-        for(let input of Object.values(this.inputs))
+        if (!this.isConnected)
         {
-            if (!input.polling)
+            // Don't update the DOM if not connected to any :(
+            return;
+        }
+        else if (!this._context)
+        {
+            // Clear all values if no context is available
+            this._pollElement.innerHTML = '-';
+            return;
+        }
+        else
+        {
+            let context = this._context;
+            let inputs = context.inputs;
+            for(let input of Object.values(inputs))
             {
-                this._pollElement.innerHTML = '';
-                return;
+                if (!input.polling)
+                {
+                    this._pollElement.innerHTML = '';
+                    return;
+                }
             }
-        }
-        this._pollElement.innerHTML = '✓';
-    }
-
-    /** @private */
-    updateEventTarget(eventTarget)
-    {
-        let prevTarget = this._eventTarget;
-        this._eventTarget = eventTarget;
-        if (prevTarget)
-        {
-            prevTarget.removeEventListener('focus', this.onEventTargetFocus);
-            prevTarget.removeEventListener('blur', this.onEventTargetBlur);
-        }
-        for(let device of this.devices)
-        {
-            device.setEventTarget(eventTarget);
-        }
-        if (eventTarget)
-        {
-            eventTarget.addEventListener('focus', this.onEventTargetFocus);
-            eventTarget.addEventListener('blur', this.onEventTargetBlur);
+            this._pollElement.innerHTML = '✓';
         }
     }
 }
@@ -2679,6 +2907,7 @@ exports.INVERTED_MODIFIER_BIT = INVERTED_MODIFIER_BIT;
 exports.InputBase = InputBase;
 exports.InputBindings = InputBindings;
 exports.InputCode = InputCode;
+exports.InputContext = InputContext;
 exports.InputDevice = InputDevice;
 exports.InputPort = InputPort;
 exports.Keyboard = Keyboard;

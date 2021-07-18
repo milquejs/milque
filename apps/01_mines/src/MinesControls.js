@@ -1,9 +1,9 @@
-/** @typedef {import('@milque/input').InputPort} InputPort */
+/** @typedef {import('@milque/input').InputContext} InputContext */
 
 export const INPUTS = {};
 
 /**
- * @param {InputPort} inputs 
+ * @param {InputContext} inputs 
  */
 export function attach(inputs)
 {

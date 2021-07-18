@@ -18,11 +18,13 @@ import { main as GerryMan } from './01_gerryman/main.js';
 import { main as BreadBox } from './02_breadbox/main.js';
 // eslint-disable-next-line no-unused-vars
 import { main as Miners } from './03_miners/main.js';
+// eslint-disable-next-line no-unused-vars
+import { main as HomeWorld } from './04_homeworld/main.js';
 
 /**
  * @typedef {import('@milque/asset').AssetPack} AssetPack
  * @typedef {import('@milque/display').DisplayPort} DisplayPort
- * @typedef {import('@milque/input').InputPort} InputPort
+ * @typedef {import('@milque/input').InputContext} InputContext
  */
 
 window.addEventListener('DOMContentLoaded', main);
@@ -30,8 +32,8 @@ async function main()
 {
     /** @type {DisplayPort} */
     const display = document.querySelector('#display');
-    /** @type {InputPort} */
-    const inputs = document.querySelector('#inputs');
+    /** @type {InputContext} */
+    const inputs = document.querySelector('#inputs').getContext('axisbutton');
     /** @type {AssetPack} */
     const assets = document.querySelector('#assets');
     let promise = new Promise((resolve, reject) => {
@@ -66,5 +68,6 @@ async function main()
     // await IsoGame(game);
     // await BreadBox(game);
     // await GerryMan(game);
-    await Miners(game);
+    // await Miners(game);
+    await HomeWorld(game);
 }

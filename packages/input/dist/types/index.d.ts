@@ -8,7 +8,7 @@
  * @property {number} value
  * @property {boolean} polling
  */
-declare class InputBase$2 {
+declare class InputBase$1 {
     /**
      * @abstract
      * @param {number} size The initial binding state size.
@@ -62,14 +62,14 @@ declare class InputBase$2 {
      * @param {BindingIndex} code
      * @param {BindingOptions} [opts]
      */
-    onBind(code: BindingIndex$2, opts?: BindingOptions$2): void;
+    onBind(code: BindingIndex$2, opts?: BindingOptions$1): void;
     /**
      * Called to unbind all states.
      */
     onUnbind(): void;
 }
 type BindingIndex$2 = number;
-type BindingOptions$2 = {
+type BindingOptions$1 = {
     inverted: boolean;
 };
 type InputReadOnly = {
@@ -91,7 +91,7 @@ type InputReadOnly = {
  * @property {number} delta
  * @property {boolean} polling
  */
-declare class Axis extends InputBase$2 {
+declare class Axis extends InputBase$1 {
     /** @returns {AxisBindingState} */
     static createAxisBindingState(): AxisBindingState;
     /**
@@ -164,7 +164,7 @@ declare const PRESSED_STATE_BIT: 2;
 declare const REPEATED_STATE_BIT: 4;
 declare const RELEASED_STATE_BIT: 8;
 declare const INVERTED_MODIFIER_BIT: 16;
-declare class Button extends InputBase$2 {
+declare class Button extends InputBase$1 {
     /**
      * @param {number} [size]
      */
@@ -235,7 +235,7 @@ type ButtonReadOnly$2 = {
  * A class that represents a raw system device that
  * emits input events.
  */
-declare class InputDevice {
+declare class InputDevice$1 {
     /** @abstract */
     static isAxis(code: any): boolean;
     /** @abstract */
@@ -271,9 +271,9 @@ declare class InputDevice {
      * @param {InputDeviceEvent} e
      * @returns {boolean} Whether the input event should be consumed.
      */
-    dispatchInputEvent(e: InputDeviceEvent$1): boolean;
+    dispatchInputEvent(e: InputDeviceEvent): boolean;
 }
-type InputDeviceEvent$1 = {
+type InputDeviceEvent = {
     target: EventTarget;
     device: string;
     code: string;
@@ -299,7 +299,7 @@ type InputDeviceEvent$1 = {
      */
     alt?: boolean;
 };
-type InputDeviceEventListener = (e: InputDeviceEvent$1) => any;
+type InputDeviceEventListener = (e: InputDeviceEvent) => any;
 
 /** @typedef {import('./InputDevice.js').InputDeviceEvent} InputDeviceEvent */
 /**
@@ -310,7 +310,7 @@ type InputDeviceEventListener = (e: InputDeviceEvent$1) => any;
  * - This device uses the `event.code` standard to reference each key.
  * - Use this to help you determine the key code: https://keycode.info/
  */
-declare class KeyboardDevice extends InputDevice {
+declare class KeyboardDevice extends InputDevice$1 {
     /**
      * Constructs a listening keyboard with no listeners (yet).
      *
@@ -357,7 +357,7 @@ declare class KeyboardDevice extends InputDevice {
  * - Button3 (next button)
  * - Button4 (back button)
  */
-declare class MouseDevice extends InputDevice {
+declare class MouseDevice extends InputDevice$1 {
     /**
      * Constructs a listening mouse with no listeners (yet).
      *
@@ -476,18 +476,18 @@ declare class InputBindings$1 {
      * @param {KeyCode} code
      * @param {BindingOptions} [opts]
      */
-    bind(input: InputBase$1, device: DeviceName$1, code: KeyCode$1, opts?: BindingOptions$1): void;
+    bind(input: InputBase, device: DeviceName, code: KeyCode, opts?: BindingOptions): void;
     /**
      * @param {InputBase} input
      */
-    unbind(input: InputBase$1): void;
+    unbind(input: InputBase): void;
     /**
      * @param {InputBase} input
      * @returns {boolean}
      */
-    isBound(input: InputBase$1): boolean;
+    isBound(input: InputBase): boolean;
     /** @returns {IterableIterator<InputBase>} */
-    getInputs(): IterableIterator<InputBase$1>;
+    getInputs(): IterableIterator<InputBase>;
     /** @returns {IterableIterator<Binding>} */
     getBindingsByInput(input: any): IterableIterator<Binding>;
     /**
@@ -495,12 +495,12 @@ declare class InputBindings$1 {
      * @param {KeyCode} code
      * @returns {IterableIterator<Binding>}
      */
-    getBindings(device: DeviceName$1, code: KeyCode$1): IterableIterator<Binding>;
+    getBindings(device: DeviceName, code: KeyCode): IterableIterator<Binding>;
 }
-type InputBase$1 = InputBase$2;
-type BindingOptions$1 = BindingOptions$2;
-type DeviceName$1 = string;
-type KeyCode$1 = string;
+type InputBase = InputBase$1;
+type BindingOptions = BindingOptions$1;
+type DeviceName = string;
+type KeyCode = string;
 /**
  * @typedef {import('./axisbutton/InputBase.js').InputBase} InputBase
  * @typedef {import('./axisbutton/InputBase.js').BindingOptions} BindingOptions
@@ -515,16 +515,66 @@ declare class Binding {
      * @param {InputBase} input The parent input
      * @param {number} index The binding index for the input
      */
-    constructor(device: DeviceName$1, code: KeyCode$1, input: InputBase$1, index: number);
+    constructor(device: DeviceName, code: KeyCode, input: InputBase, index: number);
     /** Name of the device */
     device: string;
     /** The key code for the device */
     code: string;
     /** The parent input */
-    input: InputBase$2;
+    input: InputBase$1;
     /** The binding index for the input */
     index: number;
 }
+
+/** @typedef {import('./InputBindings.js').InputBindings} InputBindings */
+/**
+ * A class to listen and transform device events through
+ * each mapped bindings into an input state.
+ *
+ * It requires onPoll() to be called to keep the input
+ * state up to date. This is usually called from
+ * requestAnimationFrame() or using the AutoPoller.
+ */
+declare class DeviceInputAdapter {
+    /**
+     * @param {InputBindings} bindings
+     */
+    constructor(bindings: InputBindings);
+    onInput(e: any): boolean;
+    onPoll(now: any): void;
+    bindings: InputBindings$1;
+}
+type InputBindings = InputBindings$1;
+
+/**
+ * @callback OnPollCallback
+ * @param {number} now
+ *
+ * @typedef Pollable
+ * @property {OnPollCallback} onPoll
+ */
+/**
+ * A class to automatically call onPoll() on animation frame.
+ */
+declare class AutoPoller {
+    /**
+     * @param {Pollable} pollable
+     */
+    constructor(pollable: Pollable);
+    /** @private */
+    private onAnimationFrame;
+    /** @private */
+    private animationFrameHandle;
+    /** @private */
+    private pollable;
+    get running(): boolean;
+    start(): void;
+    stop(): void;
+}
+type OnPollCallback = (now: number) => any;
+type Pollable = {
+    onPoll: OnPollCallback;
+};
 
 /**
  * @typedef {import('../device/InputDevice.js').InputDevice} InputDevice
@@ -536,79 +586,81 @@ declare class Binding {
  *
  * @typedef {string} InputName
  */
-declare class InputPort extends HTMLElement {
-    static define(customElements?: CustomElementRegistry): void;
-    /** @override */
-    static get observedAttributes(): string[];
-    set autopoll(arg: boolean);
-    /** @returns {boolean} */
-    get autopoll(): boolean;
-    set for(arg: string);
-    /** @returns {string} */
-    get for(): string;
-    /** @private */
-    private _titleElement;
-    /** @private */
-    private _pollElement;
-    /** @private */
-    private _focusElement;
-    /** @private */
-    private _bodyElement;
-    /** @private */
-    private _outputElements;
-    /** @private */
-    private onAnimationFrame;
-    /** @private */
-    private animationFrameHandle;
-    /** @private */
-    private _for;
-    /** @private */
-    private _eventTarget;
-    /** @private */
-    private _autopoll;
+/**
+ * @typedef {'bind'|'unbind'|'focus'|'blur'} InputContextEventType
+ * @typedef {(e: InputContextEvent) => boolean} InputContextEventListener
+ * @typedef InputContextEvent
+ * @property {InputContextEventType} type
+ */
+declare class InputContext {
     /**
-     * @private
+     * @param {EventTarget} eventTarget
+     * @param {object} [opts]
+     */
+    constructor(eventTarget: EventTarget, opts?: object);
+    /**
      * @type {Record<string, Axis|Button>}
      */
-    private inputs;
+    inputs: Record<string, Axis | Button>;
     /**
-     * @private
      * @type {Array<InputDevice>}
      */
-    private devices;
-    /** @private */
-    private bindings;
-    /** @private */
-    private adapter;
-    /** @private */
-    private autopoller;
-    /** @private */
-    private anyButton;
-    /** @private */
-    private anyButtonDevice;
-    /** @private */
-    private anyButtonCode;
-    /** @private */
-    private anyAxis;
-    /** @private */
-    private anyAxisDevice;
-    /** @private */
-    private anyAxisCode;
+    devices: Array<InputDevice>;
+    bindings: InputBindings$1;
+    adapter: DeviceInputAdapter;
+    autopoller: AutoPoller;
+    /** @protected */
+    protected eventTarget: EventTarget;
+    /** @protected */
+    protected anyButton: Button;
+    /** @protected */
+    protected anyButtonDevice: string;
+    /** @protected */
+    protected anyButtonCode: string;
+    /** @protected */
+    protected anyAxis: Axis;
+    /** @protected */
+    protected anyAxisDevice: string;
+    /** @protected */
+    protected anyAxisCode: string;
+    /**
+     * @private
+     * @type {Record<InputContextEventType, Array<InputContextEventListener>>}
+     */
+    private listeners;
     /**
      * @private
      * @param {InputDeviceEvent} e
      */
     private onInput;
     /** @private */
-    private onEventTargetFocus;
-    /** @private */
     private onEventTargetBlur;
-    /** @override */
-    connectedCallback(): void;
-    /** @override */
-    disconnectedCallback(): void;
-    /** @override */
-    attributeChangedCallback(attribute: any, prev: any, value: any): void;
+    /** @private */
+    private onEventTargetFocus;
+    set autopoll(arg: boolean);
+    get autopoll(): boolean;
+    destroy(): void;
+    setEventTarget(eventTarget: any): void;
+    toggleAutoPoll(force?: any): void;
+    /**
+     * @param {InputContextEventType} event
+     * @param {InputContextEventListener} listener
+     */
+    addEventListener(event: InputContextEventType, listener: InputContextEventListener): void;
+    /**
+     * @param {InputContextEventType} event
+     * @param {InputContextEventListener} listener
+     */
+    removeEventListener(event: InputContextEventType, listener: InputContextEventListener): void;
+    /**
+     * @param {InputContextEvent} e
+     * @returns {boolean} Whether the event should be consumed.
+     */
+    dispatchEvent(e: InputContextEvent): boolean;
+    /**
+     * @param {number} now
+     */
+    poll(now?: number): void;
     /**
      * @private
      * @param {number} now
@@ -619,30 +671,26 @@ declare class InputPort extends HTMLElement {
     /** @private */
     private onUnbind;
     /**
-     * @param {number} now
-     */
-    poll(now?: number): void;
-    /**
      * @param {InputName} name
      * @param {DeviceName} device
      * @param {KeyCode} code
      * @param {BindingOptions} [opts]
      */
-    bindButton(name: InputName, device: DeviceName, code: KeyCode, opts?: BindingOptions): void;
+    bindButton(name: InputName, device: any, code: any, opts?: any): void;
     /**
      * @param {string} name
      * @param {DeviceName} device
      * @param {KeyCode} code
      * @param {BindingOptions} [opts]
      */
-    bindAxis(name: string, device: DeviceName, code: KeyCode, opts?: BindingOptions): void;
+    bindAxis(name: string, device: any, code: any, opts?: any): void;
     /**
      * @param {string} name
      * @param {DeviceName} device
      * @param {KeyCode} negativeCode
      * @param {KeyCode} positiveCode
      */
-    bindAxisButtons(name: string, device: DeviceName, negativeCode: KeyCode, positiveCode: KeyCode): void;
+    bindAxisButtons(name: string, device: any, negativeCode: any, positiveCode: any): void;
     /**
      * @param {string} name
      */
@@ -656,7 +704,7 @@ declare class InputPort extends HTMLElement {
      * @param {InputName} name
      * @returns {InputBase}
      */
-    getInput(name: InputName): InputBase;
+    getInput(name: InputName): any;
     /**
      * Get the button for the given name. Assumes a button already exists for the name.
      * @param {InputName} name
@@ -735,71 +783,84 @@ declare class InputPort extends HTMLElement {
     getMouse(): MouseDevice;
     /** @returns {KeyboardDevice} */
     getKeyboard(): KeyboardDevice;
+}
+type InputDevice = any;
+type InputName = string;
+type InputContextEventType = 'bind' | 'unbind' | 'focus' | 'blur';
+type InputContextEventListener = (e: InputContextEvent) => boolean;
+type InputContextEvent = {
+    type: InputContextEventType;
+};
+
+/**
+ * @typedef {import('../device/InputDevice.js').InputDevice} InputDevice
+ * @typedef {import('../device/InputDevice.js').InputDeviceEvent} InputDeviceEvent
+ * @typedef {import('../axisbutton/InputBase.js').InputBase} InputBase
+ * @typedef {import('../InputBindings.js').DeviceName} DeviceName
+ * @typedef {import('../InputBindings.js').KeyCode} KeyCode
+ * @typedef {import('../InputBindings.js').BindingOptions} BindingOptions
+ *
+ * @typedef {string} InputName
+ */
+declare class InputPort extends HTMLElement {
+    static define(customElements?: CustomElementRegistry): void;
+    /** @override */
+    static get observedAttributes(): string[];
+    set autopoll(arg: boolean);
+    /** @returns {boolean} */
+    get autopoll(): boolean;
+    set for(arg: string);
+    /** @returns {string} */
+    get for(): string;
+    /** @private */
+    private _titleElement;
+    /** @private */
+    private _pollElement;
+    /** @private */
+    private _focusElement;
+    /** @private */
+    private _bodyElement;
+    /** @private */
+    private _outputElements;
+    /** @private */
+    private onAnimationFrame;
+    /** @private */
+    private animationFrameHandle;
+    /** @private */
+    private _for;
+    /** @private */
+    private _eventTarget;
+    /** @private */
+    private _autopoll;
+    /** @private */
+    private _context;
+    /** @private */
+    private onInputContextBind;
+    /** @private */
+    private onInputContextUnbind;
+    /** @private */
+    private onInputContextFocus;
+    /** @private */
+    private onInputContextBlur;
+    /** @override */
+    connectedCallback(): void;
+    /** @override */
+    disconnectedCallback(): void;
+    /** @override */
+    attributeChangedCallback(attribute: any, prev: any, value: any): void;
+    /**
+     * @param {'axisbutton'} [contextId]
+     * @param {object} [options]
+     * @returns {InputContext}
+     */
+    getContext(contextId?: 'axisbutton', options?: object): InputContext;
     /** @private */
     private updateTable;
     /** @private */
     private updateTableValues;
     /** @private */
     private updatePollStatus;
-    /** @private */
-    private updateEventTarget;
 }
-type InputDeviceEvent = InputDeviceEvent$1;
-type InputBase = InputBase$2;
-type DeviceName = DeviceName$1;
-type KeyCode = KeyCode$1;
-type BindingOptions = BindingOptions$1;
-type InputName = string;
-
-/**
- * @callback OnPollCallback
- * @param {number} now
- *
- * @typedef Pollable
- * @property {OnPollCallback} onPoll
- */
-/**
- * A class to automatically call onPoll() on animation frame.
- */
-declare class AutoPoller {
-    /**
-     * @param {Pollable} pollable
-     */
-    constructor(pollable: Pollable);
-    /** @private */
-    private onAnimationFrame;
-    /** @private */
-    private animationFrameHandle;
-    /** @private */
-    private pollable;
-    get running(): boolean;
-    start(): void;
-    stop(): void;
-}
-type OnPollCallback = (now: number) => any;
-type Pollable = {
-    onPoll: OnPollCallback;
-};
-
-/** @typedef {import('./InputBindings.js').InputBindings} InputBindings */
-/**
- * A class to listen and transform device events through
- * each mapped bindings into an input state.
- *
- * It requires onPoll() to be called to keep the input
- * state up to date. This is usually called from
- * requestAnimationFrame() or using the AutoPoller.
- */
-declare class DeviceInputAdapter {
-    /**
-     * @param {InputBindings} bindings
-     */
-    constructor(bindings: InputBindings);
-    onInput(e: any): boolean;
-    onPoll(now: any): void;
-    bindings: InputBindings$1;
-}
-type InputBindings = InputBindings$1;
 
 declare class Keyboard {
     constructor(eventTarget: any, opts: any);
@@ -971,4 +1032,4 @@ type ButtonReadOnly = ButtonReadOnly$2;
  */
 declare const MOUSE_SOURCE: unique symbol;
 
-export { AutoPoller, Axis, AxisBindingState, Button, CLEAR_DOWN_STATE_BITS, CLEAR_INVERTED_MODIFIER_BITS, CLEAR_POLL_BITS, DOWN_STATE_BIT, DeviceInputAdapter, INVERTED_MODIFIER_BIT, InputCode, InputDeviceEvent, InputDeviceEventListener, InputName, InputPort, InputReadOnly, Keyboard, KeyboardDevice, Mouse, MouseDevice, OnPollCallback, PRESSED_STATE_BIT, Pollable, RELEASED_STATE_BIT, REPEATED_STATE_BIT };
+export { AutoPoller, Axis, AxisBindingState, Button, CLEAR_DOWN_STATE_BITS, CLEAR_INVERTED_MODIFIER_BITS, CLEAR_POLL_BITS, DOWN_STATE_BIT, DeviceInputAdapter, INVERTED_MODIFIER_BIT, InputCode, InputContext, InputContextEvent, InputContextEventListener, InputContextEventType, InputDeviceEventListener, InputPort, InputReadOnly, Keyboard, KeyboardDevice, Mouse, MouseDevice, OnPollCallback, PRESSED_STATE_BIT, Pollable, RELEASED_STATE_BIT, REPEATED_STATE_BIT };

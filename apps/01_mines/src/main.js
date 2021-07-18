@@ -10,7 +10,7 @@ import { attach } from './MinesControls.js';
 
 /**
  * @typedef {import('@milque/display').DisplayPort} DisplayPort
- * @typedef {import('@milque/input').InputPort} InputPort
+ * @typedef {import('@milque/input').InputContext} InputContext
  * @typedef {import('@milque/asset').AssetPack} AssetPack
  */
 
@@ -46,9 +46,9 @@ async function main()
     const display = document.querySelector('display-port');
     const ctx = display.canvas.getContext('2d');
     ctx.imageSmoothingEnabled = false;
-    
-    /** @type {InputPort} */
-    const inputs = document.querySelector('input-port');
+
+    /** @type {InputContext} */
+    const inputs =  document.querySelector('input-port').getContext('axisbutton');
     attach(inputs);
 
     /** @type {AssetPack} */

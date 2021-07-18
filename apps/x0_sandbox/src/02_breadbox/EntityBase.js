@@ -1,5 +1,5 @@
 /**
- * @typedef {import('@milque/input').InputPort} InputPort
+ * @typedef {import('@milque/input').InputContext} InputContext
  * @typedef {import('./World.js').World} World
  * @typedef {import('../renderer/FixedSpriteGLRenderer2d.js').FixedSpriteGLRenderer2d} Renderer
  */
@@ -26,7 +26,7 @@ export class EntityBase
     }
 
     /**
-     * @param {InputPort} inputs 
+     * @param {InputContext} inputs 
      * @param {number} dt 
      */
     onInputUpdate(inputs, dt)

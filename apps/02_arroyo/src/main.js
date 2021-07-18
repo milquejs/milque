@@ -44,7 +44,7 @@ import { loadAudio } from './asset/Audio.js';
 /**
  * @typedef {import('@milque/display').DisplayPort} DisplayPort
  * @typedef {import('@milque/display').FrameEvent} FrameEvent
- * @typedef {import('@milque/input').InputPort} InputPort
+ * @typedef {import('@milque/input').InputContext} InputContext
  * @typedef {import('@milque/asset').AssetPack} AssetPack
  */
 
@@ -63,8 +63,8 @@ async function main()
 {
     /** @type {DisplayPort} */
     const display = document.querySelector('#display');
-    /** @type {InputPort} */
-    const inputs = document.querySelector('#inputs');
+    /** @type {InputContext} */
+    const inputs = document.querySelector('#inputs').getContext('axisbutton');
     inputs.bindAxis('PointerX', 'Mouse', 'PosX');
     inputs.bindAxis('PointerY', 'Mouse', 'PosY');
     inputs.bindButton('Place', 'Mouse', 'Button0');

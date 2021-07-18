@@ -2,7 +2,7 @@ import { EntityBase } from './EntityBase.js';
 import { clamp, lookAt2, toDegrees, toRadians } from '@milque/util';
 
 /**
- * @typedef {import('@milque/input').InputPort} InputPort
+ * @typedef {import('@milque/input').InputContext} InputContext
  */
 
 const MAX_JUMP_TICKS = 6;
@@ -44,7 +44,7 @@ export class Player extends EntityBase
 
     /**
      * @override
-     * @param {InputPort} inputs
+     * @param {InputContext} inputs
      * @param {number} dt
      */
     onInputUpdate(inputs, dt)

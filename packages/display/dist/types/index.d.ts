@@ -136,6 +136,11 @@ declare class DisplayPort extends HTMLElement {
     disconnectedCallback(): void;
     /** @override */
     attributeChangedCallback(attribute: any, prev: any, value: any): void;
+    /**
+     * @param {'2d'|'webgl'|'webgl2'} [contextId]
+     * @param {CanvasRenderingContext2DSettings} [options]
+     */
+    getContext(contextId?: '2d' | 'webgl' | 'webgl2', options?: CanvasRenderingContext2DSettings): RenderingContext;
     /** Pause animation of the display frames. */
     pause(): void;
     /** Resume animation of the display frames. */

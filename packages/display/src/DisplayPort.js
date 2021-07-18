@@ -394,6 +394,15 @@ export class DisplayPort extends HTMLElement
         }
     }
 
+    /**
+     * @param {'2d'|'webgl'|'webgl2'} [contextId]
+     * @param {CanvasRenderingContext2DSettings} [options] 
+     */
+    getContext(contextId = '2d', options = undefined)
+    {
+        return this._canvasElement.getContext(contextId, options);
+    }
+
     /** Pause animation of the display frames. */
     pause()
     {

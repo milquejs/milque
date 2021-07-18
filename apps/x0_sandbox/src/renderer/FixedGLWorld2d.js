@@ -35,10 +35,10 @@ export class FixedGLWorld2d
         return this;
     }
 
-    registerTexture(textureUnit, image)
+    registerTexture(textureUnit, image, textureName = undefined)
     {
         let renderer = this.renderer;
-        renderer.texture(textureUnit, image);
+        renderer.texture(textureUnit, image, textureName);
         return this;
     }
 

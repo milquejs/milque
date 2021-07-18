@@ -7,3 +7,4 @@ export * from './DeviceInputAdapter.js';
 export * from './InputBindings.js';
 export * from './Keyboard.js';
 export * from './Mouse.js';
+export * from './InputContext.js';
