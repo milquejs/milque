@@ -1,6 +1,6 @@
 import { mat4, quat, vec3 } from 'gl-matrix';
 import { OrthographicCamera } from '@milque/scene';
-import { BufferHelper, BufferInfo, ProgramInfo } from '@milque/mogli';
+import { BufferHelper, BufferInfoBuilder, ProgramInfoBuilder } from '@milque/mogli';
 
 import { hex } from './color.js';
 import { FixedGLRenderer2d } from './FixedGLRenderer2d.js';
@@ -90,7 +90,7 @@ export class FixedShapeGLRenderer2d extends FixedGLRenderer2d
          * @protected
          * @type {ProgramInfo}
          */
-        this.program = ProgramInfo.builder(gl)
+        this.program = new ProgramInfoBuilder(gl)
             .shader(gl.VERTEX_SHADER, WEBGL_VERTEX_SHADER_SOURCE)
             .shader(gl.FRAGMENT_SHADER, WEBGL_FRAGMENT_SHADER_SOURCE)
             .link();
@@ -98,28 +98,28 @@ export class FixedShapeGLRenderer2d extends FixedGLRenderer2d
          * @protected
          * @type {BufferInfo}
          */
-        this.meshQuad = BufferInfo.builder(gl, gl.ARRAY_BUFFER)
+        this.meshQuad = new BufferInfoBuilder(gl, gl.ARRAY_BUFFER)
             .data(BufferHelper.createBufferSource(gl, gl.FLOAT, QUAD_VERTICES))
             .build();
         /**
          * @protected
          * @type {BufferInfo}
          */
-        this.meshLine = BufferInfo.builder(gl, gl.ARRAY_BUFFER)
+        this.meshLine = new BufferInfoBuilder(gl, gl.ARRAY_BUFFER)
             .data(BufferHelper.createBufferSource(gl, gl.FLOAT, LINE_VERTICES))
             .build();
         /**
          * @protected
          * @type {BufferInfo}
          */
-        this.meshCircle = BufferInfo.builder(gl, gl.ARRAY_BUFFER)
+        this.meshCircle = new BufferInfoBuilder(gl, gl.ARRAY_BUFFER)
             .data(BufferHelper.createBufferSource(gl, gl.FLOAT, CIRCLE_VERTICES))
             .build();
         /**
          * @protected
          * @type {BufferInfo}
          */
-        this.meshLineCircle = BufferInfo.builder(gl, gl.ARRAY_BUFFER)
+        this.meshLineCircle = new BufferInfoBuilder(gl, gl.ARRAY_BUFFER)
             .data(BufferHelper.createBufferSource(gl, gl.FLOAT, LINE_CIRCLE_VERTICES))
             .build();
         /** @protected */

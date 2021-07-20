@@ -1,18 +1,9 @@
 import { getActiveUniformsInfo } from './ProgramUniformInfo.js';
 import { getActiveAttribsInfo } from './ProgramAttributeInfo.js';
-import { ProgramBuilder } from './ProgramBuilder.js';
 import { draw } from './ProgramHelper.js';
 
 export class ProgramInfo
 {
-    /**
-     * @param {WebGLRenderingContextBase} gl
-     */
-    static builder(gl)
-    {
-        return new ProgramInfoBuilder(gl);
-    }
-
     /**
      * @param {WebGLRenderingContextBase} gl 
      * @param {WebGLProgram} program 
@@ -111,26 +102,5 @@ export class ProgramInfoDrawContext
     {
         draw(gl, mode, offset, count, elementBuffer);
         return this.parent;
-    }
-}
-
-export class ProgramInfoBuilder extends ProgramBuilder
-{
-    /**
-     * @param {WebGLRenderingContextBase} gl
-     */
-    constructor(gl)
-    {
-        super(gl);
-    }
-
-    /**
-     * @override
-     * @returns {ProgramInfo}
-     */
-    link()
-    {
-        const handle = super.link();
-        return new ProgramInfo(this.gl, handle);
     }
 }

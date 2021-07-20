@@ -68,7 +68,7 @@ export class BufferDataContext
     }
 }
 
-export class BufferBuilder extends BufferDataContext
+export class BufferBuilder
 {
     /**
      * @param {WebGLRenderingContextBase} gl The webgl context.
@@ -79,10 +79,44 @@ export class BufferBuilder extends BufferDataContext
      */
     constructor(gl, target, buffer = undefined)
     {
-        super(gl, target);
+        /** @private */
+        this.dataContext = new BufferDataContext(gl, target);
         this.handle = buffer || gl.createBuffer();
-
         gl.bindBuffer(target, this.handle);
+    }
+
+    get gl()
+    {
+        return this.dataContext.gl;
+    }
+
+    get target()
+    {
+        return this.dataContext.target;
+    }
+
+    /**
+     * @param {BufferSource|number} srcDataOrSize The buffer data source or the buffer size in bytes.
+     * @param {GLenum} [usage] The buffer data usage. By default, this is `gl.STATIC_DRAW`.
+     * @returns {BufferBuilder}
+     */
+    data(srcDataOrSize, usage = undefined)
+    {
+        this.dataContext.data(srcDataOrSize, usage);
+        return this;
+    }
+
+    /**
+     * @param {BufferSource} srcData The buffer data source.
+     * @param {number} [dstOffset] The destination byte offset to put the data.
+     * @param {number} [srcOffset] The source array index offset to copy the data from.
+     * @param {number} [srcLength] The source array count to copy the data until.
+     * @returns {BufferBuilder}
+     */
+    subData(srcData, dstOffset = 0, srcOffset = undefined, srcLength = undefined)
+    {
+        this.dataContext.subData(srcData, dstOffset, srcOffset, srcLength);
+        return this;
     }
     
     /** @returns {WebGLBuffer} */

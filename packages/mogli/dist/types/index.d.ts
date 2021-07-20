@@ -37,7 +37,7 @@ declare class BufferDataContext {
      */
     subData(srcData: BufferSource, dstOffset?: number, srcOffset?: number, srcLength?: number): BufferDataContext;
 }
-declare class BufferBuilder extends BufferDataContext {
+declare class BufferBuilder {
     /**
      * @param {WebGLRenderingContextBase} gl The webgl context.
      * @param {GLenum} target The buffer bind target. Usually, this is
@@ -46,19 +46,30 @@ declare class BufferBuilder extends BufferDataContext {
      * new buffer will be created.
      */
     constructor(gl: WebGLRenderingContextBase, target: GLenum, buffer?: WebGLBuffer);
+    /** @private */
+    private dataContext;
     handle: WebGLBuffer;
+    get gl(): WebGLRenderingContextBase;
+    get target(): number;
+    /**
+     * @param {BufferSource|number} srcDataOrSize The buffer data source or the buffer size in bytes.
+     * @param {GLenum} [usage] The buffer data usage. By default, this is `gl.STATIC_DRAW`.
+     * @returns {BufferBuilder}
+     */
+    data(srcDataOrSize: BufferSource | number, usage?: GLenum): BufferBuilder;
+    /**
+     * @param {BufferSource} srcData The buffer data source.
+     * @param {number} [dstOffset] The destination byte offset to put the data.
+     * @param {number} [srcOffset] The source array index offset to copy the data from.
+     * @param {number} [srcLength] The source array count to copy the data until.
+     * @returns {BufferBuilder}
+     */
+    subData(srcData: BufferSource, dstOffset?: number, srcOffset?: number, srcLength?: number): BufferBuilder;
     /** @returns {WebGLBuffer} */
     build(): WebGLBuffer;
 }
 
 declare class BufferInfo {
-    /**
-     * @param {WebGLRenderingContextBase} gl The gl context.
-     * @param {GLenum} target The buffer bind target. Usually, this is
-     * `gl.ARRAY_BUFFER` or `gl.ELEMENT_ARRAY_BUFFER`.
-     * @returns {BufferInfoBuilder}
-     */
-    static builder(gl: WebGLRenderingContextBase, target: GLenum): BufferInfoBuilder;
     /**
      * @param {WebGLRenderingContextBase} gl The gl context.
      * @param {GLenum} target The buffer bind target. Usually, this is
@@ -77,17 +88,43 @@ declare class BufferInfo {
     type: number;
     /** @private */
     private bindContext;
-    bind(gl: any): BufferInfoBindContext;
+    bind(gl: any): BufferDataContext;
 }
-declare class BufferInfoBindContext extends BufferDataContext {
-    constructor(gl: any, bufferInfo: any);
+
+declare class BufferInfoBuilder {
+    /**
+     * @param {WebGLRenderingContextBase} gl The gl context.
+     * @param {GLenum} target The buffer bind target. Usually, this is
+     * `gl.ARRAY_BUFFER` or `gl.ELEMENT_ARRAY_BUFFER`.
+     * @param {WebGLBuffer} [buffer] The buffer handle. If undefined, a
+     * new buffer will be created.
+     */
+    constructor(gl: WebGLRenderingContextBase, target: GLenum, buffer?: WebGLBuffer);
     /** @private */
-    private parent;
-}
-declare class BufferInfoBuilder extends BufferBuilder {
-    constructor(gl: any, target: any);
+    private bufferBuilder;
     /** @private */
     private bufferType;
+    get gl(): WebGLRenderingContextBase;
+    get handle(): WebGLBuffer;
+    get target(): number;
+    /**
+     * @param {BufferSource|number} srcDataOrSize The buffer data source or the buffer size in bytes.
+     * @param {GLenum} [usage] The buffer data usage. By default, this is `gl.STATIC_DRAW`.
+     * @returns {BufferInfoBuilder}
+     */
+    data(srcDataOrSize: BufferSource | number, usage?: GLenum): BufferInfoBuilder;
+    /**
+     * @param {BufferSource} srcData The buffer data source.
+     * @param {number} [dstOffset] The destination byte offset to put the data.
+     * @param {number} [srcOffset] The source array index offset to copy the data from.
+     * @param {number} [srcLength] The source array count to copy the data until.
+     * @returns {BufferInfoBuilder}
+     */
+    subData(srcData: BufferSource, dstOffset?: number, srcOffset?: number, srcLength?: number): BufferInfoBuilder;
+    /**
+     * @returns {BufferInfo}
+     */
+    build(): BufferInfo;
 }
 
 /**
@@ -158,33 +195,7 @@ type ActiveUniformInfo = {
     set: any;
 };
 
-declare class ProgramBuilder {
-    /**
-     * @param {WebGLRenderingContextBase} gl
-     * @param {WebGLProgram} [program]
-     */
-    constructor(gl: WebGLRenderingContextBase, program?: WebGLProgram);
-    handle: WebGLProgram;
-    shaders: any[];
-    /** @type {WebGLRenderingContextBase} */
-    gl: WebGLRenderingContextBase;
-    /**
-     * @param {GLenum} shaderType
-     * @param {string} shaderSource
-     * @returns {ProgramBuilder}
-     */
-    shader(shaderType: GLenum, shaderSource: string): ProgramBuilder;
-    /**
-     * @returns {WebGLProgram}
-     */
-    link(): WebGLProgram;
-}
-
 declare class ProgramInfo {
-    /**
-     * @param {WebGLRenderingContextBase} gl
-     */
-    static builder(gl: WebGLRenderingContextBase): ProgramInfoBuilder;
     /**
      * @param {WebGLRenderingContextBase} gl
      * @param {WebGLProgram} program
@@ -232,11 +243,50 @@ declare class ProgramInfoDrawContext {
      */
     draw(gl: WebGLRenderingContext, mode: number, offset: number, count: number, elementBuffer?: WebGLBuffer): any;
 }
-declare class ProgramInfoBuilder extends ProgramBuilder {
+
+declare class ProgramInfoBuilder {
     /**
      * @param {WebGLRenderingContextBase} gl
+     * @param {WebGLProgram} [program]
      */
-    constructor(gl: WebGLRenderingContextBase);
+    constructor(gl: WebGLRenderingContextBase, program?: WebGLProgram);
+    /** @private */
+    private programBuilder;
+    get gl(): WebGLRenderingContextBase;
+    get handle(): WebGLProgram;
+    get shaders(): any[];
+    /**
+     * @param {GLenum} shaderType
+     * @param {string} shaderSource
+     * @returns {ProgramInfoBuilder}
+     */
+    shader(shaderType: GLenum, shaderSource: string): ProgramInfoBuilder;
+    /**
+     * @returns {ProgramInfo}
+     */
+    link(): ProgramInfo;
+}
+
+declare class ProgramBuilder {
+    /**
+     * @param {WebGLRenderingContextBase} gl
+     * @param {WebGLProgram} [program]
+     */
+    constructor(gl: WebGLRenderingContextBase, program?: WebGLProgram);
+    handle: WebGLProgram;
+    shaders: any[];
+    /** @type {WebGLRenderingContextBase} */
+    gl: WebGLRenderingContextBase;
+    /**
+     * @param {GLenum} shaderType
+     * @param {string} shaderSource
+     * @returns {ProgramBuilder}
+     */
+    shader(shaderType: GLenum, shaderSource: string): ProgramBuilder;
+    /**
+     * @returns {WebGLProgram}
+     */
+    link(): WebGLProgram;
 }
 
 /**
@@ -433,4 +483,4 @@ declare namespace ProgramUniformFunctions {
   };
 }
 
-export { BufferEnums, BufferHelper, BufferInfo, GLHelper, ProgramAttributeEnums, ProgramHelper, ProgramInfo, ProgramUniformEnums, ProgramUniformFunctions };
+export { BufferBuilder, BufferEnums, BufferHelper, BufferInfo, BufferInfoBuilder, GLHelper, ProgramAttributeEnums, ProgramBuilder, ProgramHelper, ProgramInfo, ProgramInfoBuilder, ProgramUniformEnums, ProgramUniformFunctions };

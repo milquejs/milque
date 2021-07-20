@@ -1,19 +1,7 @@
-import { BufferBuilder, BufferDataContext } from './BufferBuilder.js';
-import { getTypedArrayBufferType } from './BufferHelper.js';
+import { BufferDataContext } from './BufferBuilder.js';
 
 export class BufferInfo
 {
-    /**
-     * @param {WebGLRenderingContextBase} gl The gl context.
-     * @param {GLenum} target The buffer bind target. Usually, this is
-     * `gl.ARRAY_BUFFER` or `gl.ELEMENT_ARRAY_BUFFER`.
-     * @returns {BufferInfoBuilder}
-     */
-    static builder(gl, target)
-    {
-        return new BufferInfoBuilder(gl, target);
-    }
-
     /**
      * @param {WebGLRenderingContextBase} gl The gl context.
      * @param {GLenum} target The buffer bind target. Usually, this is
@@ -33,7 +21,7 @@ export class BufferInfo
         this.type = bufferType;
 
         /** @private */
-        this.bindContext = new BufferInfoBindContext(gl, this);
+        this.bindContext = new BufferDataContext(gl, this.target);
     }
 
     bind(gl)
@@ -41,70 +29,5 @@ export class BufferInfo
         gl.bindBuffer(this.target, this.handle);
         this.bindContext.gl = gl;
         return this.bindContext;
-    }
-}
-
-export class BufferInfoBindContext extends BufferDataContext
-{
-    constructor(gl, bufferInfo)
-    {
-        super(gl, bufferInfo.target);
-
-        /** @private */
-        this.parent = bufferInfo;
-    }
-}
-
-export class BufferInfoBuilder extends BufferBuilder
-{
-    constructor(gl, target)
-    {
-        super(gl, target);
-
-        /** @private */
-        this.bufferType = gl.FLOAT;
-    }
-
-    /**
-     * @override
-     * @param {BufferSource|number} srcDataOrSize The buffer data source or the buffer size in bytes.
-     * @param {GLenum} [usage] The buffer data usage. By default, this is `gl.STATIC_DRAW`.
-     * @returns {BufferInfoBuilder}
-     */
-    data(srcDataOrSize, usage = undefined)
-    {
-        super.data(srcDataOrSize, usage);
-        if (typeof srcDataOrSize !== 'number')
-        {
-            const typedArray = srcDataOrSize.constructor;
-            this.bufferType = getTypedArrayBufferType(this.gl, typedArray);
-        }
-        return this;
-    }
-
-    /**
-     * @override
-     * @param {BufferSource} srcData The buffer data source.
-     * @param {number} [dstOffset] The destination byte offset to put the data.
-     * @param {number} [srcOffset] The source array index offset to copy the data from.
-     * @param {number} [srcLength] The source array count to copy the data until.
-     * @returns {BufferInfoBuilder}
-     */
-    subData(srcData, dstOffset = undefined, srcOffset = undefined, srcLength = undefined)
-    {
-        super.subData(srcData, dstOffset, srcOffset, srcLength);
-        const typedArray = srcData.constructor;
-        this.bufferType = getTypedArrayBufferType(this.gl, typedArray);
-        return this;
-    }
-
-    /** @override */
-    build()
-    {
-        const handle = super.build();
-        const gl = this.gl;
-        const target = this.target;
-        const type = this.bufferType;
-        return new BufferInfo(gl, target, type, handle);
     }
 }

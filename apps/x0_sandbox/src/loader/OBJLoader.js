@@ -1,3 +1,15 @@
+/**
+ * @typedef MeshData
+ * @property {Float32Array} positions
+ * @property {Float32Array} texcoords
+ * @property {Float32Array} normals
+ * @property {Uint16Array} indices
+ */
+
+/**
+ * @param {string} src 
+ * @returns {MeshData}
+ */
 export async function loadOBJ(src)
 {
     if (typeof src === 'string')
@@ -17,6 +29,10 @@ export async function loadOBJ(src)
     return parse(new TextDecoder().decode(arrayBuffer));
 }
 
+/**
+ * @param {string} string 
+ * @returns {MeshData}
+ */
 function parse(string)
 {
     const vertexList = [];

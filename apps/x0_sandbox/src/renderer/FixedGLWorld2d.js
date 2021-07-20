@@ -50,6 +50,7 @@ export class FixedGLWorld2d
             spriteName: spriteName,
             spriteIndex: 0,
             spriteSpeed: 1,
+            visible: true,
         };
         return obj;
     }
@@ -60,6 +61,7 @@ export class FixedGLWorld2d
         obj.renderType = 'text';
         obj.renderInfo = {
             text: text,
+            visible: true,
         };
         return obj;
     }
@@ -93,22 +95,40 @@ export class FixedGLWorld2d
         const dt = deltaTime / MILLIS_PER_FRAME;
         const renderer = this.renderer;
         renderer.prepare();
-
         for(let obj of this.objects)
         {
+            // Update render info
             switch(obj.renderType)
             {
-                case 'null':
-                    drawSprite(renderer, obj, NULL_SPRITE_INFO);
-                    break;
                 case 'sprite':
-                    drawSprite(renderer, obj, obj.renderInfo);
                     obj.renderInfo.spriteIndex += obj.renderInfo.spriteSpeed * dt;
+                    if (!obj.renderInfo.visible) continue;
                     break;
                 case 'text':
-                    drawText(renderer, obj, obj.renderInfo);
+                    if (!obj.renderInfo.visible) continue;
+                    break;
+                default:
                     break;
             }
+            // Draw render info
+            this.drawObject(obj);
+        }
+    }
+
+    drawObject(obj)
+    {
+        const renderer = this.renderer;
+        switch(obj.renderType)
+        {
+            case 'null':
+                drawSprite(renderer, obj, NULL_SPRITE_INFO);
+                break;
+            case 'sprite':
+                drawSprite(renderer, obj, obj.renderInfo);
+                break;
+            case 'text':
+                drawText(renderer, obj, obj.renderInfo);
+                break;
         }
     }
 }

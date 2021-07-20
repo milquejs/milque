@@ -86,7 +86,7 @@ class BufferDataContext
     }
 }
 
-class BufferBuilder extends BufferDataContext
+class BufferBuilder
 {
     /**
      * @param {WebGLRenderingContextBase} gl The webgl context.
@@ -97,16 +97,82 @@ class BufferBuilder extends BufferDataContext
      */
     constructor(gl, target, buffer = undefined)
     {
-        super(gl, target);
+        /** @private */
+        this.dataContext = new BufferDataContext(gl, target);
         this.handle = buffer || gl.createBuffer();
-
         gl.bindBuffer(target, this.handle);
+    }
+
+    get gl()
+    {
+        return this.dataContext.gl;
+    }
+
+    get target()
+    {
+        return this.dataContext.target;
+    }
+
+    /**
+     * @param {BufferSource|number} srcDataOrSize The buffer data source or the buffer size in bytes.
+     * @param {GLenum} [usage] The buffer data usage. By default, this is `gl.STATIC_DRAW`.
+     * @returns {BufferBuilder}
+     */
+    data(srcDataOrSize, usage = undefined)
+    {
+        this.dataContext.data(srcDataOrSize, usage);
+        return this;
+    }
+
+    /**
+     * @param {BufferSource} srcData The buffer data source.
+     * @param {number} [dstOffset] The destination byte offset to put the data.
+     * @param {number} [srcOffset] The source array index offset to copy the data from.
+     * @param {number} [srcLength] The source array count to copy the data until.
+     * @returns {BufferBuilder}
+     */
+    subData(srcData, dstOffset = 0, srcOffset = undefined, srcLength = undefined)
+    {
+        this.dataContext.subData(srcData, dstOffset, srcOffset, srcLength);
+        return this;
     }
     
     /** @returns {WebGLBuffer} */
     build()
     {
         return this.handle;
+    }
+}
+
+class BufferInfo
+{
+    /**
+     * @param {WebGLRenderingContextBase} gl The gl context.
+     * @param {GLenum} target The buffer bind target. Usually, this is
+     * `gl.ARRAY_BUFFER` or `gl.ELEMENT_ARRAY_BUFFER`.
+     * @param {GLenum} bufferType The buffer data type. Usually, this is
+     * `gl.FLOAT` for array buffers or `gl.UNSIGNED_SHORT` for element
+     * array buffers. It must be either `gl.BYTE`, `gl.UNSIGNED_BYTE`,
+     * `gl.SHORT`, `gl.UNSIGNED_SHORT`, `gl.FLOAT`, or `gl.HALF_FLOAT`
+     * for WebGL2.
+     * @param {WebGLBuffer} buffer The buffer handle.
+     */
+    constructor(gl, target, bufferType, buffer)
+    {
+        this.gl = gl;
+        this.target = target;
+        this.handle = buffer;
+        this.type = bufferType;
+
+        /** @private */
+        this.bindContext = new BufferDataContext(gl, this.target);
+    }
+
+    bind(gl)
+    {
+        gl.bindBuffer(this.target, this.handle);
+        this.bindContext.gl = gl;
+        return this.bindContext;
     }
 }
 
@@ -195,79 +261,46 @@ var BufferHelper = /*#__PURE__*/Object.freeze({
     getBufferUsage: getBufferUsage
 });
 
-class BufferInfo
+class BufferInfoBuilder
 {
     /**
      * @param {WebGLRenderingContextBase} gl The gl context.
      * @param {GLenum} target The buffer bind target. Usually, this is
      * `gl.ARRAY_BUFFER` or `gl.ELEMENT_ARRAY_BUFFER`.
-     * @returns {BufferInfoBuilder}
+     * @param {WebGLBuffer} [buffer] The buffer handle. If undefined, a
+     * new buffer will be created.
      */
-    static builder(gl, target)
+    constructor(gl, target, buffer = undefined)
     {
-        return new BufferInfoBuilder(gl, target);
-    }
-
-    /**
-     * @param {WebGLRenderingContextBase} gl The gl context.
-     * @param {GLenum} target The buffer bind target. Usually, this is
-     * `gl.ARRAY_BUFFER` or `gl.ELEMENT_ARRAY_BUFFER`.
-     * @param {GLenum} bufferType The buffer data type. Usually, this is
-     * `gl.FLOAT` for array buffers or `gl.UNSIGNED_SHORT` for element
-     * array buffers. It must be either `gl.BYTE`, `gl.UNSIGNED_BYTE`,
-     * `gl.SHORT`, `gl.UNSIGNED_SHORT`, `gl.FLOAT`, or `gl.HALF_FLOAT`
-     * for WebGL2.
-     * @param {WebGLBuffer} buffer The buffer handle.
-     */
-    constructor(gl, target, bufferType, buffer)
-    {
-        this.gl = gl;
-        this.target = target;
-        this.handle = buffer;
-        this.type = bufferType;
-
         /** @private */
-        this.bindContext = new BufferInfoBindContext(gl, this);
-    }
-
-    bind(gl)
-    {
-        gl.bindBuffer(this.target, this.handle);
-        this.bindContext.gl = gl;
-        return this.bindContext;
-    }
-}
-
-class BufferInfoBindContext extends BufferDataContext
-{
-    constructor(gl, bufferInfo)
-    {
-        super(gl, bufferInfo.target);
-
-        /** @private */
-        this.parent = bufferInfo;
-    }
-}
-
-class BufferInfoBuilder extends BufferBuilder
-{
-    constructor(gl, target)
-    {
-        super(gl, target);
-
+        this.bufferBuilder = new BufferBuilder(gl, target, buffer);
         /** @private */
         this.bufferType = gl.FLOAT;
     }
 
+    get gl()
+    {
+        return this.bufferBuilder.gl;
+    }
+
+    get handle()
+    {
+        return this.bufferBuilder.handle;
+    }
+
+    get target()
+    {
+        return this.bufferBuilder.target;
+    }
+
     /**
-     * @override
      * @param {BufferSource|number} srcDataOrSize The buffer data source or the buffer size in bytes.
      * @param {GLenum} [usage] The buffer data usage. By default, this is `gl.STATIC_DRAW`.
      * @returns {BufferInfoBuilder}
      */
     data(srcDataOrSize, usage = undefined)
     {
-        super.data(srcDataOrSize, usage);
+        this.bufferBuilder.data(srcDataOrSize, usage);
         if (typeof srcDataOrSize !== 'number')
         {
             const typedArray = srcDataOrSize.constructor;
@@ -277,7 +310,6 @@ class BufferInfoBuilder extends BufferBuilder
     }
 
     /**
-     * @override
      * @param {BufferSource} srcData The buffer data source.
      * @param {number} [dstOffset] The destination byte offset to put the data.
      * @param {number} [srcOffset] The source array index offset to copy the data from.
@@ -286,16 +318,18 @@ class BufferInfoBuilder extends BufferBuilder
      */
     subData(srcData, dstOffset = undefined, srcOffset = undefined, srcLength = undefined)
     {
-        super.subData(srcData, dstOffset, srcOffset, srcLength);
+        this.bufferBuilder.subData(srcData, dstOffset, srcOffset, srcLength);
         const typedArray = srcData.constructor;
         this.bufferType = getTypedArrayBufferType(this.gl, typedArray);
         return this;
     }
 
-    /** @override */
+    /**
+     * @returns {BufferInfo}
+     */
     build()
     {
-        const handle = super.build();
+        const handle = this.bufferBuilder.build();
         const gl = this.gl;
         const target = this.target;
         const type = this.bufferType;
@@ -941,55 +975,8 @@ var ProgramHelper = /*#__PURE__*/Object.freeze({
     getActiveAttribs: getActiveAttribs
 });
 
-class ProgramBuilder
-{
-    /**
-     * @param {WebGLRenderingContextBase} gl 
-     * @param {WebGLProgram} [program] 
-     */
-    constructor(gl, program = undefined)
-    {
-        this.handle = program || gl.createProgram();
-        this.shaders = [];
-        /** @type {WebGLRenderingContextBase} */
-        this.gl = gl;
-    }
-
-    /**
-     * @param {GLenum} shaderType 
-     * @param {string} shaderSource 
-     * @returns {ProgramBuilder}
-     */
-    shader(shaderType, shaderSource)
-    {
-        const gl = this.gl;
-        let shader = createShader(gl, shaderType, shaderSource);
-        this.shaders.push(shader);
-        return this;
-    }
-
-    /**
-     * @returns {WebGLProgram}
-     */
-    link()
-    {
-        const gl = this.gl;
-        createShaderProgram(gl, this.handle, this.shaders);
-        this.shaders.length = 0;
-        return this.handle;
-    }
-}
-
 class ProgramInfo
 {
-    /**
-     * @param {WebGLRenderingContextBase} gl
-     */
-    static builder(gl)
-    {
-        return new ProgramInfoBuilder(gl);
-    }
-
     /**
      * @param {WebGLRenderingContextBase} gl 
      * @param {WebGLProgram} program 
@@ -1091,23 +1078,89 @@ class ProgramInfoDrawContext
     }
 }
 
-class ProgramInfoBuilder extends ProgramBuilder
+class ProgramBuilder
 {
     /**
-     * @param {WebGLRenderingContextBase} gl
+     * @param {WebGLRenderingContextBase} gl 
+     * @param {WebGLProgram} [program] 
      */
-    constructor(gl)
+    constructor(gl, program = undefined)
     {
-        super(gl);
+        this.handle = program || gl.createProgram();
+        this.shaders = [];
+        /** @type {WebGLRenderingContextBase} */
+        this.gl = gl;
     }
 
     /**
-     * @override
+     * @param {GLenum} shaderType 
+     * @param {string} shaderSource 
+     * @returns {ProgramBuilder}
+     */
+    shader(shaderType, shaderSource)
+    {
+        const gl = this.gl;
+        let shader = createShader(gl, shaderType, shaderSource);
+        this.shaders.push(shader);
+        return this;
+    }
+
+    /**
+     * @returns {WebGLProgram}
+     */
+    link()
+    {
+        const gl = this.gl;
+        createShaderProgram(gl, this.handle, this.shaders);
+        this.shaders.length = 0;
+        return this.handle;
+    }
+}
+
+class ProgramInfoBuilder
+{
+    /**
+     * @param {WebGLRenderingContextBase} gl 
+     * @param {WebGLProgram} [program]
+     */
+    constructor(gl, program = undefined)
+    {
+        /** @private */
+        this.programBuilder = new ProgramBuilder(gl, program);
+    }
+    
+    get gl()
+    {
+        return this.programBuilder.gl;
+    }
+
+    get handle()
+    {
+        return this.programBuilder.handle;
+    }
+
+    get shaders()
+    {
+        return this.programBuilder.shaders;
+    }
+
+    /**
+     * @param {GLenum} shaderType 
+     * @param {string} shaderSource 
+     * @returns {ProgramInfoBuilder}
+     */
+    shader(shaderType, shaderSource)
+    {
+        this.programBuilder.shader(shaderType, shaderSource);
+        return this;
+    }
+
+    /**
      * @returns {ProgramInfo}
      */
     link()
     {
-        const handle = super.link();
+        const handle = this.programBuilder.link();
         return new ProgramInfo(this.gl, handle);
     }
 }
@@ -1170,12 +1223,16 @@ const ProgramAttributeEnums = {
     HALF_FLOAT:                     0x140B,
 };
 
+exports.BufferBuilder = BufferBuilder;
 exports.BufferEnums = BufferEnums;
 exports.BufferHelper = BufferHelper;
 exports.BufferInfo = BufferInfo;
+exports.BufferInfoBuilder = BufferInfoBuilder;
 exports.GLHelper = GLHelper;
 exports.ProgramAttributeEnums = ProgramAttributeEnums;
+exports.ProgramBuilder = ProgramBuilder;
 exports.ProgramHelper = ProgramHelper;
 exports.ProgramInfo = ProgramInfo;
+exports.ProgramInfoBuilder = ProgramInfoBuilder;
 exports.ProgramUniformEnums = ProgramUniformEnums;
 exports.ProgramUniformFunctions = ProgramUniformFunctions;

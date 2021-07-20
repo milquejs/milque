@@ -1,4 +1,4 @@
-import { BufferHelper, BufferInfo, ProgramInfo } from '@milque/mogli';
+import { BufferHelper, BufferInfoBuilder, ProgramInfoBuilder } from '@milque/mogli';
 import { OrthographicCamera } from '@milque/scene';
 import { mat4, quat, vec2, vec3, vec4 } from 'gl-matrix';
 
@@ -70,18 +70,18 @@ export class FixedSpriteGLRenderer2d extends FixedGLRenderer2d
          * @protected
          * @type {ProgramInfo}
          */
-        this.program = ProgramInfo.builder(gl)
+        this.program = new ProgramInfoBuilder(gl)
             .shader(gl.VERTEX_SHADER, WEBGL_VERTEX_SHADER_SOURCE)
             .shader(gl.FRAGMENT_SHADER, WEBGL_FRAGMENT_SHADER_SOURCE)
             .link();
         /** @protected */
         this.meshQuad = {
             /** @type {BufferInfo} */
-            position: BufferInfo.builder(gl, gl.ARRAY_BUFFER)
+            position: new BufferInfoBuilder(gl, gl.ARRAY_BUFFER)
                 .data(BufferHelper.createBufferSource(gl, gl.FLOAT, QUAD_VERTICES))
                 .build(),
             /** @type {BufferInfo} */
-            texcoord: BufferInfo.builder(gl, gl.ARRAY_BUFFER)
+            texcoord: new BufferInfoBuilder(gl, gl.ARRAY_BUFFER)
                 .data(BufferHelper.createBufferSource(gl, gl.FLOAT, QUAD_VERTICES))
                 .build(),
         };
@@ -362,9 +362,4 @@ function drawSprite(
         .uniform('u_sprite', spriteVector)
         .uniform('u_texture_size', textureSize)
         .draw(gl, gl.TRIANGLES, 0, 6);
-}
-
-function isPowerOf2(value)
-{
-    return (value & (value - 1)) == 0;
 }
