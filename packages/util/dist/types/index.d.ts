@@ -132,4 +132,6 @@ declare function toDegrees(radians: any): number;
 declare function topoSort(nodes: Array<any>, dependencyCallback: DependencyCallback): Array<any>;
 type DependencyCallback = (node: any) => Array<any>;
 
-export { DependencyCallback, Eventable, FILE_TYPE_PNG, FILE_TYPE_SVG, Logger, PriorityQueue, bresenhamLine, clamp, cycle, direction2, distance2, downloadImageFromSVG, downloadText, downloadURL, lerp, lookAt2, toDegrees, toRadians, topoSort, uploadFile, uuid, withinRadius };
+declare function astarSearch(startX: any, startY: any, goalX: any, goalY: any, isWalkable: any): any[][];
+
+export { DependencyCallback, Eventable, FILE_TYPE_PNG, FILE_TYPE_SVG, Logger, PriorityQueue, astarSearch, bresenhamLine, clamp, cycle, direction2, distance2, downloadImageFromSVG, downloadText, downloadURL, lerp, lookAt2, toDegrees, toRadians, topoSort, uploadFile, uuid, withinRadius };

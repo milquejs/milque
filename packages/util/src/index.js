@@ -7,3 +7,4 @@ export * from './PriorityQueue.js';
 export * from './uuidv4.js';
 export * from './MathHelper.js';
 export * from './TopologicalSort.js';
+export * from './AStar.js';
