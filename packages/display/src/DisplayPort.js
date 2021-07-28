@@ -70,6 +70,9 @@ const DEFAULT_HEIGHT = 150;
 /** The default display scaling mode. */
 const DEFAULT_MODE = MODE_FIT;
 
+/** The default resize timeout */
+const DELAYED_RESIZE_MILLIS = 200;
+
 /**
  * @typedef {CustomEvent} FrameEvent
  * @property {number} detail.now
@@ -300,7 +303,14 @@ export class DisplayPort extends HTMLElement
         this._prevAnimationFrameTime = 0;
 
         /** @private */
+        this._resizeTimeoutHandle = 0;
+        this._resizeCanvasWidth = 0;
+        this._resizeCanvasHeight = 0;
+
+        /** @private */
         this.update = this.update.bind(this);
+        /** @private */
+        this.onDelayCanvasResize = this.onDelayCanvasResize.bind(this);
     }
 
     /** Get the canvas element. */
@@ -326,7 +336,7 @@ export class DisplayPort extends HTMLElement
         {
             this.setAttribute('tabindex', '0');
         }
-
+        
         this.updateCanvasSize();
         this.resume();
     }
@@ -419,7 +429,7 @@ export class DisplayPort extends HTMLElement
     update(now)
     {
         this._animationRequestHandle = requestAnimationFrame(this.update);
-        this.updateCanvasSize();
+        this.updateCanvasSize(false);
         const deltaTime = now - this._prevAnimationFrameTime;
         this._prevAnimationFrameTime = now;
 
@@ -466,11 +476,31 @@ export class DisplayPort extends HTMLElement
             composed: true
         }));
     }
+
+    /** @private */
+    onDelayCanvasResize()
+    {
+        this.updateCanvasSize(true);
+    }
+
+    delayCanvasResize(canvasWidth, canvasHeight)
+    {
+        if (canvasWidth !== this._resizeCanvasWidth || canvasHeight !== this._resizeCanvasHeight)
+        {
+            this._resizeCanvasWidth = canvasWidth;
+            this._resizeCanvasHeight = canvasHeight;
+            if (this._resizeTimeoutHandle)
+            {
+                clearTimeout(this._resizeTimeoutHandle);
+            }
+            this._resizeTimeoutHandle = setTimeout(this.onDelayCanvasResize, DELAYED_RESIZE_MILLIS);
+        }
+    }
     
     /** @private */
-    updateCanvasSize()
+    updateCanvasSize(force = true)
     {
-        let clientRect = this.shadowRoot.host.getBoundingClientRect();
+        const clientRect = this.shadowRoot.host.getBoundingClientRect();
         const clientWidth = clientRect.width;
         const clientHeight = clientRect.height;
 
@@ -509,6 +539,12 @@ export class DisplayPort extends HTMLElement
 
         canvasWidth = Math.floor(canvasWidth);
         canvasHeight = Math.floor(canvasHeight);
+
+        if (!force)
+        {
+            this.delayCanvasResize(canvasWidth, canvasHeight);
+            return;
+        }
 
         let fontSize = Math.min(
             canvasWidth / this._width,

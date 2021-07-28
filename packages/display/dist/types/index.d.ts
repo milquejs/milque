@@ -127,7 +127,13 @@ declare class DisplayPort extends HTMLElement {
     /** @private */
     private _prevAnimationFrameTime;
     /** @private */
+    private _resizeTimeoutHandle;
+    _resizeCanvasWidth: number;
+    _resizeCanvasHeight: number;
+    /** @private */
     private update;
+    /** @private */
+    private onDelayCanvasResize;
     /** Get the canvas element. */
     get canvas(): HTMLCanvasElement;
     /** @override */
@@ -145,6 +151,7 @@ declare class DisplayPort extends HTMLElement {
     pause(): void;
     /** Resume animation of the display frames. */
     resume(): void;
+    delayCanvasResize(canvasWidth: any, canvasHeight: any): void;
     /** @private */
     private updateCanvasSize;
 }
