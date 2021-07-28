@@ -983,8 +983,7 @@ class ProgramInfo
 
         this.activeUniforms = getActiveUniformsInfo(gl, program);
         this.activeAttributes = getActiveAttribsInfo(gl, program);
-
-        /** @private */
+        
         this.drawContext = new ProgramInfoDrawContext(gl, this);
     }
 
@@ -1219,4 +1218,4 @@ const ProgramAttributeEnums = {
     HALF_FLOAT:                     0x140B,
 };
 
-export { BufferBuilder, BufferEnums, BufferHelper, BufferInfo, BufferInfoBuilder, GLHelper, ProgramAttributeEnums, ProgramBuilder, ProgramHelper, ProgramInfo, ProgramInfoBuilder, ProgramUniformEnums, ProgramUniformFunctions };
+export { BufferBuilder, BufferDataContext, BufferEnums, BufferHelper, BufferInfo, BufferInfoBuilder, GLHelper, ProgramAttributeEnums, ProgramBuilder, ProgramHelper, ProgramInfo, ProgramInfoBuilder, ProgramInfoDrawContext, ProgramUniformEnums, ProgramUniformFunctions };

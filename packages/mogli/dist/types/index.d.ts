@@ -204,8 +204,7 @@ declare class ProgramInfo {
     handle: WebGLProgram;
     activeUniforms: Record<string, ActiveUniformInfo>;
     activeAttributes: Record<string, ActiveAttributeInfo>;
-    /** @private */
-    private drawContext;
+    drawContext: ProgramInfoDrawContext;
     /**
      * Bind the program and prepare to draw. This returns the bound context
      * that can modify the draw state.
@@ -483,4 +482,4 @@ declare namespace ProgramUniformFunctions {
   };
 }
 
-export { BufferBuilder, BufferEnums, BufferHelper, BufferInfo, BufferInfoBuilder, GLHelper, ProgramAttributeEnums, ProgramBuilder, ProgramHelper, ProgramInfo, ProgramInfoBuilder, ProgramUniformEnums, ProgramUniformFunctions };
+export { BufferBuilder, BufferDataContext, BufferEnums, BufferHelper, BufferInfo, BufferInfoBuilder, GLHelper, ProgramAttributeEnums, ProgramBuilder, ProgramHelper, ProgramInfo, ProgramInfoBuilder, ProgramInfoDrawContext, ProgramUniformEnums, ProgramUniformFunctions };

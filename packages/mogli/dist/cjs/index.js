@@ -987,8 +987,7 @@ class ProgramInfo
 
         this.activeUniforms = getActiveUniformsInfo(gl, program);
         this.activeAttributes = getActiveAttribsInfo(gl, program);
-
-        /** @private */
+        
         this.drawContext = new ProgramInfoDrawContext(gl, this);
     }
 
@@ -1224,6 +1223,7 @@ const ProgramAttributeEnums = {
 };
 
 exports.BufferBuilder = BufferBuilder;
+exports.BufferDataContext = BufferDataContext;
 exports.BufferEnums = BufferEnums;
 exports.BufferHelper = BufferHelper;
 exports.BufferInfo = BufferInfo;
@@ -1234,5 +1234,6 @@ exports.ProgramBuilder = ProgramBuilder;
 exports.ProgramHelper = ProgramHelper;
 exports.ProgramInfo = ProgramInfo;
 exports.ProgramInfoBuilder = ProgramInfoBuilder;
+exports.ProgramInfoDrawContext = ProgramInfoDrawContext;
 exports.ProgramUniformEnums = ProgramUniformEnums;
 exports.ProgramUniformFunctions = ProgramUniformFunctions;

@@ -14,8 +14,7 @@ export class ProgramInfo
 
         this.activeUniforms = getActiveUniformsInfo(gl, program);
         this.activeAttributes = getActiveAttribsInfo(gl, program);
-
-        /** @private */
+        
         this.drawContext = new ProgramInfoDrawContext(gl, this);
     }
 

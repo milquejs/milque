@@ -2101,7 +2101,7 @@ class InputContext
      */
     getButtonValue(name)
     {
-        return this.buttons[name].value;
+        return this.inputs[name].value;
     }
 
     /**
