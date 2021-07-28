@@ -19,7 +19,7 @@ import { main as BreadBox } from './02_breadbox/main.js';
 // eslint-disable-next-line no-unused-vars
 import { main as Miners } from './03_miners/main.js';
 // eslint-disable-next-line no-unused-vars
-import { main as HomeWorld } from './04_homeworld/main.js';
+import { main as Boxmede } from './04_boxmede/main.js';
 
 /**
  * @typedef {import('@milque/asset').AssetPack} AssetPack
@@ -69,5 +69,5 @@ async function main()
     // await BreadBox(game);
     // await GerryMan(game);
     // await Miners(game);
-    await HomeWorld(game);
+    await Boxmede(game);
 }
