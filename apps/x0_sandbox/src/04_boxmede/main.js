@@ -73,7 +73,7 @@ export async function main(game)
         ctx.fillStyle = 'black';
         ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
-        drawWorldMap(ctx, worldMap);
+        drawWorldMap(ctx, worldMap, cursor);
         drawCursor(ctx, cursor, worldMap);
     });
 }
@@ -211,8 +211,14 @@ function putFactory(worldMap, x, y)
             }
         }
     }
-    putFactoryPort(worldMap, x - 1, y + FACTORY_CELL_COUNT_Y - 1, x, y + FACTORY_CELL_COUNT_Y - 1);
-    putFactoryPort(worldMap, x + FACTORY_CELL_COUNT_X, y + FACTORY_CELL_COUNT_Y - 1, x + FACTORY_CELL_COUNT_X - 1, y + FACTORY_CELL_COUNT_Y - 1);
+    if (Math.random() > 0.5)
+    {
+        putFactoryPort(worldMap, x - 1, y + FACTORY_CELL_COUNT_Y - 1, x, y + FACTORY_CELL_COUNT_Y - 1);
+    }
+    else
+    {
+        putFactoryPort(worldMap, x + FACTORY_CELL_COUNT_X, y + FACTORY_CELL_COUNT_Y - 1, x + FACTORY_CELL_COUNT_X - 1, y + FACTORY_CELL_COUNT_Y - 1);
+    }
 }
 
 function putFactoryRoot(worldMap, x, y)
@@ -327,24 +333,33 @@ function updateCursor(display, input, cursor, worldMap)
     }
     else if (b)
     {
-        cursor.status = CURSOR_STATUS.DEACTIVATING;
-        let x = cursor.cellX;
-        let y = cursor.cellY;
-        let i = x + y * worldMap.width;
-        let id = worldMap.cells[i];
-        if (x !== cursor.dragCellX || y !== cursor.dragCellY)
+        if (cursor.status === CURSOR_STATUS.DEACTIVATING)
         {
-            switch(id)
+            cursor.status = CURSOR_STATUS.DEACTIVATING;
+            let x = cursor.cellX;
+            let y = cursor.cellY;
+            let i = x + y * worldMap.width;
+            let id = worldMap.cells[i];
+            if (x !== cursor.dragCellX || y !== cursor.dragCellY)
             {
-                case ROAD_ID:
-                    eraseRoad(worldMap, x, y);
-                    break;
-                case FACTORY_PORT_ID:
-                    cleanFactoryPort(worldMap, x, y); 
-                    break;
+                switch(id)
+                {
+                    case ROAD_ID:
+                        eraseRoad(worldMap, x, y);
+                        break;
+                    case FACTORY_PORT_ID:
+                        cleanFactoryPort(worldMap, x, y); 
+                        break;
+                }
+                cursor.dragCellX = x;
+                cursor.dragCellY = y;
             }
-            cursor.dragCellX = x;
-            cursor.dragCellY = y;
+        }
+        else
+        {
+            cursor.status = CURSOR_STATUS.DEACTIVATING;
+            cursor.dragCellX = -1;
+            cursor.dragCellY = -1;
         }
     }
     else
@@ -360,15 +375,20 @@ function drawCursor(ctx, cursor, worldMap)
 
     const { offsetX, offsetY } = worldMap;
     ctx.translate(offsetX, offsetY);
-    if (cursor.activating)
+    if (cursor.status !== CURSOR_STATUS.NONE)
     {
-        ctx.fillStyle = 'green';
+        ctx.lineWidth = 2;
+        switch (cursor.status)
+        {
+            case CURSOR_STATUS.ACTIVATING:
+                ctx.strokeStyle = 'white';
+                break;
+            case CURSOR_STATUS.DEACTIVATING:
+                ctx.strokeStyle = 'red';
+                break;
+        }
+        ctx.strokeRect(cursor.cellX * CELL_WIDTH, cursor.cellY * CELL_HEIGHT, CELL_WIDTH, CELL_HEIGHT);
     }
-    else
-    {
-        ctx.fillStyle = 'white';
-    }
-    ctx.strokeRect(cursor.cellX * CELL_WIDTH, cursor.cellY * CELL_HEIGHT, CELL_WIDTH, CELL_HEIGHT);
     ctx.translate(-offsetX, -offsetY);
 }
 
@@ -545,20 +565,24 @@ function createWorldMap()
     };
 }
 
-function drawWorldMap(ctx, worldMap)
+function drawWorldMap(ctx, worldMap, cursor)
 {
     const MAP_WIDTH = worldMap.width;
     const MAP_HEIGHT = worldMap.height;
     const { offsetX, offsetY } = worldMap;
     ctx.translate(offsetX, offsetY);
-    for(let y = 0; y < MAP_HEIGHT; ++y)
+    ctx.lineWidth = 1;
+    if (cursor.status !== CURSOR_STATUS.NONE)
     {
-        for(let x = 0; x < MAP_WIDTH; ++x)
+        for(let y = 0; y < MAP_HEIGHT; ++y)
         {
-            let xx = x * CELL_WIDTH;
-            let yy = y * CELL_HEIGHT;
-            ctx.strokeStyle = '#333';
-            ctx.strokeRect(xx, yy, CELL_WIDTH, CELL_HEIGHT);
+            for(let x = 0; x < MAP_WIDTH; ++x)
+            {
+                let xx = x * CELL_WIDTH;
+                let yy = y * CELL_HEIGHT;
+                ctx.strokeStyle = '#333';
+                ctx.strokeRect(xx, yy, CELL_WIDTH, CELL_HEIGHT);
+            }
         }
     }
     for(let y = 0; y < MAP_HEIGHT; ++y)
@@ -626,6 +650,8 @@ function drawCart(ctx, cart)
 function drawCellRoad(ctx, id, metadata, x, y)
 {
     ctx.strokeStyle = 'white';
+    ctx.lineWidth = 4;
+    ctx.lineCap = 'round';
     ctx.beginPath();
     let [ ee, ne, nn, nw, ww, sw, ss, se ] = getDirectionBitsFromMetadata(metadata.direction);
     let flag = false;
@@ -693,6 +719,8 @@ function drawCellHousing(ctx, id, metadata, x, y)
     drawCellRoad(ctx, id, metadata);
     ctx.fillStyle = 'green';
     ctx.fillRect(HALF_CELL_WIDTH - HALF_HOUSING_WIDTH, HALF_CELL_HEIGHT - HALF_HOUSING_HEIGHT, HOUSING_WIDTH, HOUSING_HEIGHT);
+    ctx.fillStyle = 'darkgreen';
+    ctx.fillRect(HALF_CELL_WIDTH - HALF_HOUSING_WIDTH, HALF_CELL_HEIGHT, HOUSING_WIDTH, HALF_HOUSING_HEIGHT);
 }
 
 /**
@@ -700,8 +728,15 @@ function drawCellHousing(ctx, id, metadata, x, y)
  */
 function drawCellFactory(ctx, id, metadata, x, y)
 {
-    ctx.fillStyle = 'tomato';
+    ctx.fillStyle = 'gray';
     ctx.fillRect(0, 0, FACTORY_CELL_COUNT_X * CELL_WIDTH, FACTORY_CELL_COUNT_Y * CELL_HEIGHT);
+
+    let margin = 16;
+    ctx.fillStyle = 'red';
+    ctx.fillRect(margin, margin, FACTORY_CELL_COUNT_X * CELL_WIDTH - margin * 2, (FACTORY_CELL_COUNT_Y - 1) * CELL_HEIGHT - margin * 2);
+    ctx.fillStyle = 'maroon';
+    ctx.fillRect(margin, margin + CELL_HEIGHT, FACTORY_CELL_COUNT_X * CELL_WIDTH - margin * 2, (FACTORY_CELL_COUNT_Y - 2) * CELL_HEIGHT - margin * 2);
+    ctx.fillRect(FACTORY_CELL_COUNT_X / 2 * CELL_WIDTH - 8, FACTORY_CELL_COUNT_Y / 2 * CELL_HEIGHT + 8, 16, 16);
 }
 
 /**
