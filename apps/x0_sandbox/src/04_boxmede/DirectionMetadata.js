@@ -1,4 +1,6 @@
-
+const OPPOSITE_DIRECTION_METADATA_OFFSET = 4;
+const CLOCKWISE_ORTHOGONAL_DIRECTION_METADATA_OFFSET = 2;
+export const DIRECTION_METADATA_BITS = 8;
 export const DIRECTION_METADATA = {
     EAST: 1 << 0,
     NORTHEAST: 1 << 1,
@@ -12,7 +14,42 @@ export const DIRECTION_METADATA = {
 
 export function randomDirectionMetadata()
 {
-    return 1 << Math.floor(Math.random() * 8);
+    return 1 << Math.floor(Math.random() * DIRECTION_METADATA_BITS);
+}
+
+export function getOppositeDirectionIndex(directionIndex)
+{
+    return (directionIndex + OPPOSITE_DIRECTION_METADATA_OFFSET) % DIRECTION_METADATA_BITS;
+}
+
+export function getClockwiseOrthogonalDirectionIndex(directionIndex)
+{
+    return (directionIndex + CLOCKWISE_ORTHOGONAL_DIRECTION_METADATA_OFFSET) % DIRECTION_METADATA_BITS;
+}
+
+export function getDeltaVectorFromMetadata(metadata)
+{
+    switch(metadata)
+    {
+        case DIRECTION_METADATA.EAST:
+            return [1, 0];
+        case DIRECTION_METADATA.NORTHEAST:
+            return [1, -1];
+        case DIRECTION_METADATA.NORTH:
+            return [0, -1];
+        case DIRECTION_METADATA.NORTHWEST:
+            return [-1, -1];
+        case DIRECTION_METADATA.WEST:
+            return [-1, 0];
+        case DIRECTION_METADATA.SOUTHWEST:
+            return [-1, 1];
+        case DIRECTION_METADATA.SOUTH:
+            return [0, 1];
+        case DIRECTION_METADATA.SOUTHEAST:
+            return [1, 1];
+        default:
+            throw new Error('Cannot get delta vector from multi-directional metadata.');
+    }
 }
 
 export function getDirectionBitsFromMetadata(metadata)
