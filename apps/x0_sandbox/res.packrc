@@ -8,6 +8,11 @@
                 "crc": 823822015
             },
             {
+                "name": "res/cube.obj",
+                "bytes": 1039,
+                "crc": 1246241771
+            },
+            {
                 "name": "res/cube.png",
                 "bytes": 350,
                 "crc": -1475014004
@@ -48,6 +53,11 @@
                 "crc": 53799162
             },
             {
+                "name": "res/quad.obj",
+                "bytes": 330,
+                "crc": 1405090529
+            },
+            {
                 "name": "res/slime.aseprite",
                 "bytes": 1218,
                 "crc": -400400322
@@ -78,7 +88,7 @@
                 "crc": -842706858
             }
         ],
-        "totalBytes": 134401,
-        "checksum": -791891162
+        "totalBytes": 135770,
+        "checksum": -1709304954
     }
 }

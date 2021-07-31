@@ -1,18 +1,20 @@
 import { bresenhamLine, uuid } from '@milque/util';
 import { Cursor, CURSOR_STATUS } from './Cursor.js';
 import {
-    DIRECTION_METADATA,
-    DIRECTION_METADATA_BITS,
-    getDeltaVectorFromMetadata,
-    getDirectionBitsFromMetadata,
-    getDirectionMetadataFromBits,
-    getDirectionMetadataFromDelta,
+    DIRECTIONAL_ENCODING,
+    DIRECTIONAL_ENCODING_BITS,
+    getDirectionalVectorFromEncoding,
+    getDirectionalBitArrayFromEncoding,
+    getDirectionalEncodingFromBitArray,
+    getDirectionalEncodingFromVector,
+    randomSingleDirectionalEncoding,
     getOppositeDirectionIndex,
-    randomDirectionMetadata
-} from './DirectionMetadata.js';
+} from './Directional.js';
 import { World } from './World.js';
 import { Lane, updateLanes, putCartOnLane } from './Lane.js';
 import { Cart, updateCart } from './Cart.js';
+import { assert } from './util/assert.js';
+import * as LaneWorld from './LaneWorld.js';
 
 const MAX_LANE_DISTANCE = 4;
 
@@ -64,6 +66,8 @@ export async function main(game)
     input.bindButton('deactivate', 'Mouse', 'Button2');
     const ctx = display.getContext('2d');
 
+    
+    /*
     const worldMap = new World(8, 6);
     const cursor = new Cursor();
     putHousing(worldMap, 1, 1);
@@ -72,14 +76,17 @@ export async function main(game)
     putHousing(worldMap, 1, 5);
     putFactory(worldMap, 3, 2);
 
-    putCellOneWayLane(worldMap, 0, 0, DIRECTION_METADATA.EAST);
-    putCellOneWayLane(worldMap, 1, 0, DIRECTION_METADATA.EAST);
-    //putCellTwoWayLanes(worldMap, 0, 0, DIRECTION_METADATA.EAST);
+    putCellOneWayLane(worldMap, 0, 0, DIRECTIONAL_ENCODING.EAST);
+    putCellOneWayLane(worldMap, 1, 0, DIRECTIONAL_ENCODING.EAST);
+    //putCellTwoWayLanes(worldMap, 0, 0, DIRECTIONAL_ENCODING.EAST);
 
     let timer = 0;
-    game.on('frame', () => {
-        updateCursor(display, input, cursor, worldMap);
+    */
 
+    let world = LaneWorld.create();
+    game.on('frame', () => {
+        // updateCursor(display, input, cursor, worldMap);
+        LaneWorld.simulate(world);
         /*
         // Update Carts
         for(let cart of Object.values(worldMap.carts))
@@ -95,9 +102,12 @@ export async function main(game)
         
         ctx.fillStyle = 'black';
         ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+        LaneWorld.render(ctx, world);
 
+        /*
         drawWorldMap(ctx, worldMap, cursor);
         drawCursor(ctx, cursor, worldMap);
+        */
     });
 }
 
@@ -208,7 +218,7 @@ function putHousing(worldMap, cellX, cellY)
     {
         throw new Error('Cannot put housing outside of map.');
     }
-    let direction = randomDirectionMetadata();
+    let direction = randomSingleDirectionalEncoding();
     worldMap.setCell(cellX, cellY, HOUSING_ID, { direction });
     putCellTwoWayLanes(worldMap, cellX, cellY, direction);
 
@@ -308,8 +318,8 @@ function putFactoryPort(worldMap, x, y, parentX, parentY)
         throw new Error('Cannot put port outside of map.');
     }
     let i = x + y * worldMap.width;
-    let direction = getDirectionMetadataFromDelta(parentX - x, parentY - y);
-    let oppositeDirection = getDirectionMetadataFromDelta(x - parentX, y - parentY);
+    let direction = getDirectionalEncodingFromVector(parentX - x, parentY - y);
+    let oppositeDirection = getDirectionalEncodingFromVector(x - parentX, y - parentY);
     worldMap.cells[i] = FACTORY_PORT_ID;
     worldMap.metas[i] = {
         parentX,
@@ -387,14 +397,14 @@ function putRoadImpl(worldMap, x, y, dx, dy)
     {
         case EMPTY_ID:
             {
-                let direction = getDirectionMetadataFromDelta(dx, dy);
+                let direction = getDirectionalEncodingFromVector(dx, dy);
                 worldMap.setCell(x, y, ROAD_ID, { direction });
                 putCellTwoWayLanes(worldMap, x, y, direction);
             }
             return true;
         case ROAD_ID:
             {
-                worldMap.metas[i].direction |= getDirectionMetadataFromDelta(dx, dy);
+                worldMap.metas[i].direction |= getDirectionalEncodingFromVector(dx, dy);
                 putCellTwoWayLanes(worldMap, x, y, worldMap.metas[i].direction);
             }
             return true;
@@ -428,13 +438,13 @@ function putRoadImpl(worldMap, x, y, dx, dy)
                 {
                     pruneNeighboringRoads(worldMap, x, y);
                 }
-                worldMap.metas[i].direction = getDirectionMetadataFromDelta(dx, dy);
+                worldMap.metas[i].direction = getDirectionalEncodingFromVector(dx, dy);
                 putCellTwoWayLanes(worldMap, x, y, worldMap.metas[i].direction);
             }
             return true;
         case FACTORY_PORT_ID:
             {
-                worldMap.metas[i].direction |= getDirectionMetadataFromDelta(dx, dy);
+                worldMap.metas[i].direction |= getDirectionalEncodingFromVector(dx, dy);
                 putCellTwoWayLanes(worldMap, x, y, worldMap.metas[i].direction);
             }
             return true;
@@ -463,7 +473,7 @@ function putCellOneWayLane(world, cellX, cellY, directions)
         {
             // Making some lanes.
             let junction = putLaneImpl(world, cellX, cellY, 'junction', existingLanes, newLanes);
-            for(let i = 0; i < DIRECTION_METADATA_BITS; ++i)
+            for(let i = 0; i < DIRECTIONAL_ENCODING_BITS; ++i)
             {
                 let subdirs = directions & (1 << i);
                 if (subdirs !== 0)
@@ -473,7 +483,7 @@ function putCellOneWayLane(world, cellX, cellY, directions)
                     junction.addOutlet(outBranch.id);
         
                     // Does this lead anywhere?
-                    let [dx, dy] = getDeltaVectorFromMetadata(subdirs);
+                    let [dx, dy] = getDirectionalVectorFromEncoding(subdirs);
                     let j = getOppositeDirectionIndex(i);
                     const otherInBranchId = `lane-${cellX + dx}-${cellY + dy}-in${j}`;
                     if (otherInBranchId in world.lanes)
@@ -509,7 +519,7 @@ function putCellTwoWayLanes(world, cellX, cellY, directions)
         {
             // Making some lanes.
             let junction = putLaneImpl(world, cellX, cellY, 'junction', existingLanes, newLanes);
-            for(let i = 0; i < DIRECTION_METADATA_BITS; ++i)
+            for(let i = 0; i < DIRECTIONAL_ENCODING_BITS; ++i)
             {
                 let subdirs = directions & (1 << i);
                 if (subdirs !== 0)
@@ -521,7 +531,7 @@ function putCellTwoWayLanes(world, cellX, cellY, directions)
                     inBranch.addOutlet(junction.id);
         
                     // Does this lead anywhere?
-                    let [dx, dy] = getDeltaVectorFromMetadata(subdirs);
+                    let [dx, dy] = getDirectionalVectorFromEncoding(subdirs);
                     let j = getOppositeDirectionIndex(i);
                     const otherInBranchId = `lane-${cellX + dx}-${cellY + dy}-in${j}`;
                     const otherOutBranchId = `lane-${cellX + dx}-${cellY + dy}-out${j}`;
@@ -693,7 +703,7 @@ function pruneNeighboringRoads(worldMap, x, y)
                     case ROAD_ID:
                         {
                             let metadata = worldMap.metas[i];
-                            metadata.direction &= ~getDirectionMetadataFromDelta(dx, dy);
+                            metadata.direction &= ~getDirectionalEncodingFromVector(dx, dy);
                             if (metadata.direction === 0)
                             {
                                 worldMap.setCell(xx, yy, EMPTY_ID, null);
@@ -704,7 +714,7 @@ function pruneNeighboringRoads(worldMap, x, y)
                     case FACTORY_PORT_ID:
                         {
                             let metadata = worldMap.metas[i];
-                            metadata.direction &= metadata.parentDirection | ~getDirectionMetadataFromDelta(dx, dy);
+                            metadata.direction &= metadata.parentDirection | ~getDirectionalEncodingFromVector(dx, dy);
                             putCellTwoWayLanes(worldMap, xx, yy, metadata.direction);
                         }
                         break;
@@ -869,52 +879,52 @@ function drawLane(ctx, lane)
     switch(dir)
     {
         case 'in0':
-            drawLaneSegment(ctx, cellX, cellY, DIRECTION_METADATA.EAST);
+            drawLaneSegment(ctx, cellX, cellY, DIRECTIONAL_ENCODING.EAST);
             break;
         case 'in1':
-            drawLaneSegment(ctx, cellX, cellY, DIRECTION_METADATA.NORTHEAST);
+            drawLaneSegment(ctx, cellX, cellY, DIRECTIONAL_ENCODING.NORTHEAST);
             break;
         case 'in2':
-            drawLaneSegment(ctx, cellX, cellY, DIRECTION_METADATA.NORTH);
+            drawLaneSegment(ctx, cellX, cellY, DIRECTIONAL_ENCODING.NORTH);
             break;
         case 'in3':
-            drawLaneSegment(ctx, cellX, cellY, DIRECTION_METADATA.NORTHWEST);
+            drawLaneSegment(ctx, cellX, cellY, DIRECTIONAL_ENCODING.NORTHWEST);
             break;
         case 'in4':
-            drawLaneSegment(ctx, cellX, cellY, DIRECTION_METADATA.WEST);
+            drawLaneSegment(ctx, cellX, cellY, DIRECTIONAL_ENCODING.WEST);
             break;
         case 'in5':
-            drawLaneSegment(ctx, cellX, cellY, DIRECTION_METADATA.SOUTHWEST);
+            drawLaneSegment(ctx, cellX, cellY, DIRECTIONAL_ENCODING.SOUTHWEST);
             break;
         case 'in6':
-            drawLaneSegment(ctx, cellX, cellY, DIRECTION_METADATA.SOUTH);
+            drawLaneSegment(ctx, cellX, cellY, DIRECTIONAL_ENCODING.SOUTH);
             break;
         case 'in7':
-            drawLaneSegment(ctx, cellX, cellY, DIRECTION_METADATA.SOUTHEAST);
+            drawLaneSegment(ctx, cellX, cellY, DIRECTIONAL_ENCODING.SOUTHEAST);
             break;
         case 'out0':
-            drawLaneSegment(ctx, cellX, cellY, DIRECTION_METADATA.EAST, OUT_OFFSET);
+            drawLaneSegment(ctx, cellX, cellY, DIRECTIONAL_ENCODING.EAST, OUT_OFFSET);
             break;
         case 'out1':
-            drawLaneSegment(ctx, cellX, cellY, DIRECTION_METADATA.NORTHEAST, OUT_OFFSET);
+            drawLaneSegment(ctx, cellX, cellY, DIRECTIONAL_ENCODING.NORTHEAST, OUT_OFFSET);
             break;
         case 'out2':
-            drawLaneSegment(ctx, cellX, cellY, DIRECTION_METADATA.NORTH, OUT_OFFSET);
+            drawLaneSegment(ctx, cellX, cellY, DIRECTIONAL_ENCODING.NORTH, OUT_OFFSET);
             break;
         case 'out3':
-            drawLaneSegment(ctx, cellX, cellY, DIRECTION_METADATA.NORTHWEST, OUT_OFFSET);
+            drawLaneSegment(ctx, cellX, cellY, DIRECTIONAL_ENCODING.NORTHWEST, OUT_OFFSET);
             break;
         case 'out4':
-            drawLaneSegment(ctx, cellX, cellY, DIRECTION_METADATA.WEST, OUT_OFFSET);
+            drawLaneSegment(ctx, cellX, cellY, DIRECTIONAL_ENCODING.WEST, OUT_OFFSET);
             break;
         case 'out5':
-            drawLaneSegment(ctx, cellX, cellY, DIRECTION_METADATA.SOUTHWEST, OUT_OFFSET);
+            drawLaneSegment(ctx, cellX, cellY, DIRECTIONAL_ENCODING.SOUTHWEST, OUT_OFFSET);
             break;
         case 'out6':
-            drawLaneSegment(ctx, cellX, cellY, DIRECTION_METADATA.SOUTH, OUT_OFFSET);
+            drawLaneSegment(ctx, cellX, cellY, DIRECTIONAL_ENCODING.SOUTH, OUT_OFFSET);
             break;
         case 'out7':
-            drawLaneSegment(ctx, cellX, cellY, DIRECTION_METADATA.SOUTHEAST, OUT_OFFSET);
+            drawLaneSegment(ctx, cellX, cellY, DIRECTIONAL_ENCODING.SOUTHEAST, OUT_OFFSET);
             break;
         case 'junction':
             {
@@ -944,19 +954,7 @@ function drawLane(ctx, lane)
  */
 function drawLane(ctx, lane)
 {
-    const { cellX, cellY, outlets } = lane;
-
-    let x = cellX * CELL_WIDTH + HALF_CELL_WIDTH;
-    let y = cellY * CELL_HEIGHT + HALF_CELL_HEIGHT;
-    ctx.lineWidth = ROAD_RADIUS * 2;
-    ctx.lineCap = 'square';
-    ctx.beginPath();
-    ctx.moveTo(x, y);
-    ctx.lineTo(x, y);
-    ctx.stroke();
-
-    
-    let [dx, dy] = getDeltaVectorFromMetadata(directionalMetadata);
+    let [dx, dy] = getDirectionalVectorFromEncoding(directionalMetadata);
     let ortho = Math.atan2(dy, dx) - Math.PI / 2;
     let odx = Math.cos(ortho - Math.PI / 4);
     let ody = Math.sin(ortho - Math.PI / 4);
@@ -990,7 +988,7 @@ function drawLaneSegment(ctx, cellX, cellY, directionalMetadata, offset = 0)
     }
     ctx.lineWidth = ROAD_RADIUS * 2;
     ctx.lineCap = 'square';
-    let [dx, dy] = getDeltaVectorFromMetadata(directionalMetadata);
+    let [dx, dy] = getDirectionalVectorFromEncoding(directionalMetadata);
     let ortho = Math.atan2(dy, dx) - Math.PI / 2;
     let odx = Math.cos(ortho - Math.PI / 4);
     let ody = Math.sin(ortho - Math.PI / 4);
@@ -1020,7 +1018,7 @@ function drawCellRoad(ctx, id, metadata, x, y)
     const fullh = halfh * 2;
     const cx = halfw;
     const cy = halfh;
-    const [ ee, ne, nn, nw, ww, sw, ss, se ] = getDirectionBitsFromMetadata(metadata.direction);
+    const [ ee, ne, nn, nw, ww, sw, ss, se ] = getDirectionalBitArrayFromEncoding(metadata.direction);
     let flag = false;
     ctx.strokeStyle = 'white';
     ctx.lineCap = 'round';
@@ -1157,8 +1155,8 @@ function test()
 
 function testInterCardinal()
 {
-    let metadata = getDirectionMetadataFromBits(0, 1, 0, 1, 0, 1, 0, 1);
-    let dirs = getDirectionBitsFromMetadata(metadata);
+    let metadata = getDirectionalEncodingFromBitArray(0, 1, 0, 1, 0, 1, 0, 1);
+    let dirs = getDirectionalBitArrayFromEncoding(metadata);
     assert(dirs[0] === 0
         && dirs[1] === 1
         && dirs[2] === 0
@@ -1171,8 +1169,8 @@ function testInterCardinal()
 
 function testCardinal()
 {
-    let metadata = getDirectionMetadataFromBits(1, 0, 1, 0, 1, 0, 1, 0);
-    let dirs = getDirectionBitsFromMetadata(metadata);
+    let metadata = getDirectionalEncodingFromBitArray(1, 0, 1, 0, 1, 0, 1, 0);
+    let dirs = getDirectionalBitArrayFromEncoding(metadata);
     assert(dirs[0] === 1
         && dirs[1] === 0
         && dirs[2] === 1
@@ -1192,28 +1190,18 @@ function testPutRoad()
     i = 0;
     j = 1 + worldMap.width;
     assert(worldMap.cells[i] === ROAD_ID);
-    assert(worldMap.metas[i].direction === DIRECTION_METADATA.SOUTHEAST);
+    assert(worldMap.metas[i].direction === DIRECTIONAL_ENCODING.SOUTHEAST);
     assert(worldMap.cells[j] === ROAD_ID);
-    assert(worldMap.metas[j].direction === DIRECTION_METADATA.NORTHWEST);
+    assert(worldMap.metas[j].direction === DIRECTIONAL_ENCODING.NORTHWEST);
 
     worldMap = new World(8, 6);
     putRoad(worldMap, 1, 1, 0, 0);
     i = 0;
     j = 1 + worldMap.width;
     assert(worldMap.cells[i] === ROAD_ID);
-    assert(worldMap.metas[i].direction === DIRECTION_METADATA.SOUTHEAST);
+    assert(worldMap.metas[i].direction === DIRECTIONAL_ENCODING.SOUTHEAST);
     assert(worldMap.cells[j] === ROAD_ID);
-    assert(worldMap.metas[j].direction === DIRECTION_METADATA.NORTHWEST);
-}
-
-/** @param {boolean} condition */
-function assert(condition)
-{
-    if (!condition)
-    {
-        window.alert('Assertion failed!');
-        throw new Error('Assertion failed!');
-    }
+    assert(worldMap.metas[j].direction === DIRECTIONAL_ENCODING.NORTHWEST);
 }
 
 test();

@@ -1,22 +1,23 @@
 /**
- * @typedef {string} NodeId
- * 
- * @typedef NodeCache
- * @property {Record<string, number>} fscore
- * @property {Record<string, number>} gscore
- * @property {Record<string, number>} hscore
- * @property {Record<string, NodeId>} parents
+ * @template T
+ * @typedef NodeCache<T>
+ * @property {Record<T, number>} fscore
+ * @property {Record<T, number>} gscore
+ * @property {Record<T, number>} hscore
+ * @property {Record<T, T>} parents
  */
 
 /**
- * @param {NodeId} startId The string representation of the starting position. Must be unique and deterministic.
- * @param {NodeId} goalId The string representation of the stopping position. Must be unique and deterministic.
- * @param {(node: NodeId) => Array<NodeId>} neighborsCallback Get all reachable neighbors from the given node.
- * @param {(from: NodeId, to: NodeId) => number} heuristicCallback Get the heuristics score between the two nodes.
- * @returns If the goal is not reachable from the start, it will return an empty array.
+ * @template T
+ * @param {T} startId The unique representation of the starting position. Must be deterministic.
+ * @param {T} goalId The unique representation of the stopping position. Must be deterministic.
+ * @param {(node: T) => Array<T>} neighborsCallback Get all reachable neighbors from the given node.
+ * @param {(from: T, to: T) => number} heuristicCallback Get the heuristics score between the two nodes.
+ * @returns {Array<T>} If the goal is not reachable from the start, it will return an empty array.
  */
 export function astarSearch(startId, goalId, neighborsCallback, heuristicCallback)
 {
+    /** @type {NodeCache<T>} */
     let cache = createCache();
     cacheNode(cache, startId);
     let opened = new Set();
@@ -50,6 +51,7 @@ export function astarSearch(startId, goalId, neighborsCallback, heuristicCallbac
                 result.push(currentNodeId);
                 currentNodeId = cache.parents[currentNodeId];
             }
+            result.push(currentNodeId);
             return result.reverse();
         }
         else
@@ -87,7 +89,8 @@ export function astarSearch(startId, goalId, neighborsCallback, heuristicCallbac
 }
 
 /**
- * @returns {NodeCache}
+ * @template T
+ * @returns {NodeCache<T>}
  */
 function createCache()
 {
@@ -100,13 +103,14 @@ function createCache()
 }
 
 /**
- * @param {object} cache 
- * @param {NodeId} id 
+ * @template T
+ * @param {NodeCache<T>} cache 
+ * @param {T} id 
  * @param {number} f 
  * @param {number} g 
  * @param {number} h 
- * @param {NodeId} parent 
- * @returns {NodeId}
+ * @param {T} parent 
+ * @returns {T}
  */
 function cacheNode(cache, id, f = Number.POSITIVE_INFINITY, g = Number.POSITIVE_INFINITY, h = Number.NaN, parent = null)
 {
