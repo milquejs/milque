@@ -10,19 +10,9 @@
  * @typedef {[number, number]} Coords
  * @typedef {string} CartId
  * 
- * @typedef Junction
- * @property {Array<JunctionEncoding>} inlets
- * @property {Array<JunctionEncoding>} outlets
- * @property {Record<JunctionEncoding, Lane>} lanes
- * 
- * @typedef Lane
- * @property {JunctionEncoding} inlet
- * @property {JunctionEncoding} outlet
- * @property {Array<CartId>} slots
- * @property {number} length
- * @property {number} nextBlocking
- * 
- * @typedef {object} Cart
+ * @typedef {import('./Junction.js').Junction} Junction
+ * @typedef {import('./Junction.js').Lane} Lane
+ * @typedef {import('./Junction.js').Cart} Cart
  */
 
 import { connectJunction, drawJunctions, drawLanes, drawOutlets, getJunctionIndexFromCoords, createCart, putJunction, updateTraffic, drawCarts } from './Junction.js';
@@ -40,6 +30,7 @@ export class LaneWorld
         this.juncs = new Array(width * height);
 
         this.worldTicks = 0;
+        this.tickFrames = 0;
     }
 }
 
@@ -81,15 +72,14 @@ export function create()
     return world;
 }
 
-let timer = 0;
 /**
  * @param {LaneWorld} world 
  */
 export function simulate(world)
 {
-    if (++timer > 50)
+    if (++world.tickFrames > 50)
     {
-        timer = 0;
+        world.tickFrames = 0;
     }
     else
     {

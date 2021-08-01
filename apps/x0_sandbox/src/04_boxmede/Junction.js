@@ -1,4 +1,4 @@
-import { uuid } from '@milque/util';
+import { lerp, lookAt2, uuid } from '@milque/util';
 
 /**
  * @typedef {import('./LaneWorld.js').LaneWorld} LaneWorld
@@ -45,16 +45,20 @@ export class Lane
 
 export class Cart
 {
-    constructor(id)
+    constructor(id, juncX, juncY)
     {
         this.id = id;
         this.lastUpdatedTicks = -1;
         this.currentJunction = -1;
         this.currentOutlet = -1;
         this.currentSlot = -1;
+        this.passingJunction = -1;
+        this.maxLaneSpeed = 2;
 
-        this.x = 0;
-        this.y = 0;
+        this.x = juncX;
+        this.y = juncY;
+        this.radians = 0;
+        this.speed = 0;
     }
 }
 
@@ -66,7 +70,7 @@ export function createCart(world, juncX, juncY)
     putCartOnJunction(world, cartId, getJunctionIndexFromCoords(world, juncX, juncY));
 }
 
-export function moveCartTowards(world, cartId, outletIndex, steps = 1)
+export function moveCartTowards(world, cartId, outletIndex, steps)
 {
     let cart = getCartById(world, cartId);
     let junc = getJunctionByIndex(world, cart.currentJunction);
@@ -113,6 +117,7 @@ export function moveCartTowards(world, cartId, outletIndex, steps = 1)
                 if (tryAcquirePassThroughJunction(world, cartId, outletIndex))
                 {
                     // Move and exit the lane.
+                    cart.passingSlot = prevSlot;
                     putCartOnJunction(world, cartId, outletIndex);
                     let nextJunc = getNextJunctionForCart(world, cartId);
                     moveCartTowards(world, cartId, nextJunc, nextSlot - lane.length);
@@ -154,6 +159,8 @@ function tryAcquirePassThroughJunction(world, cartId, juncIndex)
     if (!junc.passing)
     {
         junc.passing = cartId;
+        let cart = getCartById(world, cartId);
+        cart.passingJunction = juncIndex;
         return true;
     }
     else
@@ -220,14 +227,6 @@ export function putCartOnJunction(world, cartId, juncIndex)
 export function updateTraffic(world)
 {
     const worldTicks = ++world.worldTicks;
-    // Clear passing
-    for(let junc of world.juncs)
-    {
-        if (junc)
-        {
-            junc.passing = null;
-        }
-    }
     // Update carts
     for(let cart of Object.values(world.carts))
     {
@@ -238,12 +237,18 @@ export function updateTraffic(world)
             {
                 throw new Error('Cart is not on a junction!');
             }
+            if (cart.passingJunction !== -1)
+            {
+                let junc = getJunctionByIndex(world, cart.passingJunction);
+                junc.passing = null;
+                cart.passingJunction = -1;
+            }
             if (cart.currentOutlet === -1)
             {
                 let outlet = getNextJunctionForCart(world, cart.id);
                 cart.currentOutlet = outlet;
             }
-            moveCartTowards(world, cart.id, cart.currentOutlet, 2);
+            moveCartTowards(world, cart.id, cart.currentOutlet, cart.maxLaneSpeed);
         }
     }
 }
@@ -536,32 +541,52 @@ export function drawOutlets(ctx, world, cellSize = 128, laneRadius = 4, junction
 
 /**
  * @param {CanvasRenderingContext2D} ctx
+ * @param {LaneWorld} world
  */
-export function drawCarts(ctx, world, cellSize = 128, junctionSize = 32, cartRadius = 16)
+export function drawCarts(ctx, world, cellSize = 128, junctionSize = 32, cartRadius = 10)
 {
-    let halfJunctionSize = junctionSize / 2;
+    const HALF_JUNC_SIZE = junctionSize / 2;
+    const FRAMES_PER_TICK = 50;
+    const FRAMES_PER_HALF_TICK = FRAMES_PER_TICK / 2;
+    const OFFSET_FRAMES = 5;
+    let frameTime = Math.max(1, Math.min(FRAMES_PER_TICK, FRAMES_PER_TICK + OFFSET_FRAMES - (world.tickFrames + 1)));
+    let dt = 1 / frameTime;
     for(let cart of Object.values(world.carts))
     {
         let [jx, jy] = getJunctionCoordsFromIndex(world, cart.currentJunction);
-        let x = jx * cellSize + halfJunctionSize;
-        let y = jy * cellSize + halfJunctionSize;
+        let kx = jx;
+        let ky = jy;
         if (cart.currentOutlet !== -1)
         {
-            let [nx, ny] = getJunctionCoordsFromIndex(world, cart.currentOutlet);
-            let dx = nx - jx;
-            let dy = ny - jy;
-            let lane = getJunctionLaneByIndex(world, cart.currentJunction, cart.currentOutlet);
-            let ratio = cart.currentSlot / lane.length;
-            x = (jx + dx * ratio) * cellSize + halfJunctionSize;
-            y = (jy + dy * ratio) * cellSize + halfJunctionSize;
+            if (frameTime > FRAMES_PER_HALF_TICK && cart.passingJunction !== -1)
+            {
+                let [nx, ny] = getJunctionCoordsFromIndex(world, cart.passingJunction);
+                kx = nx;
+                ky = ny;
+            }
+            else
+            {
+                let [nx, ny] = getJunctionCoordsFromIndex(world, cart.currentOutlet);
+                let lane = getJunctionLaneByIndex(world, cart.currentJunction, cart.currentOutlet);
+                let ratio = cart.currentSlot / lane.length;
+                kx = jx + (nx - jx) * ratio;
+                ky = jy + (ny - jy) * ratio;
+            }
         }
-        let dx = x - cart.x;
-        let dy = y - cart.y;
-        cart.x += dx * 0.1;
-        cart.y += dy * 0.1;
+        let dx = (kx - cart.x) * dt;
+        let dy = (ky - cart.y) * dt;
+        let dr = Math.atan2(dy, dx);
+        let dist = Math.sqrt(dx * dx + dy * dy);
+        cart.speed = lerp(cart.speed, dist, 0.4);
+        if (cart.speed > 0)
+        {
+            cart.x += Math.cos(dr) * cart.speed;
+            cart.y += Math.sin(dr) * cart.speed;
+            cart.radians = lookAt2(cart.radians, dr, 0.3);
+        }
         ctx.strokeStyle = 'gold';
         ctx.beginPath();
-        ctx.arc(cart.x, cart.y, cartRadius, 0, Math.PI * 2);
+        ctx.arc(cart.x * cellSize + HALF_JUNC_SIZE, cart.y * cellSize + HALF_JUNC_SIZE, cartRadius, cart.radians, cart.radians + Math.PI);
         ctx.stroke();
     }
 }
