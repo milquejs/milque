@@ -41,13 +41,13 @@ export function create()
 {
     let world = new LaneWorld(8, 6);
 
-    putJunction(world, 1, 1);
+    putJunction(world, 1, 1, 4);
     putJunction(world, 1, 2);
     putJunction(world, 1, 3);
     putJunction(world, 1, 4);
     putJunction(world, 2, 3);
 
-    putJunction(world, 2, 2);
+    putJunction(world, 2, 2, 16);
     putJunction(world, 3, 3);
     putJunction(world, 3, 2);
 
@@ -88,16 +88,22 @@ export function create()
     createCart(world, 1, 1);
     createCart(world, 1, 1);
     createCart(world, 1, 1);
+
     createCart(world, 2, 2);
     createCart(world, 2, 2);
     createCart(world, 2, 2);
     createCart(world, 2, 2);
+
     createCart(world, 2, 2);
     createCart(world, 2, 2);
     createCart(world, 2, 2);
     createCart(world, 2, 2);
+
     createCart(world, 2, 2);
     createCart(world, 2, 2);
+    createCart(world, 2, 2);
+    createCart(world, 2, 2);
+
     createCart(world, 2, 2);
     createCart(world, 2, 2);
     createCart(world, 2, 2);
