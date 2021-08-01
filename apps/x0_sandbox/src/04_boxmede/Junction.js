@@ -119,7 +119,12 @@ export function moveCartTowards(world, cartId, outletIndex, steps = 1)
                 }
                 else
                 {
-                    // Cannot pass through junction. Must wait.
+                    // Cannot pass through junction. Move up as far as possible though.
+                    nextSlot = lane.length - 1;
+                    cart.currentOutlet = outletIndex;
+                    cart.currentSlot = nextSlot;
+                    lane.slots[prevSlot] = undefined;
+                    lane.slots[nextSlot] = cart.id;
                 }
             }
             else
@@ -235,11 +240,10 @@ export function updateTraffic(world)
             }
             if (cart.currentOutlet === -1)
             {
-                let outlets = world.juncs[cart.currentJunction].outlets;
-                let outlet = outlets[Math.floor(Math.random() * outlets.length)];
+                let outlet = getNextJunctionForCart(world, cart.id);
                 cart.currentOutlet = outlet;
             }
-            moveCartTowards(world, cart.id, cart.currentOutlet);
+            moveCartTowards(world, cart.id, cart.currentOutlet, 2);
         }
     }
 }
