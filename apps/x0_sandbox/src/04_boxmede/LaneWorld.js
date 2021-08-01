@@ -87,7 +87,7 @@ let timer = 0;
  */
 export function simulate(world)
 {
-    if (++timer > 20)
+    if (++timer > 50)
     {
         timer = 0;
     }
@@ -97,68 +97,11 @@ export function simulate(world)
     }
 
     updateTraffic(world);
-
-    /*
-    if (++timer > 20)
-    {
-        timer = 0;
-    }
-    else
-    {
-        return;
-    }
-    world.worldTicks += 1;
-
-    for(let y = 0; y < world.height; ++y)
-    {
-        for(let x = 0; x < world.width; ++x)
-        {
-            let junc = world.juncs[x + y * world.width];
-            if (junc)
-            {
-                for(let lane of Object.values(junc.lanes))
-                {
-                    const { slots, length } = lane;
-                    for(let i = 0; i < slots.length; ++i)
-                    {
-                        let cartId = slots[i];
-                        let cart = world.carts[cartId];
-                        if (cart)
-                        {
-                            if (cart.lastUpdatedTicks >= world.worldTicks) continue;
-
-                            let index = cart.currentLaneSlot;
-                            cart.lastUpdatedTicks = world.worldTicks;
-                            if (cart.currentLaneSlot + 1 < length)
-                            {
-                                // Move forward.
-                                let [ix, iy] = getJunctionCoordsFromEncoding(lane.inlet);
-                                let [ox, oy] = getJunctionCoordsFromEncoding(lane.outlet);
-                                putCartOnLane(world, cartId, ix, iy, ox, oy, index + 1);
-                            }
-                            else
-                            {
-                                // Go to a new lane.
-                                let [juncX, juncY] = getJunctionCoordsFromEncoding(lane.outlet);
-                                let junc = world.juncs[juncX + juncY * world.width];
-                                let next = junc.outlets[Math.floor(Math.random() * junc.outlets.length)];
-                                let [nextX, nextY] = getJunctionCoordsFromEncoding(next);
-                                putCartOnLane(world, cartId, juncX, juncY, nextX, nextY);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-    */
 }
 
 const JUNC_CELL_SIZE = 128;
 const JUNC_DRAW_SIZE = 32;
 const LANE_RADIUS = 4;
-
-const PATH_RADIUS = 2;
 
 /**
  * @param {CanvasRenderingContext2D} ctx 
@@ -172,150 +115,3 @@ export function render(ctx, world)
     drawCarts(ctx, world, JUNC_CELL_SIZE, JUNC_DRAW_SIZE);
     //drawPath(ctx, world._path, JUNC_CELL_SIZE, PATH_RADIUS, JUNC_DRAW_SIZE);
 }
-
-/*
-
-function createCart(world, juncX, juncY)
-{
-    const id = uuid();
-    let cart = {
-        id,
-        speed: 4,
-        x: juncX,
-        y: juncY,
-        homeX: juncX,
-        homeY: juncY,
-        nextX: juncX,
-        nextY: juncY,
-        lastUpdatedTicks: 0,
-        currentLaneSlot: 0,
-        currentJunctionId: null,
-        currentLaneId: null,
-        targetJunctionId: null,
-    };
-    world.carts[id] = cart;
-    return cart;
-}
-
-function updateTraffic()
-{
-    let blockingDistance = length;
-    for(let i = length - 1; i >= 0; --i)
-    {
-        let cartId = slots[i];
-        if (cartId)
-        {
-            let cart = world.carts[cartId];
-
-
-            const cartSpeed = CART_SPEED;
-            // Spend only 1 tick in passing.
-            if (junc.passing === cartId)
-            {
-                junc.passing = null;
-            }
-            let remainingDistance = (i + cartSpeed) - blockingDistance;
-            if (remainingDistance >= 0)
-            {
-                if (isLaneBlocked)
-                {
-                    // Stopping early in this lane.
-                    isLaneBlocked = true;
-                    blockingDistance = blockingDistance - 1;
-                    slots[i] = null;
-                    slots[blockingDistance] = cartId;
-                    cart.currentLaneSlot = blockingDistance;
-                }
-                else
-                {
-                    // Try exiting to the next lane.
-                    const outletId = lane.outlet;
-                    let [x, y] = getJunctionCoordsFromEncoding(outletId);
-                    let outlet = world.getJunctionByCoords(x, y);
-                    if (outlet.passing !== null)
-                    {
-                        // Outlet already in use. Stopping early.
-                        isLaneBlocked = true;
-                        blockingDistance = blockingDistance - 1;
-                        slots[i] = null;
-                        slots[blockingDistance] = cartId;
-                        cart.currentLaneSlot = blockingDistance;
-                    }
-                    else
-                    {
-                        // Outlet is available. Try to claim it and move in!
-                        if (cart.targetJunctionId)
-                        {
-                            // Pick the next lane to continue onto.
-                            let nextLane = outlet.lanes[cart.targetJunctionId];
-                            if (!nextLane)
-                            {
-                                throw new Error('Cannot find expected lane at junction - the target does not have a valid path.');
-                            }
-                            if (lane.nextBlocking > 0)
-                            {
-                                // Not blocked (yet). Proceed!
-                                slots[i] = null;
-                                outlet.passing = cartId;
-                                if (lane.nextBlocking > remainingDistance)
-                                {
-                                    if (lane.length <= remainingDistance)
-                                    {
-                                        throw new Error('Lane is too short! A cart is speeding out of it immediately!');
-                                    }
-                                    // Go the distance!
-                                    cart.currentLaneSlot = remainingDistance;
-                                    cart.currentJunctionId = outletId;
-                                    cart.targetJunctionId = null;
-                                    cart.nextX = x;
-                                    cart.nextY = y;
-                                    lane.slots[remainingDistance] = cartId;
-                                }
-                                else
-                                {
-                                    // Go up to the blocker.
-                                    let i = lane.nextBlocking - 1;
-                                    cart.currentLaneSlot = i;
-                                    cart.currentJunctionId = outletId;
-                                    cart.targetJunctionId = null;
-                                    cart.nextX = x;
-                                    cart.nextY = y;
-                                    lane.slots[i] = cartId;
-                                }
-                            }
-                            else
-                            {
-                                // Blocked. Stopping early.
-                                isLaneBlocked = true;
-                                blockingDistance = blockingDistance - 1;
-                                slots[i] = null;
-                                slots[blockingDistance] = cartId;
-                                cart.currentLaneSlot = blockingDistance;
-                            }
-                        }
-                        else
-                        {
-                            // No more instructions. Just stay here and block everybody :(
-                            isLaneBlocked = true;
-                            blockingDistance = blockingDistance - 1;
-                            slots[i] = null;
-                            slots[blockingDistance] = cartId;
-                            cart.currentLaneSlot = blockingDistance;
-                        }
-                    }
-                }
-            }
-            else
-            {
-                // Move forward in this lane.
-                isLaneBlocked = true;
-                blockingDistance = i + cartSpeed;
-                slots[i] = null;
-                slots[blockingDistance] = cartId;
-                cart.currentLaneSlot = blockingDistance;
-            }
-        }
-    }
-    lane.nextBlocking = blockingDistance;
-}
-*/

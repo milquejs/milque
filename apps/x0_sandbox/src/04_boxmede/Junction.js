@@ -16,6 +16,8 @@ export class Junction
         this.inlets = [];
         /** @type {Record<JunctionIndex, Lane>} */
         this.lanes = {};
+        /** @type {string} */
+        this.passing = null;
     }
 }
 
@@ -102,34 +104,56 @@ export function moveCartTowards(world, cartId, outletIndex, steps = 1)
         // Already on the way. Try to move forward.
         let prevSlot = cart.currentSlot;
         let furthest = getFurthestAvailableSlotInLane(world, lane, prevSlot + 1);
-        if (furthest > prevSlot)
+        if (furthest >= lane.length)
         {
-            let slot = Math.min(furthest, prevSlot + steps);
-            let remaining = slot - lane.length;
-            if (remaining < 0)
+            // No blockers. Full steam ahead!
+            let nextSlot = prevSlot + steps;
+            if (nextSlot >= lane.length)
             {
-                // Move inside the lane.
-                cart.currentOutlet = outletIndex;
-                cart.currentSlot += steps;
-                lane.slots[prevSlot] = undefined;
-                lane.slots[cart.currentSlot] = cart.id;
+                if (tryAcquirePassThroughJunction(world, cartId, outletIndex))
+                {
+                    // Move and exit the lane.
+                    putCartOnJunction(world, cartId, outletIndex);
+                    let nextJunc = getNextJunctionForCart(world, cartId);
+                    moveCartTowards(world, cartId, nextJunc, nextSlot - lane.length);
+                }
+                else
+                {
+                    // Cannot pass through junction. Must wait.
+                }
             }
             else
             {
-                // Move and exit the lane.
-                putCartOnJunction(world, cartId, outletIndex);
-                if (remaining > 0)
-                {
-                    let nextJunc = getNextJunctionForCart(world, cartId);
-                    moveCartTowards(world, cartId, nextJunc, remaining);
-                }
+                // Move forward within the lane.
+                cart.currentOutlet = outletIndex;
+                cart.currentSlot = nextSlot;
+                lane.slots[prevSlot] = undefined;
+                lane.slots[nextSlot] = cart.id;
             }
         }
         else
         {
-            // Cannot move as it is blocked.
-            return;
+            // A blocker. Try to move as far as possible.
+            let nextSlot = Math.min(furthest, prevSlot + steps);
+            cart.currentOutlet = outletIndex;
+            cart.currentSlot = nextSlot;
+            lane.slots[prevSlot] = undefined;
+            lane.slots[nextSlot] = cart.id;
         }
+    }
+}
+
+function tryAcquirePassThroughJunction(world, cartId, juncIndex)
+{
+    let junc = world.juncs[juncIndex];
+    if (!junc.passing)
+    {
+        junc.passing = cartId;
+        return true;
+    }
+    else
+    {
+        return false;
     }
 }
 
@@ -191,6 +215,15 @@ export function putCartOnJunction(world, cartId, juncIndex)
 export function updateTraffic(world)
 {
     const worldTicks = ++world.worldTicks;
+    // Clear passing
+    for(let junc of world.juncs)
+    {
+        if (junc)
+        {
+            junc.passing = null;
+        }
+    }
+    // Update carts
     for(let cart of Object.values(world.carts))
     {
         if (cart.lastUpdatedTicks < worldTicks)
@@ -423,7 +456,15 @@ export function drawLanes(ctx, world, cellSize = 128, laneRadius = 4, junctionSi
                     let endX = xx * cellSize + junctionSize / 2;
                     let endY = yy * cellSize + junctionSize / 2;
 
-                    ctx.strokeStyle = 'lime';
+                    if (junc.passing)
+                    {
+                        ctx.strokeStyle = 'red';
+                    }
+                    else
+                    {
+                        ctx.strokeStyle = 'lime';
+                    }
+
                     ctx.beginPath();
                     ctx.arc(beginX, beginY, laneRadius, 0, Math.PI * 2);
                     ctx.stroke();
