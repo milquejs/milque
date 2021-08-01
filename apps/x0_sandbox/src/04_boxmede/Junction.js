@@ -53,7 +53,7 @@ export class Cart
         this.currentOutlet = -1;
         this.currentSlot = -1;
         this.passingJunction = -1;
-        this.maxLaneSpeed = 2;
+        this.maxLaneSpeed = 1;
 
         this.x = juncX;
         this.y = juncY;
@@ -82,20 +82,12 @@ export function moveCartTowards(world, cartId, outletIndex, steps)
         let furthest = getFurthestAvailableSlotInLane(world, lane, 0);
         if (furthest > 0)
         {
-            if (furthest >= steps)
-            {
-                // Move full speed.
-                cart.currentOutlet = outletIndex;
-                cart.currentSlot = steps;
-                lane.slots[steps] = cart.id;
-            }
-            else
-            {
-                // Stopping early by blocker.
-                cart.currentOutlet = outletIndex;
-                cart.currentSlot = furthest;
-                lane.slots[furthest] = cart.id;
-            }
+            let nextSlot = Math.min(furthest, steps);
+            cart.currentOutlet = outletIndex;
+            cart.currentSlot = nextSlot;
+            lane.slots[nextSlot] = cart.id;
+            if (nextSlot >= lane.length) throw new Error('Cannot put cart in slot greater than lane length.');
+            return;
         }
         else
         {
@@ -108,49 +100,52 @@ export function moveCartTowards(world, cartId, outletIndex, steps)
         // Already on the way. Try to move forward.
         let prevSlot = cart.currentSlot;
         let furthest = getFurthestAvailableSlotInLane(world, lane, prevSlot + 1);
-        if (furthest >= lane.length)
+        let nextSlot = prevSlot + steps;
+        if (furthest >= lane.length && nextSlot >= lane.length)
         {
-            // No blockers. Full steam ahead!
-            let nextSlot = prevSlot + steps;
-            if (nextSlot >= lane.length)
+            let aheadNextJunc = peekAheadNextJunctionForCart(world, cartId, outletIndex);
+            if (canJunctionLaneAcceptCart(world, outletIndex, aheadNextJunc) && tryAcquirePassThroughJunction(world, cartId, outletIndex))
             {
-                if (tryAcquirePassThroughJunction(world, cartId, outletIndex))
-                {
-                    // Move and exit the lane.
-                    cart.passingSlot = prevSlot;
-                    putCartOnJunction(world, cartId, outletIndex);
-                    let nextJunc = getNextJunctionForCart(world, cartId);
-                    moveCartTowards(world, cartId, nextJunc, nextSlot - lane.length);
-                }
-                else
-                {
-                    // Cannot pass through junction. Move up as far as possible though.
-                    nextSlot = lane.length - 1;
-                    cart.currentOutlet = outletIndex;
-                    cart.currentSlot = nextSlot;
-                    lane.slots[prevSlot] = undefined;
-                    lane.slots[nextSlot] = cart.id;
-                }
+                // No blockers. Full steam ahead!
+                cart.passingSlot = prevSlot;
+                putCartOnJunction(world, cartId, outletIndex);
+                nextJunctionForCart(world, cartId);
+                moveCartTowards(world, cartId, aheadNextJunc, nextSlot - lane.length);
+                return;
             }
             else
             {
-                // Move forward within the lane.
+                // Move forward as far as possible before the blocker.
+                nextSlot = Math.min(lane.length - 1, furthest, nextSlot);
                 cart.currentOutlet = outletIndex;
                 cart.currentSlot = nextSlot;
                 lane.slots[prevSlot] = undefined;
                 lane.slots[nextSlot] = cart.id;
+                if (nextSlot >= lane.length) throw new Error('Cannot put cart in slot greater than lane length.');
+                return;
             }
         }
         else
         {
-            // A blocker. Try to move as far as possible.
-            let nextSlot = Math.min(furthest, prevSlot + steps);
+            // Move forward as far as possible before the blocker.
+            nextSlot = Math.min(lane.length - 1, furthest, nextSlot);
             cart.currentOutlet = outletIndex;
             cart.currentSlot = nextSlot;
             lane.slots[prevSlot] = undefined;
             lane.slots[nextSlot] = cart.id;
+            if (nextSlot >= lane.length) throw new Error('Cannot put cart in slot greater than lane length.');
+            return;
         }
     }
+}
+
+function canJunctionLaneAcceptCart(world, inletIndex, outletIndex)
+{
+    if (inletIndex < 0 || outletIndex < 0) throw new Error('Lane index must be non-negative.');
+    let lane = getJunctionLaneByIndex(world, inletIndex, outletIndex);
+    if (!lane) throw new Error('Cannot find lane for given inlet and outlet.');
+    let slot = getFurthestAvailableSlotInLane(world, lane, 0);
+    return slot >= 0;
 }
 
 function tryAcquirePassThroughJunction(world, cartId, juncIndex)
@@ -169,16 +164,23 @@ function tryAcquirePassThroughJunction(world, cartId, juncIndex)
     }
 }
 
-function getNextJunctionForCart(world, cartId)
+function nextJunctionForCart(world, cartId)
 {
     let cart = world.carts[cartId];
-    let outlets = world.juncs[cart.currentJunction].outlets;
+    return peekAheadNextJunctionForCart(world, cartId, cart.currentJunction);
+}
+
+function peekAheadNextJunctionForCart(world, cartId, nextJuncIndex)
+{
+    let outlets = getJunctionByIndex(world, nextJuncIndex).outlets;
     let outlet = outlets[Math.floor(Math.random() * outlets.length)];
     return outlet;
 }
 
 function getFurthestAvailableSlotInLane(world, lane, initialSlot)
 {
+    if (!(lane instanceof Lane)) throw new Error(`Invalid lane - ${lane}`);
+    if (initialSlot < 0) throw new Error('Slot must be non-negative.');
     for(let i = initialSlot; i < lane.length; ++i)
     {
         if (lane.slots[i])
@@ -245,7 +247,7 @@ export function updateTraffic(world)
             }
             if (cart.currentOutlet === -1)
             {
-                let outlet = getNextJunctionForCart(world, cart.id);
+                let outlet = nextJunctionForCart(world, cart.id);
                 cart.currentOutlet = outlet;
             }
             moveCartTowards(world, cart.id, cart.currentOutlet, cart.maxLaneSpeed);
@@ -260,6 +262,7 @@ export function updateTraffic(world)
  */
 export function getCartById(world, cartId)
 {
+    if (typeof world !== 'object') throw new Error('Missing world.');
     return world.carts[cartId];
 }
 
@@ -270,6 +273,7 @@ export function getCartById(world, cartId)
  */
 export function getJunctionByIndex(world, juncIndex)
 {
+    if (typeof world !== 'object') throw new Error('Missing world.');
     return world.juncs[juncIndex];
 }
 
@@ -281,6 +285,7 @@ export function getJunctionByIndex(world, juncIndex)
  */
 export function getJunctionLaneByIndex(world, inletIndex, outletIndex)
 {
+    if (typeof world !== 'object') throw new Error('Missing world.');
     let junc = world.juncs[inletIndex];
     return junc.lanes[outletIndex];
 }
@@ -418,6 +423,8 @@ export function deleteJunction(world, juncIndex)
     world.juncs[juncIndex] = null;
 }
 
+const LANE_SLOT_OFFSET = 0.5;
+
 /**
  * @param {CanvasRenderingContext2D} ctx
  * @param {LaneWorld} world 
@@ -485,7 +492,7 @@ export function drawLanes(ctx, world, cellSize = 128, laneRadius = 4, junctionSi
                     const laneLength = lane.length;
                     for(let i = 0; i < laneLength; ++i)
                     {
-                        let ratio = (i + 0.25) / laneLength;
+                        let ratio = (i + LANE_SLOT_OFFSET) / laneLength;
                         let tx = beginX + dx * ratio;
                         let ty = beginY + dy * ratio;
                         if (lane.slots[i])
@@ -564,25 +571,30 @@ export function drawCarts(ctx, world, cellSize = 128, junctionSize = 32, cartRad
                 kx = nx;
                 ky = ny;
             }
-            else
+            else if (cart.currentSlot !== -1)
             {
                 let [nx, ny] = getJunctionCoordsFromIndex(world, cart.currentOutlet);
                 let lane = getJunctionLaneByIndex(world, cart.currentJunction, cart.currentOutlet);
-                let ratio = cart.currentSlot / lane.length;
+                let ratio = (cart.currentSlot + LANE_SLOT_OFFSET) / lane.length;
                 kx = jx + (nx - jx) * ratio;
                 ky = jy + (ny - jy) * ratio;
             }
         }
-        let dx = (kx - cart.x) * dt;
-        let dy = (ky - cart.y) * dt;
-        let dr = Math.atan2(dy, dx);
-        let dist = Math.sqrt(dx * dx + dy * dy);
-        cart.speed = lerp(cart.speed, dist, 0.4);
-        if (cart.speed > 0)
+        let dx = kx - cart.x;
+        let dy = ky - cart.y;
+        let distSqu = dx * dx + dy * dy;
+        let dist = Math.sqrt(distSqu);
+        let epsilon = 1 / cellSize;
+        cart.speed = lerp(cart.speed, dist * dt, 0.1);
+        if (dist > epsilon)
         {
-            cart.x += Math.cos(dr) * cart.speed;
-            cart.y += Math.sin(dr) * cart.speed;
-            cart.radians = lookAt2(cart.radians, dr, 0.3);
+            let dr = Math.atan2(dy, dx);
+            if (cart.speed > 0)
+            {
+                cart.x += Math.cos(dr) * cart.speed;
+                cart.y += Math.sin(dr) * cart.speed;
+                cart.radians = lookAt2(cart.radians, dr, 0.2);
+            }
         }
         ctx.strokeStyle = 'gold';
         ctx.beginPath();

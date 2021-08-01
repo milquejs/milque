@@ -42,6 +42,11 @@ export function create()
     let world = new LaneWorld(8, 6);
 
     putJunction(world, 1, 1);
+    putJunction(world, 1, 2);
+    putJunction(world, 1, 3);
+    putJunction(world, 1, 4);
+    putJunction(world, 2, 3);
+
     putJunction(world, 2, 2);
     putJunction(world, 3, 3);
     putJunction(world, 3, 2);
@@ -61,11 +66,41 @@ export function create()
     connectJunction(world,
         getJunctionIndexFromCoords(world, 2, 2),
         getJunctionIndexFromCoords(world, 1, 1));
+
+    connectJunction(world,
+        getJunctionIndexFromCoords(world, 1, 1),
+        getJunctionIndexFromCoords(world, 1, 2));
+    connectJunction(world,
+        getJunctionIndexFromCoords(world, 1, 2),
+        getJunctionIndexFromCoords(world, 1, 3));
+    connectJunction(world,
+        getJunctionIndexFromCoords(world, 1, 3),
+        getJunctionIndexFromCoords(world, 1, 4));
+
+    connectJunction(world,
+        getJunctionIndexFromCoords(world, 1, 4),
+        getJunctionIndexFromCoords(world, 2, 3));
+    connectJunction(world,
+        getJunctionIndexFromCoords(world, 2, 3),
+        getJunctionIndexFromCoords(world, 3, 3));
     
     createCart(world, 1, 1);
     createCart(world, 1, 1);
     createCart(world, 1, 1);
     createCart(world, 1, 1);
+    createCart(world, 2, 2);
+    createCart(world, 2, 2);
+    createCart(world, 2, 2);
+    createCart(world, 2, 2);
+    createCart(world, 2, 2);
+    createCart(world, 2, 2);
+    createCart(world, 2, 2);
+    createCart(world, 2, 2);
+    createCart(world, 2, 2);
+    createCart(world, 2, 2);
+    createCart(world, 2, 2);
+    createCart(world, 2, 2);
+    createCart(world, 2, 2);
     createCart(world, 2, 2);
     //let cart = createCart(world, 1, 1);
     //putCartOnLane(world, cart.id, 1, 1, 2, 2);
