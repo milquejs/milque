@@ -16,7 +16,6 @@
  */
 
 import { connectJunction, drawJunctions, drawLanes, drawOutlets, getJunctionIndexFromCoords, createCart, putJunction, updateTraffic, drawCarts } from './Junction.js';
-import { astarSearch } from './util/astar.js';
 
 export class LaneWorld
 {
@@ -44,7 +43,7 @@ export function create()
     putJunction(world, 1, 1, 4);
     putJunction(world, 1, 2);
     putJunction(world, 1, 3);
-    putJunction(world, 1, 4);
+    putJunction(world, 1, 4, 16);
     putJunction(world, 2, 3);
 
     putJunction(world, 2, 2, 16);
@@ -108,8 +107,6 @@ export function create()
     createCart(world, 2, 2);
     createCart(world, 2, 2);
     createCart(world, 2, 2);
-    //let cart = createCart(world, 1, 1);
-    //putCartOnLane(world, cart.id, 1, 1, 2, 2);
     return world;
 }
 

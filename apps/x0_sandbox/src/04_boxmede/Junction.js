@@ -1,10 +1,14 @@
 import { lerp, lookAt2, uuid } from '@milque/util';
+import { astarSearch } from './util/astar.js';
 
 /**
  * @typedef {import('./LaneWorld.js').LaneWorld} LaneWorld
  * @typedef {[number, number]} JunctionCoords
  * @typedef {number} JunctionIndex
  */
+
+export const NULL_JUNCTION_INDEX = -1;
+export const NULL_SLOT_INDEX = -1;
 
 export class Junction
 {
@@ -16,8 +20,10 @@ export class Junction
         this.inlets = [];
         /** @type {Record<JunctionIndex, Lane>} */
         this.lanes = {};
+
         /** @type {string} */
         this.passing = null;
+
         /** @type {number} */
         this.parkingCapacity = parkingCapacity;
         /** @type {number} */
@@ -43,33 +49,45 @@ export class Lane
         /** @type {number} */
         this.length = length;
         /** @type {number} */
-        this.blocking = length;
+        this.blocking = length; // TODO: Not yet implemented. Should allow faster blocking checks.
     }
 }
 
 export class Cart
 {
-    constructor(id, juncX, juncY)
+    constructor(world, id, juncX, juncY)
     {
         this.id = id;
         this.lastUpdatedTicks = -1;
-        this.currentJunction = -1;
-        this.currentOutlet = -1;
-        this.currentSlot = -1;
-        this.passingJunction = -1;
+        this.currentJunction = NULL_JUNCTION_INDEX;
+        this.currentOutlet = NULL_JUNCTION_INDEX;
+        this.currentSlot = NULL_SLOT_INDEX;
         this.maxLaneSpeed = 2;
+
+        this.passingJunction = NULL_JUNCTION_INDEX;
+        this.parkingJunction = NULL_JUNCTION_INDEX;
 
         this.x = juncX;
         this.y = juncY;
         this.radians = 0;
         this.speed = 0;
+
+        this.home = getJunctionIndexFromCoords(world, juncX, juncY);
+        this.path = [];
+        this.pathIndex = -1;
+    }
+
+    /** @override */
+    toString()
+    {
+        return `[Cart ${this.id} : ${this.status}]`;
     }
 }
 
 export function createCart(world, juncX, juncY)
 {
     let cartId = uuid();
-    let cart = new Cart(cartId, juncX, juncY);
+    let cart = new Cart(world, cartId, juncX, juncY);
     world.carts[cartId] = cart;
     parkCartOnJunction(world, cartId, getJunctionIndexFromCoords(world, juncX, juncY));
 }
@@ -90,29 +108,22 @@ export function moveCartTowards(world, cartId, outletIndex, steps)
 {
     let cart = getCartById(world, cartId);
     let junc = getJunctionByIndex(world, cart.currentJunction);
-    if (!junc.outlets.includes(outletIndex)) throw new Error('Missing outlet at junction to move cart towards.');
+    if (!junc.outlets.includes(outletIndex)) throw new Error(`Missing outlet '${getJunctionCoordsFromIndex(world, outletIndex)}' at junction '${getJunctionCoordsFromIndex(world, cart.currentJunction)}' to move cart towards.`);
     let lane = junc.lanes[outletIndex];
-    if (cart.currentOutlet === -1)
+    if (isNullJunction(world, cart.currentOutlet))
     {
         // Not on the way yet. Try to merge into a lane.
         let furthest = getFurthestAvailableSlotInLane(world, lane, 0);
         if (furthest > 0)
         {
-            // No longer parking in the junction.
-            if (junc.parking > 0)
-            {
-                junc.parking -= 1;
-            }
-            // Move the cart.
-            let nextSlot = Math.min(furthest, steps);
-            cart.currentOutlet = outletIndex;
-            cart.currentSlot = nextSlot;
-            lane.slots[nextSlot] = cart.id;
-            if (nextSlot >= lane.length) throw new Error('Cannot put cart in slot greater than lane length.');
+            // Move the cart (it takes 1 step to move out of parking).
+            let nextSlot = Math.min(furthest, steps - 1);
+            forceCartOnLane(world, cartId, outletIndex, nextSlot);
             return;
         }
         else
         {
+            // Blocked at destination but unable to get into it.
             // Cannot move in as it is blocked.
             return;
         }
@@ -123,48 +134,55 @@ export function moveCartTowards(world, cartId, outletIndex, steps)
         let prevSlot = cart.currentSlot;
         let furthest = getFurthestAvailableSlotInLane(world, lane, prevSlot + 1);
         let nextSlot = prevSlot + steps;
+        // There's no blockers and total movement will exit the lane
         if (furthest >= lane.length && nextSlot >= lane.length)
         {
-            if (tryAcquireParkingInJunction(world, cartId, outletIndex))
+            let aheadNextJunc = peekAheadNextJunctionForCart(world, cart, outletIndex);
+            if (isNullJunction(world, aheadNextJunc))
             {
-                forceCartOnJunction(world, cartId, outletIndex);
-                let nextJunc = nextJunctionForCart(world, cartId);
-                moveCartTowards(world, cartId, nextJunc, nextSlot - lane.length);
-            }
-            else
-            {
-                let aheadNextJunc = peekAheadNextJunctionForCart(world, cartId, outletIndex);
-                if (canJunctionLaneAcceptCart(world, outletIndex, aheadNextJunc) && tryAcquirePassThroughJunction(world, cartId, outletIndex))
+                // Navigation is stopping at this junction. Slow down.
+                if (tryAcquireParkingInJunction(world, cartId, outletIndex))
                 {
-                    // No blockers. Full steam ahead!
-                    cart.passingSlot = prevSlot;
                     forceCartOnJunction(world, cartId, outletIndex);
-                    nextJunctionForCart(world, cartId);
-                    moveCartTowards(world, cartId, aheadNextJunc, nextSlot - lane.length);
+                    let nextJunc = nextJunctionForCart(world, cartId);
+                    moveCartTowards(world, cartId, nextJunc, nextSlot - lane.length);
                     return;
                 }
                 else
                 {
-                    // Move forward as far as possible before the blocker.
-                    nextSlot = Math.min(lane.length - 1, furthest, nextSlot);
-                    cart.currentOutlet = outletIndex;
-                    cart.currentSlot = nextSlot;
-                    lane.slots[prevSlot] = undefined;
-                    lane.slots[nextSlot] = cart.id;
-                    if (nextSlot >= lane.length) throw new Error('Cannot put cart in slot greater than lane length.');
+                    // This only happens when a cart is going to a non-parkable junction
+                    forceCartOnJunction(world, cartId, outletIndex);
                     return;
                 }
+            }
+            else if (canJunctionLaneAcceptCart(world, outletIndex, aheadNextJunc) && tryAcquirePassThroughJunction(world, cartId, outletIndex))
+            {
+                // Navigation has more junctions to visit and the next junction can accept this cart without blockers
+                cart.passingSlot = prevSlot;
+                forceCartOnJunction(world, cartId, outletIndex);
+                forceCartOnLane(world, cartId, aheadNextJunc, 0);
+                nextJunctionForCart(world, cartId);
+                // ...if there's movement left, continue down the lane?
+                let aheadNextSteps = nextSlot - lane.length;
+                if (aheadNextSteps > 0)
+                {
+                    moveCartTowards(world, cartId, aheadNextJunc, aheadNextSteps);
+                }
+                return;
+            }
+            else
+            {
+                // Move forward as far as possible before the blocker.
+                nextSlot = Math.min(lane.length - 1, furthest, nextSlot);
+                forceCartOnLane(world, cartId, outletIndex, nextSlot);
+                return;
             }
         }
         else
         {
             // Move forward as far as possible before the blocker.
             nextSlot = Math.min(lane.length - 1, furthest, nextSlot);
-            cart.currentOutlet = outletIndex;
-            cart.currentSlot = nextSlot;
-            lane.slots[prevSlot] = undefined;
-            lane.slots[nextSlot] = cart.id;
-            if (nextSlot >= lane.length) throw new Error('Cannot put cart in slot greater than lane length.');
+            forceCartOnLane(world, cartId, outletIndex, nextSlot);
             return;
         }
     }
@@ -176,6 +194,8 @@ function tryAcquireParkingInJunction(world, cartId, juncIndex)
     let junc = getJunctionByIndex(world, juncIndex);
     if (junc.parking < junc.parkingCapacity)
     {
+        let cart = getCartById(world, cartId);
+        cart.parkingJunction = juncIndex;
         junc.parking += 1;
         return true;
     }
@@ -189,7 +209,7 @@ function canJunctionLaneAcceptCart(world, inletIndex, outletIndex)
 {
     if (inletIndex < 0 || outletIndex < 0) throw new Error('Junction index must be non-negative.');
     let lane = getJunctionLaneByIndex(world, inletIndex, outletIndex);
-    if (!lane) throw new Error('Cannot find lane for given inlet and outlet.');
+    if (!lane) throw new Error(`Cannot find lane for given inlet '${getJunctionCoordsFromIndex(world, inletIndex)}' and outlet '${getJunctionCoordsFromIndex(world, outletIndex)}'.`);
     let slot = getFurthestAvailableSlotInLane(world, lane, 0);
     return slot >= 0;
 }
@@ -224,6 +244,78 @@ function peekAheadNextJunctionForCart(world, cartId, nextJuncIndex)
     return outlet;
 }
 
+function findValidDestination(world, cart)
+{
+    let destinations = [];
+    for(let i = 0; i < world.juncs.length; ++i)
+    {
+        let junc = world.juncs[i];
+        if (junc && junc.parkingCapacity > 0)
+        {
+            destinations.push(i);
+        }
+    }
+    return destinations[Math.floor(Math.random() * destinations.length)];
+}
+
+function findPathToJunction(world, fromJunc, toJunc)
+{
+    let path = astarSearch(fromJunc, toJunc, (juncIndex) => {
+        let junc = world.juncs[juncIndex];
+        if (junc)
+        {
+            return junc.outlets;
+        }
+        else
+        {
+            return [];
+        }
+    }, (fromIndex, toIndex) => {
+        let [fromJuncX, fromJuncY] = getJunctionCoordsFromIndex(world, fromIndex);
+        let [toJuncX, toJuncY] = getJunctionCoordsFromIndex(world, toIndex);
+        return Math.abs(toJuncX - fromJuncX) + Math.abs(toJuncY - fromJuncY);
+    });
+    // Validate path
+    let prev = fromJunc;
+    path.splice(0, 1);
+    for(let i = 0; i < path.length; ++i)
+    {
+        if (!isJunctionOutletForJunction(world, path[i], prev))
+        {
+            throw new Error(`Found invalid lane at path index ${i}: ${path}.`);
+        }
+        prev = path[i];
+    }
+    return path;
+}
+
+function peekAheadNextJunction(world, cart, nextJuncIndex)
+{
+    return randomOutletJunctionFromJunction(world, nextJuncIndex);
+}
+
+function updateNavigation(world, cartId)
+{
+    let cart = getCartById(world, cartId);
+    if (cart.path === cart.currentJunction)
+    {
+        cart.path = randomOutletJunctionFromJunction(world, cart.currentJunction);
+        cart.currentOutlet = cart.path;
+    }
+    else if (cart.pathIndex < 0)
+    {
+        cart.path = randomOutletJunctionFromJunction(world, cart.currentJunction);
+        cart.pathIndex = 0;
+    }
+}
+
+export function randomOutletJunctionFromJunction(world, juncIndex)
+{
+    let outlets = getJunctionByIndex(world, juncIndex).outlets;
+    let outlet = outlets[Math.floor(Math.random() * outlets.length)];
+    return outlet;
+}
+
 function getFurthestAvailableSlotInLane(world, lane, initialSlot)
 {
     if (!(lane instanceof Lane)) throw new Error(`Invalid lane - ${lane}`);
@@ -250,11 +342,11 @@ export function forceCartOnJunction(world, cartId, juncIndex)
         throw new Error('Invalid junction index.');
     }
     let cart = world.carts[cartId];
-    if (cart.currentJunction !== -1)
+    if (!isNullJunction(world, cart.currentJunction))
     {
         // Remove from previous junction.
         let junc = world.juncs[cart.currentJunction];
-        if (cart.currentOutlet !== -1)
+        if (!isNullJunction(world, cart.currentOutlet))
         {
             // Remove from previous lane.
             let lane = junc.lanes[cart.currentOutlet];
@@ -264,15 +356,68 @@ export function forceCartOnJunction(world, cartId, juncIndex)
             }
             lane.slots[cart.currentSlot] = null;
         }
-        else if (junc.parking > 0)
+        else if (cart.parkingJunction === cart.currentJunction)
         {
             // No longer parked there.
+            cart.parkingJunction = NULL_JUNCTION_INDEX;
             junc.parking -= 1;
+            if (junc.parking < 0)
+            {
+                throw new Error('Found junction parking under 0.');
+            }
         }
     }
     cart.currentJunction = juncIndex;
-    cart.currentOutlet = -1;
-    cart.currentSlot = -1;
+    cart.currentOutlet = NULL_JUNCTION_INDEX;
+    cart.currentSlot = NULL_SLOT_INDEX;
+}
+
+/**
+ * @param {LaneWorld} world 
+ * @param {string} cartId 
+ * @param {JunctionIndex} outlet 
+ * @param {number} slot 
+ */
+export function forceCartOnLane(world, cartId, outlet, slot)
+{
+    let cart = getCartById(world, cartId);
+    let junc = getJunctionByIndex(world, cart.currentJunction);
+    let lane = junc.lanes[outlet];
+    if (!isNullJunction(world, cart.currentOutlet))
+    {
+        if (cart.currentSlot >= 0)
+        {
+            let prevSlot = cart.currentSlot;
+            cart.currentOutlet = NULL_JUNCTION_INDEX;
+            cart.currentSlot = NULL_SLOT_INDEX;
+            lane.slots[prevSlot] = undefined;
+        }
+        else
+        {
+            throw new Error('Found cart with non-null outlet on null slot.');
+        }
+    }
+    else if (cart.parkingJunction === cart.currentJunction)
+    {
+        // No longer parked. We are moving out!
+        cart.parkingJunction = NULL_JUNCTION_INDEX;
+        junc.parking -= 1;
+        if (junc.parking < 0)
+        {
+            throw new Error('Found junction parking under 0.');
+        }
+    }
+    if (isNullJunction(world, outlet) || !isJunctionOutletForJunction(world, outlet, cart.currentJunction))
+    {
+        throw new Error(`Cannot put cart on non-existant lane with inlet '${getJunctionCoordsFromIndex(world, cart.currentJunction)}' and outlet '${getJunctionCoordsFromIndex(world, outlet)}'.`);
+    }
+    if (slot < 0 || slot >= lane.length)
+    {
+        throw new Error(`Cannot put cart on slot index ${slot} out of bounds for lane - must be within [0, ${lane.length}).`);
+    }
+    cart.currentOutlet = outlet;
+    cart.currentSlot = slot;
+    lane.slots[slot] = cartId;
 }
 
 /**
@@ -286,23 +431,31 @@ export function updateTraffic(world)
     {
         if (cart.lastUpdatedTicks < worldTicks)
         {
+            let targetOutlet = cart.currentOutlet;
             cart.lastUpdatedTicks = worldTicks;
-            if (cart.currentJunction === -1)
+            // Carts should always be on a junction.
+            if (isNullJunction(world, cart.currentJunction))
             {
                 throw new Error('Cart is not on a junction!');
             }
-            if (cart.passingJunction !== -1)
+            // Passing junctions only last for 1 tick.
+            if (!isNullJunction(world, cart.passingJunction))
             {
                 let junc = getJunctionByIndex(world, cart.passingJunction);
                 junc.passing = null;
-                cart.passingJunction = -1;
+                cart.passingJunction = NULL_JUNCTION_INDEX;
             }
-            if (cart.currentOutlet === -1)
+            // If not moving on a lane, try starting to.
+            if (isNullJunction(world, cart.currentOutlet))
             {
-                let outlet = nextJunctionForCart(world, cart.id);
-                cart.currentOutlet = outlet;
+                targetOutlet = nextJunctionForCart(world, cart.id);
             }
-            moveCartTowards(world, cart.id, cart.currentOutlet, cart.maxLaneSpeed);
+            // Validate cart junction and outlet are correct before moving.
+            if (!isJunctionOutletForJunction(world, targetOutlet, cart.currentJunction))
+            {
+                throw new Error(`Next junction outlet '${getJunctionCoordsFromIndex(world, cart.currentOutlet)}' is not for junction '${getJunctionCoordsFromIndex(world, cart.currentJunction)}'.`);
+            }
+            moveCartTowards(world, cart.id, targetOutlet, cart.maxLaneSpeed);
         }
     }
 }
@@ -458,6 +611,22 @@ export function isJunctionWithinBounds(world, juncX, juncY)
 
 /**
  * @param {LaneWorld} world 
+ * @param {JunctionIndex} outletIndex 
+ * @param {JunctionIndex} juncIndex 
+ * @returns {boolean}
+ */
+export function isJunctionOutletForJunction(world, outletIndex, juncIndex)
+{
+    let junc = world.juncs[juncIndex];
+    if (junc)
+    {
+        return junc.outlets.includes(outletIndex);
+    }
+    return false;
+}
+
+/**
+ * @param {LaneWorld} world 
  * @param {JunctionIndex} juncIndex
  */
 export function deleteJunction(world, juncIndex)
@@ -473,6 +642,20 @@ export function deleteJunction(world, juncIndex)
         disconnectJunction(world, juncIndex, outletIndex);
     }
     world.juncs[juncIndex] = null;
+}
+
+/**
+ * @param {LaneWorld} world 
+ * @param {JunctionIndex} juncIndex 
+ * @returns {boolean}
+ */
+export function isNullJunction(world, juncIndex)
+{
+    if (typeof world !== 'object') throw new Error('Missing world.');
+    return typeof juncIndex !== 'number'
+        || Number.isNaN(juncIndex)
+        || juncIndex < 0
+        || juncIndex >= world.juncs.length;
 }
 
 const LANE_SLOT_OFFSET = 0.5;
@@ -615,15 +798,15 @@ export function drawCarts(ctx, world, cellSize = 128, junctionSize = 32, cartRad
         let [jx, jy] = getJunctionCoordsFromIndex(world, cart.currentJunction);
         let kx = jx;
         let ky = jy;
-        if (cart.currentOutlet !== -1)
+        if (!isNullJunction(world, cart.currentOutlet))
         {
-            if (frameTime > FRAMES_PER_HALF_TICK && cart.passingJunction !== -1)
+            if (frameTime > FRAMES_PER_HALF_TICK && !isNullJunction(world, cart.passingJunction))
             {
                 let [nx, ny] = getJunctionCoordsFromIndex(world, cart.passingJunction);
                 kx = nx;
                 ky = ny;
             }
-            else if (cart.currentSlot !== -1)
+            else if (cart.currentSlot >= 0)
             {
                 let [nx, ny] = getJunctionCoordsFromIndex(world, cart.currentOutlet);
                 let lane = getJunctionLaneByIndex(world, cart.currentJunction, cart.currentOutlet);
