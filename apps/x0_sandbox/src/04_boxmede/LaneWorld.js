@@ -49,6 +49,7 @@ export function create()
     putJunction(world, 2, 2, 16);
     putJunction(world, 3, 3);
     putJunction(world, 3, 2);
+    putJunction(world, 4, 4);
 
     connectJunction(world,
         getJunctionIndexFromCoords(world, 1, 1),

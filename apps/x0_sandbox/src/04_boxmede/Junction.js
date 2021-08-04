@@ -1,5 +1,5 @@
 import { lerp, lookAt2, uuid } from '@milque/util';
-import { astarSearch } from './util/astar.js';
+import { updateNavigation } from './Navigator.js';
 
 /**
  * @typedef {import('./LaneWorld.js').LaneWorld} LaneWorld
@@ -62,7 +62,7 @@ export class Cart
         this.currentJunction = NULL_JUNCTION_INDEX;
         this.currentOutlet = NULL_JUNCTION_INDEX;
         this.currentSlot = NULL_SLOT_INDEX;
-        this.maxLaneSpeed = 2;
+        this.maxLaneSpeed = 1;
 
         this.passingJunction = NULL_JUNCTION_INDEX;
         this.parkingJunction = NULL_JUNCTION_INDEX;
@@ -75,6 +75,8 @@ export class Cart
         this.home = getJunctionIndexFromCoords(world, juncX, juncY);
         this.path = [];
         this.pathIndex = -1;
+        this.state = 0;
+        this.lastStateChangedTicks = -1;
     }
 
     /** @override */
@@ -89,11 +91,7 @@ export function createCart(world, juncX, juncY)
     let cartId = uuid();
     let cart = new Cart(world, cartId, juncX, juncY);
     world.carts[cartId] = cart;
-    parkCartOnJunction(world, cartId, getJunctionIndexFromCoords(world, juncX, juncY));
-}
-
-export function parkCartOnJunction(world, cartId, juncIndex)
-{
+    let juncIndex = getJunctionIndexFromCoords(world, juncX, juncY);
     if (tryAcquireParkingInJunction(world, cartId, juncIndex))
     {
         forceCartOnJunction(world, cartId, juncIndex);
@@ -108,7 +106,10 @@ export function moveCartTowards(world, cartId, outletIndex, steps)
 {
     let cart = getCartById(world, cartId);
     let junc = getJunctionByIndex(world, cart.currentJunction);
-    if (!junc.outlets.includes(outletIndex)) throw new Error(`Missing outlet '${getJunctionCoordsFromIndex(world, outletIndex)}' at junction '${getJunctionCoordsFromIndex(world, cart.currentJunction)}' to move cart towards.`);
+    if (!junc.outlets.includes(outletIndex))
+    {
+        throw new Error(`Missing outlet '${getJunctionCoordsFromIndex(world, outletIndex)}' at junction '${getJunctionCoordsFromIndex(world, cart.currentJunction)}' to move cart towards.`);
+    }
     let lane = junc.lanes[outletIndex];
     if (isNullJunction(world, cart.currentOutlet))
     {
@@ -132,20 +133,19 @@ export function moveCartTowards(world, cartId, outletIndex, steps)
     {
         // Already on the way. Try to move forward.
         let prevSlot = cart.currentSlot;
-        let furthest = getFurthestAvailableSlotInLane(world, lane, prevSlot + 1);
         let nextSlot = prevSlot + steps;
+        let furthest = getFurthestAvailableSlotInLane(world, lane, prevSlot + 1);
         // There's no blockers and total movement will exit the lane
         if (furthest >= lane.length && nextSlot >= lane.length)
         {
-            let aheadNextJunc = peekAheadNextJunctionForCart(world, cart, outletIndex);
+            let aheadNextJunc = lookAheadNavigation(world, cartId, outletIndex);
             if (isNullJunction(world, aheadNextJunc))
             {
                 // Navigation is stopping at this junction. Slow down.
                 if (tryAcquireParkingInJunction(world, cartId, outletIndex))
                 {
+                    // Parking. Any remaining movement is ignored.
                     forceCartOnJunction(world, cartId, outletIndex);
-                    let nextJunc = nextJunctionForCart(world, cartId);
-                    moveCartTowards(world, cartId, nextJunc, nextSlot - lane.length);
                     return;
                 }
                 else
@@ -161,7 +161,6 @@ export function moveCartTowards(world, cartId, outletIndex, steps)
                 cart.passingSlot = prevSlot;
                 forceCartOnJunction(world, cartId, outletIndex);
                 forceCartOnLane(world, cartId, aheadNextJunc, 0);
-                nextJunctionForCart(world, cartId);
                 // ...if there's movement left, continue down the lane?
                 let aheadNextSteps = nextSlot - lane.length;
                 if (aheadNextSteps > 0)
@@ -231,82 +230,22 @@ function tryAcquirePassThroughJunction(world, cartId, juncIndex)
     }
 }
 
-function nextJunctionForCart(world, cartId)
-{
-    let cart = world.carts[cartId];
-    return peekAheadNextJunctionForCart(world, cartId, cart.currentJunction);
-}
-
-function peekAheadNextJunctionForCart(world, cartId, nextJuncIndex)
-{
-    let outlets = getJunctionByIndex(world, nextJuncIndex).outlets;
-    let outlet = outlets[Math.floor(Math.random() * outlets.length)];
-    return outlet;
-}
-
-function findValidDestination(world, cart)
-{
-    let destinations = [];
-    for(let i = 0; i < world.juncs.length; ++i)
-    {
-        let junc = world.juncs[i];
-        if (junc && junc.parkingCapacity > 0)
-        {
-            destinations.push(i);
-        }
-    }
-    return destinations[Math.floor(Math.random() * destinations.length)];
-}
-
-function findPathToJunction(world, fromJunc, toJunc)
-{
-    let path = astarSearch(fromJunc, toJunc, (juncIndex) => {
-        let junc = world.juncs[juncIndex];
-        if (junc)
-        {
-            return junc.outlets;
-        }
-        else
-        {
-            return [];
-        }
-    }, (fromIndex, toIndex) => {
-        let [fromJuncX, fromJuncY] = getJunctionCoordsFromIndex(world, fromIndex);
-        let [toJuncX, toJuncY] = getJunctionCoordsFromIndex(world, toIndex);
-        return Math.abs(toJuncX - fromJuncX) + Math.abs(toJuncY - fromJuncY);
-    });
-    // Validate path
-    let prev = fromJunc;
-    path.splice(0, 1);
-    for(let i = 0; i < path.length; ++i)
-    {
-        if (!isJunctionOutletForJunction(world, path[i], prev))
-        {
-            throw new Error(`Found invalid lane at path index ${i}: ${path}.`);
-        }
-        prev = path[i];
-    }
-    return path;
-}
-
-function peekAheadNextJunction(world, cart, nextJuncIndex)
-{
-    return randomOutletJunctionFromJunction(world, nextJuncIndex);
-}
-
-function updateNavigation(world, cartId)
+function lookAheadNavigation(world, cartId, outletIndex)
 {
     let cart = getCartById(world, cartId);
-    if (cart.path === cart.currentJunction)
+    if (cart.pathIndex >= 0)
     {
-        cart.path = randomOutletJunctionFromJunction(world, cart.currentJunction);
-        cart.currentOutlet = cart.path;
+        let i = cart.path.indexOf(outletIndex);
+        if (i < 0)
+        {
+            throw new Error('Missing outlet in path.');
+        }
+        else if (i + 1 < cart.path.length)
+        {
+            return cart.path[i + 1];
+        }
     }
-    else if (cart.pathIndex < 0)
-    {
-        cart.path = randomOutletJunctionFromJunction(world, cart.currentJunction);
-        cart.pathIndex = 0;
-    }
+    return NULL_JUNCTION_INDEX;
 }
 
 export function randomOutletJunctionFromJunction(world, juncIndex)
@@ -448,12 +387,16 @@ export function updateTraffic(world)
             // If not moving on a lane, try starting to.
             if (isNullJunction(world, cart.currentOutlet))
             {
-                targetOutlet = nextJunctionForCart(world, cart.id);
+                targetOutlet = updateNavigation(world, cart.id);
+                if (isNullJunction(world, targetOutlet))
+                {
+                    continue;
+                }
             }
             // Validate cart junction and outlet are correct before moving.
             if (!isJunctionOutletForJunction(world, targetOutlet, cart.currentJunction))
             {
-                throw new Error(`Next junction outlet '${getJunctionCoordsFromIndex(world, cart.currentOutlet)}' is not for junction '${getJunctionCoordsFromIndex(world, cart.currentJunction)}'.`);
+                throw new Error(`Next junction outlet '${getJunctionCoordsFromIndex(world, targetOutlet)}' is not for junction '${getJunctionCoordsFromIndex(world, cart.currentJunction)}'.`);
             }
             moveCartTowards(world, cart.id, targetOutlet, cart.maxLaneSpeed);
         }
@@ -831,7 +774,14 @@ export function drawCarts(ctx, world, cellSize = 128, junctionSize = 32, cartRad
                 cart.radians = lookAt2(cart.radians, dr, 0.2);
             }
         }
-        ctx.strokeStyle = 'gold';
+        if (!isNullJunction(world, cart.parkingJunction))
+        {
+            ctx.strokeStyle = 'gray';
+        }
+        else
+        {
+            ctx.strokeStyle = 'gold';
+        }
         ctx.beginPath();
         ctx.arc(cart.x * cellSize + HALF_JUNC_SIZE, cart.y * cellSize + HALF_JUNC_SIZE, cartRadius, cart.radians, cart.radians + Math.PI);
         ctx.stroke();
