@@ -1,75 +1,86 @@
-export function astarSearch(startX, startY, goalX, goalY, isWalkable)
+/**
+ * @template T
+ * @typedef NodeCache<T>
+ * @property {Record<T, number>} fscore
+ * @property {Record<T, number>} gscore
+ * @property {Record<T, number>} hscore
+ * @property {Record<T, T>} parents
+ */
+
+/**
+ * @template T
+ * @param {T} startId The unique representation of the starting position. Must be deterministic.
+ * @param {T} goalId The unique representation of the stopping position. Must be deterministic.
+ * @param {(node: T) => Array<T>} neighborsCallback Get all reachable neighbors from the given node.
+ * @param {(from: T, to: T) => number} heuristicCallback Get the heuristics score between the two nodes.
+ * @returns {Array<T>} If the goal is not reachable from the start, it will return an empty array.
+ */
+export function astarSearch(startId, goalId, neighborsCallback, heuristicCallback)
 {
-    let start = createNode(startX, startY);
-    let nodes = {
-        [start.id]: start,
-    };
-    let opened = [];
-    let closed = [];
-    opened.push(start.id);
-    while(opened.length > 0)
+    /** @type {NodeCache<T>} */
+    let cache = createCache();
+    cacheNode(cache, startId);
+    let opened = new Set();
+    let closed = new Set();
+    opened.add(startId);
+    while(opened.size > 0)
     {
-        let findex = 0;
-        let minId = opened[findex];
-        let minNode = nodes[minId];
-        for(let i = 1; i < opened.length; ++i)
+        let minNodeId;
+        for(let openNodeId of opened)
         {
-            let openedId = opened[i];
-            let openedNode = nodes[openedId];
-            if (openedNode.f < minNode.f)
+            if (minNodeId)
             {
-                findex = i;
-                minId = openedId;
-                minNode = openedNode;
+                if (cache.fscore[openNodeId] < cache.fscore[minNodeId])
+                {
+                    minNodeId = openNodeId;
+                }
+            }
+            else
+            {
+                minNodeId = openNodeId;
             }
         }
-        let currentId = opened[findex];
-        let currentNode = nodes[currentId];
 
-        if (currentNode.x === goalX && currentNode.y === goalY)
+        let currentNodeId = minNodeId;
+        if (currentNodeId === goalId)
         {
             // Completed!
             let result = [];
-            while(currentNode.parent)
+            while(cache.parents[currentNodeId])
             {
-                result.push([ currentNode.x, currentNode.y ]);
-                currentNode = currentNode.parent;
+                result.push(currentNodeId);
+                currentNodeId = cache.parents[currentNodeId];
             }
-            result.push([ currentNode.x, currentNode.y ]);
+            result.push(currentNodeId);
             return result.reverse();
         }
         else
         {
             // Not there yet...
-            closed.push(currentId);
-            let i = opened.indexOf(currentId);
-            opened.splice(i, 1);
-            let neighbors = getNeighbors(nodes, currentNode.x, currentNode.y);
-            for(let node of neighbors)
+            closed.add(currentNodeId);
+            opened.delete(currentNodeId);
+            for(let neighborNodeId of neighborsCallback(currentNodeId))
             {
-                if (closed.indexOf(node.id) >= 0 || !isWalkable(currentNode.x, currentNode.y, node.x, node.y))
+                if (closed.has(neighborNodeId)) continue;
+                let g = cache.gscore[currentNodeId] + 1;
+                let flag = false;
+                if (!opened.has(neighborNodeId))
                 {
-                    continue;
+                    flag = true;
+                    cacheNode(cache, neighborNodeId);
+                    cache.hscore[neighborNodeId] = heuristicCallback(neighborNodeId, goalId);
+                    opened.add(neighborNodeId);
                 }
-
-                let g = currentNode.g + 1;
-                let gbest = false;
-                if (opened.indexOf(node.id) === -1)
+                else if (g < cache.gscore[neighborNodeId])
                 {
-                    gbest = true;
-                    node.h = Math.abs(goalX - node.x) + Math.abs(goalY - node.y);
-                    opened.push(node.id);
+                    flag = true;
                 }
-                else if (g < node.g)
+                // Use the new g score if better
+                if (flag)
                 {
-                    gbest = true;
-                }
-
-                if (gbest)
-                {
-                    node.parent = currentNode;
-                    node.g = g;
-                    node.f = g + node.h;
+                    cache.parents[neighborNodeId] = currentNodeId;
+                    cache.gscore[neighborNodeId] = g;
+                    cache.fscore[neighborNodeId] = g + cache.hscore[neighborNodeId];
                 }
             }
         }
@@ -77,44 +88,36 @@ export function astarSearch(startX, startY, goalX, goalY, isWalkable)
     return [];
 }
 
-function resolveNode(nodes, x, y)
-{
-    let id = `${x},${y}`;
-    if (id in nodes)
-    {
-        return nodes[id];
-    }
-    else
-    {
-        let node = createNode(x, y);
-        nodes[id] = node;
-        return node;
-    }
-}
-
-function getNeighbors(nodes, x, y)
-{
-    return [
-        resolveNode(nodes, x - 1, y - 1),
-        resolveNode(nodes, x - 1, y + 0),
-        resolveNode(nodes, x - 1, y + 1),
-        resolveNode(nodes, x + 0, y + 1),
-        resolveNode(nodes, x + 1, y + 1),
-        resolveNode(nodes, x + 1, y + 0),
-        resolveNode(nodes, x + 1, y - 1),
-        resolveNode(nodes, x + 0, y - 1),
-    ];
-}
-
-function createNode(x, y)
+/**
+ * @template T
+ * @returns {NodeCache<T>}
+ */
+function createCache()
 {
     return {
-        id: `${x},${y}`,
-        x: x,
-        y: y,
-        f: Number.NaN,
-        g: Number.NaN,
-        h: Number.NaN,
-        parent: null,
+        fscore: {},
+        gscore: {},
+        hscore: {},
+        parents: {},
     };
 }
+
+/**
+ * @template T
+ * @param {NodeCache<T>} cache 
+ * @param {T} id 
+ * @param {number} f 
+ * @param {number} g 
+ * @param {number} h 
+ * @param {T} parent 
+ * @returns {T}
+ */
+function cacheNode(cache, id, f = Number.POSITIVE_INFINITY, g = Number.POSITIVE_INFINITY, h = Number.NaN, parent = null)
+{
+    cache.fscore[id] = f;
+    cache.gscore[id] = g;
+    cache.hscore[id] = h;
+    cache.parents[id] = parent;
+    return id;
+}
+ 

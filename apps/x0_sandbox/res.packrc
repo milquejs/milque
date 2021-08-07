@@ -73,6 +73,11 @@
                 "crc": 1571288211
             },
             {
+                "name": "res/starfield.png",
+                "bytes": 193937,
+                "crc": 1090874061
+            },
+            {
                 "name": "res/toast.aseprite",
                 "bytes": 615,
                 "crc": -391701269
@@ -88,7 +93,7 @@
                 "crc": -842706858
             }
         ],
-        "totalBytes": 135770,
-        "checksum": -1709304954
+        "totalBytes": 329707,
+        "checksum": 158754127
     }
 }

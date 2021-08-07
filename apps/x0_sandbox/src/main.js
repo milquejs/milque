@@ -68,6 +68,6 @@ async function main()
     // await IsoGame(game);
     // await BreadBox(game);
     // await GerryMan(game);
-    // await Miners(game);
-    await Boxmede(game);
+    await Miners(game);
+    // await Boxmede(game);
 }

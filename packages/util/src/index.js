@@ -8,3 +8,5 @@ export * from './uuidv4.js';
 export * from './MathHelper.js';
 export * from './TopologicalSort.js';
 export * from './AStar.js';
+export * from './Shuffle.js';
+export * from './BitHelper.js';

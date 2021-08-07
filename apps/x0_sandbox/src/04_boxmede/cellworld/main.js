@@ -12,7 +12,7 @@ import {
 } from './Directional.js';
 import { World } from './World.js';
 import { Lane, updateLanes } from './Lane.js';
-import { assert } from './util/assert.js';
+import { assert } from '../util/assert.js';
 
 const MAX_LANE_DISTANCE = 4;
 
