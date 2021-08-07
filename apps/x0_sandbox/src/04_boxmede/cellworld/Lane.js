@@ -1,5 +1,5 @@
 /**
- * @typedef {import('../game/Game.js').Game} Game
+ * @typedef {import('../../game/Game.js').Game} Game
  * @typedef {import('@milque/display').DisplayPort} DisplayPort
  * @typedef {import('@milque/input').InputContext} InputContext
  * 

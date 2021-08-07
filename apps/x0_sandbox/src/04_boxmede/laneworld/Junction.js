@@ -2,7 +2,7 @@ import { lerp, lookAt2, uuid } from '@milque/util';
 import { updateNavigation } from './Navigator.js';
 
 /**
- * @typedef {import('./LaneWorld.js').LaneWorld} LaneWorld
+ * @typedef {import('../LaneWorld.js').LaneWorld} LaneWorld
  * @typedef {[number, number]} JunctionCoords
  * @typedef {number} JunctionIndex
  */

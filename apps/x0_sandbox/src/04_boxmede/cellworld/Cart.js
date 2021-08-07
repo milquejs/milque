@@ -1,5 +1,5 @@
-import { astarSearch } from './util/astar.js';
-import { fisherYatesShuffle } from './util/shuffle.js';
+import { astarSearch } from '../util/astar.js';
+import { fisherYatesShuffle } from '../util/shuffle.js';
 
 /**
  * @typedef {import('./World.js').World} World

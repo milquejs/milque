@@ -1,8 +1,8 @@
 import { getCartById, getJunctionCoordsFromIndex, isNullJunction, NULL_JUNCTION_INDEX } from './Junction.js';
-import { astarSearch } from './util/astar.js';
+import { astarSearch } from '../util/astar.js';
 
 /**
- * @typedef {import('./LaneWorld.js').LaneWorld} LaneWorld
+ * @typedef {import('../LaneWorld.js').LaneWorld} LaneWorld
  */
 
 const SEARCH_VALID_DESTINATION_RATE = 5;
