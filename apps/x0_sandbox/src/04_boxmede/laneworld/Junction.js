@@ -584,7 +584,7 @@ export function deleteJunction(world, juncIndex)
     {
         disconnectJunction(world, juncIndex, outletIndex);
     }
-    world.juncs[juncIndex] = null;
+    world.juncs[juncIndex] = undefined;
 }
 
 /**
@@ -731,7 +731,7 @@ export function drawOutlets(ctx, world, cellSize = 128, laneRadius = 4, junction
 export function drawCarts(ctx, world, cellSize = 128, junctionSize = 32, cartRadius = 10)
 {
     const HALF_JUNC_SIZE = junctionSize / 2;
-    const FRAMES_PER_TICK = 50;
+    const FRAMES_PER_TICK = 15;
     const FRAMES_PER_HALF_TICK = FRAMES_PER_TICK / 2;
     const OFFSET_FRAMES = 5;
     let frameTime = Math.max(1, Math.min(FRAMES_PER_TICK, FRAMES_PER_TICK + OFFSET_FRAMES - (world.tickFrames + 1)));

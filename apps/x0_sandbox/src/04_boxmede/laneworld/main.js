@@ -19,12 +19,12 @@ export async function main(game)
     input.bindButton('deactivate', 'Mouse', 'Button2');
     const ctx = display.getContext('2d');
 
-    let world = LaneWorld.create();
+    let world = LaneWorld.createWorld(game);
     game.on('frame', () => {
-        LaneWorld.simulate(world);
+        LaneWorld.updateWorld(game, world);
         
         ctx.fillStyle = 'black';
         ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-        LaneWorld.render(ctx, world);
+        LaneWorld.drawWorld(game, ctx, world);
     });
 }

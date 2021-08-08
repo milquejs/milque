@@ -27,7 +27,13 @@ export async function main(game)
             player.x = Math.random() * display.width;
             player.y = Math.random() * display.height;
             let pop = /** @type {Sound} */ (assets.getAsset('sound:pop.wav'));
-            pop.play({ pitch: (Math.random() - 0.5) * 10, gain: 0.5 });
+            playVariation(pop, -10, 10);
         }
     });
+}
+
+function playVariation(sound, lowPitchRange, highPitchRange, gain = 1)
+{
+    let range = highPitchRange - lowPitchRange;
+    sound.play({ pitch: lowPitchRange + (Math.random() * range), gain });
 }
