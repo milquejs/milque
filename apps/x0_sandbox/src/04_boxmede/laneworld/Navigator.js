@@ -1,4 +1,6 @@
-import { getCartById, getJunctionCoordsFromIndex, isNullJunction, NULL_JUNCTION_INDEX } from './Junction.js';
+import { getJunctionCoordsFromIndex, isNullJunction } from './Junction.js';
+import { getCartById, NULL_JUNCTION_INDEX } from './Cart.js';
+
 import { astarSearch } from '../util/astar.js';
 
 /**

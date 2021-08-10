@@ -14,7 +14,8 @@
 import { drawGrid } from '../render2d.js';
 import { CELL_SIZE, CellWorld, putHousing, drawHousings } from './CellWorld.js';
 import { Cursor, updateCursor, drawCursor } from './Cursor.js';
-import { drawJunctions, drawLanes, drawOutlets, putJunction, updateTraffic, drawCarts } from './Junction.js';
+import { drawJunctions, drawLanes, drawOutlets, putJunction } from './Junction.js';
+import { updateTraffic, drawCarts } from './Cart.js';
 
 export class LaneWorld
 {

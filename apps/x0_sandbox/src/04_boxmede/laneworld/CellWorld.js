@@ -1,5 +1,6 @@
 import { uuid } from '@milque/util';
-import { connectJunction, createCart, getJunctionByIndex, getJunctionIndexFromCoords, isJunctionOutletForJunction, putJunction } from './Junction.js';
+import { connectJunction, getJunctionByIndex, getJunctionIndexFromCoords, isJunctionOutletForJunction, putJunction } from './Junction.js';
+import { createCart } from './Cart.js';
 
 export const CELL_SIZE = 128;
 
