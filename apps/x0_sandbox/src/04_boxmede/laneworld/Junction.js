@@ -12,8 +12,16 @@ export const NULL_SLOT_INDEX = -1;
 
 export class Junction
 {
-    constructor(parkingCapacity)
+    /**
+     * @param {number} coordX 
+     * @param {number} coordY 
+     * @param {number} parkingCapacity 
+     */
+    constructor(coordX, coordY, parkingCapacity)
     {
+        this.coordX = coordX;
+        this.coordY = coordY;
+
         /** @type {Array<JunctionIndex>} */
         this.outlets = [];
         /** @type {Array<JunctionIndex>} */
@@ -216,7 +224,7 @@ function canJunctionLaneAcceptCart(world, inletIndex, outletIndex)
 function tryAcquirePassThroughJunction(world, cartId, juncIndex)
 {
     if (juncIndex < 0) throw new Error('Junction index must be non-negative.');
-    let junc = world.juncs[juncIndex];
+    let junc = getJunctionByIndex(world, juncIndex);
     if (!junc.passing)
     {
         junc.passing = cartId;
@@ -284,7 +292,7 @@ export function forceCartOnJunction(world, cartId, juncIndex)
     if (!isNullJunction(world, cart.currentJunction))
     {
         // Remove from previous junction.
-        let junc = world.juncs[cart.currentJunction];
+        let junc = getJunctionByIndex(world, cart.currentJunction);
         if (!isNullJunction(world, cart.currentOutlet))
         {
             // Remove from previous lane.
@@ -434,7 +442,7 @@ export function getJunctionByIndex(world, juncIndex)
 export function getJunctionLaneByIndex(world, inletIndex, outletIndex)
 {
     if (typeof world !== 'object') throw new Error('Missing world.');
-    let junc = world.juncs[inletIndex];
+    let junc = getJunctionByIndex(world, inletIndex);
     return junc.lanes[outletIndex];
 }
 
@@ -444,10 +452,10 @@ export function getJunctionLaneByIndex(world, inletIndex, outletIndex)
  * @param {number} juncY 
  * @returns {Junction}
  */
-export function putJunction(world, juncX, juncY, parkingCapacity = 0)
+export function putJunction(world, coordX, coordY, parkingCapacity = 0)
 {
-    let junc = new Junction(parkingCapacity);
-    world.juncs[getJunctionIndexFromCoords(world, juncX, juncY)] = junc;
+    let junc = new Junction(coordX, coordY, parkingCapacity);
+    world.juncs[getJunctionIndexFromCoords(world, coordX, coordY)] = junc;
     return junc;
 }
 
@@ -484,9 +492,9 @@ export function getJunctionIndexFromCoords(world, juncX, juncY)
  */
 export function connectJunction(world, fromJuncIndex, toJuncIndex, laneLength = 4)
 {
-    let from = world.juncs[fromJuncIndex];
+    let from = getJunctionByIndex(world, fromJuncIndex);
     if (!from) throw new Error('Cannot connect from a non-existant junction.');
-    let to = world.juncs[toJuncIndex];
+    let to = getJunctionByIndex(world, toJuncIndex);
     if (!to) throw new Error('Cannot connect to a non-existant junction.');
 
     if (from.outlets.includes(toJuncIndex)) throw new Error('Cannot connect junctions that are already connected!');
@@ -505,10 +513,10 @@ export function connectJunction(world, fromJuncIndex, toJuncIndex, laneLength = 
 export function disconnectJunction(world, fromJuncIndex, toJuncIndex)
 {
     /** @type {Junction} */
-    let from = world.juncs[fromJuncIndex];
+    let from = getJunctionByIndex(world, fromJuncIndex);
     if (!from) throw new Error('Cannot disconnect from a non-existant junction.');
     /** @type {Junction} */
-    let to = world.juncs[toJuncIndex];
+    let to = getJunctionByIndex(world, toJuncIndex);
     if (!to) throw new Error('Cannot disconnect to a non-existant junction.');
 
     let outletIndex = from.outlets.indexOf(toJuncIndex);
@@ -536,7 +544,7 @@ export function disconnectJunction(world, fromJuncIndex, toJuncIndex)
  */
 export function isJunctionConnectedTo(world, fromJuncIndex, toJuncIndex)
 {
-    let junc = world.juncs[fromJuncIndex];
+    let junc = getJunctionByIndex(world, fromJuncIndex);
     // If outlet exist, can assume inlet exists as well.
     return junc.outlets.includes(toJuncIndex);
 }
@@ -560,7 +568,7 @@ export function isJunctionWithinBounds(world, juncX, juncY)
  */
 export function isJunctionOutletForJunction(world, outletIndex, juncIndex)
 {
-    let junc = world.juncs[juncIndex];
+    let junc = getJunctionByIndex(world, juncIndex);
     if (junc)
     {
         return junc.outlets.includes(outletIndex);
@@ -574,7 +582,7 @@ export function isJunctionOutletForJunction(world, outletIndex, juncIndex)
  */
 export function deleteJunction(world, juncIndex)
 {
-    let from = world.juncs[juncIndex];
+    let from = getJunctionByIndex(world, juncIndex);
     if (!from) throw new Error('Cannot delete a non-existant junction.');
     for(let inletIndex of from.inlets)
     {
@@ -584,7 +592,7 @@ export function deleteJunction(world, juncIndex)
     {
         disconnectJunction(world, juncIndex, outletIndex);
     }
-    world.juncs[juncIndex] = undefined;
+    delete world.juncs[juncIndex];
 }
 
 /**
@@ -595,10 +603,7 @@ export function deleteJunction(world, juncIndex)
 export function isNullJunction(world, juncIndex)
 {
     if (typeof world !== 'object') throw new Error('Missing world.');
-    return typeof juncIndex !== 'number'
-        || Number.isNaN(juncIndex)
-        || juncIndex < 0
-        || juncIndex >= world.juncs.length;
+    return !(juncIndex in world.juncs);
 }
 
 const LANE_SLOT_OFFSET = 0.5;
@@ -609,20 +614,14 @@ const LANE_SLOT_OFFSET = 0.5;
  */
 export function drawJunctions(ctx, world, cellSize = 128, laneRadius = 4, junctionSize = 32)
 {
-    for(let y = 0; y < world.height; ++y)
+    for(let junc of Object.values(world.juncs))
     {
-        for(let x = 0; x < world.width; ++x)
-        {
-            let junc = world.juncs[x + y * world.width];
-            if (junc)
-            {
-                let xx = x * cellSize;
-                let yy = y * cellSize;
-                ctx.lineWidth = laneRadius * 2;
-                ctx.strokeStyle = 'teal';
-                ctx.strokeRect(xx, yy, junctionSize, junctionSize);
-            }
-        }
+        const { coordX, coordY } = junc;
+        let xx = coordX * cellSize;
+        let yy = coordY * cellSize;
+        ctx.lineWidth = laneRadius * 2;
+        ctx.strokeStyle = 'teal';
+        ctx.strokeRect(xx, yy, junctionSize, junctionSize);
     }
 }
 

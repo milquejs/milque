@@ -6,6 +6,7 @@
  * @typedef {string} CartId
  * 
  * @typedef {import('./Junction.js').Junction} Junction
+ * @typedef {import('./Junction.js').JunctionIndex} JunctionIndex
  * @typedef {import('./Junction.js').Lane} Lane
  * @typedef {import('./Junction.js').Cart} Cart
  */
@@ -23,8 +24,8 @@ export class LaneWorld
         this.height = height;
         /** @type {Record<CartId, Cart>} */
         this.carts = {};
-        /** @type {Array<Junction>} */
-        this.juncs = new Array(width * height);
+        /** @type {Record<JunctionIndex, Junction>} */
+        this.juncs = {};
 
         this.worldTicks = 0;
         this.tickFrames = 0;
