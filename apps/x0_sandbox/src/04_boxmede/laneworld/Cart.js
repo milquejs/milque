@@ -1,6 +1,7 @@
-import { lerp, lookAt2, toDegrees, uuid } from '@milque/util';
+import { lerp, lookAt2, uuid } from '@milque/util';
 import { updateNavigation } from './Navigator.js';
 import { getJunctionByIndex, getJunctionCoordsFromIndex, getJunctionIndexFromCoords, getJunctionLaneByIndex, isJunctionOutletForJunction, isNullJunction, LANE_SLOT_OFFSET } from './Junction.js';
+import { CART_STATUS } from '../cellworld/Cart.js';
 
 /**
  * @typedef {import('./LaneWorld.js').LaneWorld} LaneWorld
@@ -446,8 +447,16 @@ export function drawCarts(ctx, cartManager, junctionMap, cellSize = 128, junctio
         {
             ctx.strokeStyle = 'gold';
         }
-        let xx = (cart.x + 0.5) * cellSize;
-        let yy = (cart.y + 0.5) * cellSize;
+        let ddx = 0;
+        let ddy = 0;
+        if (cart.state == CART_STATUS.RETURNING || cart.state === CART_STATUS.SENDING)
+        {
+            let dr = Math.atan2(dy, dx);
+            ddx = Math.cos(dr + Math.PI / 2) * 0.1;
+            ddy = Math.sin(dr + Math.PI / 2) * 0.1;
+        }
+        let xx = (cart.x + 0.5 + ddx) * cellSize;
+        let yy = (cart.y + 0.5 + ddy) * cellSize;
         drawCart(ctx, xx, yy, cart.radians, cellSize);
     }
 }

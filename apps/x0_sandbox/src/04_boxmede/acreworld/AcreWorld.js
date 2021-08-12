@@ -59,6 +59,16 @@ export function placeHousing(world, juncX, juncY)
     };
 }
 
+export function tryPlaceHousing(world, juncX, juncY)
+{
+    const map = world.junctionMap;
+    let juncIndex = getJunctionIndexFromCoords(map, juncX, juncY);
+    if (!map.hasJunction(juncIndex))
+    {
+        placeHousing(world, juncX, juncY);
+    }
+}
+
 export function placeRoad(world, fromX, fromY, toX, toY)
 {
     const map = world.junctionMap;
@@ -132,10 +142,10 @@ export function createWorld(game)
 {
     let world = new AcreWorld(16, 12);
 
-    placeHousing(world, 1, 1);
-    placeHousing(world, 1, 2);
-    placeHousing(world, 2, 2);
-    placeHousing(world, 1, 3);
+    tryPlaceHousing(world, 1, 1);
+    tryPlaceHousing(world, 1, 2);
+    tryPlaceHousing(world, 2, 2);
+    tryPlaceHousing(world, 1, 3);
 
     placeFactory(world, 4, 4);
     return world;
@@ -388,11 +398,11 @@ function setSolid(world, map, juncIndex)
 export function drawWorld(game, ctx, world)
 {
     const map = world.junctionMap;
-    ctx.lineWidth = 1;
     if (world.cursor.status !== CURSOR_ACTION.NONE)
     {
         const mapWidth = map.width;
         const mapHeight = map.height;
+        ctx.lineWidth = 1;
         drawGrid(ctx, mapWidth, mapHeight, CELL_SIZE);
     }
     drawOutlets(ctx, map, CELL_SIZE);
@@ -402,8 +412,11 @@ export function drawWorld(game, ctx, world)
     drawCarts(ctx, world.cartManager, map, CELL_SIZE);
     drawHousings(ctx, world, CELL_SIZE);
     drawFactories(ctx, world, CELL_SIZE);
-    ctx.lineWidth = 4;
-    drawCursor(ctx, world.cursor.screenX, world.cursor.screenY, CELL_SIZE);
+    if (world.cursor.status !== CURSOR_ACTION.NONE)
+    {
+        ctx.lineWidth = 2;
+        drawCursor(ctx, world.cursor.screenX, world.cursor.screenY, CELL_SIZE, '#333333');
+    }
 }
 
 /**

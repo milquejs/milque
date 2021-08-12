@@ -1,4 +1,4 @@
-export function drawGrid(ctx, gridCols, gridRows, gridCellSize, color = '#333333')
+export function drawGrid(ctx, gridCols, gridRows, gridCellSize, color = '#222222')
 {
     for(let y = 0; y < gridRows; ++y)
     {
