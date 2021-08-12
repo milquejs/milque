@@ -25,6 +25,7 @@ export class JunctionMap
      */
     hasJunction(juncIndex)
     {
+        if (juncIndex < 0) return false;
         return Boolean(this.juncs[juncIndex]);
     }
 
@@ -479,7 +480,7 @@ export function removeJunction(map, juncIndex)
  */
 export function isNullJunction(map, juncIndex)
 {
-    return map.hasJunction(juncIndex);
+    return !map.hasJunction(juncIndex);
 }
 
 export const LANE_SLOT_OFFSET = 0.5;

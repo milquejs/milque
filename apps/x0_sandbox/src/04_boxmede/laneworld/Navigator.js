@@ -23,10 +23,9 @@ const CART_STATE = {
  * @param {LaneWorld} world 
  * @param {string} cartId 
  */
-export function updateNavigation(world, cartId)
+export function updateNavigation(cartManager, junctionMap, cartId)
 {
-    let map = world.juncMap;
-    let cart = getCartById(world, cartId);
+    let cart = getCartById(cartManager, cartId);
     switch(cart.state)
     {
         case CART_STATE.READY:
@@ -34,10 +33,10 @@ export function updateNavigation(world, cartId)
             {
                 cart.lastStateChangedTicks = cart.lastUpdatedTicks;
 
-                let dest = findValidDestination(world, cart);
-                if (!isNullJunction(map, dest))
+                let dest = findValidDestination(junctionMap, cart);
+                if (!isNullJunction(junctionMap, dest))
                 {
-                    let path = findPathToJunction(world, cart.currentJunction, dest);
+                    let path = findPathToJunction(junctionMap, cart.currentJunction, dest);
                     if (path.length > 0)
                     {
                         cart.state = CART_STATE.SENDING;
@@ -80,9 +79,9 @@ export function updateNavigation(world, cartId)
             if (cart.lastUpdatedTicks - cart.lastStateChangedTicks > PROCESSING_TICKS)
             {
                 cart.lastStateChangedTicks = cart.lastUpdatedTicks;
-                if (!isNullJunction(map, cart.home))
+                if (!isNullJunction(junctionMap, cart.home))
                 {
-                    let path = findPathToJunction(world, cart.currentJunction, cart.home);
+                    let path = findPathToJunction(junctionMap, cart.currentJunction, cart.home);
                     if (path.length > 0)
                     {
                         cart.state = CART_STATE.RETURNING;
@@ -134,20 +133,22 @@ export function updateNavigation(world, cartId)
 
 /**
  * 
- * @param {LaneWorld} world 
+ * @param {JunctionMap} junctionMap 
  * @param {*} cart 
  * @returns 
  */
-function findValidDestination(world, cart)
+function findValidDestination(junctionMap, cart)
 {
     let destinations = [];
-    let map = world.juncMap;
-    for(let i = 0; i < map.length; ++i)
+    for(let i = 0; i < junctionMap.length; ++i)
     {
-        let junc = map.getJunction(i);
-        if (junc && junc.parkingCapacity > 0)
+        if (junctionMap.hasJunction(i))
         {
-            destinations.push(i);
+            let junc = junctionMap.getJunction(i);
+            if (junc.parkingCapacity > 0)
+            {
+                destinations.push(i);
+            }
         }
     }
     return destinations[Math.floor(Math.random() * destinations.length)];
@@ -160,11 +161,10 @@ function findValidDestination(world, cart)
  * @param {JunctionIndex} toJunc 
  * @returns 
  */
-function findPathToJunction(world, fromJunc, toJunc)
+function findPathToJunction(junctionMap, fromJunc, toJunc)
 {
-    let map = world.juncMap;
     let path = astarSearch(fromJunc, toJunc, (juncIndex) => {
-        let junc = map.getJunction(juncIndex);
+        let junc = junctionMap.getJunction(juncIndex);
         if (junc)
         {
             return junc.outlets;
@@ -174,8 +174,8 @@ function findPathToJunction(world, fromJunc, toJunc)
             return [];
         }
     }, (fromIndex, toIndex) => {
-        let [fromJuncX, fromJuncY] = getJunctionCoordsFromIndex(map, fromIndex);
-        let [toJuncX, toJuncY] = getJunctionCoordsFromIndex(map, toIndex);
+        let [fromJuncX, fromJuncY] = getJunctionCoordsFromIndex(junctionMap, fromIndex);
+        let [toJuncX, toJuncY] = getJunctionCoordsFromIndex(junctionMap, toIndex);
         return Math.abs(toJuncX - fromJuncX) + Math.abs(toJuncY - fromJuncY);
     });
     return path;
