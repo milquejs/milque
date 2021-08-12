@@ -551,11 +551,14 @@ export function drawLanes(ctx, map, cellSize)
                 ctx.arc(beginX, beginY, laneRadius / 2, 0, Math.PI * 2);
                 ctx.stroke();
 
+                // Lane Index
+                /*
                 ctx.lineWidth = 1;
                 ctx.font = '32px Arial';
                 ctx.strokeStyle = 'white';
                 ctx.strokeText(`${laneId++}`, beginX + 8, beginY - 8);
                 ctx.lineWidth = laneRadius / 4;
+                */
 
                 for(let i = 0; i < laneLength; ++i)
                 {
@@ -586,7 +589,7 @@ export function drawLanes(ctx, map, cellSize)
 export function drawOutlets(ctx, map, cellSize)
 {
     const juncSize = cellSize / 2;
-    const laneRadius = juncSize / 3;
+    const laneRadius = juncSize;
     ctx.lineWidth = laneRadius;
     ctx.lineCap = 'round';
     ctx.strokeStyle = '#333333';

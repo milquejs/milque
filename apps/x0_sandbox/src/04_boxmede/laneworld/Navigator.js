@@ -1,4 +1,4 @@
-import { getJunctionCoordsFromIndex, isNullJunction } from './Junction.js';
+import { getJunctionCoordsFromIndex, isNullJunction, randomOutletJunctionFromJunction } from './Junction.js';
 import { getCartById, NULL_JUNCTION_INDEX } from './Cart.js';
 
 import { astarSearch } from '../util/astar.js';
@@ -10,6 +10,7 @@ import { astarSearch } from '../util/astar.js';
 const SEARCH_VALID_DESTINATION_RATE = 5;
 const PROCESSING_TICKS = 5;
 const RESTING_TICKS = 5;
+const FORCE_RANDOM_WALK = false;
 
 const CART_STATE = {
     READY: 0,
@@ -26,6 +27,13 @@ const CART_STATE = {
 export function updateNavigation(cartManager, junctionMap, cartId)
 {
     let cart = getCartById(cartManager, cartId);
+    if (FORCE_RANDOM_WALK)
+    {
+        let next = randomOutletJunctionFromJunction(junctionMap, cart.currentJunction);
+        cart.path = [next];
+        cart.pathIndex = 0;
+        return next;
+    }
     switch(cart.state)
     {
         case CART_STATE.READY:
@@ -53,7 +61,12 @@ export function updateNavigation(cartManager, junctionMap, cartId)
                 let i = cart.path.indexOf(cart.currentJunction);
                 if (i < 0)
                 {
-                    throw new Error('Cart not on path for index ' + i);
+                    // Reset back to home.
+                    cart.currentJunction = cart.home;
+                    cart.state = CART_STATE.RESTING;
+                    cart.lastStateChangedTicks = cart.lastUpdatedTicks;
+                    cart.path = [];
+                    cart.pathIndex = -1;
                 }
                 else
                 {
@@ -70,7 +83,20 @@ export function updateNavigation(cartManager, junctionMap, cartId)
                     else
                     {
                         // We are moving forward!
-                        return cart.path[i];
+                        let juncIndex = cart.path[i];
+                        if (!junctionMap.hasJunction(juncIndex))
+                        {
+                            // Path is no longer valid. Reset back to home.
+                            cart.currentJunction = cart.home;
+                            cart.state = CART_STATE.RESTING;
+                            cart.lastStateChangedTicks = cart.lastUpdatedTicks;
+                            cart.path = [];
+                            cart.pathIndex = -1;
+                        }
+                        else
+                        {
+                            return juncIndex;
+                        }
                     }
                 }
             }
@@ -98,7 +124,13 @@ export function updateNavigation(cartManager, junctionMap, cartId)
                 let i = cart.path.indexOf(cart.currentJunction);
                 if (i < 0)
                 {
-                    throw new Error('Cart not on path for index ' + i);
+                    // Reset back to home.
+                    cart.currentJunction = cart.home;
+                    cart.state = CART_STATE.RESTING;
+                    cart.lastStateChangedTicks = cart.lastUpdatedTicks;
+
+                    cart.path = [];
+                    cart.pathIndex = -1;
                 }
                 else
                 {
@@ -115,7 +147,20 @@ export function updateNavigation(cartManager, junctionMap, cartId)
                     else
                     {
                         // We are moving forward!
-                        return cart.path[i];
+                        let juncIndex = cart.path[i];
+                        if (!junctionMap.hasJunction(juncIndex))
+                        {
+                            // Path is no longer valid. Reset back to home.
+                            cart.currentJunction = cart.home;
+                            cart.state = CART_STATE.RESTING;
+                            cart.lastStateChangedTicks = cart.lastUpdatedTicks;
+                            cart.path = [];
+                            cart.pathIndex = -1;
+                        }
+                        else
+                        {
+                            return juncIndex;
+                        }
                     }
                 }
             }
