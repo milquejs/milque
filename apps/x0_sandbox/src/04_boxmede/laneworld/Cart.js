@@ -1,4 +1,4 @@
-import { lerp, lookAt2, uuid } from '@milque/util';
+import { lerp, lookAt2, toDegrees, uuid } from '@milque/util';
 import { updateNavigation } from './Navigator.js';
 import { getJunctionByIndex, getJunctionCoordsFromIndex, getJunctionIndexFromCoords, getJunctionLaneByIndex, isJunctionOutletForJunction, isNullJunction, LANE_SLOT_OFFSET } from './Junction.js';
 
@@ -73,6 +73,7 @@ export function createCart(cartManager, junctionMap, juncX, juncY)
     {
         throw new Error('Unable to park cart on junction.');
     }
+    return cart;
 }
 
 /**
@@ -445,9 +446,32 @@ export function drawCarts(ctx, cartManager, junctionMap, cellSize = 128, junctio
         {
             ctx.strokeStyle = 'gold';
         }
-        ctx.beginPath();
-        ctx.arc((cart.x + 0.5) * cellSize, (cart.y + 0.5) * cellSize, cartRadius, cart.radians, cart.radians + Math.PI);
-        ctx.stroke();
+        let xx = (cart.x + 0.5) * cellSize;
+        let yy = (cart.y + 0.5) * cellSize;
+        drawCart(ctx, xx, yy, cart.radians, cellSize);
     }
 }
- 
+
+export function drawCart(ctx, x, y, rotation, cellSize)
+{
+    let width = cellSize * 0.25;
+    let height = cellSize * 0.4;
+    let halfWidth = width / 2;
+    let halfHeight = height / 2;
+    let padding = 2;
+    let hoodSize = height * 0.3;
+    let topSize = height * 0.2;
+    ctx.translate(x, y);
+    ctx.rotate(rotation + Math.PI / 2);
+    {
+        ctx.fillStyle = 'green';
+        ctx.fillRect(-halfWidth, -halfHeight, width, height);
+        ctx.fillStyle = 'lime';
+        ctx.fillRect(-halfWidth + padding, -halfHeight + hoodSize, width - padding * 2, hoodSize + topSize);
+        ctx.fillStyle = 'gold';
+        ctx.fillRect(-halfWidth + padding, -halfHeight, padding, padding);
+        ctx.fillRect(halfWidth - padding * 2, -halfHeight, padding, padding);
+    }
+    ctx.rotate(-rotation - Math.PI / 2);
+    ctx.translate(-x, -y);
+}

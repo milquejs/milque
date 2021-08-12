@@ -1,6 +1,6 @@
 import { uuid } from '@milque/util';
 import { DIRECTIONAL_ENCODING_BITS, getDirectionalVectorFromEncoding, nextDirectionalEncoding, randomSingleDirectionalEncoding } from '../cellworld/Directional.js';
-import { CartManager, createCart, drawCarts, updateTraffic } from '../laneworld/Cart.js';
+import { CartManager, createCart, drawCart, drawCarts, updateTraffic } from '../laneworld/Cart.js';
 import { connectJunctions, disconnectJunctions, drawJunctions, drawLanes, drawOutlets, getJunctionCoordsFromIndex, getJunctionIndexFromCoords, isJunctionConnectedTo, isJunctionWithinBounds, JunctionMap, putJunction, removeJunction } from '../laneworld/Junction.js';
 import { drawGrid } from '../render2d.js';
 import { CURSOR_ACTION, makeRoad } from './RoadMaker.js';
@@ -9,7 +9,7 @@ import { CURSOR_ACTION, makeRoad } from './RoadMaker.js';
  * @typedef {import('../../game/Game.js').Game} Game
  */
 
-export const CELL_SIZE = 64;
+export const CELL_SIZE = 32;
 export const DRAG_MARGIN = 0.9;
 
 export class AcreWorld
@@ -46,10 +46,16 @@ export function placeHousing(world, juncX, juncY)
 {
     putDirectableJunction(world, world.junctionMap, juncX, juncY, 2);
     let id = uuid();
+    let cartA = createCart(world.cartManager, world.junctionMap, juncX, juncY);
+    let cartB = createCart(world.cartManager, world.junctionMap, juncX, juncY);
     world.housing[id] = {
         coordX: juncX,
         coordY: juncY,
         junction: getJunctionIndexFromCoords(world.junctionMap, juncX, juncY),
+        carts: [
+            cartA.id,
+            cartB.id,
+        ]
     };
 }
 
@@ -124,13 +130,14 @@ export function getJunctionCoordsFromCell(acreWorld, cellX, cellY)
 
 export function createWorld(game)
 {
-    let world = new AcreWorld(8, 6);
+    let world = new AcreWorld(16, 12);
 
     placeHousing(world, 1, 1);
-    placeFactory(world, 1, 2);
+    placeHousing(world, 1, 2);
+    placeHousing(world, 2, 2);
+    placeHousing(world, 1, 3);
 
-    createCart(world.cartManager, world.junctionMap, 1, 1);
-    createCart(world.cartManager, world.junctionMap, 1, 1);
+    placeFactory(world, 4, 4);
     return world;
 }
 
@@ -389,7 +396,7 @@ export function drawWorld(game, ctx, world)
         drawGrid(ctx, mapWidth, mapHeight, CELL_SIZE);
     }
     drawOutlets(ctx, map, CELL_SIZE);
-    drawJunctions(ctx, map, CELL_SIZE);
+    // drawJunctions(ctx, map, CELL_SIZE);
     // drawLanes(ctx, map, CELL_SIZE);
     drawSolids(ctx, world, map, CELL_SIZE);
     drawCarts(ctx, world.cartManager, map, CELL_SIZE);
