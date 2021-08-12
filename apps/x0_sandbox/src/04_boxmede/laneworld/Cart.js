@@ -3,6 +3,10 @@ import { updateNavigation } from './Navigator.js';
 import { getJunctionByIndex, getJunctionCoordsFromIndex, getJunctionIndexFromCoords, getJunctionLaneByIndex, isJunctionOutletForJunction, isNullJunction, LANE_SLOT_OFFSET } from './Junction.js';
 import { Lane } from '../cellworld/Lane.js';
 
+/**
+ * @typedef {import('./LaneWorld.js').LaneWorld} LaneWorld
+ */
+
 export const NULL_JUNCTION_INDEX = -1;
 export const NULL_SLOT_INDEX = -1;
 
@@ -25,7 +29,8 @@ export class Cart
         this.radians = 0;
         this.speed = 0;
 
-        this.home = getJunctionIndexFromCoords(world, juncX, juncY);
+        let map = world.map;
+        this.home = getJunctionIndexFromCoords(map, juncX, juncY);
         this.path = [];
         this.pathIndex = -1;
         this.state = 0;
@@ -44,7 +49,8 @@ export function createCart(world, juncX, juncY)
     let cartId = uuid();
     let cart = new Cart(world, cartId, juncX, juncY);
     world.carts[cartId] = cart;
-    let juncIndex = getJunctionIndexFromCoords(world, juncX, juncY);
+    let map = world.map;
+    let juncIndex = getJunctionIndexFromCoords(map, juncX, juncY);
     if (tryAcquireParkingInJunction(world, cartId, juncIndex))
     {
         forceCartOnJunction(world, cartId, juncIndex);
@@ -55,16 +61,24 @@ export function createCart(world, juncX, juncY)
     }
 }
 
+/**
+ * @param {LaneWorld} world 
+ * @param {*} cartId 
+ * @param {*} outletIndex 
+ * @param {*} steps 
+ * @returns 
+ */
 export function moveCartTowards(world, cartId, outletIndex, steps)
 {
     let cart = getCartById(world, cartId);
-    let junc = getJunctionByIndex(world, cart.currentJunction);
+    let map = world.juncMap;
+    let junc = getJunctionByIndex(map, cart.currentJunction);
     if (!junc.outlets.includes(outletIndex))
     {
-        throw new Error(`Missing outlet '${getJunctionCoordsFromIndex(world, outletIndex)}' at junction '${getJunctionCoordsFromIndex(world, cart.currentJunction)}' to move cart towards.`);
+        throw new Error(`Missing outlet '${getJunctionCoordsFromIndex(map, outletIndex)}' at junction '${getJunctionCoordsFromIndex(map, cart.currentJunction)}' to move cart towards.`);
     }
     let lane = junc.lanes[outletIndex];
-    if (isNullJunction(world, cart.currentOutlet))
+    if (isNullJunction(map, cart.currentOutlet))
     {
         // Not on the way yet. Try to merge into a lane.
         let furthest = getFurthestAvailableSlotInLane(world, lane, 0);
@@ -92,7 +106,7 @@ export function moveCartTowards(world, cartId, outletIndex, steps)
         if (furthest >= lane.length && nextSlot >= lane.length)
         {
             let aheadNextJunc = lookAheadNavigation(world, cartId, outletIndex);
-            if (isNullJunction(world, aheadNextJunc))
+            if (isNullJunction(map, aheadNextJunc))
             {
                 // Navigation is stopping at this junction. Slow down.
                 if (tryAcquireParkingInJunction(world, cartId, outletIndex))
@@ -143,7 +157,8 @@ export function moveCartTowards(world, cartId, outletIndex, steps)
 function tryAcquireParkingInJunction(world, cartId, juncIndex)
 {
     if (juncIndex < 0) throw new Error('Junction index must be non-negative.');
-    let junc = getJunctionByIndex(world, juncIndex);
+    let map = world.juncMap;
+    let junc = getJunctionByIndex(map, juncIndex);
     if (junc.parking < junc.parkingCapacity)
     {
         let cart = getCartById(world, cartId);
@@ -160,16 +175,18 @@ function tryAcquireParkingInJunction(world, cartId, juncIndex)
 function canJunctionLaneAcceptCart(world, inletIndex, outletIndex)
 {
     if (inletIndex < 0 || outletIndex < 0) throw new Error('Junction index must be non-negative.');
-    let lane = getJunctionLaneByIndex(world, inletIndex, outletIndex);
-    if (!lane) throw new Error(`Cannot find lane for given inlet '${getJunctionCoordsFromIndex(world, inletIndex)}' and outlet '${getJunctionCoordsFromIndex(world, outletIndex)}'.`);
-    let slot = getFurthestAvailableSlotInLane(world, lane, 0);
+    let map = world.juncMap;
+    let lane = getJunctionLaneByIndex(map, inletIndex, outletIndex);
+    if (!lane) throw new Error(`Cannot find lane for given inlet '${getJunctionCoordsFromIndex(map, inletIndex)}' and outlet '${getJunctionCoordsFromIndex(map, outletIndex)}'.`);
+    let slot = getFurthestAvailableSlotInLane(map, lane, 0);
     return slot >= 0;
 }
 
 function tryAcquirePassThroughJunction(world, cartId, juncIndex)
 {
     if (juncIndex < 0) throw new Error('Junction index must be non-negative.');
-    let junc = getJunctionByIndex(world, juncIndex);
+    let map = world.juncMap;
+    let junc = getJunctionByIndex(map, juncIndex);
     if (!junc.passing)
     {
         junc.passing = cartId;
@@ -201,7 +218,7 @@ function lookAheadNavigation(world, cartId, outletIndex)
     return NULL_JUNCTION_INDEX;
 }
 
-function getFurthestAvailableSlotInLane(world, lane, initialSlot)
+function getFurthestAvailableSlotInLane(map, lane, initialSlot)
 {
     if (!(lane instanceof Lane)) throw new Error(`Invalid lane - ${lane}`);
     if (initialSlot < 0) throw new Error('Slot must be non-negative.');
@@ -227,11 +244,12 @@ export function forceCartOnJunction(world, cartId, juncIndex)
         throw new Error('Invalid junction index.');
     }
     let cart = world.carts[cartId];
-    if (!isNullJunction(world, cart.currentJunction))
+    let map = world.juncMap;
+    if (!isNullJunction(map, cart.currentJunction))
     {
         // Remove from previous junction.
-        let junc = getJunctionByIndex(world, cart.currentJunction);
-        if (!isNullJunction(world, cart.currentOutlet))
+        let junc = getJunctionByIndex(map, cart.currentJunction);
+        if (!isNullJunction(map, cart.currentOutlet))
         {
             // Remove from previous lane.
             let lane = junc.lanes[cart.currentOutlet];
@@ -266,9 +284,10 @@ export function forceCartOnJunction(world, cartId, juncIndex)
 export function forceCartOnLane(world, cartId, outlet, slot)
 {
     let cart = getCartById(world, cartId);
-    let junc = getJunctionByIndex(world, cart.currentJunction);
+    let map = world.juncMap;
+    let junc = getJunctionByIndex(map, cart.currentJunction);
     let lane = junc.lanes[outlet];
-    if (!isNullJunction(world, cart.currentOutlet))
+    if (!isNullJunction(map, cart.currentOutlet))
     {
         if (cart.currentSlot >= 0)
         {
@@ -292,9 +311,9 @@ export function forceCartOnLane(world, cartId, outlet, slot)
             throw new Error('Found junction parking under 0.');
         }
     }
-    if (isNullJunction(world, outlet) || !isJunctionOutletForJunction(world, outlet, cart.currentJunction))
+    if (isNullJunction(map, outlet) || !isJunctionOutletForJunction(map, outlet, cart.currentJunction))
     {
-        throw new Error(`Cannot put cart on non-existant lane with inlet '${getJunctionCoordsFromIndex(world, cart.currentJunction)}' and outlet '${getJunctionCoordsFromIndex(world, outlet)}'.`);
+        throw new Error(`Cannot put cart on non-existant lane with inlet '${getJunctionCoordsFromIndex(map, cart.currentJunction)}' and outlet '${getJunctionCoordsFromIndex(map, outlet)}'.`);
     }
     if (slot < 0 || slot >= lane.length)
     {
@@ -310,6 +329,7 @@ export function forceCartOnLane(world, cartId, outlet, slot)
  */
 export function updateTraffic(world)
 {
+    let map = world.juncMap;
     const worldTicks = ++world.worldTicks;
     // Update carts
     for(let cart of Object.values(world.carts))
@@ -319,30 +339,31 @@ export function updateTraffic(world)
             let targetOutlet = cart.currentOutlet;
             cart.lastUpdatedTicks = worldTicks;
             // Carts should always be on a junction.
-            if (isNullJunction(world, cart.currentJunction))
+            if (isNullJunction(map, cart.currentJunction))
             {
                 throw new Error('Cart is not on a junction!');
             }
             // Passing junctions only last for 1 tick.
-            if (!isNullJunction(world, cart.passingJunction))
+            if (!isNullJunction(map, cart.passingJunction))
             {
-                let junc = getJunctionByIndex(world, cart.passingJunction);
+                let map = world.juncMap;
+                let junc = getJunctionByIndex(map, cart.passingJunction);
                 junc.passing = null;
                 cart.passingJunction = NULL_JUNCTION_INDEX;
             }
             // If not moving on a lane, try starting to.
-            if (isNullJunction(world, cart.currentOutlet))
+            if (isNullJunction(map, cart.currentOutlet))
             {
                 targetOutlet = updateNavigation(world, cart.id);
-                if (isNullJunction(world, targetOutlet))
+                if (isNullJunction(map, targetOutlet))
                 {
                     continue;
                 }
             }
             // Validate cart junction and outlet are correct before moving.
-            if (!isJunctionOutletForJunction(world, targetOutlet, cart.currentJunction))
+            if (!isJunctionOutletForJunction(map, targetOutlet, cart.currentJunction))
             {
-                throw new Error(`Next junction outlet '${getJunctionCoordsFromIndex(world, targetOutlet)}' is not for junction '${getJunctionCoordsFromIndex(world, cart.currentJunction)}'.`);
+                throw new Error(`Next junction outlet '${getJunctionCoordsFromIndex(map, targetOutlet)}' is not for junction '${getJunctionCoordsFromIndex(map, cart.currentJunction)}'.`);
             }
             moveCartTowards(world, cart.id, targetOutlet, cart.maxLaneSpeed);
         }
@@ -372,23 +393,24 @@ export function drawCarts(ctx, world, cellSize = 128, junctionSize = 32, cartRad
     const OFFSET_FRAMES = 5;
     let frameTime = Math.max(1, Math.min(FRAMES_PER_TICK, FRAMES_PER_TICK + OFFSET_FRAMES - (world.tickFrames + 1)));
     let dt = 1 / frameTime;
+    let map = world.juncMap;
     for(let cart of Object.values(world.carts))
     {
-        let [jx, jy] = getJunctionCoordsFromIndex(world, cart.currentJunction);
+        let [jx, jy] = getJunctionCoordsFromIndex(map, cart.currentJunction);
         let kx = jx;
         let ky = jy;
-        if (!isNullJunction(world, cart.currentOutlet))
+        if (!isNullJunction(map, cart.currentOutlet))
         {
-            if (frameTime > FRAMES_PER_HALF_TICK && !isNullJunction(world, cart.passingJunction))
+            if (frameTime > FRAMES_PER_HALF_TICK && !isNullJunction(map, cart.passingJunction))
             {
-                let [nx, ny] = getJunctionCoordsFromIndex(world, cart.passingJunction);
+                let [nx, ny] = getJunctionCoordsFromIndex(map, cart.passingJunction);
                 kx = nx;
                 ky = ny;
             }
             else if (cart.currentSlot >= 0)
             {
-                let [nx, ny] = getJunctionCoordsFromIndex(world, cart.currentOutlet);
-                let lane = getJunctionLaneByIndex(world, cart.currentJunction, cart.currentOutlet);
+                let [nx, ny] = getJunctionCoordsFromIndex(map, cart.currentOutlet);
+                let lane = getJunctionLaneByIndex(map, cart.currentJunction, cart.currentOutlet);
                 let ratio = (cart.currentSlot + LANE_SLOT_OFFSET) / lane.length;
                 kx = jx + (nx - jx) * ratio;
                 ky = jy + (ny - jy) * ratio;
@@ -410,7 +432,7 @@ export function drawCarts(ctx, world, cellSize = 128, junctionSize = 32, cartRad
                 cart.radians = lookAt2(cart.radians, dr, 0.2);
             }
         }
-        if (!isNullJunction(world, cart.parkingJunction))
+        if (!isNullJunction(map, cart.parkingJunction))
         {
             ctx.strokeStyle = 'gray';
         }

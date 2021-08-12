@@ -16,6 +16,11 @@ export const DIRECTIONAL_ENCODING = {
 };
 export const DIRECTIONAL_ENCODING_VALUES = Object.values(DIRECTIONAL_ENCODING);
 
+export function nextDirectionalEncoding(encoding)
+{
+    return rotateDirectionalEncoding(encoding, 1);
+}
+
 export function randomSingleDirectionalEncoding()
 {
     return 1 << Math.floor(Math.random() * DIRECTIONAL_ENCODING_BITS);

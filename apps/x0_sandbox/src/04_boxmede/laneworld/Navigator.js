@@ -25,6 +25,7 @@ const CART_STATE = {
  */
 export function updateNavigation(world, cartId)
 {
+    let map = world.juncMap;
     let cart = getCartById(world, cartId);
     switch(cart.state)
     {
@@ -34,7 +35,7 @@ export function updateNavigation(world, cartId)
                 cart.lastStateChangedTicks = cart.lastUpdatedTicks;
 
                 let dest = findValidDestination(world, cart);
-                if (!isNullJunction(world, dest))
+                if (!isNullJunction(map, dest))
                 {
                     let path = findPathToJunction(world, cart.currentJunction, dest);
                     if (path.length > 0)
@@ -79,7 +80,7 @@ export function updateNavigation(world, cartId)
             if (cart.lastUpdatedTicks - cart.lastStateChangedTicks > PROCESSING_TICKS)
             {
                 cart.lastStateChangedTicks = cart.lastUpdatedTicks;
-                if (!isNullJunction(world, cart.home))
+                if (!isNullJunction(map, cart.home))
                 {
                     let path = findPathToJunction(world, cart.currentJunction, cart.home);
                     if (path.length > 0)
@@ -131,12 +132,19 @@ export function updateNavigation(world, cartId)
     return NULL_JUNCTION_INDEX;
 }
 
+/**
+ * 
+ * @param {LaneWorld} world 
+ * @param {*} cart 
+ * @returns 
+ */
 function findValidDestination(world, cart)
 {
     let destinations = [];
-    for(let i = 0; i < world.juncs.length; ++i)
+    let map = world.juncMap;
+    for(let i = 0; i < map.length; ++i)
     {
-        let junc = world.juncs[i];
+        let junc = map.getJunction(i);
         if (junc && junc.parkingCapacity > 0)
         {
             destinations.push(i);
@@ -145,10 +153,18 @@ function findValidDestination(world, cart)
     return destinations[Math.floor(Math.random() * destinations.length)];
 }
 
+/**
+ * 
+ * @param {LaneWorld} world 
+ * @param {JunctionIndex} fromJunc 
+ * @param {JunctionIndex} toJunc 
+ * @returns 
+ */
 function findPathToJunction(world, fromJunc, toJunc)
 {
+    let map = world.juncMap;
     let path = astarSearch(fromJunc, toJunc, (juncIndex) => {
-        let junc = world.juncs[juncIndex];
+        let junc = map.getJunction(juncIndex);
         if (junc)
         {
             return junc.outlets;
@@ -158,8 +174,8 @@ function findPathToJunction(world, fromJunc, toJunc)
             return [];
         }
     }, (fromIndex, toIndex) => {
-        let [fromJuncX, fromJuncY] = getJunctionCoordsFromIndex(world, fromIndex);
-        let [toJuncX, toJuncY] = getJunctionCoordsFromIndex(world, toIndex);
+        let [fromJuncX, fromJuncY] = getJunctionCoordsFromIndex(map, fromIndex);
+        let [toJuncX, toJuncY] = getJunctionCoordsFromIndex(map, toIndex);
         return Math.abs(toJuncX - fromJuncX) + Math.abs(toJuncY - fromJuncY);
     });
     return path;

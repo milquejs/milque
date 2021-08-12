@@ -14,7 +14,7 @@
 import { drawGrid } from '../render2d.js';
 import { CELL_SIZE, CellWorld, putHousing, drawHousings } from './CellWorld.js';
 import { Cursor, updateCursor, drawCursor } from './Cursor.js';
-import { drawJunctions, drawLanes, drawOutlets, putJunction } from './Junction.js';
+import { drawJunctions, drawLanes, drawOutlets, JunctionMap, putJunction } from './Junction.js';
 import { updateTraffic, drawCarts } from './Cart.js';
 
 export class LaneWorld
@@ -25,8 +25,7 @@ export class LaneWorld
         this.height = height;
         /** @type {Record<CartId, Cart>} */
         this.carts = {};
-        /** @type {Record<JunctionIndex, Junction>} */
-        this.juncs = {};
+        this.juncMap = new JunctionMap(width, height);
 
         this.worldTicks = 0;
         this.tickFrames = 0;

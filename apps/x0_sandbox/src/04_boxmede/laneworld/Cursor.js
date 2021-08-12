@@ -1,6 +1,6 @@
 import { bresenhamLine } from '@milque/util';
 import { CELL_SIZE, getJunctionCoordsFromCell, putTwoWayRoad } from './CellWorld.js';
-import { deleteJunction, getJunctionByIndex, getJunctionIndexFromCoords } from './Junction.js';
+import { removeJunction, getJunctionByIndex, getJunctionIndexFromCoords } from './Junction.js';
 
 export const CURSOR_STATUS = {
     NONE: 0,
@@ -110,7 +110,7 @@ export function updateCursor(display, input, cursor, cellWorld)
                 let junc = getJunctionByIndex(laneWorld, juncIndex);
                 if (junc)
                 {
-                    deleteJunction(laneWorld, juncIndex);
+                    removeJunction(laneWorld, juncIndex);
                 }
                 cursor.dragCellX = x;
                 cursor.dragCellY = y;
