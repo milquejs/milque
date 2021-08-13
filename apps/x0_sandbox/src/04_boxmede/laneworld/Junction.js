@@ -446,14 +446,13 @@ export function isJunctionOutletForJunction(map, outletIndex, juncIndex)
 export function removeJunction(map, juncIndex)
 {
     let from = map.getJunction(juncIndex);
-    if (!from.isEmpty())
+    if (!isJunctionEmpty(map, juncIndex))
     {
         let outlets = from.getOutlets();
         for(let outlet of outlets)
         {
             disconnectJunctions(map, juncIndex, outlet);
-            let junc = map.getJunction(outlet);
-            if (junc.isEmpty())
+            if (isJunctionEmpty(map, outlet))
             {
                 map.deleteJunction(outlet);
             }
@@ -462,8 +461,7 @@ export function removeJunction(map, juncIndex)
         for(let inlet of inlets)
         {
             disconnectJunctions(map, inlet, juncIndex);
-            let junc = map.getJunction(inlet);
-            if (junc.isEmpty())
+            if (isJunctionEmpty(map, inlet))
             {
                 map.deleteJunction(inlet);
             }
