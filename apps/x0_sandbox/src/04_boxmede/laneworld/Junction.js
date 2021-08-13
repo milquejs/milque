@@ -1,4 +1,3 @@
-
 /**
  * @typedef {[number, number]} JunctionCoords
  * @typedef {number} JunctionIndex
@@ -478,9 +477,20 @@ export function removeJunction(map, juncIndex)
  * @param {JunctionIndex} juncIndex 
  * @returns {boolean}
  */
+export function isJunctionEmpty(map, juncIndex)
+{
+    let junc = map.getJunction(juncIndex);
+    return junc.isEmpty();
+}
+
+/**
+ * @param {JunctionMap} map 
+ * @param {JunctionIndex} juncIndex 
+ * @returns {boolean}
+ */
 export function isNullJunction(map, juncIndex)
 {
-    return !map.hasJunction(juncIndex);
+    return juncIndex === -1 || !map.hasJunction(juncIndex);
 }
 
 export const LANE_SLOT_OFFSET = 0.5;

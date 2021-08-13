@@ -1,11 +1,10 @@
 import { lerp, lookAt2, uuid } from '@milque/util';
 import { getJunctionByIndex, getJunctionCoordsFromIndex, getJunctionIndexFromCoords, getJunctionLaneByIndex, isJunctionOutletForJunction, isNullJunction, LANE_SLOT_OFFSET } from '../laneworld/Junction.js';
-import { CART_STATUS } from '../cellworld/Cart.js';
 import { Navigator } from './Navigator.js';
 
 export const NULL_JUNCTION_INDEX = -1;
 export const NULL_SLOT_INDEX = -1;
-export const FRAMES_PER_TICK = 15;
+export const FRAMES_PER_TICK = 30;
 export const FRAMES_PER_HALF_TICK = FRAMES_PER_TICK / 2;
 export const OFFSET_FRAMES = 5;
 
@@ -25,7 +24,7 @@ export class CartManager
     {
         let [x, y] = getJunctionCoordsFromIndex(this.junctionMap, homeIndex);
         let cartId = uuid();
-        let cart = new Cart(this.junctionMap, cartId, x, y, 0, homeIndex);
+        let cart = new Cart(cartId, x + 0.5, y + 0.5, 0, homeIndex);
         this.carts[cartId] = cart;
         if (tryAcquireParkingInJunction(this, this.junctionMap, cartId, homeIndex))
         {
@@ -50,24 +49,24 @@ export class CartManager
 
 export class Cart
 {
-    constructor(junctionMap, id, juncX, juncY)
+    constructor(id, coordX, coordY, radians, homeIndex)
     {
         this.id = id;
         this.lastUpdatedTicks = -1;
         this.currentJunction = NULL_JUNCTION_INDEX;
         this.currentOutlet = NULL_JUNCTION_INDEX;
         this.currentSlot = NULL_SLOT_INDEX;
-        this.maxLaneSpeed = 1;
+        this.maxLaneSpeed = 2;
 
         this.passingJunction = NULL_JUNCTION_INDEX;
         this.parkingJunction = NULL_JUNCTION_INDEX;
 
-        this.x = juncX;
-        this.y = juncY;
-        this.radians = 0;
+        this.x = coordX;
+        this.y = coordY;
+        this.radians = radians;
         this.speed = 0;
 
-        this.home = getJunctionIndexFromCoords(junctionMap, juncX, juncY);
+        this.homeIndex = homeIndex;
         this.path = [];
         this.pathId = null;
         this.pathIndex = -1;
@@ -79,6 +78,112 @@ export class Cart
     toString()
     {
         return `[Cart ${this.id} : ${this.status}]`;
+    }
+}
+
+function forwardCart(cartManager, junctionMap, cartId, steps)
+{
+    let cart = getCartById(cartManager, cartId);
+    let juncIndex = cart.currentJunction;
+    let nextIndex = getNextJunction(cart);
+    let lane = getJunctionLaneByIndex(junctionMap, juncIndex, nextIndex);
+    if (isNullJunction(junctionMap, cart.currentOutlet))
+    {
+        // Not on the way yet. Try to merge into a lane.
+        let furthest = getFurthestAvailableSlotInLane(junctionMap, lane, 0);
+        if (furthest > 0)
+        {
+            // Move the cart (it takes 1 step to move out of parking).
+            let nextSlot = Math.min(furthest, steps - 1);
+            forceCartOnLane(cartManager, junctionMap, cartId, nextIndex, nextSlot);
+            return;
+        }
+        else
+        {
+            // Blocked at destination but unable to get into it.
+            // Cannot move in as it is blocked.
+            return;
+        }
+    }
+    else
+    {
+        // Already on the way. Try to move forward.
+        let prevSlot = cart.currentSlot;
+        let nextSlot = prevSlot + steps;
+        let furthest = getFurthestAvailableSlotInLane(junctionMap, lane, prevSlot + 1);
+        // There's no blockers and total movement will exit the lane
+        if (furthest >= lane.length && nextSlot >= lane.length)
+        {
+            let aheadNextJunc = lookAheadNavigation(cartManager, cartId, nextIndex);
+            if (isNullJunction(junctionMap, aheadNextJunc))
+            {
+                // Navigation is stopping at this junction. Slow down.
+                if (tryAcquireParkingInJunction(cartManager, junctionMap, cartId, nextIndex))
+                {
+                    // Parking. Any remaining movement is ignored.
+                    forceCartOnJunction(cartManager, junctionMap, cartId, nextIndex);
+                    return;
+                }
+                else
+                {
+                    // This only happens when a cart is going to a non-parkable junction
+                    forceCartOnJunction(cartManager, junctionMap, cartId, nextIndex);
+                    return;
+                }
+            }
+            else if (canJunctionLaneAcceptCart(junctionMap, nextIndex, aheadNextJunc) && tryAcquirePassThroughJunction(cartManager, junctionMap, cartId, nextIndex))
+            {
+                // Navigation has more junctions to visit and the next junction can accept this cart without blockers
+                cart.passingSlot = prevSlot;
+                forceCartOnJunction(cartManager, junctionMap, cartId, nextIndex);
+                forceCartOnLane(cartManager, junctionMap, cartId, aheadNextJunc, 0);
+                // ...if there's movement left, continue down the lane?
+                let aheadNextSteps = nextSlot - lane.length;
+                if (aheadNextSteps > 0)
+                {
+                    moveCartTowards(cartManager, junctionMap, cartId, aheadNextJunc, aheadNextSteps);
+                }
+                return;
+            }
+            else
+            {
+                // Move forward as far as possible before the blocker.
+                nextSlot = Math.min(lane.length - 1, furthest, nextSlot);
+                forceCartOnLane(cartManager, junctionMap, cartId, nextIndex, nextSlot);
+                return;
+            }
+        }
+        else
+        {
+            // Move forward as far as possible before the blocker.
+            nextSlot = Math.min(lane.length - 1, furthest, nextSlot);
+            forceCartOnLane(cartManager, junctionMap, cartId, nextIndex, nextSlot);
+            return;
+        }
+    }
+}
+
+function canForwardCart(map, cart)
+{
+    let nextIndex = cart.pathIndex + 1;
+    if (nextIndex <= 0 || nextIndex >= cart.path.length)
+    {
+        return false;
+    }
+    let next = cart.path[nextIndex];
+    return isJunctionOutletForJunction(map, next, cart.currentJunction);
+}
+
+function getNextJunction(cart)
+{
+    let nextIndex = cart.pathIndex + 1;
+    if (nextIndex <= 0 || nextIndex >= cart.path.length)
+    {
+        return -1;
+    }
+    else
+    {
+        return cart.path[nextIndex];
     }
 }
 
@@ -264,7 +369,6 @@ export function forceCartOnJunction(cartManager, junctionMap, cartId, juncIndex)
     let cart = cartManager.carts[cartId];
     if (!isNullJunction(junctionMap, cart.currentJunction))
     {
-        console.log(cart.currentJunction);
         // Remove from previous junction.
         let junc = junctionMap.getJunction(cart.currentJunction);
         if (!isNullJunction(junctionMap, cart.currentOutlet))
@@ -340,6 +444,15 @@ export function forceCartOnLane(cartManager, junctionMap, cartId, outlet, slot)
     lane.slots[slot] = cartId;
 }
 
+function teleportCartToHome(cartManager, map, cart)
+{
+    forceCartOnJunction(cartManager, map, cart.id, cart.homeIndex);
+    let [coordX, coordY] = getJunctionCoordsFromIndex(map, cart.homeIndex);
+    cart.x = coordX + 0.5;
+    cart.y = coordY + 0.5;
+    cart.radians = 0;
+}
+
 /**
  * @param {CartManager} cartManager 
  * @param {JunctionMap} junctionMap 
@@ -358,7 +471,10 @@ export function updateTraffic(cartManager, junctionMap, navigator)
             // Carts should always be on a junction.
             if (isNullJunction(junctionMap, cart.currentJunction))
             {
-                throw new Error('Cart is not on a junction!');
+                // It's lost.
+                // throw new Error('Cart is not on a junction!');
+                teleportCartToHome(cartManager, junctionMap, cart);
+                continue;
             }
             // Passing junctions only last for 1 tick.
             if (!isNullJunction(junctionMap, cart.passingJunction))
@@ -373,13 +489,18 @@ export function updateTraffic(cartManager, junctionMap, navigator)
                 targetOutlet = navigator.updateNavigation(cart.id);
                 if (isNullJunction(junctionMap, targetOutlet))
                 {
+                    // Cannot move. Go home.
+                    teleportCartToHome(cartManager, junctionMap, cart);
                     continue;
                 }
             }
             // Validate cart junction and outlet are correct before moving.
             if (!isJunctionOutletForJunction(junctionMap, targetOutlet, cart.currentJunction))
             {
-                throw new Error(`Next junction outlet '${getJunctionCoordsFromIndex(junctionMap, targetOutlet)}' is not for junction '${getJunctionCoordsFromIndex(junctionMap, cart.currentJunction)}'.`);
+                // Cannot move. Go home.
+                // throw new Error(`Next junction outlet '${getJunctionCoordsFromIndex(junctionMap, targetOutlet)}' is not for junction '${getJunctionCoordsFromIndex(junctionMap, cart.currentJunction)}'.`);
+                teleportCartToHome(cartManager, junctionMap, cart);
+                continue;
             }
             moveCartTowards(cartManager, junctionMap, cart.id, targetOutlet, cart.maxLaneSpeed);
         }
@@ -398,67 +519,34 @@ export function getCartById(cartManager, cartId)
 /**
  * @param {CanvasRenderingContext2D} ctx
  */
-export function drawCarts(ctx, cartManager, junctionMap, cellSize = 128, junctionSize = 32, cartRadius = 10)
+export function drawCarts(ctx, cartManager, junctionMap, cellSize)
 {
-    let frameTime = Math.max(1, Math.min(FRAMES_PER_TICK, FRAMES_PER_TICK + OFFSET_FRAMES - (cartManager.tickFrames + 1)));
-    let dt = 1 / frameTime;
+    // let frameTime = Math.max(1, Math.min(FRAMES_PER_TICK, FRAMES_PER_TICK + OFFSET_FRAMES - (cartManager.tickFrames + 1)));
+    // let dt = 1 / frameTime;
+    let dt = 0.3;
     for(let cart of Object.values(cartManager.carts))
     {
-        let [jx, jy] = getJunctionCoordsFromIndex(junctionMap, cart.currentJunction);
-        let kx = jx;
-        let ky = jy;
-        if (!isNullJunction(junctionMap, cart.currentOutlet))
+        if (cart.currentJunction === -1 || cart.currentOutlet === -1)
         {
-            if (frameTime > FRAMES_PER_HALF_TICK && !isNullJunction(junctionMap, cart.passingJunction))
-            {
-                let [nx, ny] = getJunctionCoordsFromIndex(junctionMap, cart.passingJunction);
-                kx = nx;
-                ky = ny;
-            }
-            else if (cart.currentSlot >= 0)
-            {
-                let [nx, ny] = getJunctionCoordsFromIndex(junctionMap, cart.currentOutlet);
-                let lane = getJunctionLaneByIndex(junctionMap, cart.currentJunction, cart.currentOutlet);
-                let ratio = (cart.currentSlot + LANE_SLOT_OFFSET) / lane.length;
-                kx = jx + (nx - jx) * ratio;
-                ky = jy + (ny - jy) * ratio;
-            }
-        }
-        let dx = kx - cart.x;
-        let dy = ky - cart.y;
-        let distSqu = dx * dx + dy * dy;
-        let dist = Math.sqrt(distSqu);
-        let epsilon = 1 / cellSize;
-        cart.speed = lerp(cart.speed, dist * dt, 0.1);
-        if (dist > epsilon)
-        {
-            let dr = Math.atan2(dy, dx);
-            if (cart.speed > 0)
-            {
-                cart.x += Math.cos(dr) * cart.speed;
-                cart.y += Math.sin(dr) * cart.speed;
-                cart.radians = lookAt2(cart.radians, dr, 0.2);
-            }
-        }
-        if (!isNullJunction(junctionMap, cart.parkingJunction))
-        {
-            ctx.strokeStyle = 'gray';
+            drawCart(ctx, cart.x * cellSize, cart.y * cellSize, cart.radians, cellSize);
         }
         else
         {
-            ctx.strokeStyle = 'gold';
+            let [nextX, nextY] = getLanePosition(junctionMap, cart.currentJunction, cart.currentOutlet, 0, cart.currentSlot / 4 + 1 / 8);
+            let prevX = cart.x;
+            let prevY = cart.y;
+            let currX = lerp(prevX, nextX, dt);
+            let currY = lerp(prevY, nextY, dt);
+            let dx = currX - prevX;
+            let dy = currY - prevY;
+            let nextRadians = Math.atan2(dy, dx);
+            let prevRadians = cart.radians;
+            let currRadians = lookAt2(prevRadians, nextRadians, dt);
+            cart.x = currX;
+            cart.y = currY;
+            cart.radians = currRadians;
+            drawCart(ctx, currX * cellSize, currY * cellSize, currRadians, cellSize);
         }
-        let ddx = 0;
-        let ddy = 0;
-        if (cart.state == CART_STATUS.RETURNING || cart.state === CART_STATUS.SENDING)
-        {
-            let dr = Math.atan2(dy, dx);
-            ddx = Math.cos(dr + Math.PI / 2) * 0.1;
-            ddy = Math.sin(dr + Math.PI / 2) * 0.1;
-        }
-        let xx = (cart.x + 0.5 + ddx) * cellSize;
-        let yy = (cart.y + 0.5 + ddy) * cellSize;
-        drawCart(ctx, xx, yy, cart.radians, cellSize);
     }
 }
 
@@ -484,4 +572,27 @@ export function drawCart(ctx, x, y, rotation, cellSize)
     }
     ctx.rotate(-rotation - Math.PI / 2);
     ctx.translate(-x, -y);
+}
+
+const HALF_PI = Math.PI * 0.5;
+
+/**
+ * @param {JunctionMap} map 
+ * @param {JunctionIndex} inletIndex 
+ * @param {JunctionIndex} outletIndex 
+ * @param {number} progress 
+ */
+function getLanePosition(map, inletIndex, outletIndex, laneIndex, progress)
+{
+    let [inx, iny] = getJunctionCoordsFromIndex(map, inletIndex);
+    let [outx, outy] = getJunctionCoordsFromIndex(map, outletIndex);
+    let dx = outx - inx;
+    let dy = outy - iny;
+    let dr = Math.atan2(dy, dx);
+    let lx = Math.cos(dr + HALF_PI) * (0.15 + 0.2 * laneIndex);
+    let ly = Math.sin(dr + HALF_PI) * (0.15 + 0.2 * laneIndex);
+    return [
+        (inx + 0.5) + lx + dx * progress,
+        (iny + 0.5) + ly + dy * progress,
+    ];
 }

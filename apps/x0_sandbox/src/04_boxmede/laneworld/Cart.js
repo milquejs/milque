@@ -259,7 +259,6 @@ export function forceCartOnJunction(cartManager, junctionMap, cartId, juncIndex)
     let cart = cartManager.carts[cartId];
     if (!isNullJunction(junctionMap, cart.currentJunction))
     {
-        console.log(cart.currentJunction);
         // Remove from previous junction.
         let junc = junctionMap.getJunction(cart.currentJunction);
         if (!isNullJunction(junctionMap, cart.currentOutlet))

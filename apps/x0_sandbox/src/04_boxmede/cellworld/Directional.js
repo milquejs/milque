@@ -15,10 +15,11 @@ export const DIRECTIONAL_ENCODING = {
     SOUTHEAST: 1 << 7,
 };
 export const DIRECTIONAL_ENCODING_VALUES = Object.values(DIRECTIONAL_ENCODING);
+export const DIRECTIONAL_ENCODING_NULL = 0;
 
-export function nextDirectionalEncoding(encoding)
+export function isDirectionalEncoding(encoding)
 {
-    return rotateDirectionalEncoding(encoding, 1);
+    return Number.isInteger(encoding) && encoding > 0 && encoding <= DIRECTIONAL_ENCODING.SOUTHEAST;
 }
 
 export function randomSingleDirectionalEncoding()

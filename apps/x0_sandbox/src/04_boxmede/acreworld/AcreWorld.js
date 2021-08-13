@@ -1,8 +1,10 @@
 import { uuid } from '@milque/util';
 import { CartManager, drawCarts } from '../cartworld/Cart.js';
-import { DIRECTIONAL_ENCODING_BITS, getDirectionalVectorFromEncoding, nextDirectionalEncoding, randomSingleDirectionalEncoding } from '../cellworld/Directional.js';
-import { connectJunctions, disconnectJunctions, drawJunctions, drawLanes, drawOutlets, getJunctionCoordsFromIndex, getJunctionIndexFromCoords, isJunctionConnectedTo, isJunctionWithinBounds, JunctionMap, putJunction, removeJunction } from '../laneworld/Junction.js';
+import { getDirectionalVectorFromEncoding, isDirectionalEncoding, randomSingleDirectionalEncoding, rotateDirectionalEncoding } from '../cellworld/Directional.js';
+import { connectJunctions, disconnectJunctions, drawJunctions, drawLanes, drawOutlets, getJunctionCoordsFromIndex, getJunctionIndexFromCoords, getJunctionIndexFromJunction, isJunctionConnectedTo, isJunctionWithinBounds, JunctionMap, putJunction, removeJunction } from '../laneworld/Junction.js';
 import { drawGrid } from '../render2d.js';
+import { Directable, tryFindValidChildDirectionForDirectable } from './Directable.js';
+import { Persistence } from './Persistence.js';
 import { CURSOR_ACTION, makeRoad } from './RoadMaker.js';
 
 /**
@@ -26,10 +28,9 @@ export class AcreWorld
 
         this.junctionMap = new JunctionMap(width, height);
         this.cartManager = new CartManager(this.junctionMap);
+        this.persistence = new Persistence(this.junctionMap);
+        this.directable = new Directable(this.junctionMap);
 
-        this.directable = new Array(width * height).fill(-1);
-        this.directed = new Array(width * height).fill(-1);
-        this.statics = new Array(width * height).fill(0);
         this.solids = new Array(width * height).fill(0);
 
         this.housing = {};
@@ -42,20 +43,38 @@ export class AcreWorld
  * @param {number} juncX 
  * @param {number} juncY 
  */
-export function placeHousing(world, juncX, juncY)
+export function placeHousing(world, juncX, juncY, outletDirection)
 {
-    putDirectableJunction(world, world.junctionMap, juncX, juncY, 2);
+    const map = world.junctionMap;
+    let [dx, dy] = getDirectionalVectorFromEncoding(outletDirection);
+    let outletX = juncX + dx;
+    let outletY = juncY + dy;
+    if (!isJunctionWithinBounds(map, outletX, outletY))
+    {
+        throw new Error('Cannot place outlet outside of boundary.');
+    }
+    let juncIndex = getJunctionIndexFromCoords(map, juncX, juncY);
+    let offsetIndex = getJunctionIndexFromCoords(map, outletX, outletY);
+    putJunction(map, juncX, juncY, 2);
+    if (!map.hasJunction(offsetIndex))
+    {
+        putJunction(world.junctionMap, outletX, outletY, 0);
+    }
+    world.directable.markDirectableJunction(juncIndex, offsetIndex);
+    world.persistence.markPersistentJunction(juncIndex, offsetIndex);
+    connectJunctions(map, juncIndex, offsetIndex);
+    connectJunctions(map, offsetIndex, juncIndex);
+
     let id = uuid();
-    let juncIndex = getJunctionIndexFromCoords(world.junctionMap, juncX, juncY);
-    let cartA = world.cartManager.createCart(juncIndex);
-    let cartB = world.cartManager.createCart(juncIndex);
+    // let cartA = world.cartManager.createCart(juncIndex);
+    // let cartB = world.cartManager.createCart(juncIndex);
     world.housing[id] = {
         coordX: juncX,
         coordY: juncY,
         junction: juncIndex,
         carts: [
-            cartA.id,
-            cartB.id,
+            // cartA.id,
+            // cartB.id,
         ]
     };
 }
@@ -66,7 +85,13 @@ export function tryPlaceHousing(world, juncX, juncY)
     let juncIndex = getJunctionIndexFromCoords(map, juncX, juncY);
     if (!map.hasJunction(juncIndex))
     {
-        placeHousing(world, juncX, juncY);
+        let direction = tryFindValidChildDirectionForDirectable(map, juncIndex, randomSingleDirectionalEncoding(), (juncIndex) => {
+            return !world.directable.isDirectableJunction(juncIndex) && !isSolid(world, map, juncIndex);
+        });
+        if (isDirectionalEncoding(direction))
+        {
+            placeHousing(world, juncX, juncY, direction);
+        }
     }
 }
 
@@ -107,9 +132,13 @@ export function placeFactory(world, juncX, juncY)
             setSolid(world, map, juncIndex);
         }
     }
-    putStaticJunction(world, map, juncX, juncY + 2, 0);
-    putStaticJunction(world, map, juncX + 1, juncY + 2, 4);
-    placeRoad(world, juncX, juncY + 2, juncX + 1, juncY + 2);
+    let juncA = putJunction(map, juncX, juncY + 2, 0);
+    let indexA = getJunctionIndexFromJunction(map, juncA);
+    let juncB = putJunction(map, juncX + 1, juncY + 2, 4);
+    let indexB = getJunctionIndexFromJunction(map, juncB);
+    world.persistence.markPersistentJunction(indexA, indexB);
+    connectJunctions(map, indexA, indexB);
+    connectJunctions(map, indexB, indexA);
     let id = uuid();
     world.factory[id] = {
         coordX: juncX,
@@ -189,26 +218,11 @@ export function updateWorld(game, world)
                 let juncIndex = getJunctionIndexFromCoords(junctionMap, juncX, juncY);
                 if (junctionMap.hasJunction(juncIndex))
                 {
-                    if (isDirectedJunction(world, junctionMap, juncIndex))
+                    if (world.persistence.isPersistentJunction(juncIndex))
                     {
-                        let directableIndex = getDirectableJunction(world, junctionMap, juncIndex);
-                        let directed = junctionMap.getJunction(juncIndex);
-                        for(let outletIndex of directed.getOutlets())
-                        {
-                            if (outletIndex !== directableIndex)
-                            {
-                                disconnectJunctions(junctionMap, juncIndex, outletIndex);
-                            }
-                        }
-                        for(let inletIndex of directed.getInlets())
-                        {
-                            if (inletIndex !== directableIndex)
-                            {
-                                disconnectJunctions(junctionMap, inletIndex, juncIndex);
-                            }
-                        }
+                        world.persistence.retainOnlyPersistentJunctionConnections(juncIndex);
                     }
-                    else if (isDeletableJunction(world, junctionMap, juncIndex))
+                    else
                     {
                         removeJunction(junctionMap, juncIndex);
                     }
@@ -237,21 +251,15 @@ function tryPutJunction(world, map, juncX, juncY)
 function tryConnectJunctions(world, map, fromJuncIndex, toJuncIndex)
 {
     if (fromJuncIndex === toJuncIndex) return false;
-    let fromDirectable = isDirectableJunction(world, map, fromJuncIndex);
-    let toDirectable = isDirectableJunction(world, map, toJuncIndex);
-    if (fromDirectable || toDirectable)
+    let fromDirectable = world.directable.isDirectableJunction(fromJuncIndex);
+    let toDirectable = world.directable.isDirectableJunction(toJuncIndex);
+    if (fromDirectable)
     {
-        if (fromDirectable && !toDirectable)
-        {
-            tryDirectJunction(world, map, fromJuncIndex, toJuncIndex);
-            return true;
-        }
-        else if (toDirectable && !fromDirectable)
-        {
-            tryDirectJunction(world, map, toJuncIndex, fromJuncIndex);
-            return true;
-        }
-        return false;
+        return tryDirectJunction(world, map, fromJuncIndex, toJuncIndex);
+    }
+    else if (toDirectable)
+    {
+        return tryDirectJunction(world, map, toJuncIndex, fromJuncIndex);
     }
     
     if (!isJunctionConnectedTo(map, fromJuncIndex, toJuncIndex))
@@ -265,138 +273,29 @@ function tryConnectJunctions(world, map, fromJuncIndex, toJuncIndex)
     return true;
 }
 
-function putStaticJunction(world, map, juncX, juncY, parkingCapacity = 0)
-{
-    let juncIndex = getJunctionIndexFromCoords(map, juncX, juncY);
-    putJunction(map, juncX, juncY, parkingCapacity);
-    setStaticJunction(world, map, juncIndex);
-}
-
-function putDirectableJunction(world, map, juncX, juncY, parkingCapacity = 0)
-{
-    if (!isJunctionWithinBounds(map, juncX - 1, juncY - 1) || !isJunctionWithinBounds(map, juncX + 1, juncY + 1))
-    {
-        throw new Error('Cannot place directable junction at boundry.');
-    }
-    let directional = randomSingleDirectionalEncoding();
-    let directable = getJunctionIndexFromCoords(map, juncX, juncY);
-    let directed;
-    let dx, dy;
-    let flag = false;
-    for(let i = 0; i < DIRECTIONAL_ENCODING_BITS; ++i)
-    {
-        [dx, dy] = getDirectionalVectorFromEncoding(directional);
-        directed = getJunctionIndexFromCoords(map, juncX + dx, juncY + dy);
-        if (!map.hasJunction(directed) || !isDirectableJunction(world, map, directed) || !isSolid(world, map, directed))
-        {
-            flag = true;
-            break;
-        }
-        directional = nextDirectionalEncoding(directional);
-    }
-    if (!flag)
-    {
-        throw new Error('Cannot find valid place for directable junction.');
-    }
-
-    if (map.hasJunction(directable))
-    {
-        throw new Error('Cannot put directable junction on existing junction.');
-    }
-
-    putJunction(map, juncX, juncY, parkingCapacity);
-    if (!map.hasJunction(directed))
-    {
-        putJunction(map, juncX + dx, juncY + dy, parkingCapacity);
-    }
-    setDirectedJunction(world, map, directable, directed);
-    connectJunctions(map, directable, directed);
-    connectJunctions(map, directed, directable);
-}
-
+/**
+ * 
+ * @param {AcreWorld} world 
+ * @param {*} map 
+ * @param {*} directableIndex 
+ * @param {*} directedIndex 
+ */
 function tryDirectJunction(world, map, directableIndex, directedIndex)
 {
-    if (!isDirectableJunction(world, map, directableIndex))
-    {
-        throw new Error('Cannot direct non-directable junction.');
-    }
-    let prevDirectedIndex = getDirectedJunction(world, map, directableIndex);
-    let prevDirected = map.getJunction(prevDirectedIndex);
-    disconnectJunctions(map, directableIndex, prevDirectedIndex);
-    disconnectJunctions(map, prevDirectedIndex, directableIndex);
-    if (prevDirected.isEmpty())
-    {
-        map.deleteJunction(prevDirectedIndex);
-    }
-    world.directed[prevDirectedIndex] = -1;
-
+    let prevDirectedIndex = world.directable.getDirectableJunctionChild(directableIndex);
+    if (directedIndex === prevDirectedIndex) return true;
+    if (world.directable.isDirectableJunction(directedIndex)) return false;
+    if (!world.directable.isDirectableJunction(directableIndex)) return false;
+    if (isSolid(world, map, directedIndex)) return false;
     if (!map.hasJunction(directedIndex))
     {
         let [juncX, juncY] = getJunctionCoordsFromIndex(map, directedIndex);
         putJunction(map, juncX, juncY, 0);
     }
-    connectJunctions(map, directableIndex, directedIndex);
-    connectJunctions(map, directedIndex, directableIndex);
-    setDirectedJunction(world, map, directableIndex, directedIndex);
-}
-
-function setDirectedJunction(world, map, directableIndex, directedIndex)
-{
-    if (!map.hasJunction(directableIndex))
-    {
-        throw new Error('Cannot make non-existant junction directable.');
-    }
-    if (!map.hasJunction(directedIndex))
-    {
-        throw new Error('Cannot make non-existant junction directed.');
-    }
-    if (isDirectableJunction(world, map, directedIndex))
-    {
-        throw new Error('Cannot direct directable junction to another directable junction.');
-    }
-    world.directable[directableIndex] = directedIndex;
-    world.directed[directedIndex] = directableIndex;
-}
-
-function getDirectedJunction(world, map, directableIndex)
-{
-    return world.directable[directableIndex];
-}
-
-function getDirectableJunction(world, map, directedIndex)
-{
-    return world.directed[directedIndex];
-}
-
-function isDirectableJunction(world, map, juncIndex)
-{
-    return world.directable[juncIndex] >= 0;
-}
-
-function isDirectedJunction(world, map, juncIndex)
-{
-    return world.directed[juncIndex] >= 0;
-}
-
-function isDeletableJunction(world, map, juncIndex)
-{
-    return !isDirectableJunction(world, map, juncIndex)
-        && !isDirectedJunction(world, map, juncIndex)
-        && !isStaticJunction(world, map, juncIndex);
-}
-
-function isStaticJunction(world, map, juncIndex)
-{
-    return world.statics[juncIndex] > 0;
-}
-
-function setStaticJunction(world, map, juncIndex)
-{
-    if (!map.hasJunction(juncIndex))
-    {
-        throw new Error('Cannot make non-existant junction static.');
-    }
-    world.statics[juncIndex] = 1;
+    world.directable.redirectDirectableJunction(directableIndex, prevDirectedIndex, directedIndex);
+    world.persistence.unmarkPersistentJunction(directableIndex, prevDirectedIndex);
+    world.persistence.markPersistentJunction(directableIndex, directedIndex);
+    return true;
 }
 
 function isSolid(world, map, juncIndex)
@@ -426,10 +325,10 @@ export function drawWorld(game, ctx, world)
         drawGrid(ctx, mapWidth, mapHeight, CELL_SIZE);
     }
     drawOutlets(ctx, map, CELL_SIZE);
-    //drawJunctions(ctx, map, CELL_SIZE);
-    //drawLanes(ctx, map, CELL_SIZE);
+    drawJunctions(ctx, map, CELL_SIZE);
+    drawLanes(ctx, map, CELL_SIZE);
     drawSolids(ctx, world, map, CELL_SIZE);
-    drawCarts(ctx, cartManager, map, CELL_SIZE);
+    // drawCarts(ctx, cartManager, map, CELL_SIZE);
     drawHousings(ctx, world, CELL_SIZE);
     drawFactories(ctx, world, CELL_SIZE);
     if (world.cursor.status !== CURSOR_ACTION.NONE)

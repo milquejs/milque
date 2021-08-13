@@ -70,7 +70,7 @@ export class Navigator
                     if (i < 0)
                     {
                         // Reset back to home.
-                        cart.currentJunction = cart.home;
+                        cart.currentJunction = cart.homeIndex;
                         cart.state = CART_STATE.RESTING;
                         cart.lastStateChangedTicks = cart.lastUpdatedTicks;
                         if (cart.pathId)
@@ -104,7 +104,7 @@ export class Navigator
                             if (!junctionMap.hasJunction(juncIndex))
                             {
                                 // Path is no longer valid. Reset back to home.
-                                cart.currentJunction = cart.home;
+                                cart.currentJunction = cart.homeIndex;
                                 cart.state = CART_STATE.RESTING;
                                 cart.lastStateChangedTicks = cart.lastUpdatedTicks;
                                 if (cart.pathId)
@@ -127,14 +127,14 @@ export class Navigator
                 if (cart.lastUpdatedTicks - cart.lastStateChangedTicks > PROCESSING_TICKS)
                 {
                     cart.lastStateChangedTicks = cart.lastUpdatedTicks;
-                    if (!isNullJunction(junctionMap, cart.home))
+                    if (!isNullJunction(junctionMap, cart.homeIndex))
                     {
                         if (cart.pathId)
                         {
                             pathFinder.releasePath(cart.pathId);
                             cart.pathId = null;
                         }
-                        let pathId = pathFinder.acquirePath(cart.currentJunction, cart.home);
+                        let pathId = pathFinder.acquirePath(cart.currentJunction, cart.homeIndex);
                         if (pathId)
                         {
                             cart.state = CART_STATE.RETURNING;
@@ -153,7 +153,7 @@ export class Navigator
                     if (i < 0)
                     {
                         // Reset back to home.
-                        cart.currentJunction = cart.home;
+                        cart.currentJunction = cart.homeIndex;
                         cart.state = CART_STATE.RESTING;
                         cart.lastStateChangedTicks = cart.lastUpdatedTicks;
                         if (cart.pathId)
@@ -188,7 +188,7 @@ export class Navigator
                             if (!junctionMap.hasJunction(juncIndex))
                             {
                                 // Path is no longer valid. Reset back to home.
-                                cart.currentJunction = cart.home;
+                                cart.currentJunction = cart.homeIndex;
                                 cart.state = CART_STATE.RESTING;
                                 cart.lastStateChangedTicks = cart.lastUpdatedTicks;
                                 if (cart.pathId)
