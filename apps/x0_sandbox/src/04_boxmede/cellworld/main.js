@@ -9,7 +9,7 @@ import {
     getDirectionalEncodingFromVector,
     randomSingleDirectionalEncoding,
     getOppositeDirectionIndex,
-} from './Directional.js';
+} from '../util/Directional.js';
 import { World } from './World.js';
 import { Lane, updateLanes } from './Lane.js';
 import { assert } from '../util/assert.js';

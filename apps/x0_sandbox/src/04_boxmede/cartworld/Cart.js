@@ -1,6 +1,5 @@
 import { lerp, lookAt2, uuid } from '@milque/util';
 import { getJunctionByIndex, getJunctionCoordsFromIndex, getJunctionIndexFromCoords, getJunctionLaneByIndex, isJunctionOutletForJunction, isNullJunction, LANE_SLOT_OFFSET } from '../laneworld/Junction.js';
-import { Navigator } from './Navigator.js';
 
 export const NULL_JUNCTION_INDEX = -1;
 export const NULL_SLOT_INDEX = -1;
@@ -12,7 +11,6 @@ export class CartManager
 {
     constructor(junctionMap)
     {
-        this.navigator = new Navigator(this, junctionMap);
         this.junctionMap = junctionMap;
         this.carts = {};
 
@@ -37,12 +35,12 @@ export class CartManager
         return cart;
     }
 
-    update()
+    update(world)
     {
         if (++this.tickFrames > FRAMES_PER_TICK)
         {
             this.tickFrames = 0;
-            updateTraffic(this, this.junctionMap, this.navigator);
+            updateTraffic(world, this, this.junctionMap, world.navigator);
         }
     }
 }
@@ -61,6 +59,8 @@ export class Cart
         this.passingJunction = NULL_JUNCTION_INDEX;
         this.parkingJunction = NULL_JUNCTION_INDEX;
 
+        this.prevX = coordX;
+        this.prevY = coordY;
         this.x = coordX;
         this.y = coordY;
         this.radians = radians;
@@ -161,17 +161,6 @@ function forwardCart(cartManager, junctionMap, cartId, steps)
             return;
         }
     }
-}
-
-function canForwardCart(map, cart)
-{
-    let nextIndex = cart.pathIndex + 1;
-    if (nextIndex <= 0 || nextIndex >= cart.path.length)
-    {
-        return false;
-    }
-    let next = cart.path[nextIndex];
-    return isJunctionOutletForJunction(map, next, cart.currentJunction);
 }
 
 function getNextJunction(cart)
@@ -458,7 +447,7 @@ function teleportCartToHome(cartManager, map, cart)
  * @param {JunctionMap} junctionMap 
  * @param {Navigator} navigator 
  */
-export function updateTraffic(cartManager, junctionMap, navigator)
+export function updateTraffic(world, cartManager, junctionMap, navigator)
 {
     const worldTicks = ++cartManager.worldTicks;
     // Update carts
@@ -486,7 +475,7 @@ export function updateTraffic(cartManager, junctionMap, navigator)
             // If not moving on a lane, try starting to.
             if (isNullJunction(junctionMap, cart.currentOutlet))
             {
-                targetOutlet = navigator.updateNavigation(cart.id);
+                targetOutlet = navigator.updateNavigation(world, cartManager, cart.id);
                 if (isNullJunction(junctionMap, targetOutlet))
                 {
                     // Cannot move. Go home.
@@ -521,9 +510,8 @@ export function getCartById(cartManager, cartId)
  */
 export function drawCarts(ctx, cartManager, junctionMap, cellSize)
 {
-    // let frameTime = Math.max(1, Math.min(FRAMES_PER_TICK, FRAMES_PER_TICK + OFFSET_FRAMES - (cartManager.tickFrames + 1)));
-    // let dt = 1 / frameTime;
-    let dt = 0.3;
+    let frameTime = cartManager.tickFrames / FRAMES_PER_TICK;
+    let dt = frameTime;
     for(let cart of Object.values(cartManager.carts))
     {
         if (cart.currentJunction === -1 || cart.currentOutlet === -1)
@@ -532,16 +520,30 @@ export function drawCarts(ctx, cartManager, junctionMap, cellSize)
         }
         else
         {
-            let [nextX, nextY] = getLanePosition(junctionMap, cart.currentJunction, cart.currentOutlet, 0, cart.currentSlot / 4 + 1 / 8);
-            let prevX = cart.x;
-            let prevY = cart.y;
+            if (frameTime <= 0)
+            {
+                // Capture current state.
+                cart.prevX = cart.x;
+                cart.prevY = cart.y;
+            }
+            let [nextX, nextY] = getLanePosition(junctionMap, cart.currentJunction, cart.currentOutlet, 0, cart.currentSlot / 3 + 1 / 6);
+            let prevX = cart.prevX;
+            let prevY = cart.prevY;
             let currX = lerp(prevX, nextX, dt);
             let currY = lerp(prevY, nextY, dt);
-            let dx = currX - prevX;
-            let dy = currY - prevY;
-            let nextRadians = Math.atan2(dy, dx);
-            let prevRadians = cart.radians;
-            let currRadians = lookAt2(prevRadians, nextRadians, dt);
+            let dx = nextX - prevX;
+            let dy = nextY - prevY;
+            let currRadians;
+            if (Math.abs(dx) <= Number.EPSILON && Math.abs(dy) <= Number.EPSILON)
+            {
+                currRadians = cart.radians;
+            }
+            else
+            {
+                let nextRadians = Math.atan2(dy, dx);
+                let prevRadians = cart.radians;
+                currRadians = lookAt2(prevRadians, nextRadians, dt);
+            }
             cart.x = currX;
             cart.y = currY;
             cart.radians = currRadians;
@@ -552,12 +554,12 @@ export function drawCarts(ctx, cartManager, junctionMap, cellSize)
 
 export function drawCart(ctx, x, y, rotation, cellSize)
 {
-    let width = cellSize * 0.25;
-    let height = cellSize * 0.4;
+    let width = cellSize * 0.2;
+    let height = cellSize * 0.3;
     let halfWidth = width / 2;
     let halfHeight = height / 2;
     let padding = 2;
-    let hoodSize = height * 0.3;
+    let hoodSize = height * 0.4;
     let topSize = height * 0.2;
     ctx.translate(x, y);
     ctx.rotate(rotation + Math.PI / 2);

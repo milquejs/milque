@@ -1,7 +1,8 @@
 import { uuid } from '@milque/util';
 import { CartManager, drawCarts } from '../cartworld/Cart.js';
-import { getDirectionalVectorFromEncoding, isDirectionalEncoding, randomSingleDirectionalEncoding, rotateDirectionalEncoding } from '../cellworld/Directional.js';
-import { connectJunctions, disconnectJunctions, drawJunctions, drawLanes, drawOutlets, getJunctionCoordsFromIndex, getJunctionIndexFromCoords, getJunctionIndexFromJunction, isJunctionConnectedTo, isJunctionWithinBounds, JunctionMap, putJunction, removeJunction } from '../laneworld/Junction.js';
+import { Navigator } from '../cartworld/Navigator.js';
+import { getDirectionalVectorFromEncoding, isDirectionalEncoding, randomSingleDirectionalEncoding } from '../util/Directional.js';
+import { connectJunctions, drawJunctions, drawLanes, drawOutlets, getJunctionCoordsFromIndex, getJunctionIndexFromCoords, getJunctionIndexFromJunction, isJunctionConnectedTo, isJunctionWithinBounds, JunctionMap, putJunction, removeJunction } from '../laneworld/Junction.js';
 import { drawGrid } from '../render2d.js';
 import { Directable, tryFindValidChildDirectionForDirectable } from './Directable.js';
 import { Persistence } from './Persistence.js';
@@ -28,6 +29,7 @@ export class AcreWorld
 
         this.junctionMap = new JunctionMap(width, height);
         this.cartManager = new CartManager(this.junctionMap);
+        this.navigator = new Navigator(this.junctionMap);
         this.persistence = new Persistence(this.junctionMap);
         this.directable = new Directable(this.junctionMap);
 
@@ -66,15 +68,15 @@ export function placeHousing(world, juncX, juncY, outletDirection)
     connectJunctions(map, offsetIndex, juncIndex);
 
     let id = uuid();
-    // let cartA = world.cartManager.createCart(juncIndex);
-    // let cartB = world.cartManager.createCart(juncIndex);
+    let cartA = world.cartManager.createCart(juncIndex);
+    let cartB = world.cartManager.createCart(juncIndex);
     world.housing[id] = {
         coordX: juncX,
         coordY: juncY,
         junction: juncIndex,
         carts: [
-            // cartA.id,
-            // cartB.id,
+            cartA.id,
+            cartB.id,
         ]
     };
 }
@@ -143,8 +145,11 @@ export function placeFactory(world, juncX, juncY)
     world.factory[id] = {
         coordX: juncX,
         coordY: juncY,
-        entryJunctions: [
-            getJunctionIndexFromCoords(map, juncX, juncY + 2)
+        entries: [
+            indexA,
+        ],
+        parking: [
+            indexB,
         ]
     };
 }
@@ -234,7 +239,7 @@ export function updateWorld(game, world)
         cursor.status = 0;
     }
 
-    cartManager.update();
+    cartManager.update(world);
 }
 
 function tryPutJunction(world, map, juncX, juncY)
@@ -325,10 +330,10 @@ export function drawWorld(game, ctx, world)
         drawGrid(ctx, mapWidth, mapHeight, CELL_SIZE);
     }
     drawOutlets(ctx, map, CELL_SIZE);
-    drawJunctions(ctx, map, CELL_SIZE);
+    // drawJunctions(ctx, map, CELL_SIZE);
     drawLanes(ctx, map, CELL_SIZE);
-    drawSolids(ctx, world, map, CELL_SIZE);
-    // drawCarts(ctx, cartManager, map, CELL_SIZE);
+    // drawSolids(ctx, world, map, CELL_SIZE);
+    drawCarts(ctx, cartManager, map, CELL_SIZE);
     drawHousings(ctx, world, CELL_SIZE);
     drawFactories(ctx, world, CELL_SIZE);
     if (world.cursor.status !== CURSOR_ACTION.NONE)

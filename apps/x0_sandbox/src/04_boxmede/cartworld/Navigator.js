@@ -6,9 +6,9 @@ import { PathFinder } from './PathFinder.js';
  * @typedef {import('./Cart.js').Cart} Cart
  */
 
-const SEARCH_VALID_DESTINATION_RATE = 5;
-const PROCESSING_TICKS = 5;
-const RESTING_TICKS = 5;
+const SEARCH_VALID_DESTINATION_RATE = 0;
+const PROCESSING_TICKS = 0;
+const RESTING_TICKS = 0;
 const FORCE_RANDOM_WALK = false;
 
 const CART_STATE = {
@@ -21,16 +21,14 @@ const CART_STATE = {
 
 export class Navigator
 {
-    constructor(cartManager, junctionMap)
+    constructor(junctionMap)
     {
-        this.cartManager = cartManager;
         this.junctionMap = junctionMap;
         this.pathFinder = new PathFinder(junctionMap);
     }
 
-    updateNavigation(cartId)
+    updateNavigation(world, cartManager, cartId)
     {
-        const cartManager = this.cartManager;
         const junctionMap = this.junctionMap;
         const pathFinder = this.pathFinder;
 
@@ -49,7 +47,7 @@ export class Navigator
                 {
                     cart.lastStateChangedTicks = cart.lastUpdatedTicks;
     
-                    let dest = findValidDestination(junctionMap, cart);
+                    let dest = findValidDestination(world, junctionMap, cart);
                     if (!isNullJunction(junctionMap, dest))
                     {
                         let pathId = pathFinder.acquirePath(cart.currentJunction, dest);
@@ -220,23 +218,18 @@ export class Navigator
 }
 
 /**
+ * @param {AcreWorld}
  * @param {JunctionMap} junctionMap 
  * @param {Cart} cart 
  */
-function findValidDestination(junctionMap, cart)
+function findValidDestination(world, junctionMap, cart)
 {
-    let home = cart.home;
-    let destinations = [];
-    for(let i = 0; i < junctionMap.length; ++i)
-    {
-        if (junctionMap.hasJunction(i) && home !== i)
-        {
-            let junc = junctionMap.getJunction(i);
-            if (junc.parkingCapacity > 0)
-            {
-                destinations.push(i);
-            }
-        }
-    }
-    return destinations[Math.floor(Math.random() * destinations.length)];
+    let factories = Object.values(world.factory);
+    if (factories.length <= 0) return NULL_JUNCTION_INDEX;
+    let i = Math.floor(Math.random() * factories.length);
+    let factory = factories[i];
+    let parking = factory.parking;
+    if (parking.length <= 0) return NULL_JUNCTION_INDEX;
+    i = Math.floor(Math.random() * parking.length);
+    return parking[i];
 }

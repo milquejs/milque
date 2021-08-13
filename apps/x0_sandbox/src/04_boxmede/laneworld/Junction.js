@@ -384,7 +384,7 @@ export function getLane(map, inletJuncIndex, outletJuncIndex)
  * @param {JunctionIndex} fromJuncIndex
  * @param {JunctionIndex} toJuncIndex
  */
-export function connectJunctions(map, fromJuncIndex, toJuncIndex, laneLength = 4)
+export function connectJunctions(map, fromJuncIndex, toJuncIndex, laneLength = 3)
 {
     putLane(map, fromJuncIndex, toJuncIndex, laneLength);
 }

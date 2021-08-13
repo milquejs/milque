@@ -2,8 +2,8 @@
  * @typedef {import('../laneworld/Junction.js').JunctionMap} JunctionMap
  */
 
-import { DIRECTIONAL_ENCODING_BITS, DIRECTIONAL_ENCODING_NULL, getDirectionalVectorFromEncoding, rotateDirectionalEncoding } from '../cellworld/Directional.js';
-import { connectJunctions, disconnectJunctions, getJunctionCoordsFromIndex, getJunctionIndexFromCoords, isJunctionEmpty, isJunctionWithinBounds, putJunction } from '../laneworld/Junction.js';
+import { DIRECTIONAL_ENCODING_BITS, DIRECTIONAL_ENCODING_NULL, getDirectionalVectorFromEncoding, rotateDirectionalEncoding } from '../util/Directional.js';
+import { connectJunctions, disconnectJunctions, getJunctionCoordsFromIndex, getJunctionIndexFromCoords, isJunctionEmpty, isJunctionWithinBounds } from '../laneworld/Junction.js';
 
 export class Directable
 {

@@ -1,4 +1,4 @@
-import { assert } from '../util/assert.js';
+import { assert } from './assert.js';
 
 const OPPOSITE_DIRECTIONAL_ENCODING_OFFSET = 4;
 const CLOCKWISE_ORTHOGONAL_DIRECTIONAL_ENCODING_OFFSET = 2;
