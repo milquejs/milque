@@ -337,7 +337,7 @@ export class DisplayPort extends HTMLElement
             this.setAttribute('tabindex', '0');
         }
         
-        this.updateCanvasSize();
+        this.updateCanvasSize(true);
         this.resume();
     }
 
@@ -480,6 +480,7 @@ export class DisplayPort extends HTMLElement
     /** @private */
     onDelayCanvasResize()
     {
+        this._resizeTimeoutHandle = 0;
         this.updateCanvasSize(true);
     }
 
@@ -487,6 +488,7 @@ export class DisplayPort extends HTMLElement
     {
         if (canvasWidth !== this._resizeCanvasWidth || canvasHeight !== this._resizeCanvasHeight)
         {
+            // Only call onDelayCanvasResize, if new canvas size actually changed since last time.
             this._resizeCanvasWidth = canvasWidth;
             this._resizeCanvasHeight = canvasHeight;
             if (this._resizeTimeoutHandle)
@@ -540,6 +542,11 @@ export class DisplayPort extends HTMLElement
         canvasWidth = Math.floor(canvasWidth);
         canvasHeight = Math.floor(canvasHeight);
 
+        if (typeof force === 'undefined')
+        {
+            force = canvas.clientWidth !== canvasWidth || canvas.clientHeight !== canvasHeight;
+        }
+
         if (!force)
         {
             this.delayCanvasResize(canvasWidth, canvasHeight);
@@ -552,16 +559,14 @@ export class DisplayPort extends HTMLElement
         // NOTE: Update the inner container for the default slotted children.
         // To anchor children outside the canvas, use the slot named 'frame'.
         this._innerElement.style.fontSize = `font-size: ${fontSize}em`;
-
-        if (canvas.clientWidth !== canvasWidth
-            || canvas.clientHeight !== canvasHeight)
+        if (force)
         {
-            if (mode === MODE_SCALE || mode === MODE_STRETCH)
+            if (mode === MODE_SCALE)
             {
                 canvas.width = this._width;
                 canvas.height = this._height;
             }
-            else
+            else if (mode !== MODE_STRETCH)
             {
                 canvas.width = canvasWidth;
                 canvas.height = canvasHeight;

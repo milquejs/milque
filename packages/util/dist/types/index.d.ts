@@ -132,6 +132,35 @@ declare function toDegrees(radians: any): number;
 declare function topoSort(nodes: Array<any>, dependencyCallback: DependencyCallback): Array<any>;
 type DependencyCallback = (node: any) => Array<any>;
 
-declare function astarSearch(startX: any, startY: any, goalX: any, goalY: any, isWalkable: any): any[][];
+/**
+ * @template T
+ * @typedef NodeCache<T>
+ * @property {Record<T, number>} fscore
+ * @property {Record<T, number>} gscore
+ * @property {Record<T, number>} hscore
+ * @property {Record<T, T>} parents
+ */
+/**
+ * @template T
+ * @param {T} startId The unique representation of the starting position. Must be deterministic.
+ * @param {T} goalId The unique representation of the stopping position. Must be deterministic.
+ * @param {(node: T) => Array<T>} neighborsCallback Get all reachable neighbors from the given node.
+ * @param {(from: T, to: T) => number} heuristicCallback Get the heuristics score between the two nodes.
+ * @returns {Array<T>} If the goal is not reachable from the start, it will return an empty array.
+ */
+declare function astarSearch<T>(startId: T, goalId: T, neighborsCallback: (node: T) => T[], heuristicCallback: (from: T, to: T) => number): T[];
+/**
+ * <T>
+ */
+type NodeCache<T> = {
+    fscore: Record<T, number>;
+    gscore: Record<T, number>;
+    hscore: Record<T, number>;
+    parents: Record<T, T>;
+};
 
-export { DependencyCallback, Eventable, FILE_TYPE_PNG, FILE_TYPE_SVG, Logger, PriorityQueue, astarSearch, bresenhamLine, clamp, cycle, direction2, distance2, downloadImageFromSVG, downloadText, downloadURL, lerp, lookAt2, toDegrees, toRadians, topoSort, uploadFile, uuid, withinRadius };
+declare function fisherYatesShuffle(array: any): any;
+
+declare function bitCount(n: any): number;
+
+export { DependencyCallback, Eventable, FILE_TYPE_PNG, FILE_TYPE_SVG, Logger, NodeCache, PriorityQueue, astarSearch, bitCount, bresenhamLine, clamp, cycle, direction2, distance2, downloadImageFromSVG, downloadText, downloadURL, fisherYatesShuffle, lerp, lookAt2, toDegrees, toRadians, topoSort, uploadFile, uuid, withinRadius };

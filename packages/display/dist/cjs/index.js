@@ -4,7 +4,7 @@ Object.defineProperty(exports, '__esModule', { value: true });
 
 var INNER_HTML = "<div class=\"container\">\n    <label class=\"hidden\" id=\"title\">display-port</label>\n    <label class=\"hidden\" id=\"fps\">00</label>\n    <label class=\"hidden\" id=\"dimension\">0x0</label>\n    <div class=\"content\">\n        <canvas>\n            Oh no! Your browser does not support canvas.\n        </canvas>\n        <slot id=\"inner\"></slot>\n    </div>\n    <slot name=\"frame\"></slot>\n</div>";
 
-var INNER_STYLE = ":host {\n    display: inline-block;\n    color: #555555;\n}\n\n.container {\n    display: flex;\n    position: relative;\n    width: 100%;\n    height: 100%;\n}\n\n.content {\n    position: relative;\n    margin: auto;\n}\n\n.content > * {\n    width: 100%;\n    height: 100%;\n}\n\ncanvas {\n    background: #000000;\n    image-rendering: pixelated;\n}\n\nlabel {\n    position: absolute;\n    font-family: monospace;\n    color: currentColor;\n}\n\n#inner {\n    display: flex;\n    flex-direction: column;\n    align-items: center;\n    justify-content: center;\n    position: absolute;\n    top: 0;\n    left: 0;\n    pointer-events: none;\n}\n\n#title {\n    left: 0.5rem;\n    top: 0.5rem;\n}\n\n#fps {\n    right: 0.5rem;\n    top: 0.5rem;\n}\n\n#dimension {\n    left: 0.5rem;\n    bottom: 0.5rem;\n}\n\n.hidden {\n    display: none;\n}\n\n:host([debug]) .container {\n    outline: 6px dashed rgba(0, 0, 0, 0.1);\n    outline-offset: -4px;\n    background-color: rgba(0, 0, 0, 0.1);\n}\n\n:host([mode=\"noscale\"]) canvas {\n    margin: 0;\n    top: 0;\n    left: 0;\n}\n\n:host([mode=\"fit\"]),\n:host([mode=\"scale\"]),\n:host([mode=\"center\"]),\n:host([mode=\"stretch\"]),\n:host([mode=\"fill\"]) {\n    width: 100%;\n    height: 100%;\n}\n\n:host([full]) {\n    width: 100vw !important;\n    height: 100vh !important;\n}\n\n:host([disabled]) {\n    display: none;\n}\n\nslot {\n    display: flex;\n    flex-direction: column;\n    align-items: center;\n    justify-content: center;\n    position: absolute;\n    width: 100%;\n    height: 100%;\n    top: 0;\n    left: 0;\n    pointer-events: none;\n}\n\n::slotted(*) {\n    pointer-events: auto;\n}\n";
+var INNER_STYLE = ":host {\n    display: inline-block;\n    color: #555555;\n}\n\n.container {\n    display: flex;\n    position: relative;\n    width: 100%;\n    height: 100%;\n}\n\n.content {\n    position: relative;\n    margin: auto;\n}\n\n.content > *:not(canvas) {\n    width: 100%;\n    height: 100%;\n}\n\ncanvas {\n    background: #000000;\n    image-rendering: pixelated;\n}\n\nlabel {\n    position: absolute;\n    font-family: monospace;\n    color: currentColor;\n}\n\n#inner {\n    display: flex;\n    flex-direction: column;\n    align-items: center;\n    justify-content: center;\n    position: absolute;\n    top: 0;\n    left: 0;\n    pointer-events: none;\n}\n\n#title {\n    left: 0.5rem;\n    top: 0.5rem;\n}\n\n#fps {\n    right: 0.5rem;\n    top: 0.5rem;\n}\n\n#dimension {\n    left: 0.5rem;\n    bottom: 0.5rem;\n}\n\n.hidden {\n    display: none;\n}\n\n:host([debug]) .container {\n    outline: 6px dashed rgba(0, 0, 0, 0.1);\n    outline-offset: -4px;\n    background-color: rgba(0, 0, 0, 0.1);\n}\n\n:host([mode=\"noscale\"]) canvas {\n    margin: 0;\n    top: 0;\n    left: 0;\n}\n\n:host([mode=\"stretch\"]) canvas,\n:host([mode=\"scale\"]) canvas {\n    width: 100%;\n    height: 100%;\n}\n\n:host([mode=\"fit\"]),\n:host([mode=\"scale\"]),\n:host([mode=\"center\"]),\n:host([mode=\"stretch\"]),\n:host([mode=\"fill\"]) {\n    width: 100%;\n    height: 100%;\n}\n\n:host([full]) {\n    width: 100vw !important;\n    height: 100vh !important;\n}\n\n:host([disabled]) {\n    display: none;\n}\n\nslot {\n    display: flex;\n    flex-direction: column;\n    align-items: center;\n    justify-content: center;\n    position: absolute;\n    width: 100%;\n    height: 100%;\n    top: 0;\n    left: 0;\n    pointer-events: none;\n}\n\n::slotted(*) {\n    pointer-events: auto;\n}\n";
 
 /**
  * No scaling is applied. The canvas size maintains a
@@ -334,7 +334,7 @@ class DisplayPort extends HTMLElement
             this.setAttribute('tabindex', '0');
         }
         
-        this.updateCanvasSize();
+        this.updateCanvasSize(true);
         this.resume();
     }
 
@@ -477,6 +477,7 @@ class DisplayPort extends HTMLElement
     /** @private */
     onDelayCanvasResize()
     {
+        this._resizeTimeoutHandle = 0;
         this.updateCanvasSize(true);
     }
 
@@ -484,6 +485,7 @@ class DisplayPort extends HTMLElement
     {
         if (canvasWidth !== this._resizeCanvasWidth || canvasHeight !== this._resizeCanvasHeight)
         {
+            // Only call onDelayCanvasResize, if new canvas size actually changed since last time.
             this._resizeCanvasWidth = canvasWidth;
             this._resizeCanvasHeight = canvasHeight;
             if (this._resizeTimeoutHandle)
@@ -537,6 +539,11 @@ class DisplayPort extends HTMLElement
         canvasWidth = Math.floor(canvasWidth);
         canvasHeight = Math.floor(canvasHeight);
 
+        if (typeof force === 'undefined')
+        {
+            force = canvas.clientWidth !== canvasWidth || canvas.clientHeight !== canvasHeight;
+        }
+
         if (!force)
         {
             this.delayCanvasResize(canvasWidth, canvasHeight);
@@ -549,16 +556,14 @@ class DisplayPort extends HTMLElement
         // NOTE: Update the inner container for the default slotted children.
         // To anchor children outside the canvas, use the slot named 'frame'.
         this._innerElement.style.fontSize = `font-size: ${fontSize}em`;
-
-        if (canvas.clientWidth !== canvasWidth
-            || canvas.clientHeight !== canvasHeight)
+        if (force)
         {
-            if (mode === MODE_SCALE || mode === MODE_STRETCH)
+            if (mode === MODE_SCALE)
             {
                 canvas.width = this._width;
                 canvas.height = this._height;
             }
-            else
+            else if (mode !== MODE_STRETCH)
             {
                 canvas.width = canvasWidth;
                 canvas.height = canvasHeight;
