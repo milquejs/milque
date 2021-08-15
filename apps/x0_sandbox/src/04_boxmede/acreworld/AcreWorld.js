@@ -175,7 +175,7 @@ export function getJunctionCoordsFromCell(acreWorld, cellX, cellY)
 
 export function createWorld()
 {
-    let world = new AcreWorld(8, 6);
+    let world = new AcreWorld(12, 8);
 
     tryPlaceHousing(world, 1, 1);
     tryPlaceHousing(world, 1, 2);
@@ -331,7 +331,7 @@ export function drawWorld(game, ctx, world)
     }
     drawOutlets(ctx, map, CELL_SIZE);
     // drawJunctions(ctx, map, CELL_SIZE);
-    drawLanes(ctx, map, CELL_SIZE);
+    // drawLanes(ctx, map, CELL_SIZE);
     // drawSolids(ctx, world, map, CELL_SIZE);
     drawCarts(ctx, cartManager, map, CELL_SIZE);
     drawHousings(ctx, world, CELL_SIZE);

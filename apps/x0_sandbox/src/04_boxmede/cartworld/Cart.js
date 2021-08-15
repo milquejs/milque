@@ -1,5 +1,7 @@
-import { lerp, lookAt2, uuid } from '@milque/util';
-import { getJunctionByIndex, getJunctionCoordsFromIndex, getJunctionIndexFromCoords, getJunctionLaneByIndex, isJunctionOutletForJunction, isNullJunction, LANE_SLOT_OFFSET } from '../laneworld/Junction.js';
+import { cycle, lerp, lookAt2, uuid } from '@milque/util';
+import { getJunctionByIndex, getJunctionCoordsFromIndex, getJunctionLaneByIndex, isJunctionOutletForJunction, isNullJunction, LANE_SLOT_OFFSET } from '../laneworld/Junction.js';
+
+/** @typedef {import('../laneworld/Junction.js').JunctionMap} JunctionMap */
 
 export const NULL_JUNCTION_INDEX = -1;
 export const NULL_SLOT_INDEX = -1;
@@ -9,9 +11,13 @@ export const OFFSET_FRAMES = 5;
 
 export class CartManager
 {
+    /**
+     * @param {JunctionMap} junctionMap 
+     */
     constructor(junctionMap)
     {
         this.junctionMap = junctionMap;
+        /** @type {Record<string, Cart>} */
         this.carts = {};
 
         this.worldTicks = 0;
@@ -61,6 +67,10 @@ export class Cart
 
         this.prevX = coordX;
         this.prevY = coordY;
+        this.prevJunction = NULL_JUNCTION_INDEX;
+        this.prevOutlet = NULL_JUNCTION_INDEX;
+        this.prevSlot = NULL_SLOT_INDEX;
+
         this.x = coordX;
         this.y = coordY;
         this.radians = radians;
@@ -78,101 +88,6 @@ export class Cart
     toString()
     {
         return `[Cart ${this.id} : ${this.status}]`;
-    }
-}
-
-function forwardCart(cartManager, junctionMap, cartId, steps)
-{
-    let cart = getCartById(cartManager, cartId);
-    let juncIndex = cart.currentJunction;
-    let nextIndex = getNextJunction(cart);
-    let lane = getJunctionLaneByIndex(junctionMap, juncIndex, nextIndex);
-    if (isNullJunction(junctionMap, cart.currentOutlet))
-    {
-        // Not on the way yet. Try to merge into a lane.
-        let furthest = getFurthestAvailableSlotInLane(junctionMap, lane, 0);
-        if (furthest > 0)
-        {
-            // Move the cart (it takes 1 step to move out of parking).
-            let nextSlot = Math.min(furthest, steps - 1);
-            forceCartOnLane(cartManager, junctionMap, cartId, nextIndex, nextSlot);
-            return;
-        }
-        else
-        {
-            // Blocked at destination but unable to get into it.
-            // Cannot move in as it is blocked.
-            return;
-        }
-    }
-    else
-    {
-        // Already on the way. Try to move forward.
-        let prevSlot = cart.currentSlot;
-        let nextSlot = prevSlot + steps;
-        let furthest = getFurthestAvailableSlotInLane(junctionMap, lane, prevSlot + 1);
-        // There's no blockers and total movement will exit the lane
-        if (furthest >= lane.length && nextSlot >= lane.length)
-        {
-            let aheadNextJunc = lookAheadNavigation(cartManager, cartId, nextIndex);
-            if (isNullJunction(junctionMap, aheadNextJunc))
-            {
-                // Navigation is stopping at this junction. Slow down.
-                if (tryAcquireParkingInJunction(cartManager, junctionMap, cartId, nextIndex))
-                {
-                    // Parking. Any remaining movement is ignored.
-                    forceCartOnJunction(cartManager, junctionMap, cartId, nextIndex);
-                    return;
-                }
-                else
-                {
-                    // This only happens when a cart is going to a non-parkable junction
-                    forceCartOnJunction(cartManager, junctionMap, cartId, nextIndex);
-                    return;
-                }
-            }
-            else if (canJunctionLaneAcceptCart(junctionMap, nextIndex, aheadNextJunc) && tryAcquirePassThroughJunction(cartManager, junctionMap, cartId, nextIndex))
-            {
-                // Navigation has more junctions to visit and the next junction can accept this cart without blockers
-                cart.passingSlot = prevSlot;
-                forceCartOnJunction(cartManager, junctionMap, cartId, nextIndex);
-                forceCartOnLane(cartManager, junctionMap, cartId, aheadNextJunc, 0);
-                // ...if there's movement left, continue down the lane?
-                let aheadNextSteps = nextSlot - lane.length;
-                if (aheadNextSteps > 0)
-                {
-                    moveCartTowards(cartManager, junctionMap, cartId, aheadNextJunc, aheadNextSteps);
-                }
-                return;
-            }
-            else
-            {
-                // Move forward as far as possible before the blocker.
-                nextSlot = Math.min(lane.length - 1, furthest, nextSlot);
-                forceCartOnLane(cartManager, junctionMap, cartId, nextIndex, nextSlot);
-                return;
-            }
-        }
-        else
-        {
-            // Move forward as far as possible before the blocker.
-            nextSlot = Math.min(lane.length - 1, furthest, nextSlot);
-            forceCartOnLane(cartManager, junctionMap, cartId, nextIndex, nextSlot);
-            return;
-        }
-    }
-}
-
-function getNextJunction(cart)
-{
-    let nextIndex = cart.pathIndex + 1;
-    if (nextIndex <= 0 || nextIndex >= cart.path.length)
-    {
-        return -1;
-    }
-    else
-    {
-        return cart.path[nextIndex];
     }
 }
 
@@ -440,6 +355,9 @@ function teleportCartToHome(cartManager, map, cart)
     cart.x = coordX + 0.5;
     cart.y = coordY + 0.5;
     cart.radians = 0;
+    cart.prevJunction = cart.homeIndex;
+    cart.prevOutlet = NULL_JUNCTION_INDEX;
+    cart.prevSlot = NULL_SLOT_INDEX;
 }
 
 /**
@@ -507,11 +425,16 @@ export function getCartById(cartManager, cartId)
 
 /**
  * @param {CanvasRenderingContext2D} ctx
+ * @param {CartManager} cartManager
+ * @param {JunctionMap} junctionMap
+ * @param {number} cellSize
  */
 export function drawCarts(ctx, cartManager, junctionMap, cellSize)
 {
-    let frameTime = cartManager.tickFrames / FRAMES_PER_TICK;
-    let dt = frameTime;
+    let frameIndex = cartManager.tickFrames;
+    let frameTimeRatio = frameIndex / FRAMES_PER_TICK;
+    const LANE_SLOT_COUNT = 3;
+    let dt = frameTimeRatio;
     for(let cart of Object.values(cartManager.carts))
     {
         if (cart.currentJunction === -1 || cart.currentOutlet === -1)
@@ -520,13 +443,40 @@ export function drawCarts(ctx, cartManager, junctionMap, cellSize)
         }
         else
         {
-            if (frameTime <= 0)
+            if (frameIndex <= 0)
             {
                 // Capture current state.
                 cart.prevX = cart.x;
                 cart.prevY = cart.y;
             }
-            let [nextX, nextY] = getLanePosition(junctionMap, cart.currentJunction, cart.currentOutlet, 0, cart.currentSlot / 3 + 1 / 6);
+            else if (frameIndex >= FRAMES_PER_TICK)
+            {
+                // Capture for next tick (this is the last frame)
+                cart.prevJunction = cart.currentJunction;
+                cart.prevOutlet = cart.currentOutlet;
+                cart.prevSlot = cart.currentSlot;
+            }
+
+            let nextX, nextY;
+            /*
+            // TODO: Although this is more accurate, it is less "smooth". The wrong way looks nicer.
+            let remainingPrevSlots = cart.prevSlot !== NULL_SLOT_INDEX
+                ? LANE_SLOT_COUNT - cart.prevSlot
+                : 0;
+            let remainingCurrentSlots = cart.currentSlot;
+            let totalRemainingSlots = remainingCurrentSlots + remainingPrevSlots;
+            if (frameTimeRatio < remainingPrevSlots / totalRemainingSlots)
+            {
+                // Travelling the remainder of the previous junction
+                [nextX, nextY] = getLanePosition(junctionMap, cart.prevJunction, cart.prevOutlet, 0, 1);
+            }
+            else
+            {
+                // Travelling the remainder of the current junction
+                [nextX, nextY] = getLanePosition(junctionMap, cart.currentJunction, cart.currentOutlet, 0, cart.currentSlot / LANE_SLOT_COUNT);
+            }
+            */
+            [nextX, nextY] = getLanePosition(junctionMap, cart.currentJunction, cart.currentOutlet, 0, cart.currentSlot / LANE_SLOT_COUNT);
             let prevX = cart.prevX;
             let prevY = cart.prevY;
             let currX = lerp(prevX, nextX, dt);
@@ -542,7 +492,8 @@ export function drawCarts(ctx, cartManager, junctionMap, cellSize)
             {
                 let nextRadians = Math.atan2(dy, dx);
                 let prevRadians = cart.radians;
-                currRadians = lookAt2(prevRadians, nextRadians, dt);
+                let diffRadians = cycle(nextRadians - prevRadians, -Math.PI, Math.PI);
+                currRadians = lookAt2(prevRadians, nextRadians, diffRadians / (Math.PI * 2));
             }
             cart.x = currX;
             cart.y = currY;
