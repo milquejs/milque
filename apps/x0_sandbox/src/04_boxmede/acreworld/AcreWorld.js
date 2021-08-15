@@ -1,14 +1,14 @@
 import { uuid } from '@milque/util';
-import { CartManager, drawCarts, NULL_JUNCTION_INDEX } from '../cartworld/Cart.js';
-import { findValidDestination, getPathToJunction, Navigator } from '../cartworld/Navigator.js';
 import { getDirectionalVectorFromEncoding, isDirectionalEncoding, randomSingleDirectionalEncoding } from '../util/Directional.js';
-import { connectJunctions, drawJunctions, drawLanes, drawOutlets, getJunctionCoordsFromIndex, getJunctionIndexFromCoords, getJunctionIndexFromJunction, isJunctionConnectedTo, isJunctionWithinBounds, isNullJunction, JunctionMap, putJunction, randomOutletJunctionFromJunction, removeJunction } from '../laneworld/Junction.js';
+import { connectJunctions, drawOutlets, getJunctionCoordsFromIndex, getJunctionIndexFromCoords, getJunctionIndexFromJunction, isJunctionConnectedTo, isJunctionWithinBounds, isNullJunction, JunctionMap, putJunction, randomOutletJunctionFromJunction, removeJunction } from '../laneworld/Junction.js';
 import { drawGrid } from '../render2d.js';
 import { Directable, tryFindValidChildDirectionForDirectable } from './Directable.js';
 import { Persistence } from './Persistence.js';
 import { CURSOR_ACTION, makeRoad } from './RoadMaker.js';
-import { drawAgents, PARKING_JUNCTION_INTENT, PASSING_JUNCTION_INTENT, TrafficSimulator } from '../cartworld/TrafficSimulator.js';
+import { NULL_JUNCTION_INDEX, PARKING_JUNCTION_INTENT, PASSING_JUNCTION_INTENT, TrafficSimulator } from '../cartworld/TrafficSimulator.js';
 import { PathFinder } from '../cartworld/PathFinder.js';
+import { CartManager, drawCarts } from '../cartworld/CartManager.js';
+import { findValidDestination, getPathToJunction } from '../cartworld/Navigator.js';
 
 /**
  * @typedef {import('../../game/Game.js').Game} Game
@@ -16,6 +16,7 @@ import { PathFinder } from '../cartworld/PathFinder.js';
 
 export const CELL_SIZE = 64;
 export const DRAG_MARGIN = 0.9;
+export const FRAMES_PER_TICK = 30;
 
 export class AcreWorld
 {
@@ -29,14 +30,13 @@ export class AcreWorld
             status: 0,
         };
 
-        this.ticksPerFrame = 0;
+        this.framesToTick = 0;
 
         const map = new JunctionMap(width, height);
         this.junctionMap = map;
         this.trafficSimulator = new TrafficSimulator(map, (agents) => planTraffic(this, agents));
         this.pathFinder = new PathFinder(map);
-        this.cartManager = new CartManager(map);
-        this.navigator = new Navigator(map);
+        this.cartManager = new CartManager(map, this.trafficSimulator);
         this.persistence = new Persistence(map);
         this.directable = new Directable(map);
 
@@ -47,138 +47,6 @@ export class AcreWorld
     }
 }
 
-/**
- * @param {AcreWorld} world 
- * @param {number} juncX 
- * @param {number} juncY 
- */
-export function placeHousing(world, juncX, juncY, outletDirection)
-{
-    const map = world.junctionMap;
-    let [dx, dy] = getDirectionalVectorFromEncoding(outletDirection);
-    let outletX = juncX + dx;
-    let outletY = juncY + dy;
-    if (!isJunctionWithinBounds(map, outletX, outletY))
-    {
-        throw new Error('Cannot place outlet outside of boundary.');
-    }
-    let juncIndex = getJunctionIndexFromCoords(map, juncX, juncY);
-    let offsetIndex = getJunctionIndexFromCoords(map, outletX, outletY);
-    putJunction(map, juncX, juncY, 2);
-    if (!map.hasJunction(offsetIndex))
-    {
-        putJunction(world.junctionMap, outletX, outletY, 0);
-    }
-    world.directable.markDirectableJunction(juncIndex, offsetIndex);
-    world.persistence.markPersistentJunction(juncIndex, offsetIndex);
-    connectJunctions(map, juncIndex, offsetIndex);
-    connectJunctions(map, offsetIndex, juncIndex);
-
-    let id = uuid();
-    let cartA = world.cartManager.createCart(juncIndex);
-    // let cartB = world.cartManager.createCart(juncIndex);
-    world.housing[id] = {
-        coordX: juncX,
-        coordY: juncY,
-        junction: juncIndex,
-        carts: [
-            cartA.id,
-        ]
-    };
-}
-
-export function tryPlaceHousing(world, juncX, juncY)
-{
-    const map = world.junctionMap;
-    let juncIndex = getJunctionIndexFromCoords(map, juncX, juncY);
-    if (!map.hasJunction(juncIndex))
-    {
-        let direction = tryFindValidChildDirectionForDirectable(map, juncIndex, randomSingleDirectionalEncoding(), (juncIndex) => {
-            return !world.directable.isDirectableJunction(juncIndex) && !isSolid(world, map, juncIndex);
-        });
-        if (isDirectionalEncoding(direction))
-        {
-            placeHousing(world, juncX, juncY, direction);
-        }
-    }
-}
-
-export function placeRoad(world, fromX, fromY, toX, toY)
-{
-    const map = world.junctionMap;
-    let fromIndex = getJunctionIndexFromCoords(map, fromX, fromY);
-    let toIndex = getJunctionIndexFromCoords(map, toX, toY);
-    if (!isJunctionConnectedTo(map, fromIndex, toIndex))
-    {
-        connectJunctions(map, fromIndex, toIndex);
-    }
-    if (!isJunctionConnectedTo(map, toIndex, fromIndex))
-    {
-        connectJunctions(map, toIndex, fromIndex);
-    }
-}
-
-/**
- * @param {AcreWorld} world 
- * @param {juncX} juncX 
- * @param {juncY} juncY 
- */
-export function placeFactory(world, juncX, juncY)
-{
-    const map = world.junctionMap;
-    if (!isJunctionWithinBounds(map, juncX, juncY)
-        || !isJunctionWithinBounds(map, juncX + 3, juncY + 3))
-    {
-        throw new Error('Cannot place factory out of bounds.');
-    }
-
-    for(let i = 0; i < 2; ++i)
-    {
-        for(let j = 0; j < 3; ++j)
-        {
-            let juncIndex = (juncX + i + 1) + (juncY + j) * map.width;
-            setSolid(world, map, juncIndex);
-        }
-    }
-    let juncA = putJunction(map, juncX, juncY + 2, 0);
-    let indexA = getJunctionIndexFromJunction(map, juncA);
-    let juncB = putJunction(map, juncX + 1, juncY + 2, 4);
-    let indexB = getJunctionIndexFromJunction(map, juncB);
-    world.persistence.markPersistentJunction(indexA, indexB);
-    connectJunctions(map, indexA, indexB);
-    connectJunctions(map, indexB, indexA);
-    let id = uuid();
-    world.factory[id] = {
-        coordX: juncX,
-        coordY: juncY,
-        entries: [
-            indexA,
-        ],
-        parking: [
-            indexB,
-        ]
-    };
-}
-
-/**
- * @param {AcreWorld} acreWorld 
- * @param {number} coordX 
- * @param {number} coordY 
- */
-export function getJunctionByCoords(acreWorld, coordX, coordY)
-{
-    let juncIndex = coordX + coordY * acreWorld.width;
-    return acreWorld.junctions[juncIndex];
-}
-
-export function getJunctionCoordsFromCell(acreWorld, cellX, cellY)
-{
-    return [
-        cellX,
-        cellY,
-    ];
-}
-
 export function createWorld()
 {
     let world = new AcreWorld(12, 8);
@@ -187,7 +55,6 @@ export function createWorld()
     tryPlaceHousing(world, 1, 2);
     tryPlaceHousing(world, 2, 2);
     tryPlaceHousing(world, 1, 3);
-    world.trafficSimulator.spawnAgent(getJunctionIndexFromCoords(world.junctionMap, 1, 1));
 
     placeFactory(world, 4, 2);
     return world;
@@ -200,7 +67,6 @@ export function createWorld()
 export function updateWorld(game, world)
 {
     const cursor = world.cursor;
-    const cartManager = world.cartManager;
     const map = world.junctionMap;
 
     let screenX = game.inputs.getAxisValue('cursorX') * game.display.width;
@@ -246,11 +112,9 @@ export function updateWorld(game, world)
         cursor.status = 0;
     }
 
-    cartManager.update(world);
-
-    if (++world.ticksPerFrame >= 30)
+    if (++world.framesToTick >= FRAMES_PER_TICK)
     {
-        world.ticksPerFrame = 0;
+        world.framesToTick = 0;
         planTraffic(world, world.trafficSimulator.getAgents().filter(agent => agent.target === -1));
         world.trafficSimulator.tick();
     }
@@ -348,6 +212,139 @@ function planTraffic(world, agents)
     }
 }
 
+/**
+ * @param {AcreWorld} world 
+ * @param {number} juncX 
+ * @param {number} juncY 
+ */
+export function placeHousing(world, juncX, juncY, outletDirection)
+{
+    const map = world.junctionMap;
+    let [dx, dy] = getDirectionalVectorFromEncoding(outletDirection);
+    let outletX = juncX + dx;
+    let outletY = juncY + dy;
+    if (!isJunctionWithinBounds(map, outletX, outletY))
+    {
+        throw new Error('Cannot place outlet outside of boundary.');
+    }
+    let juncIndex = getJunctionIndexFromCoords(map, juncX, juncY);
+    let offsetIndex = getJunctionIndexFromCoords(map, outletX, outletY);
+    putJunction(map, juncX, juncY, 2);
+    if (!map.hasJunction(offsetIndex))
+    {
+        putJunction(world.junctionMap, outletX, outletY, 0);
+    }
+    world.directable.markDirectableJunction(juncIndex, offsetIndex);
+    world.persistence.markPersistentJunction(juncIndex, offsetIndex);
+    connectJunctions(map, juncIndex, offsetIndex);
+    connectJunctions(map, offsetIndex, juncIndex);
+
+    let id = uuid();
+    let cartA = world.cartManager.createCart(juncX, juncY, Math.atan2(dy, dx));
+    let cartB = world.cartManager.createCart(juncX, juncY, Math.atan2(dy, dx));
+    world.housing[id] = {
+        coordX: juncX,
+        coordY: juncY,
+        junction: juncIndex,
+        carts: [
+            cartA.id,
+            cartB.id,
+        ]
+    };
+}
+
+export function tryPlaceHousing(world, juncX, juncY)
+{
+    const map = world.junctionMap;
+    let juncIndex = getJunctionIndexFromCoords(map, juncX, juncY);
+    if (!map.hasJunction(juncIndex))
+    {
+        let direction = tryFindValidChildDirectionForDirectable(map, juncIndex, randomSingleDirectionalEncoding(), (juncIndex) => {
+            return !world.directable.isDirectableJunction(juncIndex) && !isSolid(world, map, juncIndex);
+        });
+        if (isDirectionalEncoding(direction))
+        {
+            placeHousing(world, juncX, juncY, direction);
+        }
+    }
+}
+
+export function placeRoad(world, fromX, fromY, toX, toY)
+{
+    const map = world.junctionMap;
+    let fromIndex = getJunctionIndexFromCoords(map, fromX, fromY);
+    let toIndex = getJunctionIndexFromCoords(map, toX, toY);
+    if (!isJunctionConnectedTo(map, fromIndex, toIndex))
+    {
+        connectJunctions(map, fromIndex, toIndex);
+    }
+    if (!isJunctionConnectedTo(map, toIndex, fromIndex))
+    {
+        connectJunctions(map, toIndex, fromIndex);
+    }
+}
+
+/**
+ * @param {AcreWorld} world 
+ * @param {juncX} juncX 
+ * @param {juncY} juncY 
+ */
+export function placeFactory(world, juncX, juncY)
+{
+    const map = world.junctionMap;
+    if (!isJunctionWithinBounds(map, juncX, juncY)
+        || !isJunctionWithinBounds(map, juncX + 3, juncY + 3))
+    {
+        throw new Error('Cannot place factory out of bounds.');
+    }
+
+    for(let i = 0; i < 2; ++i)
+    {
+        for(let j = 0; j < 3; ++j)
+        {
+            let juncIndex = (juncX + i + 1) + (juncY + j) * map.width;
+            setSolid(world, map, juncIndex);
+        }
+    }
+    let juncA = putJunction(map, juncX, juncY + 2, 0);
+    let indexA = getJunctionIndexFromJunction(map, juncA);
+    let juncB = putJunction(map, juncX + 1, juncY + 2, 4);
+    let indexB = getJunctionIndexFromJunction(map, juncB);
+    world.persistence.markPersistentJunction(indexA, indexB);
+    connectJunctions(map, indexA, indexB);
+    connectJunctions(map, indexB, indexA);
+    let id = uuid();
+    world.factory[id] = {
+        coordX: juncX,
+        coordY: juncY,
+        entries: [
+            indexA,
+        ],
+        parking: [
+            indexB,
+        ]
+    };
+}
+
+/**
+ * @param {AcreWorld} acreWorld 
+ * @param {number} coordX 
+ * @param {number} coordY 
+ */
+export function getJunctionByCoords(acreWorld, coordX, coordY)
+{
+    let juncIndex = coordX + coordY * acreWorld.width;
+    return acreWorld.junctions[juncIndex];
+}
+
+export function getJunctionCoordsFromCell(acreWorld, cellX, cellY)
+{
+    return [
+        cellX,
+        cellY,
+    ];
+}
+ 
 function tryPutJunction(world, map, juncX, juncY)
 {
     let index = getJunctionIndexFromCoords(map, juncX, juncY);
@@ -439,10 +436,10 @@ export function drawWorld(game, ctx, world)
     // drawJunctions(ctx, map, CELL_SIZE);
     // drawLanes(ctx, map, CELL_SIZE);
     // drawSolids(ctx, world, map, CELL_SIZE);
-    drawCarts(ctx, cartManager, map, CELL_SIZE);
+    drawCarts(ctx, cartManager, world.framesToTick, FRAMES_PER_TICK, CELL_SIZE);
     drawHousings(ctx, world, CELL_SIZE);
     drawFactories(ctx, world, CELL_SIZE);
-    drawAgents(ctx, map, world.trafficSimulator, CELL_SIZE);
+    // drawAgents(ctx, map, world.trafficSimulator, CELL_SIZE);
     if (world.cursor.status !== CURSOR_ACTION.NONE)
     {
         ctx.lineWidth = 2;
