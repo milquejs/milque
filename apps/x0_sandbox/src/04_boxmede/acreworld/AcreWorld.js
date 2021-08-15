@@ -1,12 +1,14 @@
 import { uuid } from '@milque/util';
-import { CartManager, drawCarts } from '../cartworld/Cart.js';
-import { Navigator } from '../cartworld/Navigator.js';
+import { CartManager, drawCarts, NULL_JUNCTION_INDEX } from '../cartworld/Cart.js';
+import { findValidDestination, getPathToJunction, Navigator } from '../cartworld/Navigator.js';
 import { getDirectionalVectorFromEncoding, isDirectionalEncoding, randomSingleDirectionalEncoding } from '../util/Directional.js';
-import { connectJunctions, drawJunctions, drawLanes, drawOutlets, getJunctionCoordsFromIndex, getJunctionIndexFromCoords, getJunctionIndexFromJunction, isJunctionConnectedTo, isJunctionWithinBounds, JunctionMap, putJunction, removeJunction } from '../laneworld/Junction.js';
+import { connectJunctions, drawJunctions, drawLanes, drawOutlets, getJunctionCoordsFromIndex, getJunctionIndexFromCoords, getJunctionIndexFromJunction, isJunctionConnectedTo, isJunctionWithinBounds, isNullJunction, JunctionMap, putJunction, randomOutletJunctionFromJunction, removeJunction } from '../laneworld/Junction.js';
 import { drawGrid } from '../render2d.js';
 import { Directable, tryFindValidChildDirectionForDirectable } from './Directable.js';
 import { Persistence } from './Persistence.js';
 import { CURSOR_ACTION, makeRoad } from './RoadMaker.js';
+import { drawAgents, PARKING_JUNCTION_INTENT, PASSING_JUNCTION_INTENT, TrafficSimulator } from '../cartworld/TrafficSimulator.js';
+import { PathFinder } from '../cartworld/PathFinder.js';
 
 /**
  * @typedef {import('../../game/Game.js').Game} Game
@@ -27,11 +29,16 @@ export class AcreWorld
             status: 0,
         };
 
-        this.junctionMap = new JunctionMap(width, height);
-        this.cartManager = new CartManager(this.junctionMap);
-        this.navigator = new Navigator(this.junctionMap);
-        this.persistence = new Persistence(this.junctionMap);
-        this.directable = new Directable(this.junctionMap);
+        this.ticksPerFrame = 0;
+
+        const map = new JunctionMap(width, height);
+        this.junctionMap = map;
+        this.trafficSimulator = new TrafficSimulator(map, (agents) => planTraffic(this, agents));
+        this.pathFinder = new PathFinder(map);
+        this.cartManager = new CartManager(map);
+        this.navigator = new Navigator(map);
+        this.persistence = new Persistence(map);
+        this.directable = new Directable(map);
 
         this.solids = new Array(width * height).fill(0);
 
@@ -69,14 +76,13 @@ export function placeHousing(world, juncX, juncY, outletDirection)
 
     let id = uuid();
     let cartA = world.cartManager.createCart(juncIndex);
-    let cartB = world.cartManager.createCart(juncIndex);
+    // let cartB = world.cartManager.createCart(juncIndex);
     world.housing[id] = {
         coordX: juncX,
         coordY: juncY,
         junction: juncIndex,
         carts: [
             cartA.id,
-            cartB.id,
         ]
     };
 }
@@ -181,6 +187,7 @@ export function createWorld()
     tryPlaceHousing(world, 1, 2);
     tryPlaceHousing(world, 2, 2);
     tryPlaceHousing(world, 1, 3);
+    world.trafficSimulator.spawnAgent(getJunctionIndexFromCoords(world.junctionMap, 1, 1));
 
     placeFactory(world, 4, 2);
     return world;
@@ -194,7 +201,7 @@ export function updateWorld(game, world)
 {
     const cursor = world.cursor;
     const cartManager = world.cartManager;
-    const junctionMap = world.junctionMap;
+    const map = world.junctionMap;
 
     let screenX = game.inputs.getAxisValue('cursorX') * game.display.width;
     let screenY = game.inputs.getAxisValue('cursorY') * game.display.height;
@@ -206,22 +213,22 @@ export function updateWorld(game, world)
     {
         makeRoad(screenX, screenY, action, cursor,
             (fromX, fromY, toX, toY) => {
-                if (!isJunctionWithinBounds(junctionMap, fromX, fromY)) return;
-                if (!isJunctionWithinBounds(junctionMap, toX, toY)) return;
+                if (!isJunctionWithinBounds(map, fromX, fromY)) return;
+                if (!isJunctionWithinBounds(map, toX, toY)) return;
                 let [fromJuncX, fromJuncY] = getJunctionCoordsFromCell(world, fromX, fromY);
-                let fromJuncIndex = getJunctionIndexFromCoords(junctionMap, fromJuncX, fromJuncY);
+                let fromJuncIndex = getJunctionIndexFromCoords(map, fromJuncX, fromJuncY);
                 let [toJuncX, toJuncY] = getJunctionCoordsFromCell(world, toX, toY);
-                let toJuncIndex = getJunctionIndexFromCoords(junctionMap, toJuncX, toJuncY);
+                let toJuncIndex = getJunctionIndexFromCoords(map, toJuncX, toJuncY);
                 if (fromJuncIndex === toJuncIndex) return;
-                if (tryPutJunction(world, junctionMap, fromJuncX, fromJuncY) && tryPutJunction(world, junctionMap, toJuncX, toJuncY))
+                if (tryPutJunction(world, map, fromJuncX, fromJuncY) && tryPutJunction(world, map, toJuncX, toJuncY))
                 {
-                    tryConnectJunctions(world, junctionMap, fromJuncIndex, toJuncIndex);
+                    tryConnectJunctions(world, map, fromJuncIndex, toJuncIndex);
                 }
             }, (cellX, cellY) => {
                 let [juncX, juncY] = getJunctionCoordsFromCell(world, cellX, cellY);
-                if (!isJunctionWithinBounds(junctionMap, juncX, juncY)) return;
-                let juncIndex = getJunctionIndexFromCoords(junctionMap, juncX, juncY);
-                if (junctionMap.hasJunction(juncIndex))
+                if (!isJunctionWithinBounds(map, juncX, juncY)) return;
+                let juncIndex = getJunctionIndexFromCoords(map, juncX, juncY);
+                if (map.hasJunction(juncIndex))
                 {
                     if (world.persistence.isPersistentJunction(juncIndex))
                     {
@@ -229,7 +236,7 @@ export function updateWorld(game, world)
                     }
                     else
                     {
-                        removeJunction(junctionMap, juncIndex);
+                        removeJunction(map, juncIndex);
                     }
                 }
             }, CELL_SIZE, DRAG_MARGIN);
@@ -240,6 +247,105 @@ export function updateWorld(game, world)
     }
 
     cartManager.update(world);
+
+    if (++world.ticksPerFrame >= 30)
+    {
+        world.ticksPerFrame = 0;
+        planTraffic(world, world.trafficSimulator.getAgents().filter(agent => agent.target === -1));
+        world.trafficSimulator.tick();
+    }
+}
+
+/**
+ * @param {AcreWorld} world 
+ * @param {Array<TrafficAgent>} agents 
+ */
+function planTraffic(world, agents)
+{
+    const map = world.junctionMap;
+    for(let agent of agents)
+    {
+        switch('path')
+        {
+            case 'random':
+                {
+                    let target = typeof agent.savedTarget !== 'undefined'
+                        ? agent.savedTarget
+                        : randomOutletJunctionFromJunction(map, agent.junction);
+                    let nextTarget = randomOutletJunctionFromJunction(map, target);
+                    agent.savedTarget = nextTarget;
+                    let intent = PASSING_JUNCTION_INTENT;
+                    agent.setTarget(target, nextTarget, intent);
+                }
+                break;
+            case 'path':
+                {
+                    if (!agent.pathId)
+                    {
+                        let destination;
+                        if (agent.junction === agent.home)
+                        {
+                            destination = findValidDestination(world, map);
+                        }
+                        else
+                        {
+                            destination = agent.home;
+                        }
+                        if (!isNullJunction(map, destination))
+                        {
+                            let pathId = getPathToJunction(world, world.pathFinder, agent.junction, destination);
+                            let path = world.pathFinder.getPathById(pathId);
+                            if (!path || path.length < 2)
+                            {
+                                // No path.
+                                break;
+                            }
+                            else if (path === 2)
+                            {
+                                // One step path.
+                                agent.pathId = pathId;
+                                agent.setTarget(path[1], NULL_JUNCTION_INDEX, PARKING_JUNCTION_INTENT);
+                            }
+                            else
+                            {
+                                // Path with multiple steps.
+                                agent.pathId = pathId;
+                                agent.setTarget(path[1], path[2], PASSING_JUNCTION_INTENT);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // Already on a path.
+                        let pathId = agent.pathId;
+                        let path = world.pathFinder.getPathById(pathId);
+                        let i = path.indexOf(agent.junction);
+                        if (i >= 0)
+                        {
+                            if (i < path.length - 2)
+                            {
+                                agent.setTarget(path[i + 1], path[i + 2], PASSING_JUNCTION_INTENT);
+                            }
+                            else if (i < path.length - 1)
+                            {
+                                agent.setTarget(path[i + 1], NULL_JUNCTION_INDEX, PARKING_JUNCTION_INTENT);
+                            }
+                            else
+                            {
+                                agent.pathId = null;
+                                agent.clearTarget();
+                            }
+                        }
+                        else
+                        {
+                            agent.pathId = null;
+                            agent.clearTarget();
+                        }
+                    }
+                }
+                break;
+        }
+    }
 }
 
 function tryPutJunction(world, map, juncX, juncY)
@@ -336,6 +442,7 @@ export function drawWorld(game, ctx, world)
     drawCarts(ctx, cartManager, map, CELL_SIZE);
     drawHousings(ctx, world, CELL_SIZE);
     drawFactories(ctx, world, CELL_SIZE);
+    drawAgents(ctx, map, world.trafficSimulator, CELL_SIZE);
     if (world.cursor.status !== CURSOR_ACTION.NONE)
     {
         ctx.lineWidth = 2;

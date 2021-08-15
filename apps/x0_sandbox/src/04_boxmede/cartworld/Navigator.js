@@ -43,10 +43,11 @@ export class Navigator
         switch(cart.state)
         {
             case CART_STATE.READY:
-                if (cart.lastUpdatedTicks - cart.lastStateChangedTicks > SEARCH_VALID_DESTINATION_RATE)
+            {
+                let elapsedTicks = cart.lastUpdatedTicks - cart.lastStateChangedTicks;
+                if (elapsedTicks > SEARCH_VALID_DESTINATION_RATE)
                 {
                     cart.lastStateChangedTicks = cart.lastUpdatedTicks;
-    
                     let dest = findValidDestination(world, junctionMap, cart);
                     if (!isNullJunction(junctionMap, dest))
                     {
@@ -61,28 +62,17 @@ export class Navigator
                         }
                     }
                 }
-                break;
+                return cart.currentJunction;
+            }
             case CART_STATE.SENDING:
                 {
-                    let i = cart.path.indexOf(cart.currentJunction);
-                    if (i < 0)
+                    let pathId = cart.pathId;
+                    let path = pathFinder.getPathById(pathId);
+                    let i = path.indexOf(cart.currentJunction);
+                    if (i >= 0)
                     {
-                        // Reset back to home.
-                        cart.currentJunction = cart.homeIndex;
-                        cart.state = CART_STATE.RESTING;
-                        cart.lastStateChangedTicks = cart.lastUpdatedTicks;
-                        if (cart.pathId)
-                        {
-                            pathFinder.releasePath(cart.pathId);
-                            cart.pathId = null;
-                            cart.path = [];
-                            cart.pathIndex = -1;
-                        }
-                    }
-                    else
-                    {
-                        ++i;
-                        if (i >= cart.path.length)
+                        i = i + 1;
+                        if (i >= path.length)
                         {
                             // We reached the end!
                             cart.state = CART_STATE.PROCESSING;
@@ -94,26 +84,13 @@ export class Navigator
                                 cart.path = [];
                                 cart.pathIndex = -1;
                             }
+                            return path[path.length - 1];
                         }
                         else
                         {
                             // We are moving forward!
-                            let juncIndex = cart.path[i];
-                            if (!junctionMap.hasJunction(juncIndex))
-                            {
-                                // Path is no longer valid. Reset back to home.
-                                cart.currentJunction = cart.homeIndex;
-                                cart.state = CART_STATE.RESTING;
-                                cart.lastStateChangedTicks = cart.lastUpdatedTicks;
-                                if (cart.pathId)
-                                {
-                                    pathFinder.releasePath(cart.pathId);
-                                    cart.pathId = null;
-                                    cart.path = [];
-                                    cart.pathIndex = -1;
-                                }
-                            }
-                            else
+                            let juncIndex = path[i];
+                            if (junctionMap.hasJunction(juncIndex))
                             {
                                 return juncIndex;
                             }
@@ -122,21 +99,17 @@ export class Navigator
                 }
                 break;
             case CART_STATE.PROCESSING:
-                if (cart.lastUpdatedTicks - cart.lastStateChangedTicks > PROCESSING_TICKS)
+            {
+                let elapsedTicks = cart.lastUpdatedTicks - cart.lastStateChangedTicks;
+                if (elapsedTicks > PROCESSING_TICKS)
                 {
                     cart.lastStateChangedTicks = cart.lastUpdatedTicks;
                     if (!isNullJunction(junctionMap, cart.homeIndex))
                     {
-                        if (cart.pathId)
-                        {
-                            pathFinder.releasePath(cart.pathId);
-                            cart.pathId = null;
-                        }
                         let pathId = pathFinder.acquirePath(cart.currentJunction, cart.homeIndex);
                         if (pathId)
                         {
                             cart.state = CART_STATE.RETURNING;
-    
                             cart.path = pathFinder.getPathById(pathId);
                             cart.pathId = pathId;
                             cart.pathIndex = 0;
@@ -144,33 +117,21 @@ export class Navigator
                         }
                     }
                 }
-                break;
+                return cart.currentJunction;
+            }
             case CART_STATE.RETURNING:
                 {
-                    let i = cart.path.indexOf(cart.currentJunction);
-                    if (i < 0)
+                    let pathId = cart.pathId;
+                    let path = pathFinder.getPathById(pathId);
+                    let i = path.indexOf(cart.currentJunction);
+                    if (i >= 0)
                     {
-                        // Reset back to home.
-                        cart.currentJunction = cart.homeIndex;
-                        cart.state = CART_STATE.RESTING;
-                        cart.lastStateChangedTicks = cart.lastUpdatedTicks;
-                        if (cart.pathId)
-                        {
-                            pathFinder.releasePath(cart.pathId);
-                            cart.pathId = null;
-                            cart.path = [];
-                            cart.pathIndex = -1;
-                        }
-                    }
-                    else
-                    {
-                        ++i;
-                        if (i >= cart.path.length)
+                        i = i + 1;
+                        if (i >= path.length)
                         {
                             // We reached the end!
-                            cart.state = CART_STATE.RESTING;
+                            cart.state = CART_STATE.PROCESSING;
                             cart.lastStateChangedTicks = cart.lastUpdatedTicks;
-    
                             if (cart.pathId)
                             {
                                 pathFinder.releasePath(cart.pathId);
@@ -178,26 +139,13 @@ export class Navigator
                                 cart.path = [];
                                 cart.pathIndex = -1;
                             }
+                            return cart.currentJunction;
                         }
                         else
                         {
                             // We are moving forward!
-                            let juncIndex = cart.path[i];
-                            if (!junctionMap.hasJunction(juncIndex))
-                            {
-                                // Path is no longer valid. Reset back to home.
-                                cart.currentJunction = cart.homeIndex;
-                                cart.state = CART_STATE.RESTING;
-                                cart.lastStateChangedTicks = cart.lastUpdatedTicks;
-                                if (cart.pathId)
-                                {
-                                    pathFinder.releasePath(cart.pathId);
-                                    cart.pathId = null;
-                                    cart.path = [];
-                                    cart.pathIndex = -1;
-                                }
-                            }
-                            else
+                            let juncIndex = path[i];
+                            if (junctionMap.hasJunction(juncIndex))
                             {
                                 return juncIndex;
                             }
@@ -206,15 +154,32 @@ export class Navigator
                 }
                 break;
             case CART_STATE.RESTING:
-                if (cart.lastUpdatedTicks - cart.lastStateChangedTicks > RESTING_TICKS)
+            {
+                let elapsedTicks = cart.lastUpdatedTicks - cart.lastStateChangedTicks;
+                if (elapsedTicks > RESTING_TICKS)
                 {
                     cart.lastStateChangedTicks = cart.lastUpdatedTicks;
                     cart.state = CART_STATE.READY;
+                    return cart.currentJunction;
                 }
-                break;
+                return cart.currentJunction;
+            }
         }
+        // Nothing valid. Teleport home.
         return NULL_JUNCTION_INDEX;
     }
+}
+
+/**
+ * @param {AcreWorld} world 
+ * @param {PathFinder} pathFinder 
+ * @param {number} fromIndex 
+ * @param {number} toIndex 
+ * @returns 
+ */
+export function getPathToJunction(world, pathFinder, fromIndex, toIndex)
+{
+    return pathFinder.acquirePath(fromIndex, toIndex);
 }
 
 /**
@@ -222,7 +187,7 @@ export class Navigator
  * @param {JunctionMap} junctionMap 
  * @param {Cart} cart 
  */
-function findValidDestination(world, junctionMap, cart)
+export function findValidDestination(world, map)
 {
     let factories = Object.values(world.factory);
     if (factories.length <= 0) return NULL_JUNCTION_INDEX;

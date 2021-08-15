@@ -1,6 +1,8 @@
 /**
  * @typedef {[number, number]} JunctionCoords
  * @typedef {number} JunctionIndex
+ * 
+ * @typedef {string} LaneIndex
  */
 
 export class JunctionMap
@@ -16,6 +18,11 @@ export class JunctionMap
          * @type {Record<JunctionIndex, Junction>}
          */
         this.juncs = {};
+        /**
+         * @private
+         * @type {Record<LaneIndex, Lane>}
+         */
+        this.lanes = {};
     }
 
     /**

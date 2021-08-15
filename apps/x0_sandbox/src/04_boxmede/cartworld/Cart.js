@@ -1,7 +1,10 @@
 import { cycle, lerp, lookAt2, uuid } from '@milque/util';
 import { getJunctionByIndex, getJunctionCoordsFromIndex, getJunctionLaneByIndex, isJunctionOutletForJunction, isNullJunction, LANE_SLOT_OFFSET } from '../laneworld/Junction.js';
 
-/** @typedef {import('../laneworld/Junction.js').JunctionMap} JunctionMap */
+/**
+ * @typedef {import('../laneworld/Junction.js').JunctionMap} JunctionMap
+ * @typedef {import('../acreworld/AcreWorld.js').AcreWorld} AcreWorld
+ */
 
 export const NULL_JUNCTION_INDEX = -1;
 export const NULL_SLOT_INDEX = -1;
