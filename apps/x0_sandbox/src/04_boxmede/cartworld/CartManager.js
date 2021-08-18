@@ -1,7 +1,7 @@
 /** @typedef {import('./TrafficSimulator.js').TrafficSimulator} TrafficSimulator */
 
 import { cycle, lerp, lookAt2 } from '@milque/util';
-import { getItemClassMainColor, getItemClassShadowColor } from '../acreworld/ItemClass.js';
+import { getCargoMainColor, getCargoShadowColor } from '../acreworld/Cargo.js';
 import { getJunctionCoordsFromIndex, getJunctionIndexFromCoords } from '../laneworld/Junction.js';
 
 export const NULL_JUNCTION_INDEX = -1;
@@ -24,14 +24,14 @@ export class CartManager
         this.carts = {};
     }
 
-    createCart(coordX, coordY, radians, itemClass)
+    createCart(coordX, coordY, radians, cargo)
     {
         const map = this.junctionMap;
         const traffic = this.trafficSimulator;
         let homeIndex = getJunctionIndexFromCoords(map, coordX, coordY);
         let agent = traffic.spawnAgent(homeIndex);
         let cartId = agent.id;
-        let cart = new Cart(cartId, coordX + 0.5, coordY + 0.5, radians, itemClass);
+        let cart = new Cart(cartId, coordX + 0.5, coordY + 0.5, radians, cargo);
         this.carts[cartId] = cart;
         return cart;
     }
@@ -44,7 +44,7 @@ export class CartManager
 
 export class Cart
 {
-    constructor(id, coordX, coordY, radians, itemClass)
+    constructor(id, coordX, coordY, radians, cargo)
     {
         this.id = id;
 
@@ -58,7 +58,7 @@ export class Cart
         this.y = coordY;
         this.radians = radians;
 
-        this.itemClass = itemClass;
+        this.cargo = cargo;
     }
 
     getAgentId()
@@ -146,8 +146,8 @@ export function drawCarts(ctx, cartManager, framesToTick, framesPerTick, cellSiz
             cart.y = currY;
             cart.radians = currRadians;
         }
-        let mainColor = getItemClassMainColor(cart.itemClass);
-        let shadowColor = getItemClassShadowColor(cart.itemClass);
+        let mainColor = getCargoMainColor(cart.cargo);
+        let shadowColor = getCargoShadowColor(cart.cargo);
         drawCart(ctx, currX * cellSize, currY * cellSize, currRadians, mainColor, shadowColor, cellSize);
     }
 }
