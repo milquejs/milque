@@ -1,3 +1,4 @@
+import { isCargoAcceptable } from '../acreworld/Cargo.js';
 import { NULL_JUNCTION_INDEX } from './TrafficSimulator.js';
 
 const CART_STATE = {
@@ -25,9 +26,10 @@ export function getPathToJunction(world, pathFinder, fromIndex, toIndex)
  * @param {JunctionMap} junctionMap 
  * @param {Cart} cart 
  */
-export function findValidDestination(world, map)
+export function findValidDestination(world, map, cart)
 {
-    let factories = Object.values(world.factory);
+    if (!cart) throw new Error('Non-existant cart.');
+    let factories = Object.values(world.factory).filter(factory => isCargoAcceptable(factory.cargo, cart.cargo));
     if (factories.length <= 0) return NULL_JUNCTION_INDEX;
     let i = Math.floor(Math.random() * factories.length);
     let factory = factories[i];

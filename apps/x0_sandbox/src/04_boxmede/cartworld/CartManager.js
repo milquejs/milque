@@ -36,9 +36,14 @@ export class CartManager
         return cart;
     }
 
-    getCart(cartId)
+    getCartById(cartId)
     {
         return this.carts[cartId];
+    }
+
+    getCartByAgentId(agentId)
+    {
+        return this.carts[agentId];
     }
 }
 

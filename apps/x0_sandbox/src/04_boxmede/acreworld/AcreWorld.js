@@ -1,5 +1,5 @@
 import { isDirectionalEncoding, randomSingleDirectionalEncoding } from '../util/Directional.js';
-import { connectJunctions, drawJunctions, drawLanes, drawOutlets, getJunctionCoordsFromIndex, getJunctionIndexFromCoords, getJunctionIndexFromJunction, isJunctionConnectedTo, isJunctionWithinBounds, isNullJunction, JunctionMap, putJunction, randomOutletJunctionFromJunction } from '../laneworld/Junction.js';
+import { connectJunctions, drawJunctions, drawLanes, drawOutlets, getJunctionCoordsFromIndex, getJunctionIndexFromCoords, isJunctionConnectedTo, isJunctionWithinBounds, isNullJunction, JunctionMap, putJunction, randomOutletJunctionFromJunction } from '../laneworld/Junction.js';
 import { drawGrid } from '../render2d.js';
 import { Directable, tryFindValidChildDirectionForDirectable } from './Directable.js';
 import { Persistence } from './Persistence.js';
@@ -67,15 +67,6 @@ export function createWorld()
         tryPlaceFactory(world, x, y);
     }
     return world;
-}
-
-function randomJunctionCoords(map, offsetX = 0, offsetY = 0, marginX = 0, marginY = 0)
-{
-    let w = map.width - offsetX - marginX * 2;
-    let h = map.height - offsetY - marginY * 2;
-    let x = Math.floor(Math.random() * w) + offsetX + marginX;
-    let y = Math.floor(Math.random() * h) + offsetY + marginY;
-    return [x, y];
 }
 
 /**
@@ -158,7 +149,8 @@ function planTraffic(world, agents)
                         let destination;
                         if (agent.junction === agent.home)
                         {
-                            destination = findValidDestination(world, map);
+                            let cart = world.cartManager.getCartByAgentId(agent.id);
+                            destination = findValidDestination(world, map, cart);
                         }
                         else
                         {
@@ -305,6 +297,15 @@ export function getJunctionCoordsFromCell(acreWorld, cellX, cellY)
         cellX,
         cellY,
     ];
+}
+
+export function randomJunctionCoords(map, offsetX = 0, offsetY = 0, marginX = 0, marginY = 0)
+{
+    let w = map.width - offsetX - marginX * 2;
+    let h = map.height - offsetY - marginY * 2;
+    let x = Math.floor(Math.random() * w) + offsetX + marginX;
+    let y = Math.floor(Math.random() * h) + offsetY + marginY;
+    return [x, y];
 }
 
 function tryPutJunction(world, map, juncX, juncY)

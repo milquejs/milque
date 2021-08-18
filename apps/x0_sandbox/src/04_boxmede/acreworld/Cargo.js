@@ -10,14 +10,19 @@ export function randomCargo()
     return CARGO_KEYS[Math.floor(Math.random() * CARGO_KEYS.length)];
 }
 
-export function getCargoMainColor(Cargo)
+export function getCargoMainColor(cargo)
 {
-    return CARGO[Cargo].color;
+    return CARGO[cargo].color;
 }
 
-export function getCargoShadowColor(Cargo)
+export function getCargoShadowColor(cargo)
 {
-    return CARGO[Cargo].shadow;
+    return CARGO[cargo].shadow;
+}
+
+export function isCargoAcceptable(sourceCargo, targetCargo)
+{
+    return sourceCargo === targetCargo;
 }
 
 function createCargo(color, shadow)
