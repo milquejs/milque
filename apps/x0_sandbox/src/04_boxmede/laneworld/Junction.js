@@ -477,6 +477,60 @@ export function removeJunction(map, juncIndex)
     map.deleteJunction(juncIndex);
 }
 
+export function removeOnlyJunctionConnections(map, juncIndex, removedIndices)
+{
+    let junc = map.getJunction(juncIndex);
+    for(let outletIndex of junc.getOutlets())
+    {
+        if (removedIndices.includes(outletIndex))
+        {
+            disconnectJunctions(map, juncIndex, outletIndex);
+            if (isJunctionEmpty(map, outletIndex))
+            {
+                removeJunction(map, outletIndex);
+            }
+        }
+    }
+    for(let inletIndex of junc.getInlets())
+    {
+        if (removedIndices.includes(inletIndex))
+        {
+            disconnectJunctions(map, inletIndex, juncIndex);
+            if (isJunctionEmpty(map, inletIndex))
+            {
+                removeJunction(map, inletIndex);
+            }
+        }
+    }
+}
+
+export function retainOnlyJunctionConnections(map, juncIndex, retainedIndices)
+{
+    let junc = map.getJunction(juncIndex);
+    for(let outletIndex of junc.getOutlets())
+    {
+        if (!retainedIndices.includes(outletIndex))
+        {
+            disconnectJunctions(map, juncIndex, outletIndex);
+            if (isJunctionEmpty(map, outletIndex))
+            {
+                removeJunction(map, outletIndex);
+            }
+        }
+    }
+    for(let inletIndex of junc.getInlets())
+    {
+        if (!retainedIndices.includes(inletIndex))
+        {
+            disconnectJunctions(map, inletIndex, juncIndex);
+            if (isJunctionEmpty(map, inletIndex))
+            {
+                removeJunction(map, inletIndex);
+            }
+        }
+    }
+}
+
 /**
  * @param {JunctionMap} map 
  * @param {JunctionIndex} juncIndex 

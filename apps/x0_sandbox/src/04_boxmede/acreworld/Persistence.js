@@ -3,7 +3,7 @@
  * @typedef {import('../laneworld/Junction.js').JunctionIndex} JunctionIndex
  */
 
-import { disconnectJunctions, isJunctionEmpty, removeJunction } from '../laneworld/Junction.js';
+import { retainOnlyJunctionConnections } from '../laneworld/Junction.js';
 
 export class Persistence
 {
@@ -95,28 +95,6 @@ export class Persistence
         {
             throw new Error('Cannot retain non-persistent junction.');
         }
-        let junc = map.getJunction(juncIndex);
-        for(let outletIndex of junc.getOutlets())
-        {
-            if (!list.includes(outletIndex))
-            {
-                disconnectJunctions(map, juncIndex, outletIndex);
-                if (isJunctionEmpty(map, outletIndex))
-                {
-                    removeJunction(map, outletIndex);
-                }
-            }
-        }
-        for(let inletIndex of junc.getInlets())
-        {
-            if (!list.includes(inletIndex))
-            {
-                disconnectJunctions(map, inletIndex, juncIndex);
-                if (isJunctionEmpty(map, inletIndex))
-                {
-                    removeJunction(map, inletIndex);
-                }
-            }
-        }
+        retainOnlyJunctionConnections(map, juncIndex, list);
     }
 }

@@ -446,14 +446,8 @@ function tryConnectJunctions(world, map, fromJuncIndex, toJuncIndex)
     {
         connectJunctions(map, toJuncIndex, fromJuncIndex);
     }
-    if (world.demolition.isJunctionMarkedForDemolition(fromJuncIndex))
-    {
-        world.demolition.unmarkForDemolition(fromJuncIndex);
-    }
-    if (world.demolition.isJunctionMarkedForDemolition(toJuncIndex))
-    {
-        world.demolition.unmarkForDemolition(toJuncIndex);
-    }
+    world.demolition.unmarkLaneForDemolition(fromJuncIndex, toJuncIndex);
+    world.demolition.unmarkLaneForDemolition(toJuncIndex, fromJuncIndex);
     return true;
 }
 

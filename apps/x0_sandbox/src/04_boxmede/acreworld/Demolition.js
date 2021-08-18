@@ -5,7 +5,7 @@
  * @typedef {import('./Persistence.js').Persistence} Persistence
  */
 
-import { getJunctionCoordsFromIndex, removeJunction } from '../laneworld/Junction.js';
+import { getJunctionCoordsFromIndex, removeOnlyJunctionConnections } from '../laneworld/Junction.js';
 
 export class Demolition
 {
@@ -24,14 +24,14 @@ export class Demolition
         this.persistence = persistence;
 
         /** @private */
-        this.demolish = new Uint8Array(junctionMap.length);
+        this.demolished = new Uint8Array(junctionMap.length);
         /** @private */
         this.lanes = {};
     }
 
     update()
     {
-        let len = this.demolish.length;
+        let len = this.junctionMap.length;
         for(let i = 0; i < len; ++i)
         {
             if (this.isJunctionMarkedForDemolition(i))
@@ -42,7 +42,7 @@ export class Demolition
                 }
                 if (!this.pathFinder.isJunctionUsedForAnyPath(i))
                 {
-                    performDemolish(this.junctionMap, this.persistence, i);
+                    performDemolish(this.junctionMap, this.persistence, i, this.lanes[i]);
                     this.unmarkForDemolition(i);
                 }
             }
@@ -51,7 +51,7 @@ export class Demolition
 
     clear()
     {
-        let len = this.demolish.length;
+        let len = this.junctionMap.length;
         for(let i = 0; i < len; ++i)
         {
             if (this.isJunctionMarkedForDemolition(i))
@@ -63,34 +63,51 @@ export class Demolition
 
     markForDemolition(juncIndex)
     {
-        this.demolish[juncIndex] = 1;
+        let junc = this.junctionMap.getJunction(juncIndex);
+        this.lanes[juncIndex] = junc.getOutlets();
+        this.demolished[juncIndex] = 1;
         this.pathFinder.setWeight(juncIndex, Number.POSITIVE_INFINITY);
     }
 
     unmarkForDemolition(juncIndex)
     {
-        this.demolish[juncIndex] = 0;
+        this.demolished[juncIndex] = 0;
+        delete this.lanes[juncIndex];
         this.pathFinder.resetWeight(juncIndex);
+    }
+
+    unmarkLaneForDemolition(juncIndex, outletIndex)
+    {
+        if (!this.isJunctionMarkedForDemolition(juncIndex)) return;
+        let lanes = this.lanes[juncIndex];
+        let i = lanes.indexOf(outletIndex);
+        if (i < 0) return;
+        lanes.splice(i, 1);
     }
 
     isJunctionMarkedForDemolition(juncIndex)
     {
-        return this.demolish[juncIndex] > 0;
+        return this.demolished[juncIndex] > 0;
+    }
+
+    isLaneMarkedForDemolition(juncIndex, outletIndex)
+    {
+        return this.isJunctionMarkedForDemolition(juncIndex) && this.lanes[juncIndex].includes(outletIndex);
     }
 }
  
-function performDemolish(map, persistence, juncIndex)
+function performDemolish(map, persistence, juncIndex, outlets)
 {
     if (persistence.isPersistentJunction(juncIndex))
     {
-        persistence.retainOnlyPersistentJunctionConnections(juncIndex);
+        let unpersistent = outlets.filter(outlet => !persistence.isPersistentJunction(outlet));
+        removeOnlyJunctionConnections(map, juncIndex, unpersistent);
     }
     else
     {
-        removeJunction(map, juncIndex);
+        removeOnlyJunctionConnections(map, juncIndex, outlets);
     }
 }
-
 
 /**
  * @param {CanvasRenderingContext2D} ctx 
@@ -117,6 +134,7 @@ export function drawDemolition(ctx, map, demolition, cellSize)
             let beginY = (y + 0.5) * cellSize;
             for(let outlet of junc.outlets)
             {
+                if (!demolition.isLaneMarkedForDemolition(i, outlet)) continue;
                 let [xx, yy] = getJunctionCoordsFromIndex(map, outlet);
                 let endX = (xx + 0.5) * cellSize;
                 let endY = (yy + 0.5) * cellSize;
