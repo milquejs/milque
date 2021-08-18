@@ -6,7 +6,7 @@ import { astarSearch } from '../util/astar.js';
  * @typedef {import('../laneworld/Junction.js').JunctionMap} JunctionMap
  */
 
-const END_OF_PATH = -1;
+export const END_OF_PATH = -1;
 
 export class PathFinder
 {
@@ -15,13 +15,21 @@ export class PathFinder
      */
     constructor(junctionMap)
     {
+        /** @private */
         this.junctionMap = junctionMap;
 
+        /** @private */
         this.paths = {};
-        this.used = {};
+        /** @private */
+        this.used = new Uint8Array(junctionMap.length);
+        /** @private */
+        this.weighted = new Float32Array(junctionMap.length).fill(1);
 
+        /** @private */
         this.neighbors = this.neighbors.bind(this);
+        /** @private */
         this.heuristics = this.heuristics.bind(this);
+        /** @private */
         this.weights = this.weights.bind(this);
     }
 
@@ -45,7 +53,7 @@ export class PathFinder
         }
         for(let node of path)
         {
-            let prev = this.used[node] || 0;
+            let prev = this.used[node];
             this.used[node] = prev + 1;
         }
         return pathId;
@@ -63,6 +71,29 @@ export class PathFinder
         {
             this.used[node] -= 1;
         }
+    }
+
+    prunePath(pathId, pathIndex)
+    {
+        let path = this.paths[pathId];
+        if (!path)
+        {
+            throw new Error('Cannot prune non-existant path.');
+        }
+        for(let i = 0; i < pathIndex; ++i)
+        {
+            let node = path[i];
+            if (node !== END_OF_PATH)
+            {
+                this.used[node] -= 1;
+                path[i] = END_OF_PATH;
+            }
+        }
+    }
+
+    isJunctionUsedForAnyPath(juncIndex)
+    {
+        return this.used[juncIndex] > 0;
     }
 
     getPathById(pathId)
@@ -87,11 +118,28 @@ export class PathFinder
         }
     }
 
+    setWeight(juncIndex, weight)
+    {
+        this.weighted[juncIndex] = weight;
+    }
+
+    resetWeight(juncIndex)
+    {
+        this.weighted[juncIndex] = 1;
+    }
+
+    getWeight(juncIndex)
+    {
+        return this.weighted[juncIndex];
+    }
+
+    /** @private */
     neighbors(node)
     {
         return this.junctionMap.getJunction(node).getOutlets();
     }
 
+    /** @private */
     heuristics(from, to)
     {
         let [fromX, fromY] = getJunctionCoordsFromIndex(this.junctionMap, from);
@@ -99,8 +147,9 @@ export class PathFinder
         return Math.abs(toX - fromX) + Math.abs(toY - fromY);
     }
 
+    /** @private */
     weights(from, to)
     {
-        return Math.max(1, this.used[to]);
+        return this.weighted[to];
     }
 }

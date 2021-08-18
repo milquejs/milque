@@ -63,7 +63,9 @@ export function astarSearch(startId, goalId, neighborsCallback, heuristicCallbac
             for(let neighborNodeId of neighborsCallback(currentNodeId))
             {
                 if (closed.has(neighborNodeId)) continue;
-                let g = cache.gscore[currentNodeId] + weightsCallback(currentNodeId, neighborNodeId);
+                let weight = weightsCallback(currentNodeId, neighborNodeId);
+                if (!Number.isFinite(weight)) continue;
+                let g = cache.gscore[currentNodeId] + weight;
                 let flag = false;
                 if (!opened.has(neighborNodeId))
                 {

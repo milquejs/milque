@@ -3,7 +3,7 @@
  */
 
 import { DIRECTIONAL_ENCODING_BITS, DIRECTIONAL_ENCODING_NULL, getDirectionalVectorFromEncoding, rotateDirectionalEncoding } from '../util/Directional.js';
-import { connectJunctions, disconnectJunctions, getJunctionCoordsFromIndex, getJunctionIndexFromCoords, isJunctionEmpty, isJunctionWithinBounds } from '../laneworld/Junction.js';
+import { connectJunctions, getJunctionCoordsFromIndex, getJunctionIndexFromCoords, isJunctionConnectedTo, isJunctionWithinBounds } from '../laneworld/Junction.js';
 
 export class Directable
 {
@@ -83,15 +83,16 @@ export class Directable
         {
             throw new Error('Cannot redirect junction to non-existant child.');
         }
-        disconnectJunctions(map, juncIndex, prevChildIndex);
-        disconnectJunctions(map, prevChildIndex, juncIndex);
-        if (isJunctionEmpty(map, prevChildIndex))
-        {
-            map.deleteJunction(prevChildIndex);
-        }
+        // NOTE: This does not destroy the previous directed junction.
         this.directs[juncIndex] = newChildIndex;
-        connectJunctions(map, juncIndex, newChildIndex);
-        connectJunctions(map, newChildIndex, juncIndex);
+        if (!isJunctionConnectedTo(map, juncIndex, newChildIndex))
+        {
+            connectJunctions(map, juncIndex, newChildIndex);
+        }
+        if (!isJunctionConnectedTo(map, newChildIndex, juncIndex))
+        {
+            connectJunctions(map, newChildIndex, juncIndex);
+        }
     }
 }
 

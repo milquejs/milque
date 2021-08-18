@@ -1,14 +1,15 @@
 import { uuid } from '@milque/util';
 import { getDirectionalVectorFromEncoding, isDirectionalEncoding, randomSingleDirectionalEncoding } from '../util/Directional.js';
-import { connectJunctions, drawOutlets, getJunctionCoordsFromIndex, getJunctionIndexFromCoords, getJunctionIndexFromJunction, isJunctionConnectedTo, isJunctionWithinBounds, isNullJunction, JunctionMap, putJunction, randomOutletJunctionFromJunction, removeJunction } from '../laneworld/Junction.js';
+import { connectJunctions, drawOutlets, getJunctionCoordsFromIndex, getJunctionIndexFromCoords, getJunctionIndexFromJunction, isJunctionConnectedTo, isJunctionWithinBounds, isNullJunction, JunctionMap, putJunction, randomOutletJunctionFromJunction } from '../laneworld/Junction.js';
 import { drawGrid } from '../render2d.js';
 import { Directable, tryFindValidChildDirectionForDirectable } from './Directable.js';
 import { Persistence } from './Persistence.js';
-import { CURSOR_ACTION, makeRoad } from './RoadMaker.js';
+import { CURSOR_ACTION, tryRoadInteraction } from './RoadMaker.js';
 import { NULL_JUNCTION_INDEX, PARKING_JUNCTION_INTENT, PASSING_JUNCTION_INTENT, TrafficSimulator } from '../cartworld/TrafficSimulator.js';
 import { PathFinder } from '../cartworld/PathFinder.js';
 import { CartManager, drawCarts } from '../cartworld/CartManager.js';
 import { findValidDestination, getPathToJunction } from '../cartworld/Navigator.js';
+import { Demolition, drawDemolition } from './Demolition.js';
 
 /**
  * @typedef {import('../../game/Game.js').Game} Game
@@ -39,6 +40,7 @@ export class AcreWorld
         this.cartManager = new CartManager(map, this.trafficSimulator);
         this.persistence = new Persistence(map);
         this.directable = new Directable(map);
+        this.demolition = new Demolition(map, this.pathFinder, this.persistence);
 
         this.solids = new Array(width * height).fill(0);
 
@@ -74,43 +76,32 @@ export function updateWorld(game, world)
     cursor.screenX = screenX;
     cursor.screenY = screenY;
 
-    let action = game.inputs.isButtonDown('activate') ? 1 : game.inputs.isButtonDown('deactivate') ? 2 : 0;
-    if (action > 0)
-    {
-        makeRoad(screenX, screenY, action, cursor,
-            (fromX, fromY, toX, toY) => {
-                if (!isJunctionWithinBounds(map, fromX, fromY)) return;
-                if (!isJunctionWithinBounds(map, toX, toY)) return;
-                let [fromJuncX, fromJuncY] = getJunctionCoordsFromCell(world, fromX, fromY);
-                let fromJuncIndex = getJunctionIndexFromCoords(map, fromJuncX, fromJuncY);
-                let [toJuncX, toJuncY] = getJunctionCoordsFromCell(world, toX, toY);
-                let toJuncIndex = getJunctionIndexFromCoords(map, toJuncX, toJuncY);
-                if (fromJuncIndex === toJuncIndex) return;
-                if (tryPutJunction(world, map, fromJuncX, fromJuncY) && tryPutJunction(world, map, toJuncX, toJuncY))
-                {
-                    tryConnectJunctions(world, map, fromJuncIndex, toJuncIndex);
-                }
-            }, (cellX, cellY) => {
-                let [juncX, juncY] = getJunctionCoordsFromCell(world, cellX, cellY);
-                if (!isJunctionWithinBounds(map, juncX, juncY)) return;
-                let juncIndex = getJunctionIndexFromCoords(map, juncX, juncY);
-                if (map.hasJunction(juncIndex))
-                {
-                    if (world.persistence.isPersistentJunction(juncIndex))
-                    {
-                        world.persistence.retainOnlyPersistentJunctionConnections(juncIndex);
-                    }
-                    else
-                    {
-                        removeJunction(map, juncIndex);
-                    }
-                }
-            }, CELL_SIZE, DRAG_MARGIN);
-    }
-    else
-    {
-        cursor.status = 0;
-    }
+    let action = game.inputs.isButtonDown('activate')
+        ? CURSOR_ACTION.ACTIVATING
+        : game.inputs.isButtonDown('deactivate')
+            ? CURSOR_ACTION.DEACTIVATING
+            : CURSOR_ACTION.NONE;
+    tryRoadInteraction(screenX, screenY, action, cursor, (fromX, fromY, toX, toY) => {
+        if (!isJunctionWithinBounds(map, fromX, fromY)) return;
+        if (!isJunctionWithinBounds(map, toX, toY)) return;
+        let [fromJuncX, fromJuncY] = getJunctionCoordsFromCell(world, fromX, fromY);
+        let fromJuncIndex = getJunctionIndexFromCoords(map, fromJuncX, fromJuncY);
+        let [toJuncX, toJuncY] = getJunctionCoordsFromCell(world, toX, toY);
+        let toJuncIndex = getJunctionIndexFromCoords(map, toJuncX, toJuncY);
+        if (fromJuncIndex === toJuncIndex) return;
+        if (tryPutJunction(world, map, fromJuncX, fromJuncY) && tryPutJunction(world, map, toJuncX, toJuncY))
+        {
+            tryConnectJunctions(world, map, fromJuncIndex, toJuncIndex);
+        }
+    }, (cellX, cellY) => {
+        let [juncX, juncY] = getJunctionCoordsFromCell(world, cellX, cellY);
+        if (!isJunctionWithinBounds(map, juncX, juncY)) return;
+        let juncIndex = getJunctionIndexFromCoords(map, juncX, juncY);
+        if (map.hasJunction(juncIndex))
+        {
+            world.demolition.markForDemolition(juncIndex);
+        }
+    }, CELL_SIZE, DRAG_MARGIN);
 
     if (++world.framesToTick >= FRAMES_PER_TICK)
     {
@@ -118,6 +109,8 @@ export function updateWorld(game, world)
         planTraffic(world, world.trafficSimulator.getAgents().filter(agent => agent.target === -1));
         world.trafficSimulator.tick();
     }
+
+    world.demolition.update();
 }
 
 /**
@@ -153,7 +146,21 @@ function planTraffic(world, agents)
                         }
                         else
                         {
-                            destination = agent.home;
+                            let pathId = agent.homePathId;
+                            let path = world.pathFinder.getPathById(pathId);
+                            agent.homePathId = null;
+                            agent.pathId = pathId;
+                            if (path === 2)
+                            {
+                                // One step path.
+                                agent.setTarget(path[1], NULL_JUNCTION_INDEX, PARKING_JUNCTION_INTENT);
+                            }
+                            else
+                            {
+                                // Path with multiple steps.
+                                agent.setTarget(path[1], path[2], PASSING_JUNCTION_INTENT);
+                            }
+                            break;
                         }
                         if (!isNullJunction(map, destination))
                         {
@@ -164,16 +171,23 @@ function planTraffic(world, agents)
                                 // No path.
                                 break;
                             }
-                            else if (path === 2)
+                            let homePathId = getPathToJunction(world, world.pathFinder, destination, agent.home);
+                            let homePath = world.pathFinder.getPathById(homePathId);
+                            if (!homePath || homePath.length < 2)
+                            {
+                                // No return path.
+                                break;
+                            }
+                            agent.pathId = pathId;
+                            agent.homePathId = homePathId;
+                            if (path === 2)
                             {
                                 // One step path.
-                                agent.pathId = pathId;
                                 agent.setTarget(path[1], NULL_JUNCTION_INDEX, PARKING_JUNCTION_INTENT);
                             }
                             else
                             {
                                 // Path with multiple steps.
-                                agent.pathId = pathId;
                                 agent.setTarget(path[1], path[2], PASSING_JUNCTION_INTENT);
                             }
                         }
@@ -189,21 +203,25 @@ function planTraffic(world, agents)
                             if (i < path.length - 2)
                             {
                                 agent.setTarget(path[i + 1], path[i + 2], PASSING_JUNCTION_INTENT);
+                                world.pathFinder.prunePath(pathId, i);
                             }
                             else if (i < path.length - 1)
                             {
                                 agent.setTarget(path[i + 1], NULL_JUNCTION_INDEX, PARKING_JUNCTION_INTENT);
+                                world.pathFinder.prunePath(pathId, i);
                             }
                             else
                             {
                                 agent.pathId = null;
                                 agent.clearTarget();
+                                world.pathFinder.releasePath(pathId);
                             }
                         }
                         else
                         {
                             agent.pathId = null;
                             agent.clearTarget();
+                            world.pathFinder.releasePath(pathId);
                         }
                     }
                 }
@@ -400,6 +418,7 @@ function tryDirectJunction(world, map, directableIndex, directedIndex)
         let [juncX, juncY] = getJunctionCoordsFromIndex(map, directedIndex);
         putJunction(map, juncX, juncY, 0);
     }
+    world.demolition.markForDemolition(prevDirectedIndex);
     world.directable.redirectDirectableJunction(directableIndex, prevDirectedIndex, directedIndex);
     world.persistence.unmarkPersistentJunction(directableIndex, prevDirectedIndex);
     world.persistence.markPersistentJunction(directableIndex, directedIndex);
@@ -433,6 +452,7 @@ export function drawWorld(game, ctx, world)
         drawGrid(ctx, mapWidth, mapHeight, CELL_SIZE);
     }
     drawOutlets(ctx, map, CELL_SIZE);
+    drawDemolition(ctx, map, world.demolition, CELL_SIZE);
     // drawJunctions(ctx, map, CELL_SIZE);
     // drawLanes(ctx, map, CELL_SIZE);
     // drawSolids(ctx, world, map, CELL_SIZE);
