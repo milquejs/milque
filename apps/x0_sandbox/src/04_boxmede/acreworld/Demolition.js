@@ -25,6 +25,8 @@ export class Demolition
 
         /** @private */
         this.demolish = new Uint8Array(junctionMap.length);
+        /** @private */
+        this.lanes = {};
     }
 
     update()

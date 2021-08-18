@@ -24,7 +24,7 @@ export function isDirectionalEncoding(encoding)
 
 export function randomSingleDirectionalEncoding()
 {
-    return 1 << Math.floor(Math.random() * DIRECTIONAL_ENCODING_BITS);
+    return 0x1 << Math.floor(Math.random() * DIRECTIONAL_ENCODING_BITS);
 }
 
 export function oppositeDirectionalEncoding(encoding)

@@ -10,12 +10,13 @@ import { PathFinder } from '../cartworld/PathFinder.js';
 import { CartManager, drawCarts } from '../cartworld/CartManager.js';
 import { findValidDestination, getPathToJunction } from '../cartworld/Navigator.js';
 import { Demolition, drawDemolition } from './Demolition.js';
+import { getItemClassMainColor, getItemClassShadowColor, randomItemClass } from './ItemClass.js';
 
 /**
  * @typedef {import('../../game/Game.js').Game} Game
  */
 
-export const CELL_SIZE = 64;
+export const CELL_SIZE = 32;
 export const DRAG_MARGIN = 0.9;
 export const FRAMES_PER_TICK = 30;
 
@@ -51,15 +52,30 @@ export class AcreWorld
 
 export function createWorld()
 {
-    let world = new AcreWorld(12, 8);
+    let world = new AcreWorld(24, 16);
+    let map = world.junctionMap;
 
-    tryPlaceHousing(world, 1, 1);
-    tryPlaceHousing(world, 1, 2);
-    tryPlaceHousing(world, 2, 2);
-    tryPlaceHousing(world, 1, 3);
+    for(let i = 0; i < 20; ++i)
+    {
+        let [x, y] = randomJunctionCoords(map, 0, 0, 1, 1);
+        tryPlaceHousing(world, x, y);
+    }
 
-    placeFactory(world, 4, 2);
+    for(let i = 0; i < 4; ++i)
+    {
+        let [x, y] = randomJunctionCoords(map, 0, 0, 1, 1);
+        tryPlaceFactory(world, x, y);
+    }
     return world;
+}
+
+function randomJunctionCoords(map, offsetX = 0, offsetY = 0, marginX = 0, marginY = 0)
+{
+    let w = map.width - offsetX - marginX * 2;
+    let h = map.height - offsetY - marginY * 2;
+    let x = Math.floor(Math.random() * w) + offsetX + marginX;
+    let y = Math.floor(Math.random() * h) + offsetY + marginY;
+    return [x, y];
 }
 
 /**
@@ -258,12 +274,14 @@ export function placeHousing(world, juncX, juncY, outletDirection)
     connectJunctions(map, offsetIndex, juncIndex);
 
     let id = uuid();
-    let cartA = world.cartManager.createCart(juncX, juncY, Math.atan2(dy, dx));
-    let cartB = world.cartManager.createCart(juncX, juncY, Math.atan2(dy, dx));
+    let itemClass = randomItemClass();
+    let cartA = world.cartManager.createCart(juncX, juncY, Math.atan2(dy, dx), itemClass);
+    let cartB = world.cartManager.createCart(juncX, juncY, Math.atan2(dy, dx), itemClass);
     world.housing[id] = {
         coordX: juncX,
         coordY: juncY,
         junction: juncIndex,
+        itemClass,
         carts: [
             cartA.id,
             cartB.id,
@@ -283,8 +301,10 @@ export function tryPlaceHousing(world, juncX, juncY)
         if (isDirectionalEncoding(direction))
         {
             placeHousing(world, juncX, juncY, direction);
+            return true;
         }
     }
+    return false;
 }
 
 export function placeRoad(world, fromX, fromY, toX, toY)
@@ -300,6 +320,26 @@ export function placeRoad(world, fromX, fromY, toX, toY)
     {
         connectJunctions(map, toIndex, fromIndex);
     }
+}
+
+export function tryPlaceFactory(world, juncX, juncY)
+{
+    const map = world.junctionMap;
+    if (!isJunctionWithinBounds(map, juncX, juncY)) return false;
+    if (!isJunctionWithinBounds(map, juncX + 3, juncY + 3)) return false;
+    for(let i = 0; i < 3; ++i)
+    {
+        for(let j = 0; j < 3; ++j)
+        {
+            let k = (juncX + i) + (juncY + j) * map.width;
+            if (map.hasJunction(k))
+            {
+                return false;
+            }
+        }
+    }
+    placeFactory(world, juncX, juncY);
+    return true;
 }
 
 /**
@@ -517,19 +557,23 @@ function drawHousings(ctx, world, cellSize)
 {
     for(let housing of Object.values(world.housing))
     {
-        drawHousing(ctx, housing.coordX, housing.coordY, cellSize);
+        drawHousing(
+            ctx, housing.coordX, housing.coordY,
+            getItemClassMainColor(housing.itemClass),
+            getItemClassShadowColor(housing.itemClass),
+            cellSize);
     }
 }
 
-function drawHousing(ctx, cellX, cellY, cellSize)
+function drawHousing(ctx, cellX, cellY, mainColor, shadowColor, cellSize)
 {
     let size = cellSize * 0.8;
     let margin = (cellSize * 0.2) / 2;
     let x = cellX * cellSize + margin;
     let y = cellY * cellSize + margin;
-    ctx.fillStyle = 'lime';
+    ctx.fillStyle = mainColor;
     ctx.fillRect(x, y, size, size);
-    ctx.fillStyle = 'green';
+    ctx.fillStyle = shadowColor;
     ctx.fillRect(x, y + (size / 2), size, size / 2);
 }
 

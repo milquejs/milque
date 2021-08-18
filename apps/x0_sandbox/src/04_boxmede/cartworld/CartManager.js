@@ -1,6 +1,7 @@
 /** @typedef {import('./TrafficSimulator.js').TrafficSimulator} TrafficSimulator */
 
 import { cycle, lerp, lookAt2 } from '@milque/util';
+import { getItemClassMainColor, getItemClassShadowColor } from '../acreworld/ItemClass.js';
 import { getJunctionCoordsFromIndex, getJunctionIndexFromCoords } from '../laneworld/Junction.js';
 
 export const NULL_JUNCTION_INDEX = -1;
@@ -23,14 +24,14 @@ export class CartManager
         this.carts = {};
     }
 
-    createCart(coordX, coordY, radians)
+    createCart(coordX, coordY, radians, itemClass)
     {
         const map = this.junctionMap;
         const traffic = this.trafficSimulator;
         let homeIndex = getJunctionIndexFromCoords(map, coordX, coordY);
         let agent = traffic.spawnAgent(homeIndex);
         let cartId = agent.id;
-        let cart = new Cart(cartId, coordX + 0.5, coordY + 0.5, radians);
+        let cart = new Cart(cartId, coordX + 0.5, coordY + 0.5, radians, itemClass);
         this.carts[cartId] = cart;
         return cart;
     }
@@ -43,7 +44,7 @@ export class CartManager
 
 export class Cart
 {
-    constructor(id, coordX, coordY, radians)
+    constructor(id, coordX, coordY, radians, itemClass)
     {
         this.id = id;
 
@@ -56,6 +57,8 @@ export class Cart
         this.x = coordX;
         this.y = coordY;
         this.radians = radians;
+
+        this.itemClass = itemClass;
     }
 
     getAgentId()
@@ -82,11 +85,10 @@ export function drawCarts(ctx, cartManager, framesToTick, framesPerTick, cellSiz
         let currentJunction = agent.junction;
         let currentOutlet = agent.outlet;
         let currentSlot = agent.slot;
-        if (currentJunction === -1 || currentOutlet === -1)
-        {
-            drawCart(ctx, cart.x * cellSize, cart.y * cellSize, cart.radians, cellSize);
-        }
-        else
+        let currX = cart.x;
+        let currY = cart.y;
+        let currRadians = cart.radians;
+        if (currentJunction !== -1 && currentOutlet !== -1)
         {
             if (framesToTick <= 0)
             {
@@ -143,12 +145,14 @@ export function drawCarts(ctx, cartManager, framesToTick, framesPerTick, cellSiz
             cart.x = currX;
             cart.y = currY;
             cart.radians = currRadians;
-            drawCart(ctx, currX * cellSize, currY * cellSize, currRadians, cellSize);
         }
+        let mainColor = getItemClassMainColor(cart.itemClass);
+        let shadowColor = getItemClassShadowColor(cart.itemClass);
+        drawCart(ctx, currX * cellSize, currY * cellSize, currRadians, mainColor, shadowColor, cellSize);
     }
 }
 
-export function drawCart(ctx, x, y, rotation, cellSize)
+export function drawCart(ctx, x, y, rotation, mainColor, shadowColor, cellSize)
 {
     let width = cellSize * 0.2;
     let height = cellSize * 0.3;
@@ -160,9 +164,9 @@ export function drawCart(ctx, x, y, rotation, cellSize)
     ctx.translate(x, y);
     ctx.rotate(rotation + Math.PI / 2);
     {
-        ctx.fillStyle = 'green';
+        ctx.fillStyle = shadowColor;
         ctx.fillRect(-halfWidth, -halfHeight, width, height);
-        ctx.fillStyle = 'lime';
+        ctx.fillStyle = mainColor;
         ctx.fillRect(-halfWidth + padding, -halfHeight + hoodSize, width - padding * 2, hoodSize + topSize);
         ctx.fillStyle = 'gold';
         ctx.fillRect(-halfWidth + padding, -halfHeight, padding, padding);
