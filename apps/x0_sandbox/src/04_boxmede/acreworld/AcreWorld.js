@@ -374,6 +374,14 @@ function tryPutJunction(world, map, juncX, juncY)
     return true;
 }
 
+/**
+ * 
+ * @param {AcreWorld} world 
+ * @param {JunctionMap} map 
+ * @param {JunctionIndex} fromJuncIndex 
+ * @param {JunctionIndex} toJuncIndex 
+ * @returns 
+ */
 function tryConnectJunctions(world, map, fromJuncIndex, toJuncIndex)
 {
     if (fromJuncIndex === toJuncIndex) return false;
@@ -395,6 +403,14 @@ function tryConnectJunctions(world, map, fromJuncIndex, toJuncIndex)
     if (!isJunctionConnectedTo(map, toJuncIndex, fromJuncIndex))
     {
         connectJunctions(map, toJuncIndex, fromJuncIndex);
+    }
+    if (world.demolition.isJunctionMarkedForDemolition(fromJuncIndex))
+    {
+        world.demolition.unmarkForDemolition(fromJuncIndex);
+    }
+    if (world.demolition.isJunctionMarkedForDemolition(toJuncIndex))
+    {
+        world.demolition.unmarkForDemolition(toJuncIndex);
     }
     return true;
 }
