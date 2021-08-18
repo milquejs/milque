@@ -372,9 +372,11 @@ export function placeFactory(world, juncX, juncY)
     connectJunctions(map, indexA, indexB);
     connectJunctions(map, indexB, indexA);
     let id = uuid();
+    let itemClass = randomItemClass();
     world.factory[id] = {
         coordX: juncX,
         coordY: juncY,
+        itemClass,
         entries: [
             indexA,
         ],
@@ -587,14 +589,16 @@ function drawFactories(ctx, world, cellSize)
         ctx.fillStyle = '#666666';
         ctx.fillRect(x + cellSize, y, cellSize * 2 - margin * 2, cellSize * 3 - margin * 2);
 
+        let mainColor = getItemClassMainColor(factory.itemClass);
+        let shadowColor = getItemClassShadowColor(factory.itemClass);
         let padding = cellSize * 0.1;
-        ctx.fillStyle = 'red';
+        ctx.fillStyle = mainColor;
         let xx = x + cellSize + padding;
         let yy = y + padding;
         let ww = cellSize * 2 - margin * 2 - padding * 2;
         let hh = cellSize * 2 - margin * 2 - padding * 2;
         ctx.fillRect(xx, yy, ww, hh);
-        ctx.fillStyle = 'maroon';
+        ctx.fillStyle = shadowColor;
         ctx.fillRect(xx, yy + hh / 2, ww, hh / 2);
     }
 }
