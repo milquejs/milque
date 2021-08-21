@@ -1,11 +1,11 @@
 /**
- * @typedef {import('../laneworld/Junction.js').JunctionMap} JunctionMap
- * @typedef {import('../laneworld/Junction.js').JunctionIndex} JunctionIndex
+ * @typedef {import('../junction/Junction.js').JunctionMap} JunctionMap
+ * @typedef {import('../junction/Junction.js').JunctionIndex} JunctionIndex
  * @typedef {import('../cartworld/PathFinder.js').PathFinder} PathFinder
  * @typedef {import('./Persistence.js').Persistence} Persistence
  */
 
-import { getJunctionCoordsFromIndex, removeOnlyJunctionConnections } from '../laneworld/Junction.js';
+import { getJunctionCoordsFromIndex, removeOnlyJunctionConnections } from '../junction/Junction.js';
 
 export class Demolition
 {

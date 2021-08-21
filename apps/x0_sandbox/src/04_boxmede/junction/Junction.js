@@ -586,7 +586,7 @@ export function drawLanes(ctx, map, cellSize)
     const juncSize = cellSize / 2;
     const laneRadius = juncSize / 3;
     ctx.lineWidth = laneRadius / 4;
-    let laneId = 0;
+    // let laneId = 0;
     for(let y = 0; y < map.height; ++y)
     {
         for(let x = 0; x < map.width; ++x)

@@ -1,6 +1,6 @@
 /**
- * @typedef {import('../laneworld/Junction.js').JunctionMap} JunctionMap
- * @typedef {import('../laneworld/Junction.js').JunctionIndex} JunctionIndex
+ * @typedef {import('../junction/Junction.js').JunctionMap} JunctionMap
+ * @typedef {import('../junction/Junction.js').JunctionIndex} JunctionIndex
  */
 
 export class Solids

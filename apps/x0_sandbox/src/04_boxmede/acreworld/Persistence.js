@@ -1,9 +1,9 @@
 /**
- * @typedef {import('../laneworld/Junction.js').JunctionMap} JunctionMap
- * @typedef {import('../laneworld/Junction.js').JunctionIndex} JunctionIndex
+ * @typedef {import('../junction/Junction.js').JunctionMap} JunctionMap
+ * @typedef {import('../junction/Junction.js').JunctionIndex} JunctionIndex
  */
 
-import { retainOnlyJunctionConnections } from '../laneworld/Junction.js';
+import { retainOnlyJunctionConnections } from '../junction/Junction.js';
 
 export class Persistence
 {

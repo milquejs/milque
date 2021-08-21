@@ -1,9 +1,9 @@
 import { uuid } from '@milque/util';
-import { getJunctionCoordsFromIndex } from '../laneworld/Junction.js';
+import { getJunctionCoordsFromIndex } from '../junction/Junction.js';
 import { astarSearch } from '../util/astar.js';
 
 /**
- * @typedef {import('../laneworld/Junction.js').JunctionMap} JunctionMap
+ * @typedef {import('../junction/Junction.js').JunctionMap} JunctionMap
  */
 
 export const END_OF_PATH = -1;

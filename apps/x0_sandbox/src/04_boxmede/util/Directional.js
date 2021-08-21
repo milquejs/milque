@@ -41,7 +41,7 @@ export function rotateDirectionalEncoding(encoding, clockwiseTurns = 1)
         clockwiseTurns = DIRECTIONAL_ENCODING_BITS + clockwiseTurns;
     }
     let otherBits = DIRECTIONAL_ENCODING_BITS - clockwiseTurns;
-    return (0xF0 & (encoding << otherBits)) | (0x0F & (encoding >> clockwiseTurns));
+    return (0xF0 & (encoding << otherBits)) | (encoding >> clockwiseTurns);
 }
 
 export function getDirectionalBitArrayFromEncoding(encoding)
@@ -90,6 +90,8 @@ export function getDirectionalVectorFromEncoding(encoding)
             return [0, 1];
         case DIRECTIONAL_ENCODING.SOUTHEAST:
             return [1, 1];
+        case DIRECTIONAL_ENCODING_NULL:
+            throw new Error('Cannot get delta vector from null encoding.');
         default:
             throw new Error('Cannot get delta vector from multi-directional encoding.');
     }
@@ -171,10 +173,13 @@ function testVectorConversion()
 
 function testRotate()
 {
-    assert(rotateDirectionalEncoding(DIRECTIONAL_ENCODING.SOUTHWEST, 1) === DIRECTIONAL_ENCODING.SOUTH);
-    assert(rotateDirectionalEncoding(DIRECTIONAL_ENCODING.SOUTHWEST, 9) === DIRECTIONAL_ENCODING.SOUTH);
+    assert(rotateDirectionalEncoding(DIRECTIONAL_ENCODING.SOUTHWEST, 1) === DIRECTIONAL_ENCODING.WEST);
+    assert(rotateDirectionalEncoding(DIRECTIONAL_ENCODING.EAST, 1) === DIRECTIONAL_ENCODING.SOUTHEAST);
+    assert(rotateDirectionalEncoding(DIRECTIONAL_ENCODING.SOUTHEAST, 1) === DIRECTIONAL_ENCODING.SOUTH);
+
+    assert(rotateDirectionalEncoding(DIRECTIONAL_ENCODING.SOUTHWEST, 9) === DIRECTIONAL_ENCODING.WEST);
     assert(rotateDirectionalEncoding(DIRECTIONAL_ENCODING.SOUTHWEST, 8) === DIRECTIONAL_ENCODING.SOUTHWEST);
-    assert(rotateDirectionalEncoding(DIRECTIONAL_ENCODING.SOUTHWEST, -1) === DIRECTIONAL_ENCODING.WEST);
+    assert(rotateDirectionalEncoding(DIRECTIONAL_ENCODING.SOUTHWEST, -1) === DIRECTIONAL_ENCODING.SOUTH);
 }
 
 function testOpposite()

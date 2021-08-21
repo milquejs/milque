@@ -2,7 +2,7 @@
 
 import { cycle, lerp, lookAt2 } from '@milque/util';
 import { getCargoMainColor, getCargoShadowColor } from '../acreworld/Cargo.js';
-import { getJunctionCoordsFromIndex, getJunctionIndexFromCoords } from '../laneworld/Junction.js';
+import { getJunctionCoordsFromIndex, getJunctionIndexFromCoords } from '../junction/Junction.js';
 
 export const NULL_JUNCTION_INDEX = -1;
 export const NULL_SLOT_INDEX = -1;

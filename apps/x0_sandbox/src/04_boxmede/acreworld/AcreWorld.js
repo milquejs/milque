@@ -1,5 +1,5 @@
 import { isDirectionalEncoding, randomSingleDirectionalEncoding } from '../util/Directional.js';
-import { connectJunctions, drawJunctions, drawLanes, drawOutlets, getJunctionCoordsFromIndex, getJunctionIndexFromCoords, isJunctionConnectedTo, isJunctionWithinBounds, isNullJunction, JunctionMap, putJunction, randomOutletJunctionFromJunction } from '../laneworld/Junction.js';
+import { connectJunctions, drawJunctions, drawLanes, drawOutlets, getJunctionCoordsFromIndex, getJunctionIndexFromCoords, isJunctionConnectedTo, isJunctionWithinBounds, isNullJunction, JunctionMap, putJunction, randomOutletJunctionFromJunction } from '../junction/Junction.js';
 import { drawGrid } from '../render2d.js';
 import { Directable, tryFindValidChildDirectionForDirectable } from './Directable.js';
 import { Persistence } from './Persistence.js';
@@ -9,8 +9,10 @@ import { PathFinder } from '../cartworld/PathFinder.js';
 import { CartManager, drawCarts } from '../cartworld/CartManager.js';
 import { findValidDestination, getPathToJunction } from '../cartworld/Navigator.js';
 import { Demolition, drawDemolition } from './Demolition.js';
-import { drawFactories, drawHousings, placeFactory, placeHousing } from './Housing.js';
+import { canPlaceHousing, drawFactories, drawHousings, isHousingAtJunction, placeFactory, placeHousing } from './Housing.js';
 import { drawSolids, Solids } from './Solids.js';
+import { ScoreKeeper } from './ScoreKeeper.js';
+import { CARGO_KEYS, getCargoMainColor } from './Cargo.js';
 
 /**
  * @typedef {import('../../game/Game.js').Game} Game
@@ -18,7 +20,7 @@ import { drawSolids, Solids } from './Solids.js';
 
 export const CELL_SIZE = 32;
 export const DRAG_MARGIN = 0.9;
-export const FRAMES_PER_TICK = 30;
+export const FRAMES_PER_TICK = 20;
 
 export class AcreWorld
 {
@@ -45,6 +47,8 @@ export class AcreWorld
         this.demolition = new Demolition(map, this.pathFinder, this.persistence);
         this.solids = new Solids(map);
 
+        this.scoreKeeper = new ScoreKeeper();
+
         this.housing = {};
         this.factory = {};
     }
@@ -55,16 +59,16 @@ export function createWorld()
     let world = new AcreWorld(24, 16);
     let map = world.junctionMap;
 
+    for(let i = 0; i < 10; ++i)
+    {
+        let [x, y] = randomJunctionCoords(map, 0, 0, 1, 1);
+        tryPlaceFactory(world, x, y);
+    }
+
     for(let i = 0; i < 20; ++i)
     {
         let [x, y] = randomJunctionCoords(map, 0, 0, 1, 1);
         tryPlaceHousing(world, x, y);
-    }
-
-    for(let i = 0; i < 4; ++i)
-    {
-        let [x, y] = randomJunctionCoords(map, 0, 0, 1, 1);
-        tryPlaceFactory(world, x, y);
     }
     return world;
 }
@@ -220,6 +224,13 @@ function planTraffic(world, agents)
                             }
                             else
                             {
+                                // Got to the end!
+                                if (agent.junction !== agent.home)
+                                {
+                                    // Got to the factory!
+                                    let cart = world.cartManager.getCartByAgentId(agent.id);
+                                    world.scoreKeeper.recordCargo(cart.cargo, 1);
+                                }
                                 agent.pathId = null;
                                 agent.clearTarget();
                                 world.pathFinder.releasePath(pathId);
@@ -227,6 +238,7 @@ function planTraffic(world, agents)
                         }
                         else
                         {
+                            // Lost? Stop moving.
                             agent.pathId = null;
                             agent.clearTarget();
                             world.pathFinder.releasePath(pathId);
@@ -238,22 +250,40 @@ function planTraffic(world, agents)
     }
 }
 
+/**
+ * @param {AcreWorld} world 
+ * @param {*} juncX 
+ * @param {*} juncY 
+ * @returns 
+ */
 export function tryPlaceHousing(world, juncX, juncY)
 {
     const map = world.junctionMap;
-    let juncIndex = getJunctionIndexFromCoords(map, juncX, juncY);
-    if (!map.hasJunction(juncIndex))
+    const directable = world.directable;
+    const solids = world.solids;
+    if (!isJunctionWithinBounds(map, juncX - 1, juncY - 1)) return false;
+    if (!isJunctionWithinBounds(map, juncX + 1, juncY + 1)) return false;
+    // Cannot have any solids near it (except other housings)
+    for(let i = -1; i <= 1; ++i)
     {
-        let direction = tryFindValidChildDirectionForDirectable(map, juncIndex, randomSingleDirectionalEncoding(), (juncIndex) => {
-            return !world.directable.isDirectableJunction(juncIndex) && !world.solids.isSolidJunction(world, map, juncIndex);
-        });
-        if (isDirectionalEncoding(direction))
+        for(let j = -1; j <= 1; ++j)
         {
-            placeHousing(world, juncX, juncY, direction);
-            return true;
+            let jx = juncX + i;
+            let jy = juncY + j;
+            let ji = getJunctionIndexFromCoords(map, jx, jy);
+            if (solids.isSolidJunction(ji) && !isHousingAtJunction(world, jx, jy))
+            {
+                return false;
+            }
         }
     }
-    return false;
+    let juncIndex = getJunctionIndexFromCoords(map, juncX, juncY);
+    let direction = tryFindValidChildDirectionForDirectable(
+        map, juncIndex, randomSingleDirectionalEncoding(),
+        (juncIndex) => !directable.isDirectableJunction(juncIndex) && !solids.isSolidJunction(juncIndex));
+    if (!canPlaceHousing(world, juncX, juncY, direction)) return false;
+    placeHousing(world, juncX, juncY, direction);
+    return true;
 }
 
 export function placeRoad(world, fromX, fromY, toX, toY)
@@ -274,14 +304,15 @@ export function placeRoad(world, fromX, fromY, toX, toY)
 export function tryPlaceFactory(world, juncX, juncY)
 {
     const map = world.junctionMap;
-    if (!isJunctionWithinBounds(map, juncX, juncY)) return false;
-    if (!isJunctionWithinBounds(map, juncX + 3, juncY + 3)) return false;
-    for(let i = 0; i < 3; ++i)
+    const solids = world.solids;
+    if (!isJunctionWithinBounds(map, juncX - 1, juncY - 1)) return false;
+    if (!isJunctionWithinBounds(map, juncX + 4, juncY + 5)) return false;
+    for(let i = -1; i <= 4; ++i)
     {
-        for(let j = 0; j < 3; ++j)
+        for(let j = -1; j <= 5; ++j)
         {
             let k = (juncX + i) + (juncY + j) * map.width;
-            if (map.hasJunction(k))
+            if (solids.isSolidJunction(k))
             {
                 return false;
             }
@@ -414,6 +445,10 @@ export function drawWorld(game, ctx, world)
         ctx.lineWidth = 2;
         drawCursor(ctx, world.cursor.screenX, world.cursor.screenY, CELL_SIZE, '#333333');
     }
+    let dom = new DOMMatrix();
+    ctx.setTransform(dom);
+    drawScore(ctx, world.scoreKeeper);
+    ctx.setTransform(dom);
 }
 
 /**
@@ -428,4 +463,27 @@ function drawCursor(ctx, screenX, screenY, cellSize, color = '#FFFFFF')
     let y = Math.floor(screenY / cellSize) * cellSize;
     ctx.strokeStyle = color;
     ctx.strokeRect(x, y, cellSize, cellSize);
+}
+
+/**
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {ScoreKeeper} scoreKeeper 
+ */
+function drawScore(ctx, scoreKeeper)
+{
+    ctx.font = '16px monospace';
+    ctx.lineWidth = 1;
+    ctx.textBaseline = 'top';
+    let i = 0;
+    for(let cargo of CARGO_KEYS)
+    {
+        let count = scoreKeeper.getCargoCount(cargo);
+        if (count > 0)
+        {
+            let mainColor = getCargoMainColor(cargo);
+            ctx.fillStyle = mainColor;
+            ctx.fillText(`█ ${count}`, 0, i * 20);
+            i += 1;
+        }
+    }
 }

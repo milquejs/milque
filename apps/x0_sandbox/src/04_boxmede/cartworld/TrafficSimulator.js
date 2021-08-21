@@ -1,5 +1,5 @@
 import { uuid } from '@milque/util';
-import { getJunctionCoordsFromIndex, getJunctionLaneByIndex, isNullJunction } from '../laneworld/Junction.js';
+import { getJunctionCoordsFromIndex, getJunctionLaneByIndex, isNullJunction } from '../junction/Junction.js';
 
 export const NULL_JUNCTION_INDEX = -1;
 export const NULL_SLOT_INDEX = -1;
@@ -9,8 +9,8 @@ export const PASSING_JUNCTION_INTENT = 1;
 export const PARKING_JUNCTION_INTENT = 2;
 
 /**
- * @typedef {import('../laneworld/Junction.js').JunctionMap} JunctionMap
- * @typedef {import('../laneworld/Junction.js').JunctionIndex} JunctionIndex
+ * @typedef {import('../junction/Junction.js').JunctionMap} JunctionMap
+ * @typedef {import('../junction/Junction.js').JunctionIndex} JunctionIndex
  */
 
 export class TrafficSimulator

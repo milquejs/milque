@@ -1,9 +1,32 @@
 import { uuid } from '@milque/util';
-import { connectJunctions, getJunctionIndexFromCoords, getJunctionIndexFromJunction, isJunctionWithinBounds, putJunction } from '../laneworld/Junction.js';
-import { getDirectionalVectorFromEncoding } from '../util/Directional.js';
+import { connectJunctions, getJunctionIndexFromCoords, getJunctionIndexFromJunction, isJunctionWithinBounds, putJunction } from '../junction/Junction.js';
+import { getDirectionalVectorFromEncoding, isDirectionalEncoding } from '../util/Directional.js';
 import { getCargoMainColor, getCargoShadowColor, randomCargo } from './Cargo.js';
 
 /** @typedef {import('./AcreWorld.js').AcreWorld} AcreWorld */
+
+/**
+ * @param {AcreWorld} world 
+ * @param {number} juncX 
+ * @param {number} juncY 
+ * @param {number} outletDirection
+ */
+export function canPlaceHousing(world, juncX, juncY, outletDirection)
+{
+    const map = world.junctionMap;
+    if (!isJunctionWithinBounds(map, juncX, juncY)) return false;
+    let juncIndex = getJunctionIndexFromCoords(map, juncX, juncY);
+    if (map.hasJunction(juncIndex)) return false;
+    if (!isDirectionalEncoding(outletDirection)) return false;
+    let [dx, dy] = getDirectionalVectorFromEncoding(outletDirection);
+    let juncDX = juncX + dx;
+    let juncDY = juncY + dy;
+    let juncDIndex = getJunctionIndexFromCoords(map, juncDX, juncDY);
+    if (!isJunctionWithinBounds(map, juncDX, juncDY)) return false;
+    const solids = world.solids;
+    if (solids.isSolidJunction(juncDIndex)) return false;
+    return true;
+}
 
 /**
  * @param {AcreWorld} world 
@@ -26,14 +49,14 @@ export function placeHousing(world, juncX, juncY, outletDirection)
     world.solids.markSolidJunction(juncIndex);
     if (!map.hasJunction(offsetIndex))
     {
-        putJunction(world.junctionMap, outletX, outletY, 0);
+        putJunction(map, outletX, outletY, 0);
     }
     world.directable.markDirectableJunction(juncIndex, offsetIndex);
     world.persistence.markPersistentJunction(juncIndex, offsetIndex);
     connectJunctions(map, juncIndex, offsetIndex);
     connectJunctions(map, offsetIndex, juncIndex);
 
-    let id = uuid();
+    let id = juncX + juncY * map.width;
     let cargo = randomCargo();
     let cartA = world.cartManager.createCart(juncX, juncY, Math.atan2(dy, dx), cargo);
     let cartB = world.cartManager.createCart(juncX, juncY, Math.atan2(dy, dx), cargo);
@@ -47,6 +70,23 @@ export function placeHousing(world, juncX, juncY, outletDirection)
             cartB.id,
         ]
     };
+}
+
+export function isHousingAtJunction(world, juncX, juncY)
+{
+    let housingId = juncX + juncY * world.junctionMap.width;
+    return housingId in world.housing;
+}
+
+export function isFactoryAtJunction(world, juncX, juncY)
+{
+    for(let factory of Object.values(world.factory))
+    {
+        if (juncX >= factory.coordX
+            && juncY >= factory.coordY
+            && juncX < factory.coordX + factory.width
+            && juncY < factory.coordY + factory.height) return true;
+    }
 }
 
 /**
@@ -63,9 +103,11 @@ export function placeFactory(world, juncX, juncY)
         throw new Error('Cannot place factory out of bounds.');
     }
 
-    for(let i = 0; i < 2; ++i)
+    let width = 2;
+    let height = 3;
+    for(let i = 0; i < width; ++i)
     {
-        for(let j = 0; j < 3; ++j)
+        for(let j = 0; j < height; ++j)
         {
             let juncIndex = (juncX + i + 1) + (juncY + j) * map.width;
             world.solids.markSolidJunction(juncIndex);
@@ -78,11 +120,13 @@ export function placeFactory(world, juncX, juncY)
     world.persistence.markPersistentJunction(indexA, indexB);
     connectJunctions(map, indexA, indexB);
     connectJunctions(map, indexB, indexA);
-    let id = uuid();
+    let id = juncX + juncY * map.width;
     let cargo = randomCargo();
     world.factory[id] = {
         coordX: juncX,
         coordY: juncY,
+        width,
+        height,
         cargo,
         entries: [
             indexA,
