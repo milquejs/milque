@@ -2,7 +2,7 @@
 
 import { cycle, lerp, lookAt2 } from '@milque/util';
 import { getCargoMainColor, getCargoShadowColor } from '../acreworld/Cargo.js';
-import { getJunctionCoordsFromIndex, getJunctionIndexFromCoords } from '../junction/Junction.js';
+import { getJunctionCoordsFromIndex, getJunctionIndexFromCoords, LANE_LENGTH } from '../junction/Junction.js';
 
 export const NULL_JUNCTION_INDEX = -1;
 export const NULL_SLOT_INDEX = -1;
@@ -83,7 +83,7 @@ export function drawCarts(ctx, cartManager, framesToTick, framesPerTick, cellSiz
     const map = cartManager.junctionMap;
 
     const dt = framesToTick / framesPerTick;
-    const LANE_SLOT_COUNT = 3;
+    const LANE_SLOT_COUNT = LANE_LENGTH;
     for(let cart of Object.values(cartManager.carts))
     {
         let agent = traffic.getAgent(cart.getAgentId());
@@ -110,25 +110,22 @@ export function drawCarts(ctx, cartManager, framesToTick, framesPerTick, cellSiz
             }
 
             let nextX, nextY;
-            /*
             // TODO: Although this is more accurate, it is less "smooth". The wrong way looks nicer.
             let remainingPrevSlots = cart.prevSlot !== NULL_SLOT_INDEX
                 ? LANE_SLOT_COUNT - cart.prevSlot
                 : 0;
             let remainingCurrentSlots = cart.currentSlot;
             let totalRemainingSlots = remainingCurrentSlots + remainingPrevSlots;
-            if (frameTimeRatio < remainingPrevSlots / totalRemainingSlots)
+            if (dt < remainingPrevSlots / totalRemainingSlots)
             {
                 // Travelling the remainder of the previous junction
-                [nextX, nextY] = getLanePosition(junctionMap, cart.prevJunction, cart.prevOutlet, 0, 1);
+                [nextX, nextY] = getLanePosition(map, cart.prevJunction, cart.prevOutlet, 0, 1);
             }
             else
             {
                 // Travelling the remainder of the current junction
-                [nextX, nextY] = getLanePosition(junctionMap, cart.currentJunction, cart.currentOutlet, 0, cart.currentSlot / LANE_SLOT_COUNT);
+                [nextX, nextY] = getLanePosition(map, currentJunction, currentOutlet, 0, currentSlot / LANE_SLOT_COUNT);
             }
-            */
-            [nextX, nextY] = getLanePosition(map, currentJunction, currentOutlet, 0, currentSlot / LANE_SLOT_COUNT);
             let prevX = cart.prevX;
             let prevY = cart.prevY;
             let currX = lerp(prevX, nextX, dt);

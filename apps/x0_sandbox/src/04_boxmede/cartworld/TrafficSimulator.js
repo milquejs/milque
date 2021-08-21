@@ -1,5 +1,5 @@
 import { uuid } from '@milque/util';
-import { getJunctionCoordsFromIndex, getJunctionLaneByIndex, isNullJunction } from '../junction/Junction.js';
+import { getJunctionByIndex, getJunctionCoordsFromIndex, getJunctionLaneByIndex, isNullJunction } from '../junction/Junction.js';
 
 export const NULL_JUNCTION_INDEX = -1;
 export const NULL_SLOT_INDEX = -1;
@@ -7,6 +7,8 @@ export const NULL_SLOT_INDEX = -1;
 export const NO_JUNCTION_INTENT = 0;
 export const PASSING_JUNCTION_INTENT = 1;
 export const PARKING_JUNCTION_INTENT = 2;
+
+export const MAX_CART_SPEED = 4;
 
 /**
  * @typedef {import('../junction/Junction.js').JunctionMap} JunctionMap
@@ -144,7 +146,7 @@ export class TrafficAgent
         this.slot = NULL_SLOT_INDEX;
 
         this.speed = 0;
-        this.maxSpeed = 1;
+        this.maxSpeed = MAX_CART_SPEED;
 
         // If parked, outlet and slot must be null.
         this.parking = NULL_JUNCTION_INDEX;
@@ -228,10 +230,13 @@ export function moveAgentTowards(map, agent, outletIndex, intent, speed)
                     }
                     else if (isJunctionPassable(map, outletIndex) && canJunctionLaneAcceptMore(map, outletIndex, agent.nextTarget))
                     {
+                        // Move onto next junction's lane.
                         acquirePassing(map, agent, outletIndex);
                         forceOnJunction(map, agent, outletIndex);
                         enterLane(map, agent, outletIndex, agent.nextTarget, 0);
-                        return nextSlot - lane.length;
+                        // Slow down based on junction resistance.
+                        let resistance = getJunctionResistance(map, outletIndex);
+                        return Math.max(0, nextSlot - lane.length - resistance);
                     }
                     else
                     {
@@ -265,6 +270,12 @@ export function moveAgentTowards(map, agent, outletIndex, intent, speed)
             return 0;
         }
     }
+}
+
+export function getJunctionResistance(map, juncIndex)
+{
+    let junc = getJunctionByIndex(map, juncIndex);
+    return Math.max(0, junc.getInlets().length - 2);
 }
 
 function canJunctionLaneAcceptMore(junctionMap, inletIndex, outletIndex)

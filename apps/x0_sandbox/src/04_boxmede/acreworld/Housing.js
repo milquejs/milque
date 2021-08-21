@@ -1,7 +1,6 @@
-import { uuid } from '@milque/util';
 import { connectJunctions, getJunctionIndexFromCoords, getJunctionIndexFromJunction, isJunctionWithinBounds, putJunction } from '../junction/Junction.js';
 import { getDirectionalVectorFromEncoding, isDirectionalEncoding } from '../util/Directional.js';
-import { getCargoMainColor, getCargoShadowColor, randomCargo } from './Cargo.js';
+import { getCargoMainColor, getCargoShadowColor } from './Cargo.js';
 
 /** @typedef {import('./AcreWorld.js').AcreWorld} AcreWorld */
 
@@ -30,10 +29,12 @@ export function canPlaceHousing(world, juncX, juncY, outletDirection)
 
 /**
  * @param {AcreWorld} world 
- * @param {juncX} juncX 
- * @param {juncY} juncY 
+ * @param {number} juncX 
+ * @param {number} juncY 
+ * @param {number} outletDirection
+ * @param {string} cargo
  */
-export function placeHousing(world, juncX, juncY, outletDirection)
+export function placeHousing(world, juncX, juncY, outletDirection, cargo)
 {
     const map = world.junctionMap;
     let [dx, dy] = getDirectionalVectorFromEncoding(outletDirection);
@@ -57,7 +58,6 @@ export function placeHousing(world, juncX, juncY, outletDirection)
     connectJunctions(map, offsetIndex, juncIndex);
 
     let id = juncX + juncY * map.width;
-    let cargo = randomCargo();
     let cartA = world.cartManager.createCart(juncX, juncY, Math.atan2(dy, dx), cargo);
     let cartB = world.cartManager.createCart(juncX, juncY, Math.atan2(dy, dx), cargo);
     world.housing[id] = {
@@ -91,10 +91,11 @@ export function isFactoryAtJunction(world, juncX, juncY)
 
 /**
  * @param {AcreWorld} world 
- * @param {juncX} juncX 
- * @param {juncY} juncY 
+ * @param {number} juncX 
+ * @param {number} juncY 
+ * @param {string} cargo
  */
-export function placeFactory(world, juncX, juncY)
+export function placeFactory(world, juncX, juncY, cargo)
 {
     const map = world.junctionMap;
     if (!isJunctionWithinBounds(map, juncX, juncY)
@@ -113,15 +114,23 @@ export function placeFactory(world, juncX, juncY)
             world.solids.markSolidJunction(juncIndex);
         }
     }
-    let juncA = putJunction(map, juncX, juncY + 2, 0);
-    let indexA = getJunctionIndexFromJunction(map, juncA);
-    let juncB = putJunction(map, juncX + 1, juncY + 2, 4);
-    let indexB = getJunctionIndexFromJunction(map, juncB);
+
+    let indexA = getJunctionIndexFromCoords(map, juncX, juncY + 2);
+    if (!map.hasJunction(map, indexA))
+    {
+        putJunction(map, juncX, juncY + 2, 0);
+    }
+    else
+    {
+        map.getJunction(indexA);
+    }
+    // This is inside the solid, therefore always no junction.
+    let indexB = getJunctionIndexFromCoords(map, juncX + 1, juncY + 2);
+    putJunction(map, juncX + 1, juncY + 2, 4);
     world.persistence.markPersistentJunction(indexA, indexB);
     connectJunctions(map, indexA, indexB);
     connectJunctions(map, indexB, indexA);
     let id = juncX + juncY * map.width;
-    let cargo = randomCargo();
     world.factory[id] = {
         coordX: juncX,
         coordY: juncY,

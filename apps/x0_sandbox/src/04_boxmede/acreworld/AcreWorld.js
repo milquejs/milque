@@ -1,4 +1,4 @@
-import { isDirectionalEncoding, randomSingleDirectionalEncoding } from '../util/Directional.js';
+import { randomSingleDirectionalEncoding } from '../util/Directional.js';
 import { connectJunctions, drawJunctions, drawLanes, drawOutlets, getJunctionCoordsFromIndex, getJunctionIndexFromCoords, isJunctionConnectedTo, isJunctionWithinBounds, isNullJunction, JunctionMap, putJunction, randomOutletJunctionFromJunction } from '../junction/Junction.js';
 import { drawGrid } from '../render2d.js';
 import { Directable, tryFindValidChildDirectionForDirectable } from './Directable.js';
@@ -6,7 +6,7 @@ import { Persistence } from './Persistence.js';
 import { CURSOR_ACTION, tryRoadInteraction } from './RoadMaker.js';
 import { drawAgents, NULL_JUNCTION_INDEX, PARKING_JUNCTION_INTENT, PASSING_JUNCTION_INTENT, TrafficSimulator } from '../cartworld/TrafficSimulator.js';
 import { PathFinder } from '../cartworld/PathFinder.js';
-import { CartManager, drawCarts } from '../cartworld/CartManager.js';
+import { CartManager, drawCarts, FRAMES_PER_TICK } from '../cartworld/CartManager.js';
 import { findValidDestination, getPathToJunction } from '../cartworld/Navigator.js';
 import { Demolition, drawDemolition } from './Demolition.js';
 import { canPlaceHousing, drawFactories, drawHousings, isHousingAtJunction, placeFactory, placeHousing } from './Housing.js';
@@ -20,7 +20,6 @@ import { CARGO_KEYS, getCargoMainColor } from './Cargo.js';
 
 export const CELL_SIZE = 32;
 export const DRAG_MARGIN = 0.9;
-export const FRAMES_PER_TICK = 20;
 
 export class AcreWorld
 {
@@ -36,6 +35,10 @@ export class AcreWorld
 
         this.debugMode = false;
         this.framesToTick = 0;
+
+        this.spawnTicks = 0;
+        this.spawnCargoLevel = 0;
+        this.spawnFactoryChance = 0;
 
         const map = new JunctionMap(width, height);
         this.junctionMap = map;
@@ -57,19 +60,19 @@ export class AcreWorld
 export function createWorld()
 {
     let world = new AcreWorld(24, 16);
-    let map = world.junctionMap;
+    const map = world.junctionMap;
+    let x, y, result;
+    let cargo = CARGO_KEYS[world.spawnCargoLevel];
+    do {
+        [x, y] = randomJunctionCoords(map, 0, 0, 1, 1);
+        result = !tryPlaceFactory(world, x, y, cargo);
+    } while(result);
+    do {
 
-    for(let i = 0; i < 10; ++i)
-    {
-        let [x, y] = randomJunctionCoords(map, 0, 0, 1, 1);
-        tryPlaceFactory(world, x, y);
-    }
-
-    for(let i = 0; i < 20; ++i)
-    {
-        let [x, y] = randomJunctionCoords(map, 0, 0, 1, 1);
-        tryPlaceHousing(world, x, y);
-    }
+        [x, y] = randomJunctionCoords(map, 0, 0, 1, 1);
+        result = !tryPlaceHousing(world, x, y, cargo);
+    } while(result);
+    world.spawnTicks = 1000;
     return world;
 }
 
@@ -122,6 +125,83 @@ export function updateWorld(game, world)
     }
 
     world.demolition.update();
+
+    if (--world.spawnTicks <= 0)
+    {
+        world.spawnTicks = 100 + Math.floor(1000 * Math.random());
+        doSpawnTick(world);
+    }
+}
+
+/**
+ * 
+ * @param {AcreWorld} world 
+ */
+function doSpawnTick(world)
+{
+    let spawnableLastCargo = CARGO_KEYS[world.spawnCargoLevel];
+    let spawnableCargo;
+    if (world.scoreKeeper.getCargoCount(spawnableLastCargo) > 0 && Math.random() < 0.3)
+    {
+        // Try next level.
+        let index = Math.min(CARGO_KEYS.length - 1, world.spawnCargoLevel + 1);
+        world.spawnCargoLevel = index;
+        spawnableCargo = CARGO_KEYS[index];
+        world.spawnFactoryChance = 0.5;
+        world.spawnTicks = 100;
+    }
+    else
+    {
+        spawnableCargo = CARGO_KEYS[Math.min(world.spawnCargoLevel, Math.floor(Math.random() * CARGO_KEYS.length))];
+    }
+
+    let result;
+    if (Math.random() < world.spawnFactoryChance)
+    {
+        result = trySpawnFactory(world, spawnableCargo);
+        if (result)
+        {
+            world.spawnFactoryChance = 0;
+        }
+    }
+    else
+    {
+        result = trySpawnHousing(world, spawnableCargo);
+        if (result)
+        {
+            world.spawnFactoryChance += 0.05;
+        }
+    }
+}
+
+function trySpawnHousing(world, cargo)
+{
+    const map = world.junctionMap;
+    let x, y;
+    let result;
+    let attempts = 0;
+    do
+    {
+        [x, y] = randomJunctionCoords(map, 0, 0, 1, 1);
+        result = tryPlaceHousing(world, x, y, cargo);
+        ++attempts;
+    } while(!result && attempts < 10);
+    return result;
+}
+
+function trySpawnFactory(world, cargo)
+{
+    const map = world.junctionMap;
+    let x, y;
+    let result;
+    let attempts = 0;
+    do
+    {
+        [x, y] = randomJunctionCoords(map, 0, 0, 1, 1);
+        result = tryPlaceFactory(world, x, y, cargo);
+        ++attempts;
+    } while(!result && attempts < 10);
+    return result;
 }
 
 /**
@@ -252,11 +332,11 @@ function planTraffic(world, agents)
 
 /**
  * @param {AcreWorld} world 
- * @param {*} juncX 
- * @param {*} juncY 
- * @returns 
+ * @param {number} juncX 
+ * @param {number} juncY 
+ * @returns {boolean}
  */
-export function tryPlaceHousing(world, juncX, juncY)
+export function tryPlaceHousing(world, juncX, juncY, cargo)
 {
     const map = world.junctionMap;
     const directable = world.directable;
@@ -282,7 +362,7 @@ export function tryPlaceHousing(world, juncX, juncY)
         map, juncIndex, randomSingleDirectionalEncoding(),
         (juncIndex) => !directable.isDirectableJunction(juncIndex) && !solids.isSolidJunction(juncIndex));
     if (!canPlaceHousing(world, juncX, juncY, direction)) return false;
-    placeHousing(world, juncX, juncY, direction);
+    placeHousing(world, juncX, juncY, direction, cargo);
     return true;
 }
 
@@ -301,7 +381,7 @@ export function placeRoad(world, fromX, fromY, toX, toY)
     }
 }
 
-export function tryPlaceFactory(world, juncX, juncY)
+export function tryPlaceFactory(world, juncX, juncY, cargo)
 {
     const map = world.junctionMap;
     const solids = world.solids;
@@ -318,7 +398,18 @@ export function tryPlaceFactory(world, juncX, juncY)
             }
         }
     }
-    placeFactory(world, juncX, juncY);
+    for(let i = 1; i < 3; ++i)
+    {
+        for(let j = 0; j < 3; ++j)
+        {
+            let k = (juncX + i) + (juncY + j) * map.width;
+            if (map.hasJunction(k))
+            {
+                return false;
+            }
+        }
+    }
+    placeFactory(world, juncX, juncY, cargo);
     return true;
 }
 
@@ -447,6 +538,8 @@ export function drawWorld(game, ctx, world)
     }
     let dom = new DOMMatrix();
     ctx.setTransform(dom);
+    drawTimer(ctx, world);
+    ctx.setTransform(dom.translate(0, 20));
     drawScore(ctx, world.scoreKeeper);
     ctx.setTransform(dom);
 }
@@ -486,4 +579,17 @@ function drawScore(ctx, scoreKeeper)
             i += 1;
         }
     }
+}
+
+/**
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {AcreWorld} world 
+ */
+function drawTimer(ctx, world)
+{
+    ctx.font = '16px monospace';
+    ctx.lineWidth = 1;
+    ctx.textBaseline = 'top';
+    ctx.fillStyle = 'white';
+    ctx.fillText(`% ${world.spawnTicks}`, 0, 0);
 }
