@@ -907,10 +907,11 @@ function visit(context, node, prev)
  * @param {T} startId The unique representation of the starting position. Must be deterministic.
  * @param {T} goalId The unique representation of the stopping position. Must be deterministic.
  * @param {(node: T) => Array<T>} neighborsCallback Get all reachable neighbors from the given node.
- * @param {(from: T, to: T) => number} heuristicCallback Get the heuristics score between the two nodes.
+ * @param {(from: T, to: T) => number} heuristicCallback Get the heuristics score across the two nodes.
+ * @param {(from: T, to: T) => number} weightsCallback Get the weight if travelling between the two nodes.
  * @returns {Array<T>} If the goal is not reachable from the start, it will return an empty array.
  */
-function astarSearch(startId, goalId, neighborsCallback, heuristicCallback)
+function astarSearch(startId, goalId, neighborsCallback, heuristicCallback, weightsCallback)
 {
     /** @type {NodeCache<T>} */
     let cache = createCache();
@@ -957,7 +958,9 @@ function astarSearch(startId, goalId, neighborsCallback, heuristicCallback)
             for(let neighborNodeId of neighborsCallback(currentNodeId))
             {
                 if (closed.has(neighborNodeId)) continue;
-                let g = cache.gscore[currentNodeId] + 1;
+                let weight = weightsCallback(currentNodeId, neighborNodeId);
+                if (!Number.isFinite(weight)) continue;
+                let g = cache.gscore[currentNodeId] + weight;
                 let flag = false;
                 if (!opened.has(neighborNodeId))
                 {
