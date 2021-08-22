@@ -402,6 +402,10 @@
         "projectFolder": "apps/02_arroyo"
     },
     {
+        "packageName": "laneworld",
+        "projectFolder": "apps/03_laneworld"
+    },
+    {
         "packageName": "sandbox",
         "projectFolder": "apps/x0_sandbox"
     },

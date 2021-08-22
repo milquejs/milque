@@ -14,10 +14,6 @@ import { drawSolids, Solids } from './Solids.js';
 import { ScoreKeeper } from './ScoreKeeper.js';
 import { CARGO_KEYS, getCargoMainColor } from './Cargo.js';
 
-/**
- * @typedef {import('../../game/Game.js').Game} Game
- */
-
 export const CELL_SIZE = 32;
 export const DRAG_MARGIN = 0.9;
 
@@ -77,22 +73,21 @@ export function createWorld()
 }
 
 /**
- * @param {Game} game 
  * @param {AcreWorld} world 
  */
-export function updateWorld(game, world)
+export function updateWorld(display, inputs, world)
 {
     const cursor = world.cursor;
     const map = world.junctionMap;
 
-    let screenX = game.inputs.getAxisValue('cursorX') * game.display.width;
-    let screenY = game.inputs.getAxisValue('cursorY') * game.display.height;
+    let screenX = inputs.getAxisValue('cursorX') * display.width;
+    let screenY = inputs.getAxisValue('cursorY') * display.height;
     cursor.screenX = screenX;
     cursor.screenY = screenY;
 
-    let action = game.inputs.isButtonDown('activate')
+    let action = inputs.isButtonDown('activate')
         ? CURSOR_ACTION.ACTIVATING
-        : game.inputs.isButtonDown('deactivate')
+        : inputs.isButtonDown('deactivate')
             ? CURSOR_ACTION.DEACTIVATING
             : CURSOR_ACTION.NONE;
     tryRoadInteraction(screenX, screenY, action, cursor, (fromX, fromY, toX, toY) => {
@@ -504,11 +499,10 @@ function tryDirectJunction(world, map, directableIndex, directedIndex)
 }
 
 /**
- * @param {Game} game 
  * @param {CanvasRenderingContext2D} ctx
  * @param {AcreWorld} world 
  */
-export function drawWorld(game, ctx, world)
+export function drawWorld(ctx, world)
 {
     const map = world.junctionMap;
     const cartManager = world.cartManager;

@@ -8,6 +8,7 @@ dependencies:
   '@rush-temp/build-tools': file:projects/build-tools.tgz
   '@rush-temp/display': file:projects/display.tgz
   '@rush-temp/input': file:projects/input.tgz
+  '@rush-temp/laneworld': file:projects/laneworld.tgz
   '@rush-temp/milque': file:projects/milque.tgz
   '@rush-temp/mines': file:projects/mines.tgz
   '@rush-temp/mogli': file:projects/mogli.tgz
@@ -4151,7 +4152,7 @@ packages:
     dev: false
     name: '@rush-temp/asteroids'
     resolution:
-      integrity: sha512-dtUCRaPjP+PbLMG0lSMqvRAqHexiFonBMEtH2CGh4GXxeZefjP59ZNsIcokTvkK/wnQuHG+Nu2+waClS4AT0zg==
+      integrity: sha512-eqb86x/NBSMaml+5sICEKdcr/v8a5rdJbWY7niigIgGMpn3MOrrsxJH8kPGah5EXyuz8+YIL81kYmcBVyshxYg==
       tarball: file:projects/asteroids.tgz
     version: 0.0.0
   file:projects/build-tools.tgz:
@@ -4202,6 +4203,18 @@ packages:
     resolution:
       integrity: sha512-MMc9Y0/IyoZHXW4yOjVDh9ZtQiUSjebWepFJOB4GABRLRgjtkA+cND2c3sfjxVfWnjTn0ttlfaQaIY3NbJChXw==
       tarball: file:projects/input.tgz
+    version: 0.0.0
+  file:projects/laneworld.tgz:
+    dependencies:
+      eslint: 7.25.0
+      gl-matrix: 3.3.0
+      stylelint: 13.13.1
+      stylelint-config-standard: 22.0.0_stylelint@13.13.1
+    dev: false
+    name: '@rush-temp/laneworld'
+    resolution:
+      integrity: sha512-BlG4B+P5wY+bjfKrlAXhPBG1J9P1oz6aIN5Qkx6cT2YgkQfgHZOLXhf16yLUgjgffCyKlsHOiljYMSZ1HwTjjQ==
+      tarball: file:projects/laneworld.tgz
     version: 0.0.0
   file:projects/milque.tgz:
     dependencies:
@@ -4323,6 +4336,7 @@ specifiers:
   '@rush-temp/build-tools': file:./projects/build-tools.tgz
   '@rush-temp/display': file:./projects/display.tgz
   '@rush-temp/input': file:./projects/input.tgz
+  '@rush-temp/laneworld': file:./projects/laneworld.tgz
   '@rush-temp/milque': file:./projects/milque.tgz
   '@rush-temp/mines': file:./projects/mines.tgz
   '@rush-temp/mogli': file:./projects/mogli.tgz

@@ -1,0 +1,9 @@
+{
+    "checkJs": true,
+    "exclude": [
+        "node_modules",
+        "out",
+        "dist",
+        "public"
+    ]
+}
