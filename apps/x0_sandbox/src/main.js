@@ -10,14 +10,7 @@ import { loadAtlas } from './loader/AtlasLoader.js';
 import { loadAudioBuffer } from './loader/AudioBufferLoader.js';
 import { Sound } from './audio/Sound.js';
 
-// eslint-disable-next-line no-unused-vars
-import { main as IsoGame } from './00_isogame/main.js';
-// eslint-disable-next-line no-unused-vars
-import { main as GerryMan } from './01_gerryman/main.js';
-// eslint-disable-next-line no-unused-vars
-import { main as BreadBox } from './02_breadbox/main.js';
-// eslint-disable-next-line no-unused-vars
-import { main as Miners } from './03_miners/main.js';
+import { main as Sandbox } from './sandbox/main.js';
 
 /**
  * @typedef {import('@milque/asset').AssetPack} AssetPack
@@ -62,9 +55,6 @@ async function main()
         inputs.poll(now);
         game.emit('frame');
     });
-
-    // await IsoGame(game);
-    // await BreadBox(game);
-    // await GerryMan(game);
-    await Miners(game);
+    
+    await Sandbox(game);
 }
