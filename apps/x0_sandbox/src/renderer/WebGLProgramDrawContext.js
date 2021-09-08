@@ -1,8 +1,6 @@
-import { getActiveUniformsInfo } from './ProgramUniformInfo.js';
-import { getActiveAttribsInfo } from './ProgramAttributeInfo.js';
-import { draw } from './ProgramHelper.js';
+import { ProgramHelper } from '@milque/mogli';
 
-export class ProgramInfo
+export class WebGLProgramDrawContext
 {
     /**
      * @param {WebGLRenderingContextBase} gl 
@@ -10,37 +8,9 @@ export class ProgramInfo
      */
     constructor(gl, program)
     {
-        this.handle = program;
-
-        this.activeUniforms = getActiveUniformsInfo(gl, program);
-        this.activeAttributes = getActiveAttribsInfo(gl, program);
-        
-        this.drawContext = new ProgramInfoDrawContext(gl, this);
-    }
-
-    /**
-     * Bind the program and prepare to draw. This returns the bound context
-     * that can modify the draw state.
-     * 
-     * @param {WebGLRenderingContextBase} gl 
-     * @returns {ProgramInfoDrawContext} The bound context to draw with.
-     */
-    bind(gl)
-    {
-        gl.useProgram(this.handle);
-
-        this.drawContext.gl = gl;
-        return this.drawContext;
-    }
-}
-
-export class ProgramInfoDrawContext
-{
-    constructor(gl, programInfo)
-    {
         this.gl = gl;
         /** @private */
-        this.parent = programInfo;
+        this.parent = ProgramHelper.getProgramInfo(gl, program);
     }
     
     uniform(uniformName, value)
@@ -77,8 +47,8 @@ export class ProgramInfoDrawContext
             if (buffer)
             {
                 gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-                gl.vertexAttribPointer(location, size, bufferType, normalize, stride, offset);
                 gl.enableVertexAttribArray(location);
+                gl.vertexAttribPointer(location, size, bufferType, normalize, stride, offset);
             }
             else
             {
@@ -101,5 +71,28 @@ export class ProgramInfoDrawContext
     {
         draw(gl, mode, offset, count, elementBuffer);
         return this.parent;
+    }
+}
+
+
+/**
+ * Draw the currently bound render context.
+ * 
+ * @param {WebGLRenderingContextBase} gl 
+ * @param {Number} mode 
+ * @param {Number} offset 
+ * @param {Number} count 
+ * @param {WebGLBuffer} [elementBuffer]
+ */
+export function draw(gl, mode, offset, count, elementBuffer = undefined)
+{
+    if (elementBuffer)
+    {
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, elementBuffer);
+        gl.drawElements(mode, count, gl.UNSIGNED_SHORT, offset);
+    }
+    else
+    {
+        gl.drawArrays(mode, offset, count);
     }
 }

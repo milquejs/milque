@@ -1,6 +1,6 @@
 import { mat4, quat, vec3 } from 'gl-matrix';
 import { OrthographicCamera } from '@milque/scene';
-import { BufferHelper, BufferInfoBuilder, ProgramInfoBuilder } from '@milque/mogli';
+import { ProgramHelper, BufferHelper, BufferInfoBuilder, ProgramBuilder } from '@milque/mogli';
 
 import { hex } from './color.js';
 import { FixedGLRenderer2d } from './FixedGLRenderer2d.js';
@@ -88,12 +88,12 @@ export class FixedShapeGLRenderer2d extends FixedGLRenderer2d
         gl.enable(gl.DEPTH_TEST);
         /**
          * @protected
-         * @type {ProgramInfo}
+         * @type {import('@milque/mogli').ProgramInfo}
          */
-        this.program = new ProgramInfoBuilder(gl)
+        this.program = ProgramHelper.getProgramInfo(gl, new ProgramBuilder(gl)
             .shader(gl.VERTEX_SHADER, WEBGL_VERTEX_SHADER_SOURCE)
             .shader(gl.FRAGMENT_SHADER, WEBGL_FRAGMENT_SHADER_SOURCE)
-            .link();
+            .link());
         /**
          * @protected
          * @type {BufferInfo}

@@ -1,4 +1,4 @@
-import { BufferHelper, BufferInfoBuilder, ProgramInfoBuilder } from '@milque/mogli';
+import { BufferHelper, BufferInfoBuilder, ProgramBuilder, ProgramHelper } from '@milque/mogli';
 import { OrthographicCamera } from '@milque/scene';
 import { mat4, quat, vec2, vec3, vec4 } from 'gl-matrix';
 
@@ -68,12 +68,12 @@ export class FixedSpriteGLRenderer2d extends FixedGLRenderer2d
         gl.enable(gl.DEPTH_TEST);
         /**
          * @protected
-         * @type {ProgramInfo}
+         * @type {import('@milque/mogli').ProgramInfo}
          */
-        this.program = new ProgramInfoBuilder(gl)
+        this.program = ProgramHelper.getProgramInfo(gl, new ProgramBuilder(gl)
             .shader(gl.VERTEX_SHADER, WEBGL_VERTEX_SHADER_SOURCE)
             .shader(gl.FRAGMENT_SHADER, WEBGL_FRAGMENT_SHADER_SOURCE)
-            .link();
+            .link());
         /** @protected */
         this.meshQuad = {
             /** @type {BufferInfo} */

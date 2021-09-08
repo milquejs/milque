@@ -19,11 +19,16 @@ export class FirstPersonCameraController
         this.right = vec3.fromValues(1, 0, 0);
         this.up = vec3.fromValues(0, 1, 0);
 
+        /** @private */
         this.forwardAmount = 0;
+        /** @private */
         this.rightAmount = 0;
+        /** @private */
         this.upAmount = 0;
 
+        /** @private */
         this.pitch = 0;
+        /** @private */
         this.yaw = -90;
     }
 

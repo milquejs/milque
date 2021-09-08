@@ -22,14 +22,15 @@ export class BufferDataContext
     {
         const gl = this.gl;
         const target = this.target;
+        const dataUsage = usage || gl.STATIC_DRAW;
         if (typeof srcDataOrSize === 'number')
         {
-            gl.bufferData(target, srcDataOrSize, usage || gl.STATIC_DRAW);
+            gl.bufferData(target, srcDataOrSize, dataUsage);
         }
         else
         {
             if (!ArrayBuffer.isView(srcDataOrSize)) throw new Error('Source data must be a typed array.');
-            gl.bufferData(target, srcDataOrSize, usage || gl.STATIC_DRAW);
+            gl.bufferData(target, srcDataOrSize, dataUsage);
         }
         return this;
     }

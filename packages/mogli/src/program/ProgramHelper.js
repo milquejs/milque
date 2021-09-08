@@ -4,6 +4,16 @@ import { getActiveUniformsInfo } from './ProgramUniformInfo.js';
 export * from './ProgramActives.js';
 
 /**
+ * @typedef ProgramInfo
+ * @property {WebGLProgram} handle
+ * @property {boolean} linkStatus
+ * @property {boolean} deleteStatus
+ * @property {boolean} validateStatus
+ * @property {Record<string, ActiveUniformInfo>} activeUniforms
+ * @property {Record<string, ActiveAttributeInfo>} activeAttributes
+ */
+
+/**
  * Create and compile shader from source text.
  * 
  * @param {WebGLRenderingContextBase} gl The webgl context.
@@ -21,9 +31,10 @@ export function createShader(gl, shaderType, shaderSource)
     let status = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
     if (!status)
     {
-        console.error(gl.getShaderInfoLog(shader)
-            + `\nFailed to compile shader:\n${shaderSource}`);
+        let infoLog = gl.getShaderInfoLog(shader)
+            + `\nFailed to compile shader:\n${shaderSource}`;
         gl.deleteShader(shader);
+        throw new Error(infoLog);
     }
     return shader;
 }
@@ -59,41 +70,24 @@ export function createShaderProgram(gl, program, shaders)
     let status = gl.getProgramParameter(program, gl.LINK_STATUS);
     if (!status)
     {
-        console.error(gl.getProgramInfoLog(program));
+        let infoLog = gl.getProgramInfoLog(program);
         gl.deleteProgram(program);
+        throw new Error(infoLog);
     }
     return program;
 }
 
 /**
- * Draw the currently bound render context.
+ * Get additional info about the target program. The program does not need to be currently bound.
  * 
  * @param {WebGLRenderingContextBase} gl 
- * @param {Number} mode 
- * @param {Number} offset 
- * @param {Number} count 
- * @param {WebGLBuffer} [elementBuffer]
- */
-export function draw(gl, mode, offset, count, elementBuffer = undefined)
-{
-    if (elementBuffer)
-    {
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, elementBuffer);
-        gl.drawElements(mode, count, gl.UNSIGNED_SHORT, offset);
-    }
-    else
-    {
-        gl.drawArrays(mode, offset, count);
-    }
-}
-
-/**
- * @param {WebGLRenderingContextBase} gl 
  * @param {WebGLProgram} program 
+ * @returns {ProgramInfo}
  */
 export function getProgramInfo(gl, program)
 {
     return {
+        handle: program,
         /** @type {GLboolean} */
         linkStatus: gl.getProgramParameter(program, gl.LINK_STATUS),
         /** @type {GLboolean} */

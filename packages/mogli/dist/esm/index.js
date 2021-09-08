@@ -36,14 +36,15 @@ class BufferDataContext
     {
         const gl = this.gl;
         const target = this.target;
+        const dataUsage = usage || gl.STATIC_DRAW;
         if (typeof srcDataOrSize === 'number')
         {
-            gl.bufferData(target, srcDataOrSize, usage || gl.STATIC_DRAW);
+            gl.bufferData(target, srcDataOrSize, dataUsage);
         }
         else
         {
             if (!ArrayBuffer.isView(srcDataOrSize)) throw new Error('Source data must be a typed array.');
-            gl.bufferData(target, srcDataOrSize, usage || gl.STATIC_DRAW);
+            gl.bufferData(target, srcDataOrSize, dataUsage);
         }
         return this;
     }
@@ -180,7 +181,7 @@ class BufferInfo
  * this is `gl.FLOAT` for array buffers or `gl.UNSIGNED_SHORT` for element
  * array buffers. It must be either `gl.BYTE`, `gl.UNSIGNED_BYTE`, `gl.SHORT`,
  * `gl.UNSIGNED_SHORT`, `gl.FLOAT`, or `gl.HALF_FLOAT` for WebGL2.
- * @param {Array} data The buffer source data array.
+ * @param {Array} data The buffer data array.
  * @returns {BufferSource} The typed array buffer containing the given data.
  */
 function createBufferSource(gl, type, data)
@@ -198,7 +199,7 @@ function createBufferSource(gl, type, data)
  * @param {BufferSource} bufferSource The typed array buffer containing the given data.
  * For convenience, you can use `BufferHelper.createBufferSource()` to convert a data array
  * to the appropriate typed array.
- * @param {GLenum} usage The buffer usage hint. By default, this is `gl.STATIC_DRAW`.
+ * @param {GLenum} [usage] The buffer usage hint. By default, this is `gl.STATIC_DRAW`.
  * @returns {WebGLBuffer} The created and bound data buffer.
  */
 function createBuffer(gl, target, bufferSource, usage = undefined)
@@ -210,19 +211,39 @@ function createBuffer(gl, target, bufferSource, usage = undefined)
     return handle;
 }
 
+/**
+ * Create a buffer with the given number array.
+ * 
+ * @param {WebGLRenderingContextBase} gl The gl context.
+ * @param {GLenum} target The buffer bind target. Usually, this is `gl.ARRAY_BUFFER`
+ * or `gl.ELEMENT_ARRAY_BUFFER`.
+ * @param {GLenum} type The data type of the elements in the buffer. Usually,
+ * this is `gl.FLOAT` for array buffers or `gl.UNSIGNED_SHORT` for element
+ * array buffers. It must be either `gl.BYTE`, `gl.UNSIGNED_BYTE`, `gl.SHORT`,
+ * `gl.UNSIGNED_SHORT`, `gl.FLOAT`, or `gl.HALF_FLOAT` for WebGL2.
+ * @param {Array<number>} data The buffer data array.
+ * @param {GLenum} [usage] The buffer usage hint. By default, this is `gl.STATIC_DRAW`.
+ */
+function createBufferFromArray(gl, target, type, data, usage = undefined)
+{
+    let source = createBufferSource(gl, type, data);
+    let handle = createBuffer(gl, target, source, usage);
+    return handle;
+}
+
 function getBufferTypedArray(gl, bufferType)
 {
     // NOTE: For WebGL2, gl.HALF_FLOAT (float16) does not have an associated TypedArray.
     switch(bufferType)
     {
-    case gl.BYTE: return Int8Array;
-    case gl.UNSIGNED_BYTE: return Uint8Array;
-    case gl.SHORT: return Int16Array;
-    case gl.UNSIGNED_SHORT: return Uint16Array;
-    case gl.INT: return Int32Array;
-    case gl.UNSIGNED_INT: return Uint32Array;
-    case gl.FLOAT: return Float32Array;
-    default: throw new Error('Cannot find valid typed array for buffer type.');
+        case gl.BYTE: return Int8Array;
+        case gl.UNSIGNED_BYTE: return Uint8Array;
+        case gl.SHORT: return Int16Array;
+        case gl.UNSIGNED_SHORT: return Uint16Array;
+        case gl.INT: return Int32Array;
+        case gl.UNSIGNED_INT: return Uint32Array;
+        case gl.FLOAT: return Float32Array;
+        default: throw new Error('Cannot find valid typed array for buffer type.');
     }
 }
 
@@ -231,14 +252,14 @@ function getTypedArrayBufferType(gl, typedArray)
     // NOTE: For WebGL2, gl.HALF_FLOAT (float16) does not have an associated TypedArray.
     switch(typedArray)
     {
-    case Int8Array: return gl.BYTE;
-    case Uint8Array: return gl.UNSIGNED_BYTE;
-    case Int16Array: return gl.SHORT;
-    case Uint16Array: return gl.UNSIGNED_SHORT;
-    case Int32Array: return gl.INT;
-    case Uint32Array: return gl.UNSIGNED_INT;
-    case Float32Array: return gl.FLOAT;
-    default: throw new Error('Cannot find valid buffer type for typed array.');
+        case Int8Array: return gl.BYTE;
+        case Uint8Array: return gl.UNSIGNED_BYTE;
+        case Int16Array: return gl.SHORT;
+        case Uint16Array: return gl.UNSIGNED_SHORT;
+        case Int32Array: return gl.INT;
+        case Uint32Array: return gl.UNSIGNED_INT;
+        case Float32Array: return gl.FLOAT;
+        default: throw new Error('Cannot find valid buffer type for typed array.');
     }
 }
 
@@ -252,6 +273,7 @@ var BufferHelper = /*#__PURE__*/Object.freeze({
     __proto__: null,
     createBufferSource: createBufferSource,
     createBuffer: createBuffer,
+    createBufferFromArray: createBufferFromArray,
     getBufferTypedArray: getBufferTypedArray,
     getTypedArrayBufferType: getTypedArrayBufferType,
     getBufferUsage: getBufferUsage
@@ -346,6 +368,105 @@ const BufferEnums = {
     // WebGL2
     HALF_FLOAT:                     0x140B,
 };
+
+/**
+ * Get the number of expected elements in the attribute vertex type.
+ * 
+ * @param {WebGLRenderingContextBase} gl The gl context.
+ * @param {GLenum} attribType The attribute gl type.
+ * @returns {number} The number of expected elements in the attribute vertex type.
+ */
+function getAttribVertexSize(gl, attribType)
+{
+    // https://www.khronos.org/registry/OpenGL-Refpages/es2.0/xhtml/glGetActiveAttrib.xml
+    switch(attribType)
+    {
+    case gl.FLOAT: return 1;
+    case gl.FLOAT_VEC2: return 2;
+    case gl.FLOAT_VEC3: return 3;
+    case gl.FLOAT_VEC4: return 4;
+    case gl.FLOAT_MAT2: return 4;
+    case gl.FLOAT_MAT3: return 9;
+    case gl.FLOAT_MAT4: return 16;
+    default: throw new Error('Invalid vertex attribute type.');
+    }
+}
+
+/**
+ * Get list of parameter infos for all active uniforms in the shader program.
+ * 
+ * @param {WebGLRenderingContextBase} gl The webgl context.
+ * @param {WebGLProgram} program The program to get the active uniforms from.
+ * @returns {Array<WebGLActiveInfo>} An array of active uniforms.
+ */
+function getActiveUniforms(gl, program)
+{
+    let result = [];
+    const uniformCount = gl.getProgramParameter(program, gl.ACTIVE_UNIFORMS);
+    for(let i = 0; i < uniformCount; ++i)
+    {
+        let uniformInfo = gl.getActiveUniform(program, i);
+        if (!uniformInfo) break;
+        result.push(uniformInfo);
+    }
+    return result;
+}
+
+/**
+ * Get list of parameter infos for all active attributes in the shader program.
+ * 
+ * @param {WebGLRenderingContextBase} gl The webgl context.
+ * @param {WebGLProgram} program The program to get the active attributes from.
+ * @returns {Array<WebGLActiveInfo>} An array of active attributes.
+ */
+function getActiveAttribs(gl, program)
+{
+    let result = [];
+    const attributeCount = gl.getProgramParameter(program, gl.ACTIVE_ATTRIBUTES);
+    for(let i = 0; i < attributeCount; ++i)
+    {
+        let attributeInfo = gl.getActiveAttrib(program, i);
+        if (!attributeInfo) continue;
+        result.push(attributeInfo);
+    }
+    return result;
+}
+
+/**
+ * @typedef ActiveAttributeInfo
+ * @property {GLenum} type
+ * @property {Number} length
+ * @property {Number} location
+ */
+
+/**
+ * Get map of all active uniforms to their info in the shader program.
+ * 
+ * @param {WebGLRenderingContext} gl The webgl context.
+ * @param {WebGLProgram} program The program to get active attributes from.
+ * @returns {Record<String, ActiveAttributeInfo>} An object mapping of attribute names to info.
+ */
+function getActiveAttribsInfo(gl, program)
+{
+    let result = {};
+    const attributeInfos = getActiveAttribs(gl, program);
+    for(let attributeInfo of attributeInfos)
+    {
+        const attributeName = attributeInfo.name;
+        const attributeSize = attributeInfo.size;
+        const attributeType = attributeInfo.type;
+        const attributeLocation = gl.getAttribLocation(program, attributeName);
+        const attributeComponents = getAttribVertexSize(gl, attributeType);
+
+        result[attributeName] = {
+            type: attributeType,
+            length: attributeSize,
+            location: attributeLocation,
+            size: attributeComponents
+        };
+    }
+    return result;
+}
 
 /**
  * @callback UniformArrayFunction
@@ -706,46 +827,6 @@ var ProgramUniformFunctions = /*#__PURE__*/Object.freeze({
 });
 
 /**
- * Get list of parameter infos for all active uniforms in the shader program.
- * 
- * @param {WebGLRenderingContextBase} gl The webgl context.
- * @param {WebGLProgram} program The program to get the active uniforms from.
- * @returns {Array<WebGLActiveInfo>} An array of active uniforms.
- */
-function getActiveUniforms(gl, program)
-{
-    let result = [];
-    const uniformCount = gl.getProgramParameter(program, gl.ACTIVE_UNIFORMS);
-    for(let i = 0; i < uniformCount; ++i)
-    {
-        let uniformInfo = gl.getActiveUniform(program, i);
-        if (!uniformInfo) break;
-        result.push(uniformInfo);
-    }
-    return result;
-}
-
-/**
- * Get list of parameter infos for all active attributes in the shader program.
- * 
- * @param {WebGLRenderingContextBase} gl The webgl context.
- * @param {WebGLProgram} program The program to get the active attributes from.
- * @returns {Array<WebGLActiveInfo>} An array of active attributes.
- */
-function getActiveAttribs(gl, program)
-{
-    let result = [];
-    const attributeCount = gl.getProgramParameter(program, gl.ACTIVE_ATTRIBUTES);
-    for(let i = 0; i < attributeCount; ++i)
-    {
-        let attributeInfo = gl.getActiveAttrib(program, i);
-        if (!attributeInfo) continue;
-        result.push(attributeInfo);
-    }
-    return result;
-}
-
-/**
  * @typedef {import('./UniformTypeInfo.js').UniformFunction} UniformFunction
  */
 
@@ -799,63 +880,14 @@ function getActiveUniformsInfo(gl, program)
 }
 
 /**
- * Get the number of expected elements in the attribute vertex type.
- * 
- * @param {WebGLRenderingContextBase} gl The gl context.
- * @param {GLenum} attribType The attribute gl type.
- * @returns {number} The number of expected elements in the attribute vertex type.
+ * @typedef ProgramInfo
+ * @property {WebGLProgram} handle
+ * @property {boolean} linkStatus
+ * @property {boolean} deleteStatus
+ * @property {boolean} validateStatus
+ * @property {Record<string, ActiveUniformInfo>} activeUniforms
+ * @property {Record<string, ActiveAttributeInfo>} activeAttributes
  */
-function getAttribVertexSize(gl, attribType)
-{
-    // https://www.khronos.org/registry/OpenGL-Refpages/es2.0/xhtml/glGetActiveAttrib.xml
-    switch(attribType)
-    {
-    case gl.FLOAT: return 1;
-    case gl.FLOAT_VEC2: return 2;
-    case gl.FLOAT_VEC3: return 3;
-    case gl.FLOAT_VEC4: return 4;
-    case gl.FLOAT_MAT2: return 4;
-    case gl.FLOAT_MAT3: return 9;
-    case gl.FLOAT_MAT4: return 16;
-    default: throw new Error('Invalid vertex attribute type.');
-    }
-}
-
-/**
- * @typedef ActiveAttributeInfo
- * @property {GLenum} type
- * @property {Number} length
- * @property {Number} location
- */
-
-/**
- * Get map of all active uniforms to their info in the shader program.
- * 
- * @param {WebGLRenderingContext} gl The webgl context.
- * @param {WebGLProgram} program The program to get active attributes from.
- * @returns {Record<String, ActiveAttributeInfo>} An object mapping of attribute names to info.
- */
-function getActiveAttribsInfo(gl, program)
-{
-    let result = {};
-    const attributeInfos = getActiveAttribs(gl, program);
-    for(let attributeInfo of attributeInfos)
-    {
-        const attributeName = attributeInfo.name;
-        const attributeSize = attributeInfo.size;
-        const attributeType = attributeInfo.type;
-        const attributeLocation = gl.getAttribLocation(program, attributeName);
-        const attributeComponents = getAttribVertexSize(gl, attributeType);
-
-        result[attributeName] = {
-            type: attributeType,
-            length: attributeSize,
-            location: attributeLocation,
-            size: attributeComponents
-        };
-    }
-    return result;
-}
 
 /**
  * Create and compile shader from source text.
@@ -875,9 +907,10 @@ function createShader(gl, shaderType, shaderSource)
     let status = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
     if (!status)
     {
-        console.error(gl.getShaderInfoLog(shader)
-            + `\nFailed to compile shader:\n${shaderSource}`);
+        let infoLog = gl.getShaderInfoLog(shader)
+            + `\nFailed to compile shader:\n${shaderSource}`;
         gl.deleteShader(shader);
+        throw new Error(infoLog);
     }
     return shader;
 }
@@ -913,41 +946,24 @@ function createShaderProgram(gl, program, shaders)
     let status = gl.getProgramParameter(program, gl.LINK_STATUS);
     if (!status)
     {
-        console.error(gl.getProgramInfoLog(program));
+        let infoLog = gl.getProgramInfoLog(program);
         gl.deleteProgram(program);
+        throw new Error(infoLog);
     }
     return program;
 }
 
 /**
- * Draw the currently bound render context.
+ * Get additional info about the target program. The program does not need to be currently bound.
  * 
  * @param {WebGLRenderingContextBase} gl 
- * @param {Number} mode 
- * @param {Number} offset 
- * @param {Number} count 
- * @param {WebGLBuffer} [elementBuffer]
- */
-function draw(gl, mode, offset, count, elementBuffer = undefined)
-{
-    if (elementBuffer)
-    {
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, elementBuffer);
-        gl.drawElements(mode, count, gl.UNSIGNED_SHORT, offset);
-    }
-    else
-    {
-        gl.drawArrays(mode, offset, count);
-    }
-}
-
-/**
- * @param {WebGLRenderingContextBase} gl 
  * @param {WebGLProgram} program 
+ * @returns {ProgramInfo}
  */
 function getProgramInfo(gl, program)
 {
     return {
+        handle: program,
         /** @type {GLboolean} */
         linkStatus: gl.getProgramParameter(program, gl.LINK_STATUS),
         /** @type {GLboolean} */
@@ -965,113 +981,10 @@ var ProgramHelper = /*#__PURE__*/Object.freeze({
     __proto__: null,
     createShader: createShader,
     createShaderProgram: createShaderProgram,
-    draw: draw,
     getProgramInfo: getProgramInfo,
     getActiveUniforms: getActiveUniforms,
     getActiveAttribs: getActiveAttribs
 });
-
-class ProgramInfo
-{
-    /**
-     * @param {WebGLRenderingContextBase} gl 
-     * @param {WebGLProgram} program 
-     */
-    constructor(gl, program)
-    {
-        this.handle = program;
-
-        this.activeUniforms = getActiveUniformsInfo(gl, program);
-        this.activeAttributes = getActiveAttribsInfo(gl, program);
-        
-        this.drawContext = new ProgramInfoDrawContext(gl, this);
-    }
-
-    /**
-     * Bind the program and prepare to draw. This returns the bound context
-     * that can modify the draw state.
-     * 
-     * @param {WebGLRenderingContextBase} gl 
-     * @returns {ProgramInfoDrawContext} The bound context to draw with.
-     */
-    bind(gl)
-    {
-        gl.useProgram(this.handle);
-
-        this.drawContext.gl = gl;
-        return this.drawContext;
-    }
-}
-
-class ProgramInfoDrawContext
-{
-    constructor(gl, programInfo)
-    {
-        this.gl = gl;
-        /** @private */
-        this.parent = programInfo;
-    }
-    
-    uniform(uniformName, value)
-    {
-        const activeUniforms = this.parent.activeUniforms;
-        if (uniformName in activeUniforms)
-        {
-            let uniform = activeUniforms[uniformName];
-            let location = uniform.location;
-            uniform.set.call(this.gl, location, value);
-        }
-        return this;
-    }
-
-    /**
-     * @param {string} attributeName Name of the attribute.
-     * @param {GLenum} bufferType The buffer data type. This is usually `gl.FLOAT`
-     * but can also be one of `gl.BYTE`, `gl.UNSIGNED_BYTE`, `gl.SHORT`, `gl.UNSIGNED_SHORT`
-     * or `gl.HALF_FLOAT` for WebGL2.
-     * @param {WebGLBuffer} buffer The buffer handle.
-     * @param {boolean} [normalize=false] Whether to normalize the vectors in the buffer.
-     * @param {number} [stride=0] The stride for each vector in the buffer.
-     * @param {number} [offset=0] The initial offset in the buffer.
-     */
-    attribute(attributeName, bufferType, buffer, normalize = false, stride = 0, offset = 0)
-    {
-        const gl = this.gl;
-        const activeAttributes = this.parent.activeAttributes;
-        if (attributeName in activeAttributes)
-        {
-            let attribute = activeAttributes[attributeName];
-            let location = attribute.location;
-            let size = attribute.size;
-            if (buffer)
-            {
-                gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-                gl.vertexAttribPointer(location, size, bufferType, normalize, stride, offset);
-                gl.enableVertexAttribArray(location);
-            }
-            else
-            {
-                gl.disableVertexAttribArray(location);
-            }
-        }
-        return this;
-    }
-    
-    /**
-     * Draws using this program.
-     * 
-     * @param {WebGLRenderingContext} gl 
-     * @param {number} mode 
-     * @param {number} offset 
-     * @param {number} count 
-     * @param {WebGLBuffer} elementBuffer 
-     */
-    draw(gl, mode, offset, count, elementBuffer = null)
-    {
-        draw(gl, mode, offset, count, elementBuffer);
-        return this.parent;
-    }
-}
 
 class ProgramBuilder
 {
@@ -1109,54 +1022,6 @@ class ProgramBuilder
         createShaderProgram(gl, this.handle, this.shaders);
         this.shaders.length = 0;
         return this.handle;
-    }
-}
-
-class ProgramInfoBuilder
-{
-    /**
-     * @param {WebGLRenderingContextBase} gl 
-     * @param {WebGLProgram} [program]
-     */
-    constructor(gl, program = undefined)
-    {
-        /** @private */
-        this.programBuilder = new ProgramBuilder(gl, program);
-    }
-    
-    get gl()
-    {
-        return this.programBuilder.gl;
-    }
-
-    get handle()
-    {
-        return this.programBuilder.handle;
-    }
-
-    get shaders()
-    {
-        return this.programBuilder.shaders;
-    }
-
-    /**
-     * @param {GLenum} shaderType 
-     * @param {string} shaderSource 
-     * @returns {ProgramInfoBuilder}
-     */
-    shader(shaderType, shaderSource)
-    {
-        this.programBuilder.shader(shaderType, shaderSource);
-        return this;
-    }
-
-    /**
-     * @returns {ProgramInfo}
-     */
-    link()
-    {
-        const handle = this.programBuilder.link();
-        return new ProgramInfo(this.gl, handle);
     }
 }
 
@@ -1218,4 +1083,4 @@ const ProgramAttributeEnums = {
     HALF_FLOAT:                     0x140B,
 };
 
-export { BufferBuilder, BufferDataContext, BufferEnums, BufferHelper, BufferInfo, BufferInfoBuilder, GLHelper, ProgramAttributeEnums, ProgramBuilder, ProgramHelper, ProgramInfo, ProgramInfoBuilder, ProgramInfoDrawContext, ProgramUniformEnums, ProgramUniformFunctions };
+export { BufferBuilder, BufferDataContext, BufferEnums, BufferHelper, BufferInfo, BufferInfoBuilder, GLHelper, ProgramAttributeEnums, ProgramBuilder, ProgramHelper, ProgramUniformEnums, ProgramUniformFunctions };

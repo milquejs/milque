@@ -135,7 +135,7 @@ declare class BufferInfoBuilder {
  * this is `gl.FLOAT` for array buffers or `gl.UNSIGNED_SHORT` for element
  * array buffers. It must be either `gl.BYTE`, `gl.UNSIGNED_BYTE`, `gl.SHORT`,
  * `gl.UNSIGNED_SHORT`, `gl.FLOAT`, or `gl.HALF_FLOAT` for WebGL2.
- * @param {Array} data The buffer source data array.
+ * @param {Array} data The buffer data array.
  * @returns {BufferSource} The typed array buffer containing the given data.
  */
 declare function createBufferSource(gl: WebGLRenderingContextBase, type: GLenum, data: any[]): BufferSource;
@@ -148,16 +148,31 @@ declare function createBufferSource(gl: WebGLRenderingContextBase, type: GLenum,
  * @param {BufferSource} bufferSource The typed array buffer containing the given data.
  * For convenience, you can use `BufferHelper.createBufferSource()` to convert a data array
  * to the appropriate typed array.
- * @param {GLenum} usage The buffer usage hint. By default, this is `gl.STATIC_DRAW`.
+ * @param {GLenum} [usage] The buffer usage hint. By default, this is `gl.STATIC_DRAW`.
  * @returns {WebGLBuffer} The created and bound data buffer.
  */
 declare function createBuffer(gl: WebGLRenderingContextBase, target: GLenum, bufferSource: BufferSource, usage?: GLenum): WebGLBuffer;
+/**
+ * Create a buffer with the given number array.
+ *
+ * @param {WebGLRenderingContextBase} gl The gl context.
+ * @param {GLenum} target The buffer bind target. Usually, this is `gl.ARRAY_BUFFER`
+ * or `gl.ELEMENT_ARRAY_BUFFER`.
+ * @param {GLenum} type The data type of the elements in the buffer. Usually,
+ * this is `gl.FLOAT` for array buffers or `gl.UNSIGNED_SHORT` for element
+ * array buffers. It must be either `gl.BYTE`, `gl.UNSIGNED_BYTE`, `gl.SHORT`,
+ * `gl.UNSIGNED_SHORT`, `gl.FLOAT`, or `gl.HALF_FLOAT` for WebGL2.
+ * @param {Array<number>} data The buffer data array.
+ * @param {GLenum} [usage] The buffer usage hint. By default, this is `gl.STATIC_DRAW`.
+ */
+declare function createBufferFromArray(gl: WebGLRenderingContextBase, target: GLenum, type: GLenum, data: Array<number>, usage?: GLenum): WebGLBuffer;
 declare function getBufferTypedArray(gl: any, bufferType: any): Int8ArrayConstructor | Uint8ArrayConstructor | Int16ArrayConstructor | Uint16ArrayConstructor | Int32ArrayConstructor | Uint32ArrayConstructor | Float32ArrayConstructor;
 declare function getTypedArrayBufferType(gl: any, typedArray: any): any;
 declare function getBufferUsage(gl: any, target: any, buffer: any): any;
 
 declare const BufferHelper_createBufferSource: typeof createBufferSource;
 declare const BufferHelper_createBuffer: typeof createBuffer;
+declare const BufferHelper_createBufferFromArray: typeof createBufferFromArray;
 declare const BufferHelper_getBufferTypedArray: typeof getBufferTypedArray;
 declare const BufferHelper_getTypedArrayBufferType: typeof getTypedArrayBufferType;
 declare const BufferHelper_getBufferUsage: typeof getBufferUsage;
@@ -165,6 +180,7 @@ declare namespace BufferHelper {
   export {
     BufferHelper_createBufferSource as createBufferSource,
     BufferHelper_createBuffer as createBuffer,
+    BufferHelper_createBufferFromArray as createBufferFromArray,
     BufferHelper_getBufferTypedArray as getBufferTypedArray,
     BufferHelper_getTypedArrayBufferType as getTypedArrayBufferType,
     BufferHelper_getBufferUsage as getBufferUsage,
@@ -180,90 +196,6 @@ declare namespace BufferEnums {
     const UNSIGNED_INT: number;
     const FLOAT: number;
     const HALF_FLOAT: number;
-}
-
-type ActiveAttributeInfo = {
-    type: GLenum;
-    length: number;
-    location: number;
-};
-
-type ActiveUniformInfo = {
-    type: string;
-    length: number;
-    location: number;
-    set: any;
-};
-
-declare class ProgramInfo {
-    /**
-     * @param {WebGLRenderingContextBase} gl
-     * @param {WebGLProgram} program
-     */
-    constructor(gl: WebGLRenderingContextBase, program: WebGLProgram);
-    handle: WebGLProgram;
-    activeUniforms: Record<string, ActiveUniformInfo>;
-    activeAttributes: Record<string, ActiveAttributeInfo>;
-    drawContext: ProgramInfoDrawContext;
-    /**
-     * Bind the program and prepare to draw. This returns the bound context
-     * that can modify the draw state.
-     *
-     * @param {WebGLRenderingContextBase} gl
-     * @returns {ProgramInfoDrawContext} The bound context to draw with.
-     */
-    bind(gl: WebGLRenderingContextBase): ProgramInfoDrawContext;
-}
-declare class ProgramInfoDrawContext {
-    constructor(gl: any, programInfo: any);
-    gl: any;
-    /** @private */
-    private parent;
-    uniform(uniformName: any, value: any): ProgramInfoDrawContext;
-    /**
-     * @param {string} attributeName Name of the attribute.
-     * @param {GLenum} bufferType The buffer data type. This is usually `gl.FLOAT`
-     * but can also be one of `gl.BYTE`, `gl.UNSIGNED_BYTE`, `gl.SHORT`, `gl.UNSIGNED_SHORT`
-     * or `gl.HALF_FLOAT` for WebGL2.
-     * @param {WebGLBuffer} buffer The buffer handle.
-     * @param {boolean} [normalize=false] Whether to normalize the vectors in the buffer.
-     * @param {number} [stride=0] The stride for each vector in the buffer.
-     * @param {number} [offset=0] The initial offset in the buffer.
-     */
-    attribute(attributeName: string, bufferType: GLenum, buffer: WebGLBuffer, normalize?: boolean, stride?: number, offset?: number): ProgramInfoDrawContext;
-    /**
-     * Draws using this program.
-     *
-     * @param {WebGLRenderingContext} gl
-     * @param {number} mode
-     * @param {number} offset
-     * @param {number} count
-     * @param {WebGLBuffer} elementBuffer
-     */
-    draw(gl: WebGLRenderingContext, mode: number, offset: number, count: number, elementBuffer?: WebGLBuffer): any;
-}
-
-declare class ProgramInfoBuilder {
-    /**
-     * @param {WebGLRenderingContextBase} gl
-     * @param {WebGLProgram} [program]
-     */
-    constructor(gl: WebGLRenderingContextBase, program?: WebGLProgram);
-    /** @private */
-    private programBuilder;
-    get gl(): WebGLRenderingContextBase;
-    get handle(): WebGLProgram;
-    get shaders(): any[];
-    /**
-     * @param {GLenum} shaderType
-     * @param {string} shaderSource
-     * @returns {ProgramInfoBuilder}
-     */
-    shader(shaderType: GLenum, shaderSource: string): ProgramInfoBuilder;
-    /**
-     * @returns {ProgramInfo}
-     */
-    link(): ProgramInfo;
 }
 
 declare class ProgramBuilder {
@@ -306,6 +238,15 @@ declare function getActiveUniforms(gl: WebGLRenderingContextBase, program: WebGL
 declare function getActiveAttribs(gl: WebGLRenderingContextBase, program: WebGLProgram): Array<WebGLActiveInfo>;
 
 /**
+ * @typedef ProgramInfo
+ * @property {WebGLProgram} handle
+ * @property {boolean} linkStatus
+ * @property {boolean} deleteStatus
+ * @property {boolean} validateStatus
+ * @property {Record<string, ActiveUniformInfo>} activeUniforms
+ * @property {Record<string, ActiveAttributeInfo>} activeAttributes
+ */
+/**
  * Create and compile shader from source text.
  *
  * @param {WebGLRenderingContextBase} gl The webgl context.
@@ -327,44 +268,35 @@ declare function createShader(gl: WebGLRenderingContextBase, shaderType: any, sh
  */
 declare function createShaderProgram(gl: WebGLRenderingContextBase, program: WebGLProgram, shaders: Array<WebGLShader>): WebGLProgram;
 /**
- * Draw the currently bound render context.
+ * Get additional info about the target program. The program does not need to be currently bound.
  *
  * @param {WebGLRenderingContextBase} gl
- * @param {Number} mode
- * @param {Number} offset
- * @param {Number} count
- * @param {WebGLBuffer} [elementBuffer]
- */
-declare function draw(gl: WebGLRenderingContextBase, mode: number, offset: number, count: number, elementBuffer?: WebGLBuffer): void;
-/**
- * @param {WebGLRenderingContextBase} gl
  * @param {WebGLProgram} program
+ * @returns {ProgramInfo}
  */
-declare function getProgramInfo(gl: WebGLRenderingContextBase, program: WebGLProgram): {
-    /** @type {GLboolean} */
-    linkStatus: GLboolean;
-    /** @type {GLboolean} */
-    deleteStatus: GLboolean;
-    /** @type {GLboolean} */
-    validateStatus: GLboolean;
-    /** @type {string} */
-    validationLog: string;
-    activeUniforms: Record<string, ActiveUniformInfo>;
-    activeAttributes: Record<string, ActiveAttributeInfo>;
+declare function getProgramInfo(gl: WebGLRenderingContextBase, program: WebGLProgram): ProgramInfo;
+
+type ProgramInfo = {
+    handle: WebGLProgram;
+    linkStatus: boolean;
+    deleteStatus: boolean;
+    validateStatus: boolean;
+    activeUniforms: Record<string, any>;
+    activeAttributes: Record<string, any>;
 };
 
 declare const ProgramHelper_createShader: typeof createShader;
 declare const ProgramHelper_createShaderProgram: typeof createShaderProgram;
-declare const ProgramHelper_draw: typeof draw;
 declare const ProgramHelper_getProgramInfo: typeof getProgramInfo;
+type ProgramHelper_ProgramInfo = ProgramInfo;
 declare const ProgramHelper_getActiveUniforms: typeof getActiveUniforms;
 declare const ProgramHelper_getActiveAttribs: typeof getActiveAttribs;
 declare namespace ProgramHelper {
   export {
     ProgramHelper_createShader as createShader,
     ProgramHelper_createShaderProgram as createShaderProgram,
-    ProgramHelper_draw as draw,
     ProgramHelper_getProgramInfo as getProgramInfo,
+    ProgramHelper_ProgramInfo as ProgramInfo,
     ProgramHelper_getActiveUniforms as getActiveUniforms,
     ProgramHelper_getActiveAttribs as getActiveAttribs,
   };
@@ -482,4 +414,4 @@ declare namespace ProgramUniformFunctions {
   };
 }
 
-export { BufferBuilder, BufferDataContext, BufferEnums, BufferHelper, BufferInfo, BufferInfoBuilder, GLHelper, ProgramAttributeEnums, ProgramBuilder, ProgramHelper, ProgramInfo, ProgramInfoBuilder, ProgramInfoDrawContext, ProgramUniformEnums, ProgramUniformFunctions };
+export { BufferBuilder, BufferDataContext, BufferEnums, BufferHelper, BufferInfo, BufferInfoBuilder, GLHelper, ProgramAttributeEnums, ProgramBuilder, ProgramHelper, ProgramUniformEnums, ProgramUniformFunctions };

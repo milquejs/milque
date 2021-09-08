@@ -103,13 +103,45 @@ declare class FirstPersonCameraController {
     forward: any;
     right: any;
     up: any;
-    forwardAmount: number;
-    rightAmount: number;
-    upAmount: number;
-    pitch: number;
-    yaw: number;
+    /** @private */
+    private forwardAmount;
+    /** @private */
+    private rightAmount;
+    /** @private */
+    private upAmount;
+    /** @private */
+    private pitch;
+    /** @private */
+    private yaw;
     look(dx: any, dy: any, dt?: number): FirstPersonCameraController;
     move(forward: any, right?: number, up?: number, dt?: number): FirstPersonCameraController;
+    apply(viewMatrix: any): any;
+}
+
+declare class ArcballCameraController {
+    constructor(distance?: number);
+    position: any;
+    /** @private */
+    private forwardAmount;
+    /** @private */
+    private rightAmount;
+    /** @private */
+    private upAmount;
+    /** @private */
+    private yawAmount;
+    /** @private */
+    private pitchAmount;
+    /** @private */
+    private zoomAmount;
+    /** @private */
+    private cameraPosition;
+    /** @private */
+    private vec;
+    /** @private */
+    private mat;
+    look(dx: any, dy: any, dt?: number): ArcballCameraController;
+    move(forward: any, right: any, up?: number, dt?: number): ArcballCameraController;
+    zoom(amount: any, dt?: number): ArcballCameraController;
     apply(viewMatrix: any): any;
 }
 
@@ -249,4 +281,4 @@ type WalkBackCallback = (sceneNode: SceneNode, sceneGraph: SceneGraph) => any;
  */
 type WalkChildrenCallback = (childNodes: Array<SceneNode>, parentNode: SceneNode, sceneGraph: SceneGraph) => Array<SceneNode>;
 
-export { Camera, FirstPersonCameraController, OrthographicCamera, PerspectiveCamera, SceneGraph, SceneNode, SceneNodeInfo, WalkBackCallback, WalkCallback, WalkChildrenCallback, lookAt, panTo, screenToWorldRay };
+export { ArcballCameraController, Camera, FirstPersonCameraController, OrthographicCamera, PerspectiveCamera, SceneGraph, SceneNode, SceneNodeInfo, WalkBackCallback, WalkCallback, WalkChildrenCallback, lookAt, panTo, screenToWorldRay };

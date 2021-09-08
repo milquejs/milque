@@ -6,7 +6,7 @@
  * this is `gl.FLOAT` for array buffers or `gl.UNSIGNED_SHORT` for element
  * array buffers. It must be either `gl.BYTE`, `gl.UNSIGNED_BYTE`, `gl.SHORT`,
  * `gl.UNSIGNED_SHORT`, `gl.FLOAT`, or `gl.HALF_FLOAT` for WebGL2.
- * @param {Array} data The buffer source data array.
+ * @param {Array} data The buffer data array.
  * @returns {BufferSource} The typed array buffer containing the given data.
  */
 export function createBufferSource(gl, type, data)
@@ -24,7 +24,7 @@ export function createBufferSource(gl, type, data)
  * @param {BufferSource} bufferSource The typed array buffer containing the given data.
  * For convenience, you can use `BufferHelper.createBufferSource()` to convert a data array
  * to the appropriate typed array.
- * @param {GLenum} usage The buffer usage hint. By default, this is `gl.STATIC_DRAW`.
+ * @param {GLenum} [usage] The buffer usage hint. By default, this is `gl.STATIC_DRAW`.
  * @returns {WebGLBuffer} The created and bound data buffer.
  */
 export function createBuffer(gl, target, bufferSource, usage = undefined)
@@ -36,19 +36,39 @@ export function createBuffer(gl, target, bufferSource, usage = undefined)
     return handle;
 }
 
+/**
+ * Create a buffer with the given number array.
+ * 
+ * @param {WebGLRenderingContextBase} gl The gl context.
+ * @param {GLenum} target The buffer bind target. Usually, this is `gl.ARRAY_BUFFER`
+ * or `gl.ELEMENT_ARRAY_BUFFER`.
+ * @param {GLenum} type The data type of the elements in the buffer. Usually,
+ * this is `gl.FLOAT` for array buffers or `gl.UNSIGNED_SHORT` for element
+ * array buffers. It must be either `gl.BYTE`, `gl.UNSIGNED_BYTE`, `gl.SHORT`,
+ * `gl.UNSIGNED_SHORT`, `gl.FLOAT`, or `gl.HALF_FLOAT` for WebGL2.
+ * @param {Array<number>} data The buffer data array.
+ * @param {GLenum} [usage] The buffer usage hint. By default, this is `gl.STATIC_DRAW`.
+ */
+export function createBufferFromArray(gl, target, type, data, usage = undefined)
+{
+    let source = createBufferSource(gl, type, data);
+    let handle = createBuffer(gl, target, source, usage);
+    return handle;
+}
+
 export function getBufferTypedArray(gl, bufferType)
 {
     // NOTE: For WebGL2, gl.HALF_FLOAT (float16) does not have an associated TypedArray.
     switch(bufferType)
     {
-    case gl.BYTE: return Int8Array;
-    case gl.UNSIGNED_BYTE: return Uint8Array;
-    case gl.SHORT: return Int16Array;
-    case gl.UNSIGNED_SHORT: return Uint16Array;
-    case gl.INT: return Int32Array;
-    case gl.UNSIGNED_INT: return Uint32Array;
-    case gl.FLOAT: return Float32Array;
-    default: throw new Error('Cannot find valid typed array for buffer type.');
+        case gl.BYTE: return Int8Array;
+        case gl.UNSIGNED_BYTE: return Uint8Array;
+        case gl.SHORT: return Int16Array;
+        case gl.UNSIGNED_SHORT: return Uint16Array;
+        case gl.INT: return Int32Array;
+        case gl.UNSIGNED_INT: return Uint32Array;
+        case gl.FLOAT: return Float32Array;
+        default: throw new Error('Cannot find valid typed array for buffer type.');
     }
 }
 
@@ -57,14 +77,14 @@ export function getTypedArrayBufferType(gl, typedArray)
     // NOTE: For WebGL2, gl.HALF_FLOAT (float16) does not have an associated TypedArray.
     switch(typedArray)
     {
-    case Int8Array: return gl.BYTE;
-    case Uint8Array: return gl.UNSIGNED_BYTE;
-    case Int16Array: return gl.SHORT;
-    case Uint16Array: return gl.UNSIGNED_SHORT;
-    case Int32Array: return gl.INT;
-    case Uint32Array: return gl.UNSIGNED_INT;
-    case Float32Array: return gl.FLOAT;
-    default: throw new Error('Cannot find valid buffer type for typed array.');
+        case Int8Array: return gl.BYTE;
+        case Uint8Array: return gl.UNSIGNED_BYTE;
+        case Int16Array: return gl.SHORT;
+        case Uint16Array: return gl.UNSIGNED_SHORT;
+        case Int32Array: return gl.INT;
+        case Uint32Array: return gl.UNSIGNED_INT;
+        case Float32Array: return gl.FLOAT;
+        default: throw new Error('Cannot find valid buffer type for typed array.');
     }
 }
 
