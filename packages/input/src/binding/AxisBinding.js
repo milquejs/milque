@@ -13,4 +13,13 @@ export class AxisBinding extends InputBinding {
     constructor(name, device, code, opts) {
         super(name, device, code, opts);
     }
+
+    /**
+     * @param {import('../InputContext.js').InputContext} inputContext 
+     */
+    register(inputContext) {
+        inputContext.bindAxis(this.name, this.device, this.code, this.opts);
+        this.ref = inputContext.getAxis(this.name);
+        return this;
+    }
 }

@@ -36,4 +36,13 @@ export class ButtonBinding extends InputBinding {
     constructor(name, device, code, opts) {
         super(name, device, code, opts);
     }
+
+    /**
+     * @param {import('../InputContext.js').InputContext} inputContext 
+     */
+    register(inputContext) {
+        inputContext.bindButton(this.name, this.device, this.code, this.opts);
+        this.ref = inputContext.getButton(this.name);
+        return this;
+    }
 }

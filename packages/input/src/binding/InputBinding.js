@@ -32,11 +32,11 @@ export class InputBinding {
     }
 
     /**
-     * @param {import('../axisbutton/InputBase.js').InputBase} input
+     * @abstract
+     * @param {import('../InputContext.js').InputContext} inputContext 
      */
-    setRef(input) {
-        this.ref = input;
-        return this;
+    register(inputContext) {
+        throw new Error('Unsupported operation.');
     }
 
     /**

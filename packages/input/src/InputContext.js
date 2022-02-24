@@ -300,19 +300,7 @@ export class InputContext
      */
     bindBindings(bindings) {
         for(let binding of bindings) {
-            const name = binding.name;
-            if (binding instanceof AxisBinding) {
-                this.bindAxis(name, binding.device, binding.code, binding.opts);
-                binding.setRef(this.getAxis(name));
-            } else if (binding instanceof ButtonBinding) {
-                this.bindButton(name, binding.device, binding.code, binding.opts);
-                binding.setRef(this.getButton(name));
-            } else if (binding instanceof AxisButtonBinding) {
-                this.bindAxisButtons(name, binding.device, binding.negativeCode, binding.code);
-                binding.setRef(this.getAxis(name));
-            } else {
-                throw new Error('Unknown binding type.');
-            }
+            binding.register(this);
         }
     }
 
