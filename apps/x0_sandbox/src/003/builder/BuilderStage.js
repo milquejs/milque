@@ -1,4 +1,5 @@
-import { CanvasView, Camera2D, Downloader, Uploader } from './lib.js';
+import { downloadText, uploadFile } from '@milque/util';
+import { CanvasView, Camera2D } from './lib.js';
 
 import { saveChunkData, ChunkLoader, CHUNK_DATA_LENGTH } from '../ChunkManager.js';
 import { TileMap, renderTileMap, TILE_SIZE, renderTile } from '../TileMap.js';
@@ -45,7 +46,7 @@ export async function load()
     this.clearButton = document.querySelector('#clear');
 
     this.importButton.addEventListener('click', () => {
-        Uploader.uploadFile(['.wld'])
+        uploadFile(['.wld'])
             .then(fileList => fileList[0].text())
             .then(textData => {
                 let jsonData = JSON.parse(textData);
@@ -72,7 +73,7 @@ export async function load()
             chunks.push(filename);
             datas.push(saveChunkData(chunk));
         }
-        Downloader.downloadText(`world.wld`, JSON.stringify(result));
+        downloadText(`world.wld`, JSON.stringify(result));
     });
     this.clearButton.addEventListener('click', () => {
         this.tileMap.chunkManager.unloadLoadedChunks(this);

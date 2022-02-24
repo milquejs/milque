@@ -4,6 +4,7 @@ import { MouseDevice } from './device/MouseDevice.js';
 import { InputBindings } from './InputBindings.js';
 import { DeviceInputAdapter } from './DeviceInputAdapter.js';
 import { AutoPoller } from './AutoPoller.js';
+import { MOUSE } from './keycode/KeyCodes.js';
 
 /**
  * @typedef {import('./axisbutton/Axis.js').AxisReadOnly} AxisReadOnly
@@ -38,7 +39,7 @@ export class Mouse
         /** @type {ButtonReadOnly} */
         this.Button4 = new Button();
         
-        const deviceName = 'Mouse';
+        const deviceName = MOUSE;
         const device = new MouseDevice(deviceName, eventTarget, opts);
         const bindings = new InputBindings();
         for(let key in this)

@@ -17,17 +17,13 @@ export class InputBinding {
     }
 
     /**
-     * @param {string} name 
-     * @param {string} device 
-     * @param {string} code 
-     * @param {object} [opts] 
+     * @param {string} name
      */
-    constructor(name, device, code, opts = undefined) {
+    constructor(name) {
+        /** @protected */
         this.name = name;
-        this.device = device;
-        this.code = code;
-        this.opts = opts;
 
+        /** @protected */
         this.ref = null;
     }
 

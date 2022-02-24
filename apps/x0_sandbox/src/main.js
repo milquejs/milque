@@ -17,13 +17,13 @@ import { main as Architect } from './001/main.js';
 // eslint-disable-next-line no-unused-vars
 import { main as Bioform } from './002/main.js';
 // eslint-disable-next-line no-unused-vars
-import { main as IsoGame } from './00_isogame/main.js';
+import { main as IsoGame } from './042/main.js';
 // eslint-disable-next-line no-unused-vars
-import { main as GerryMan } from './01_gerryman/main.js';
+import { main as GerryMan } from './043/main.js';
 // eslint-disable-next-line no-unused-vars
-import { main as BreadBox } from './02_breadbox/main.js';
+import { main as BreadBox } from './044/main.js';
 // eslint-disable-next-line no-unused-vars
-import { main as Miners } from './03_miners/main.js';
+import { main as Miners } from './045/main.js';
 
 /**
  * @typedef {import('@milque/asset').AssetPack} AssetPack

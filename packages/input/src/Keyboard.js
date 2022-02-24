@@ -3,6 +3,7 @@ import { KeyboardDevice } from './device/KeyboardDevice.js';
 import { InputBindings } from './InputBindings.js';
 import { AutoPoller } from './AutoPoller.js';
 import { DeviceInputAdapter } from './DeviceInputAdapter.js';
+import { KEYBOARD } from './keycode/KeyCodes.js';
 
 /**
  * @typedef {import('./axisbutton/Button.js').ButtonReadOnly} ButtonReadOnly
@@ -134,7 +135,7 @@ export class Keyboard
         /** @type {ButtonReadOnly} */
         this.ArrowRight = new Button();
         
-        const deviceName = 'Keyboard';
+        const deviceName = KEYBOARD;
         const device = new KeyboardDevice(deviceName, eventTarget, opts);
         const bindings = new InputBindings();
         for(let key in this)

@@ -581,6 +581,48 @@ class Button extends InputBase
     }
 }
 
+class KeyCode$1 {
+
+    /**
+     * @param {string} string 
+     * @returns {KeyCode}
+     */
+    static parse(string) {
+        string = string.trim();
+        if (!string.startsWith(KEYBOARD) && !string.startsWith(MOUSE)) {
+            throw new Error('Invalid device for key code.');
+        }
+        let i = string.indexOf('.');
+        if (i < 0) {
+            throw new Error('Missing separator for key code.');
+        }
+        let key = string.substring(i + 1);
+        if (key.length < 0) {
+            throw new Error('Missing code for key code.');
+        }
+        let device = string.substring(0, i);
+        return new KeyCode$1(device, key);
+    }
+
+    /**
+     * @param {string} device 
+     * @param {string} code 
+     */
+    constructor(device, code) {
+        this.device = device;
+        this.code = code;
+    }
+
+    /** @override */
+    toString() {
+        return `${this.device}.${this.code}`;
+    }
+}
+
+function from$1(device, code) {
+    return new KeyCode$1(device, code);
+}
+
 class InputBinding {
     
     /** @returns {boolean} */
@@ -600,26 +642,22 @@ class InputBinding {
     }
 
     /**
-     * @param {string} name 
-     * @param {string} device 
-     * @param {string} code 
-     * @param {object} [opts] 
+     * @param {string} name
      */
-    constructor(name, device, code, opts = undefined) {
+    constructor(name) {
+        /** @protected */
         this.name = name;
-        this.device = device;
-        this.code = code;
-        this.opts = opts;
 
+        /** @protected */
         this.ref = null;
     }
 
     /**
-     * @param {import('../axisbutton/InputBase.js').InputBase} input
+     * @abstract
+     * @param {import('../InputContext.js').InputContext} inputContext 
      */
-    setRef(input) {
-        this.ref = input;
-        return this;
+    register(inputContext) {
+        throw new Error('Unsupported operation.');
     }
 
     /**
@@ -634,7 +672,103 @@ class InputBinding {
     }
 }
 
+class KeyCode {
+
+    /**
+     * @param {string} string 
+     * @returns {KeyCode}
+     */
+    static parse(string) {
+        string = string.trim();
+        if (!string.startsWith(KEYBOARD) && !string.startsWith(MOUSE)) {
+            throw new Error('Invalid device for key code.');
+        }
+        let i = string.indexOf('.');
+        if (i < 0) {
+            throw new Error('Missing separator for key code.');
+        }
+        let key = string.substring(i + 1);
+        if (key.length < 0) {
+            throw new Error('Missing code for key code.');
+        }
+        let device = string.substring(0, i);
+        return new KeyCode(device, key);
+    }
+
+    /**
+     * @param {string} device 
+     * @param {string} code 
+     */
+    constructor(device, code) {
+        this.device = device;
+        this.code = code;
+    }
+
+    /** @override */
+    toString() {
+        return `${this.device}.${this.code}`;
+    }
+}
+
+/**
+ * @param {string|Array<string>} strings
+ * @returns {Array<KeyCode>}
+ */
+function stringsToKeyCodes(strings) {
+    if (!Array.isArray(strings)) {
+        strings = [strings];
+    }
+    let result = [];
+    for(let str of strings) {
+        let keyCode;
+        try {
+            keyCode = KeyCode.parse(str);
+        } catch (e) {
+            let keyName = camelToSnakeCase(str).toUpperCase();
+            if (!(keyName in KeyCodes)) {
+                throw new Error('Invalid key code string - ' + e);
+            }
+            keyCode = KeyCodes[keyName];
+        }
+        result.push(keyCode);
+    }
+    return result;
+}
+
+/**
+ * @param {string} str 
+ * @returns {string}
+ */
+function camelToSnakeCase(str) {
+    return str.replace(/([a-z]|(?:[A-Z0-9]+))([A-Z0-9]|$)/g, function(_, a, b) {
+        return a + (b && '_' + b);
+    }).toLowerCase();
+}
+
+/** @typedef {import('../keycode/KeyCode.js').KeyCode} KeyCode */
+
 class AxisBinding extends InputBinding {
+
+    /**
+     * @param {string} name 
+     * @param {string} device 
+     * @param {string} code 
+     * @param {object} [opts]
+     * @returns {AxisBinding}
+     */
+    static fromBind(name, device, code, opts = undefined) {
+        return new AxisBinding(name, from$1(device, code), opts);
+    }
+
+    /**
+     * @param {string} name
+     * @param {...string} strings
+     * @returns {AxisBinding}
+     */
+    static fromString(name, ...strings) {
+        let keyCodes = stringsToKeyCodes(strings);
+        return new AxisBinding(name, keyCodes);
+    }
     
     /** @returns {number} */
     get delta() {
@@ -644,12 +778,223 @@ class AxisBinding extends InputBinding {
         return this.ref.delta;
     }
 
-    constructor(name, device, code, opts) {
-        super(name, device, code, opts);
+    /**
+     * @param {string} name 
+     * @param {KeyCode|Array<KeyCode>} keyCodes
+     * @param {object} [opts] 
+     */
+    constructor(name, keyCodes, opts = undefined) {
+        super(name);
+
+        /** @protected */
+        this.keyCodes = Array.isArray(keyCodes) ? keyCodes : [keyCodes];
+        /** @protected */
+        this.opts = opts;
+    }
+
+    /**
+     * @override
+     * @param {import('../InputContext.js').InputContext} inputContext 
+     */
+    register(inputContext) {
+        let name = this.name;
+        let opts = this.opts;
+        for(let keyCode of this.keyCodes) {
+            inputContext.bindAxis(name, keyCode.device, keyCode.code, opts);
+        }
+        this.ref = inputContext.getAxis(name);
+        return this;
     }
 }
 
+function from(device, code) {
+    return new KeyCode(device, code);
+}
+
+function isKeyCode(object) {
+    return 'device' in object && 'code' in object;
+}
+
+const KEYBOARD$1 = 'Keyboard';
+const MOUSE$1 = 'Mouse';
+
+const KEY_A = new KeyCode(KEYBOARD$1, 'KeyA');
+const KEY_B = new KeyCode(KEYBOARD$1, 'KeyB');
+const KEY_C = new KeyCode(KEYBOARD$1, 'KeyC');
+const KEY_D = new KeyCode(KEYBOARD$1, 'KeyD');
+const KEY_E = new KeyCode(KEYBOARD$1, 'KeyE');
+const KEY_F = new KeyCode(KEYBOARD$1, 'KeyF');
+const KEY_G = new KeyCode(KEYBOARD$1, 'KeyG');
+const KEY_H = new KeyCode(KEYBOARD$1, 'KeyH');
+const KEY_I = new KeyCode(KEYBOARD$1, 'KeyI');
+const KEY_J = new KeyCode(KEYBOARD$1, 'KeyJ');
+const KEY_K = new KeyCode(KEYBOARD$1, 'KeyK');
+const KEY_L = new KeyCode(KEYBOARD$1, 'KeyL');
+const KEY_M = new KeyCode(KEYBOARD$1, 'KeyM');
+const KEY_N = new KeyCode(KEYBOARD$1, 'KeyN');
+const KEY_O = new KeyCode(KEYBOARD$1, 'KeyO');
+const KEY_P = new KeyCode(KEYBOARD$1, 'KeyP');
+const KEY_Q = new KeyCode(KEYBOARD$1, 'KeyQ');
+const KEY_R = new KeyCode(KEYBOARD$1, 'KeyR');
+const KEY_S = new KeyCode(KEYBOARD$1, 'KeyS');
+const KEY_T = new KeyCode(KEYBOARD$1, 'KeyT');
+const KEY_U = new KeyCode(KEYBOARD$1, 'KeyU');
+const KEY_V = new KeyCode(KEYBOARD$1, 'KeyV');
+const KEY_W = new KeyCode(KEYBOARD$1, 'KeyW');
+const KEY_X = new KeyCode(KEYBOARD$1, 'KeyX');
+const KEY_Y = new KeyCode(KEYBOARD$1, 'KeyY');
+const KEY_Z = new KeyCode(KEYBOARD$1, 'KeyZ');
+
+const DIGIT_0 = new KeyCode(KEYBOARD$1, 'Digit0');
+const DIGIT_1 = new KeyCode(KEYBOARD$1, 'Digit1');
+const DIGIT_2 = new KeyCode(KEYBOARD$1, 'Digit2');
+const DIGIT_3 = new KeyCode(KEYBOARD$1, 'Digit3');
+const DIGIT_4 = new KeyCode(KEYBOARD$1, 'Digit4');
+const DIGIT_5 = new KeyCode(KEYBOARD$1, 'Digit5');
+const DIGIT_6 = new KeyCode(KEYBOARD$1, 'Digit6');
+const DIGIT_7 = new KeyCode(KEYBOARD$1, 'Digit7');
+const DIGIT_8 = new KeyCode(KEYBOARD$1, 'Digit8');
+const DIGIT_9 = new KeyCode(KEYBOARD$1, 'Digit9');
+
+const MINUS = new KeyCode(KEYBOARD$1, 'Minus');
+const EQUAL = new KeyCode(KEYBOARD$1, 'Equal');
+const BRACKET_LEFT = new KeyCode(KEYBOARD$1, 'BracketLeft');
+const BRACKET_RIGHT = new KeyCode(KEYBOARD$1, 'BracketRight');
+const SEMICOLON = new KeyCode(KEYBOARD$1, 'Semicolon');
+const QUOTE = new KeyCode(KEYBOARD$1, 'Quote');
+const BACKQUOTE = new KeyCode(KEYBOARD$1, 'Backquote');
+const BACKSLASH = new KeyCode(KEYBOARD$1, 'Backslash');
+const COMMA = new KeyCode(KEYBOARD$1, 'Comma');
+const PERIOD = new KeyCode(KEYBOARD$1, 'Period');
+const SLASH = new KeyCode(KEYBOARD$1, 'Slash');
+
+const ESCAPE = new KeyCode(KEYBOARD$1, 'Escape');
+const SPACE = new KeyCode(KEYBOARD$1, 'Space');
+const CAPS_LOCK = new KeyCode(KEYBOARD$1, 'CapsLock');
+const BACKSPACE = new KeyCode(KEYBOARD$1, 'Backspace');
+const DELETE = new KeyCode(KEYBOARD$1, 'Delete');
+const TAB = new KeyCode(KEYBOARD$1, 'Tab');
+const ENTER = new KeyCode(KEYBOARD$1, 'Enter');
+
+const ARROW_UP = new KeyCode(KEYBOARD$1, 'ArrowUp');
+const ARROW_DOWN = new KeyCode(KEYBOARD$1, 'ArrowDown');
+const ARROW_LEFT = new KeyCode(KEYBOARD$1, 'ArrowLeft');
+const ARROW_RIGHT = new KeyCode(KEYBOARD$1, 'ArrowRight');
+
+const MOUSE_BUTTON_0 = new KeyCode(MOUSE$1, 'Button0');
+const MOUSE_BUTTON_1 = new KeyCode(MOUSE$1, 'Button1');
+const MOUSE_BUTTON_2 = new KeyCode(MOUSE$1, 'Button2');
+const MOUSE_BUTTON_3 = new KeyCode(MOUSE$1, 'Button3');
+const MOUSE_BUTTON_4 = new KeyCode(MOUSE$1, 'Button4');
+
+const MOUSE_POS_X = new KeyCode(MOUSE$1, 'PosX');
+const MOUSE_POS_Y = new KeyCode(MOUSE$1, 'PosY');
+
+const MOUSE_WHEEL_X = new KeyCode(MOUSE$1, 'WheelX');
+const MOUSE_WHEEL_Y = new KeyCode(MOUSE$1, 'WheelY');
+const MOUSE_WHEEL_Z = new KeyCode(MOUSE$1, 'WheelZ');
+
+var KeyCodes$1 = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    from: from,
+    isKeyCode: isKeyCode,
+    KEYBOARD: KEYBOARD$1,
+    MOUSE: MOUSE$1,
+    KEY_A: KEY_A,
+    KEY_B: KEY_B,
+    KEY_C: KEY_C,
+    KEY_D: KEY_D,
+    KEY_E: KEY_E,
+    KEY_F: KEY_F,
+    KEY_G: KEY_G,
+    KEY_H: KEY_H,
+    KEY_I: KEY_I,
+    KEY_J: KEY_J,
+    KEY_K: KEY_K,
+    KEY_L: KEY_L,
+    KEY_M: KEY_M,
+    KEY_N: KEY_N,
+    KEY_O: KEY_O,
+    KEY_P: KEY_P,
+    KEY_Q: KEY_Q,
+    KEY_R: KEY_R,
+    KEY_S: KEY_S,
+    KEY_T: KEY_T,
+    KEY_U: KEY_U,
+    KEY_V: KEY_V,
+    KEY_W: KEY_W,
+    KEY_X: KEY_X,
+    KEY_Y: KEY_Y,
+    KEY_Z: KEY_Z,
+    DIGIT_0: DIGIT_0,
+    DIGIT_1: DIGIT_1,
+    DIGIT_2: DIGIT_2,
+    DIGIT_3: DIGIT_3,
+    DIGIT_4: DIGIT_4,
+    DIGIT_5: DIGIT_5,
+    DIGIT_6: DIGIT_6,
+    DIGIT_7: DIGIT_7,
+    DIGIT_8: DIGIT_8,
+    DIGIT_9: DIGIT_9,
+    MINUS: MINUS,
+    EQUAL: EQUAL,
+    BRACKET_LEFT: BRACKET_LEFT,
+    BRACKET_RIGHT: BRACKET_RIGHT,
+    SEMICOLON: SEMICOLON,
+    QUOTE: QUOTE,
+    BACKQUOTE: BACKQUOTE,
+    BACKSLASH: BACKSLASH,
+    COMMA: COMMA,
+    PERIOD: PERIOD,
+    SLASH: SLASH,
+    ESCAPE: ESCAPE,
+    SPACE: SPACE,
+    CAPS_LOCK: CAPS_LOCK,
+    BACKSPACE: BACKSPACE,
+    DELETE: DELETE,
+    TAB: TAB,
+    ENTER: ENTER,
+    ARROW_UP: ARROW_UP,
+    ARROW_DOWN: ARROW_DOWN,
+    ARROW_LEFT: ARROW_LEFT,
+    ARROW_RIGHT: ARROW_RIGHT,
+    MOUSE_BUTTON_0: MOUSE_BUTTON_0,
+    MOUSE_BUTTON_1: MOUSE_BUTTON_1,
+    MOUSE_BUTTON_2: MOUSE_BUTTON_2,
+    MOUSE_BUTTON_3: MOUSE_BUTTON_3,
+    MOUSE_BUTTON_4: MOUSE_BUTTON_4,
+    MOUSE_POS_X: MOUSE_POS_X,
+    MOUSE_POS_Y: MOUSE_POS_Y,
+    MOUSE_WHEEL_X: MOUSE_WHEEL_X,
+    MOUSE_WHEEL_Y: MOUSE_WHEEL_Y,
+    MOUSE_WHEEL_Z: MOUSE_WHEEL_Z
+});
+
+/** @typedef {import('../keycode/KeyCode.js').KeyCode} KeyCode */
+
 class ButtonBinding extends InputBinding {
+
+    /**
+     * @param {string} name 
+     * @param {string} device 
+     * @param {string} code 
+     * @param {object} [opts]
+     * @returns {ButtonBinding}
+     */
+    static fromBind(name, device, code, opts = undefined) {
+        return new ButtonBinding(name, from(device, code), opts);
+    }
+
+    /**
+     * @param {string} name
+     * @param {...string} strings
+     * @returns {ButtonBinding}
+     */
+    static fromString(name, ...strings) {
+        let keyCodes = stringsToKeyCodes(strings);
+        return new ButtonBinding(name, keyCodes);
+    }
+    
     /** @returns {boolean} */
     get pressed() {
         if (!this.ref) {
@@ -682,16 +1027,78 @@ class ButtonBinding extends InputBinding {
         return this.ref.down;
     }
 
-    constructor(name, device, code, opts) {
-        super(name, device, code, opts);
+    /**
+     * @param {string} name 
+     * @param {KeyCode|Array<KeyCode>} keyCodes
+     * @param {object} [opts] 
+     */
+    constructor(name, keyCodes, opts = undefined) {
+        super(name);
+
+        /** @protected */
+        this.keyCodes = Array.isArray(keyCodes) ? keyCodes : [keyCodes];
+        /** @protected */
+        this.opts = opts;
+    }
+
+    /**
+     * @override
+     * @param {import('../InputContext.js').InputContext} inputContext 
+     */
+    register(inputContext) {
+        let name = this.name;
+        let opts = this.opts;
+        for(let keyCode of this.keyCodes) {
+            inputContext.bindButton(name, keyCode.device, keyCode.code, opts);
+        }
+        this.ref = inputContext.getButton(name);
+        return this;
     }
 }
 
+/** @typedef {import('../keycode/KeyCode.js').KeyCode} KeyCode */
+
 class AxisButtonBinding extends AxisBinding {
     
-    constructor(name, device, negativeCode, positiveCode) {
-        super(name, device, positiveCode, undefined);
-        this.negativeCode = negativeCode;
+    /**
+     * @param {string} name
+     * @param {string} device
+     * @param {string} negativeCode
+     * @param {string} positiveCode
+     * @returns {AxisButtonBinding}
+     */
+    static fromBind(name, device, negativeCode, positiveCode) {
+        return new AxisButtonBinding(name, from(device, negativeCode), from(device, positiveCode));
+    }
+
+    /**
+     * @param {string} name
+     * @param {KeyCode} negativeKeyCode
+     * @param {KeyCode} positiveKeyCode
+     */
+    constructor(name, negativeKeyCode, positiveKeyCode) {
+        super(name);
+
+        if (negativeKeyCode.device !== positiveKeyCode.device) {
+            throw new Error('Cannot create axis-button codes for different devices.');
+        }
+        
+        /** @protected */
+        this.negativeKeyCode = negativeKeyCode;
+        /** @protected */
+        this.positiveKeyCode = positiveKeyCode;
+    }
+
+    /**
+     * @param {import('../InputContext.js').InputContext} inputContext 
+     */
+    register(inputContext) {
+        let name = this.name;
+        let negativeKeyCode = this.negativeKeyCode;
+        let positiveKeyCode = this.positiveKeyCode;
+        inputContext.bindAxisButtons(name, negativeKeyCode.device, negativeKeyCode.code, positiveKeyCode.code);
+        this.ref = inputContext.getAxis(name);
+        return this;
     }
 }
 
@@ -1742,12 +2149,14 @@ class InputBindings
 }
 
 /**
- * @typedef {import('../device/InputDevice.js').InputDevice} InputDevice
- * @typedef {import('../device/InputDevice.js').InputDeviceEvent} InputDeviceEvent
- * @typedef {import('../axisbutton/InputBase.js').InputBase} InputBase
- * @typedef {import('../InputBindings.js').DeviceName} DeviceName
- * @typedef {import('../InputBindings.js').KeyCode} KeyCode
- * @typedef {import('../InputBindings.js').BindingOptions} BindingOptions
+ * @typedef {import('./device/InputDevice.js').InputDevice} InputDevice
+ * @typedef {import('./device/InputDevice.js').InputDeviceEvent} InputDeviceEvent
+ * @typedef {import('./axisbutton/InputBase.js').InputBase} InputBase
+ * @typedef {import('./InputBindings.js').DeviceName} DeviceName
+ * @typedef {import('./InputBindings.js').KeyCode} KeyCode
+ * @typedef {import('./InputBindings.js').BindingOptions} BindingOptions
+ * 
+ * @typedef {import('./binding/InputBinding.js').InputBinding} InputBinding
  * 
  * @typedef {string} InputName
  */
@@ -2028,23 +2437,11 @@ class InputContext
     }
 
     /**
-     * @param {Array<AxisBinding|ButtonBinding|AxisButtonBinding>} bindings 
+     * @param {Array<InputBinding>} bindings 
      */
     bindBindings(bindings) {
         for(let binding of bindings) {
-            const name = binding.name;
-            if (binding instanceof AxisBinding) {
-                this.bindAxis(name, binding.device, binding.code, binding.opts);
-                binding.setRef(this.getAxis(name));
-            } else if (binding instanceof ButtonBinding) {
-                this.bindButton(name, binding.device, binding.code, binding.opts);
-                binding.setRef(this.getButton(name));
-            } else if (binding instanceof AxisButtonBinding) {
-                this.bindAxisButtons(name, binding.device, binding.negativeCode, binding.code);
-                binding.setRef(this.getAxis(name));
-            } else {
-                throw new Error('Unknown binding type.');
-            }
+            binding.register(this);
         }
     }
 
@@ -2927,7 +3324,7 @@ class Keyboard
         /** @type {ButtonReadOnly} */
         this.ArrowRight = new Button();
         
-        const deviceName = 'Keyboard';
+        const deviceName = KEYBOARD$1;
         const device = new KeyboardDevice(deviceName, eventTarget, opts);
         const bindings = new InputBindings();
         for(let key in this)
@@ -2993,7 +3390,7 @@ class Mouse
         /** @type {ButtonReadOnly} */
         this.Button4 = new Button();
         
-        const deviceName = 'Mouse';
+        const deviceName = MOUSE$1;
         const device = new MouseDevice(deviceName, eventTarget, opts);
         const bindings = new InputBindings();
         for(let key in this)
@@ -3026,4 +3423,4 @@ class Mouse
     }
 }
 
-export { AutoPoller, Axis, AxisBinding, AxisButtonBinding, Button, ButtonBinding, CLEAR_DOWN_STATE_BITS, CLEAR_INVERTED_MODIFIER_BITS, CLEAR_POLL_BITS, DOWN_STATE_BIT, DeviceInputAdapter, INVERTED_MODIFIER_BIT, InputBase, InputBindings, InputCode, InputContext, InputDevice, InputPort, Keyboard, KeyboardDevice, Mouse, MouseDevice, PRESSED_STATE_BIT, RELEASED_STATE_BIT, REPEATED_STATE_BIT };
+export { AutoPoller, Axis, AxisBinding, AxisButtonBinding, Button, ButtonBinding, CLEAR_DOWN_STATE_BITS, CLEAR_INVERTED_MODIFIER_BITS, CLEAR_POLL_BITS, DOWN_STATE_BIT, DeviceInputAdapter, INVERTED_MODIFIER_BIT, InputBase, InputBindings, InputCode, InputContext, InputDevice, InputPort, KeyCodes$1 as KeyCodes, Keyboard, KeyboardDevice, Mouse, MouseDevice, PRESSED_STATE_BIT, RELEASED_STATE_BIT, REPEATED_STATE_BIT, stringsToKeyCodes };
