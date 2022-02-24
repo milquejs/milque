@@ -1,3 +1,4 @@
+
 export class KeyCode {
 
     /**
@@ -6,18 +7,18 @@ export class KeyCode {
      */
     static parse(string) {
         string = string.trim();
-        if (!string.startsWith(KEYBOARD) && !string.startsWith(MOUSE)) {
-            throw new Error('Invalid device for key code.');
-        }
         let i = string.indexOf('.');
         if (i < 0) {
-            throw new Error('Missing separator for key code.');
+            throw new Error('Missing device separator for key code.');
+        }
+        let device = string.substring(0, i);
+        if (device.length < 0) {
+            throw new Error('Missing device for key code.');
         }
         let key = string.substring(i + 1);
         if (key.length < 0) {
             throw new Error('Missing code for key code.');
         }
-        let device = string.substring(0, i);
         return new KeyCode(device, key);
     }
 

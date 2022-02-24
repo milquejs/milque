@@ -1,4 +1,5 @@
 import { KeyCode } from './KeyCode.js';
+import { KeyCodes } from './index.js';
 
 /**
  * @param {string|Array<string>} strings
