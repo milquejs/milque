@@ -1,6 +1,9 @@
 import { AutoPoller } from './AutoPoller.js';
 import { Axis } from './axisbutton/Axis.js';
 import { Button } from './axisbutton/Button.js';
+import { AxisBinding } from './binding/AxisBinding.js';
+import { AxisButtonBinding } from './binding/AxisButtonBinding.js';
+import { ButtonBinding } from './binding/ButtonBinding.js';
 import { KeyboardDevice } from './device/KeyboardDevice.js';
 import { MouseDevice } from './device/MouseDevice.js';
 import { DeviceInputAdapter } from './DeviceInputAdapter.js';
@@ -290,6 +293,27 @@ export class InputContext
         this.dispatchEvent({
             type: 'blur'
         });
+    }
+
+    /**
+     * @param {Array<AxisBinding|ButtonBinding|AxisButtonBinding>} bindings 
+     */
+    bindBindings(bindings) {
+        for(let binding of bindings) {
+            const name = binding.name;
+            if (binding instanceof AxisBinding) {
+                this.bindAxis(name, binding.device, binding.code, binding.opts);
+                binding.setRef(this.getAxis(name));
+            } else if (binding instanceof ButtonBinding) {
+                this.bindButton(name, binding.device, binding.code, binding.opts);
+                binding.setRef(this.getButton(name));
+            } else if (binding instanceof AxisButtonBinding) {
+                this.bindAxisButtons(name, binding.device, binding.negativeCode, binding.code);
+                binding.setRef(this.getAxis(name));
+            } else {
+                throw new Error('Unknown binding type.');
+            }
+        }
     }
 
     /**

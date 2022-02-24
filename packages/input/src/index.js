@@ -1,4 +1,5 @@
 export * from './axisbutton/index.js';
+export * from './binding/index.js';
 export * from './device/index.js';
 export * from './inputcode/InputCode.js';
 export * from './inputport/InputPort.js';

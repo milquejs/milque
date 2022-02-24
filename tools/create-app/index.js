@@ -1,7 +1,7 @@
 const fs = require('fs/promises');
 const path = require('path');
 
-const RUSH_JSON_PATH = path.join(__dirname, 'rush.json');
+const RUSH_JSON_PATH = path.join(__dirname, '../../rush.json');
 const BEGIN_PROJECTS_TAG = '/* BEGIN_PROJECTS */';
 const END_PROJECTS_TAG = '/* END_PROJECTS */';
 
@@ -20,7 +20,7 @@ async function main(args)
         throw new Error('App name must be at least 3 characters long.');
     }
     let projectName = `x0_${appName}`;
-    let projectFolder = path.join('apps', projectName);
+    let projectFolder = path.join('../../apps', projectName);
     let projectDir = path.join(__dirname, projectFolder);
     await addProjectToRushJson(RUSH_JSON_PATH, {
         packageName: appName,
