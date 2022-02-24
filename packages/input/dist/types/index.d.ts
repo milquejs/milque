@@ -216,6 +216,56 @@ type ButtonReadOnly$2 = {
     polling: boolean;
 };
 
+declare class InputBinding {
+    /**
+     * @param {string} name
+     * @param {string} device
+     * @param {string} code
+     * @param {object} [opts]
+     */
+    constructor(name: string, device: string, code: string, opts?: object);
+    /** @returns {boolean} */
+    get polling(): boolean;
+    /** @returns {number} */
+    get value(): number;
+    name: string;
+    device: string;
+    code: string;
+    opts: any;
+    ref: InputBase$1;
+    /**
+     * @param {import('../axisbutton/InputBase.js').InputBase} input
+     */
+    setRef(input: InputBase$1): InputBinding;
+    /**
+     * @param {number} code
+     * @returns {number}
+     */
+    getState(code: number): number;
+}
+
+declare class AxisBinding extends InputBinding {
+    constructor(name: any, device: any, code: any, opts: any);
+    /** @returns {number} */
+    get delta(): number;
+}
+
+declare class ButtonBinding extends InputBinding {
+    constructor(name: any, device: any, code: any, opts: any);
+    /** @returns {boolean} */
+    get pressed(): boolean;
+    /** @returns {boolean} */
+    get repeated(): boolean;
+    /** @returns {boolean} */
+    get released(): boolean;
+    /** @returns {boolean} */
+    get down(): boolean;
+}
+
+declare class AxisButtonBinding extends AxisBinding {
+    negativeCode: any;
+}
+
 /**
  * @typedef InputDeviceEvent
  * @property {EventTarget} target
@@ -671,6 +721,10 @@ declare class InputContext {
     /** @private */
     private onUnbind;
     /**
+     * @param {Array<AxisBinding|ButtonBinding|AxisButtonBinding>} bindings
+     */
+    bindBindings(bindings: Array<AxisBinding | ButtonBinding | AxisButtonBinding>): void;
+    /**
      * @param {InputName} name
      * @param {DeviceName} device
      * @param {KeyCode} code
@@ -1032,4 +1086,4 @@ type ButtonReadOnly = ButtonReadOnly$2;
  */
 declare const MOUSE_SOURCE: unique symbol;
 
-export { AutoPoller, Axis, AxisBindingState, Button, CLEAR_DOWN_STATE_BITS, CLEAR_INVERTED_MODIFIER_BITS, CLEAR_POLL_BITS, DOWN_STATE_BIT, DeviceInputAdapter, INVERTED_MODIFIER_BIT, InputCode, InputContext, InputContextEvent, InputContextEventListener, InputContextEventType, InputDeviceEventListener, InputPort, InputReadOnly, Keyboard, KeyboardDevice, Mouse, MouseDevice, OnPollCallback, PRESSED_STATE_BIT, Pollable, RELEASED_STATE_BIT, REPEATED_STATE_BIT };
+export { AutoPoller, Axis, AxisBinding, AxisBindingState, AxisButtonBinding, Button, ButtonBinding, CLEAR_DOWN_STATE_BITS, CLEAR_INVERTED_MODIFIER_BITS, CLEAR_POLL_BITS, DOWN_STATE_BIT, DeviceInputAdapter, INVERTED_MODIFIER_BIT, InputCode, InputContext, InputContextEvent, InputContextEventListener, InputContextEventType, InputDeviceEventListener, InputPort, InputReadOnly, Keyboard, KeyboardDevice, Mouse, MouseDevice, OnPollCallback, PRESSED_STATE_BIT, Pollable, RELEASED_STATE_BIT, REPEATED_STATE_BIT };

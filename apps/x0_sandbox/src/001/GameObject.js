@@ -19,7 +19,7 @@ export class GameObject
     onDraw(world, ctx)
     {
         ctx.translate(this.x, this.y);
-        if (this.sprite) this.sprite.draw(ctx);
+        if (this.sprite) this.sprite.draw(ctx, world);
         if (this.mask) this.mask.draw(ctx);
         ctx.translate(-this.x, -this.y);
     }

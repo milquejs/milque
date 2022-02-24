@@ -2,7 +2,7 @@ import { FixedGLWorld2d } from 'src/renderer/FixedGLWorld2d.js';
 
 /** @typedef {import('src/audio/Sound.js').Sound} Sound */
 
-/** @param {import('src/game/Game.js').Game} game */
+/** @param {import('src/lib/game/Game.js').Game} game */
 export async function main(game)
 {
     const { display, inputs, assets } = game;

@@ -48,6 +48,11 @@
                 "crc": -2102375727
             },
             {
+                "name": "res/person.png",
+                "bytes": 198,
+                "crc": -1529722631
+            },
+            {
                 "name": "res/pop.wav",
                 "bytes": 87676,
                 "crc": 53799162
@@ -93,7 +98,7 @@
                 "crc": -842706858
             }
         ],
-        "totalBytes": 329707,
-        "checksum": 158754127
+        "totalBytes": 329905,
+        "checksum": 2028237194
     }
 }

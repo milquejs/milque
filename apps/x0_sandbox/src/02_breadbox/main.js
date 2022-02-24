@@ -1,7 +1,7 @@
 import { World } from './World.js';
 
 /**
- * @param {import('../game/Game.js').Game} game 
+ * @param {import('../lib/game/Game.js').Game} game 
  */
 export async function main(game)
 {

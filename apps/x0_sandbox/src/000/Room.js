@@ -1,4 +1,4 @@
-import { uuid } from '../../packages/util//src/uuidv4.js';
+import { uuid } from '@milque/util';
 
 function createRoom(roomWidth, roomHeight, views = [])
 {

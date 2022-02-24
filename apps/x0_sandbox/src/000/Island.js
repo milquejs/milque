@@ -1,4 +1,4 @@
-import { Random } from './lib.js';
+import { Random } from '@milque/random';
 
 export function generateNoisyIsland(island, width, height, opts = {})
 {

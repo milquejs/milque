@@ -8,7 +8,7 @@ export class Player extends GameObject
     {
         super();
         
-        this.sprite = new Sprite('./content/person.png', 8, 8);
+        this.sprite = new Sprite('image:toast.png', 8, 8);
         this.mask = new BoxMask(8, 8, 16, 16);
     }
 

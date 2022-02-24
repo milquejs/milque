@@ -1,19 +1,23 @@
-import * as InputMap from './InputMap.js';
-import { Player, PLAYER_INPUT_MAP } from './Player.js';
+import * as PlayerInputs from './PlayerInputs.js';
+import { Player } from './Player.js';
 
 import { Bullet } from './Bullet.js';
 import { Room } from './Room.js';
 
-document.addEventListener('DOMContentLoaded', main);
+document.title = 'Bioform';
 
-async function main()
+/**
+ * @param {import('../game/Game.js').Game} game 
+ */
+export async function main(game)
 {
-    const display = document.querySelector('display-port');
-    const input = document.querySelector('input-context');
+    const display = game.display;
     const ctx = display.canvas.getContext('2d');
     ctx.imageSmoothingEnabled = false;
+    ctx.assets = game.assets;
 
-    InputMap.hydrateInputMap(PLAYER_INPUT_MAP, input);
+    const inputs = game.inputs;
+    inputs.bindBindings(Object.values(PlayerInputs));
 
     const room = new Room(display.width, display.height, [
         { x: 0, y: 0, object: Player },

@@ -3,7 +3,7 @@ import { FixedSpriteGLRenderer2d } from '../renderer/FixedSpriteGLRenderer2d.js'
 import { Player } from './Player.js';
 
 /**
- * @typedef {import('../game/Game.js').Game} Game
+ * @typedef {import('../lib/game/Game.js').Game} Game
  * @typedef {import('./EntityBase.js').EntityBase} EntityBase
  * 
  * @typedef RenderContext

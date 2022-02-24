@@ -581,6 +581,120 @@ class Button extends InputBase
     }
 }
 
+class InputBinding {
+    
+    /** @returns {boolean} */
+    get polling() {
+        if (!this.ref) {
+            return false;
+        }
+        return this.ref.polling;
+    }
+
+    /** @returns {number} */
+    get value() {
+        if (!this.ref) {
+            return 0;
+        }
+        return this.ref.value;
+    }
+
+    /**
+     * @param {string} name 
+     * @param {string} device 
+     * @param {string} code 
+     * @param {object} [opts] 
+     */
+    constructor(name, device, code, opts = undefined) {
+        this.name = name;
+        this.device = device;
+        this.code = code;
+        this.opts = opts;
+
+        this.ref = null;
+    }
+
+    /**
+     * @param {import('../axisbutton/InputBase.js').InputBase} input
+     */
+    setRef(input) {
+        this.ref = input;
+        return this;
+    }
+
+    /**
+     * @param {number} code 
+     * @returns {number}
+     */
+    getState(code) {
+        if (!this.ref) {
+            return 0;
+        }
+        return this.ref.getState(code);
+    }
+}
+
+class AxisBinding extends InputBinding {
+    
+    /** @returns {number} */
+    get delta() {
+        if (!this.ref) {
+            return 0;
+        }
+        return this.ref.delta;
+    }
+
+    constructor(name, device, code, opts) {
+        super(name, device, code, opts);
+    }
+}
+
+class ButtonBinding extends InputBinding {
+    /** @returns {boolean} */
+    get pressed() {
+        if (!this.ref) {
+            return false;
+        }
+        return this.ref.pressed;
+    }
+
+    /** @returns {boolean} */
+    get repeated() {
+        if (!this.ref) {
+            return false;
+        }
+        return this.ref.repeated;
+    }
+
+    /** @returns {boolean} */
+    get released() {
+        if (!this.ref) {
+            return false;
+        }
+        return this.ref.released;
+    }
+
+    /** @returns {boolean} */
+    get down() {
+        if (!this.ref) {
+            return false;
+        }
+        return this.ref.down;
+    }
+
+    constructor(name, device, code, opts) {
+        super(name, device, code, opts);
+    }
+}
+
+class AxisButtonBinding extends AxisBinding {
+    
+    constructor(name, device, negativeCode, positiveCode) {
+        super(name, device, positiveCode, undefined);
+        this.negativeCode = negativeCode;
+    }
+}
+
 /**
  * @typedef InputDeviceEvent
  * @property {EventTarget} target
@@ -1914,6 +2028,27 @@ class InputContext
     }
 
     /**
+     * @param {Array<AxisBinding|ButtonBinding|AxisButtonBinding>} bindings 
+     */
+    bindBindings(bindings) {
+        for(let binding of bindings) {
+            const name = binding.name;
+            if (binding instanceof AxisBinding) {
+                this.bindAxis(name, binding.device, binding.code, binding.opts);
+                binding.setRef(this.getAxis(name));
+            } else if (binding instanceof ButtonBinding) {
+                this.bindButton(name, binding.device, binding.code, binding.opts);
+                binding.setRef(this.getButton(name));
+            } else if (binding instanceof AxisButtonBinding) {
+                this.bindAxisButtons(name, binding.device, binding.negativeCode, binding.code);
+                binding.setRef(this.getAxis(name));
+            } else {
+                throw new Error('Unknown binding type.');
+            }
+        }
+    }
+
+    /**
      * @param {InputName} name 
      * @param {DeviceName} device 
      * @param {KeyCode} code 
@@ -2891,4 +3026,4 @@ class Mouse
     }
 }
 
-export { AutoPoller, Axis, Button, CLEAR_DOWN_STATE_BITS, CLEAR_INVERTED_MODIFIER_BITS, CLEAR_POLL_BITS, DOWN_STATE_BIT, DeviceInputAdapter, INVERTED_MODIFIER_BIT, InputBase, InputBindings, InputCode, InputContext, InputDevice, InputPort, Keyboard, KeyboardDevice, Mouse, MouseDevice, PRESSED_STATE_BIT, RELEASED_STATE_BIT, REPEATED_STATE_BIT };
+export { AutoPoller, Axis, AxisBinding, AxisButtonBinding, Button, ButtonBinding, CLEAR_DOWN_STATE_BITS, CLEAR_INVERTED_MODIFIER_BITS, CLEAR_POLL_BITS, DOWN_STATE_BIT, DeviceInputAdapter, INVERTED_MODIFIER_BIT, InputBase, InputBindings, InputCode, InputContext, InputDevice, InputPort, Keyboard, KeyboardDevice, Mouse, MouseDevice, PRESSED_STATE_BIT, RELEASED_STATE_BIT, REPEATED_STATE_BIT };

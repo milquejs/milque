@@ -1,5 +1,3 @@
-import { AssetLoader } from './lib.js';
-
 export class Room
 {
     constructor(width, height, initials = [])
@@ -113,7 +111,7 @@ export class GameObject
     {
         if (this.sprite)
         {
-            this.sprite.render(ctx);
+            this.sprite.render(ctx, ctx.assets);
         }
     }
 }
@@ -125,18 +123,14 @@ export class Sprite
         this.src = src;
         this.offsetX = 0;
         this.offsetY = 0;
-
-        this.image = null;
-        AssetLoader.loadAsset('image:' + src, undefined, '../../res').then(image => {
-            this.image = image;
-        });
     }
 
-    render(ctx)
+    render(ctx, assets)
     {
-        if (this.image)
+        let image = assets.getAsset(this.src);
+        if (image)
         {
-            ctx.drawImage(this.image, this.offsetX, this.offsetY);
+            ctx.drawImage(image, this.offsetX, this.offsetY);
         }
         else
         {

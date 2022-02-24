@@ -11,6 +11,12 @@ import { loadAudioBuffer } from './loader/AudioBufferLoader.js';
 import { Sound } from './audio/Sound.js';
 
 // eslint-disable-next-line no-unused-vars
+import { main as Archaea } from './000/main.js';
+// eslint-disable-next-line no-unused-vars
+import { main as Architect } from './001/main.js';
+// eslint-disable-next-line no-unused-vars
+import { main as Bioform } from './002/main.js';
+// eslint-disable-next-line no-unused-vars
 import { main as IsoGame } from './00_isogame/main.js';
 // eslint-disable-next-line no-unused-vars
 import { main as GerryMan } from './01_gerryman/main.js';
@@ -63,8 +69,11 @@ async function main()
         game.emit('frame');
     });
 
+    // await Archaea(game);
+    // await Architect(game);
+    await Bioform(game);
     // await IsoGame(game);
     // await BreadBox(game);
     // await GerryMan(game);
-    await Miners(game);
+    // await Miners(game);
 }

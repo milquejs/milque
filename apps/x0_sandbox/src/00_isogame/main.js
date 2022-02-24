@@ -8,7 +8,7 @@ import { FixedSpriteGLRenderer2d } from 'src/renderer/FixedSpriteGLRenderer2d.js
 import { cartToIso, isoToCart, renderChunk, TileMap, TILE_SIZE } from './TileMap.js';
 
 /**
- * @typedef {import('../../src/game/Game.js').Game} Game
+ * @typedef {import('../lib/game/Game.js').Game} Game
  */
 
 export async function main(game)

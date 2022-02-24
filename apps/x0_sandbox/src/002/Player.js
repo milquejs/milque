@@ -1,17 +1,10 @@
 import { GameObject, Sprite } from './Room.js';
-import { createInputMap } from './InputMap.js';
 
 import { Bullet, BULLET_SPEED } from './Bullet.js';
+import { MoveDown, MoveLeft, MoveRight, MoveUp, Shoot } from './PlayerInputs.js';
 
 export const PLAYER_SPEED = 1;
 export const PLAYER_SHOOT_COOLDOWN = 10;
-export const PLAYER_INPUT_MAP = createInputMap([
-    'moveUp',
-    'moveDown',
-    'moveRight',
-    'moveLeft',
-    'shoot'
-]);
 
 export class Player extends GameObject
 {
@@ -20,7 +13,7 @@ export class Player extends GameObject
         super();
 
         this.name = 'player';
-        this.sprite = new Sprite('sprite/smile.png');
+        this.sprite = new Sprite('image:toast.png');
 
         this.facing = 1;
         this.shootCooldown = 0;
@@ -29,8 +22,8 @@ export class Player extends GameObject
     /** @override */
     onUpdate(dt)
     {
-        const dx = PLAYER_INPUT_MAP.moveRight.value - PLAYER_INPUT_MAP.moveLeft.value;
-        const dy = PLAYER_INPUT_MAP.moveDown.value - PLAYER_INPUT_MAP.moveUp.value;
+        const dx = MoveRight.value - MoveLeft.value;
+        const dy = MoveDown.value - MoveUp.value;
 
         this.x += PLAYER_SPEED * dx * dt;
         this.y += PLAYER_SPEED * dy * dt;
@@ -39,7 +32,7 @@ export class Player extends GameObject
             this.shootCooldown -= dt;
         }
 
-        if (PLAYER_INPUT_MAP.shoot.value)
+        if (Shoot.value)
         {
             if (this.shootCooldown <= 0)
             {

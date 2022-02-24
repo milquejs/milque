@@ -3,15 +3,20 @@ import * as MainControls from './MainControls.js';
 import { IslandRenderer } from './IslandRenderer.js';
 import { generateBoxyIsland } from './Island.js';
 
-document.addEventListener('DOMContentLoaded', main);
+document.title = 'Archaea';
 
-async function main()
+/**
+ * 
+ * @param {import('../game/Game.js').Game} game 
+ */
+export async function main(game)
 {
-    const display = document.querySelector('display-port');
+    const display = game.display;
     const ctx = display.canvas.getContext('2d');
     ctx.imageSmoothingEnabled = false;
     
-    MainControls.show();
+    const inputs = game.inputs;
+    inputs.bindBindings(Object.values(MainControls));
     
     const width = 32;
     const height = 32;
@@ -26,10 +31,6 @@ async function main()
     generateBoxyIsland(island, width, height, {});
 
     display.addEventListener('frame', e => {
-        const dt = e.detail.deltaTime / 1000;
-
-        MainControls.poll();
-
         ctx.clearRect(0, 0, display.width, display.height);
 
         // The water around the island.

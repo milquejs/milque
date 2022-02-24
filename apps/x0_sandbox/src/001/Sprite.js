@@ -5,15 +5,13 @@ export class Sprite
         this.source = source;
         this.originX = originX;
         this.originY = originY;
-        
-        this._image = new Image();
-        this._image.src = source;
     }
     
-    draw(ctx)
+    draw(ctx, world)
     {
+        let image = world.assets.getAsset(this.source);
         ctx.translate(-this.originX, -this.originY);
-        ctx.drawImage(this._image, 0, 0, this._image.width, this._image.height);
+        ctx.drawImage(image, 0, 0, image.width, image.height);
         ctx.translate(this.originX, this.originY);
     }
 }
