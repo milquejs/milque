@@ -1,21 +1,20 @@
 import { AutoPoller } from './AutoPoller.js';
 import { Axis } from './axisbutton/Axis.js';
 import { Button } from './axisbutton/Button.js';
-import { AxisBinding } from './binding/AxisBinding.js';
-import { AxisButtonBinding } from './binding/AxisButtonBinding.js';
-import { ButtonBinding } from './binding/ButtonBinding.js';
 import { KeyboardDevice } from './device/KeyboardDevice.js';
 import { MouseDevice } from './device/MouseDevice.js';
 import { DeviceInputAdapter } from './DeviceInputAdapter.js';
 import { InputBindings } from './InputBindings.js';
 
 /**
- * @typedef {import('../device/InputDevice.js').InputDevice} InputDevice
- * @typedef {import('../device/InputDevice.js').InputDeviceEvent} InputDeviceEvent
- * @typedef {import('../axisbutton/InputBase.js').InputBase} InputBase
- * @typedef {import('../InputBindings.js').DeviceName} DeviceName
- * @typedef {import('../InputBindings.js').KeyCode} KeyCode
- * @typedef {import('../InputBindings.js').BindingOptions} BindingOptions
+ * @typedef {import('./device/InputDevice.js').InputDevice} InputDevice
+ * @typedef {import('./device/InputDevice.js').InputDeviceEvent} InputDeviceEvent
+ * @typedef {import('./axisbutton/InputBase.js').InputBase} InputBase
+ * @typedef {import('./InputBindings.js').DeviceName} DeviceName
+ * @typedef {import('./InputBindings.js').KeyCode} KeyCode
+ * @typedef {import('./InputBindings.js').BindingOptions} BindingOptions
+ * 
+ * @typedef {import('./binding/InputBinding.js').InputBinding} InputBinding
  * 
  * @typedef {string} InputName
  */
@@ -296,7 +295,7 @@ export class InputContext
     }
 
     /**
-     * @param {Array<AxisBinding|ButtonBinding|AxisButtonBinding>} bindings 
+     * @param {Array<InputBinding>} bindings 
      */
     bindBindings(bindings) {
         for(let binding of bindings) {
