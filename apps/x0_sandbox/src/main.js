@@ -24,6 +24,8 @@ import { main as GerryMan } from './043/main.js';
 import { main as BreadBox } from './044/main.js';
 // eslint-disable-next-line no-unused-vars
 import { main as Miners } from './045/main.js';
+// eslint-disable-next-line no-unused-vars
+import { main as Moonset } from './046/main.js';
 
 /**
  * @typedef {import('@milque/asset').AssetPack} AssetPack
@@ -71,9 +73,10 @@ async function main()
 
     // await Archaea(game);
     // await Architect(game);
-    await Bioform(game);
+    // await Bioform(game);
     // await IsoGame(game);
     // await BreadBox(game);
     // await GerryMan(game);
     // await Miners(game);
+    await Moonset(game);
 }

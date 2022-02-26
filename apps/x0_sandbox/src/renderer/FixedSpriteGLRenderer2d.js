@@ -241,6 +241,60 @@ export class FixedSpriteGLRenderer2d extends FixedGLRenderer2d
         return this;
     }
 
+    drawRect(spriteName, frameIndex = 0, left = 0, top = 0, right = left, bottom = top)
+    {
+        let spriteMap = this.spriteMap;
+        let sprite;
+        if (spriteName in spriteMap)
+        {
+            sprite = spriteMap[spriteName];
+        }
+        else
+        {
+            let frameMap = this.frameMap;
+            let defaultSprite = this.defaultSprite;
+            let defaultFrames = defaultSprite.frames;
+            defaultFrames.length = 0;
+            if (spriteName in frameMap)
+            {
+                defaultFrames.push(spriteName);
+            }
+            sprite = defaultSprite;
+        }
+        let frameCount = sprite.frames.length;
+        if (frameCount <= 0) return this;
+        frameIndex = Math.floor(frameIndex) % frameCount;
+
+        let frameMap = this.frameMap;
+        let frameName = sprite.frames[frameIndex];
+        let frame = frameMap[frameName];
+        const [ textureUnit, u, v, s, t ] = frame;
+        let texture = this.textureList[textureUnit];
+        const { handle, width, height } = texture;
+
+        this.textureHandle = handle;
+        vec2.set(this.textureSize, width, height);
+        vec4.set(this.spriteVector, u, v, s, t);
+
+        let w = right - left;
+        let h = bottom - top;
+        let spriteW = s - u;
+        let spriteH = t - v;
+        let scaleX = w / spriteW;
+        let scaleY = h / spriteH;
+        let x = left + spriteW / 2 * scaleX;
+        let y = top + spriteH / 2 * scaleY;
+        const gl = this.gl;
+        drawSprite(gl, this.program, this.meshQuad,
+            this.peekTransform(),
+            this.modelMatrix,
+            this.textureHandle,
+            this.textureSize,
+            this.spriteVector,
+            x, y, this.spriteDepth, 0, scaleX, scaleY);
+        return this;
+    }
+
     draw(spriteName, frameIndex = 0, x = 0, y = 0, angle = 0, scaleX = 1, scaleY = scaleX)
     {
         let spriteMap = this.spriteMap;
@@ -340,7 +394,7 @@ function drawSprite(
     let spriteHeight = spriteVector[3] - spriteVector[1];
     mat4.fromRotationTranslationScaleOrigin(modelMatrix,
         quat.fromEuler(quat.create(), 0, 0, angle),
-        vec3.fromValues(x, y, z),
+        vec3.fromValues(x - spriteWidth / 2, y - spriteHeight / 2, z),
         vec3.fromValues(scaleX, scaleY, 1),
         vec3.fromValues(spriteWidth / 2, spriteHeight / 2, 0));
     // Scale with respect to top-left (instead of origin)

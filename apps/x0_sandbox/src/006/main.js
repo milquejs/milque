@@ -8,8 +8,6 @@ import * as TileMap from './TileMap.js';
 
 document.title = 'tactics';
 
-window.addEventListener('DOMContentLoaded', () => load().then(main));
-
 let assets = {};
 
 async function load()
@@ -23,8 +21,10 @@ async function load()
         assets['text:dungeon/dungeon.atlas']);
 }
 
-function main()
+export async function main()
 {
+    await load();
+
     const display = document.querySelector('display-port');
     const ctx = display.canvas.getContext('2d');
     ctx.imageSmoothingEnabled = false;
