@@ -22,6 +22,10 @@ export async function main(game) {
     renderer.texture(3, assets.getAsset('image:water_tile.png'), 'nine.all');
     loadNineSprite(renderer, 3, 16, 16);
 
+    // BMFont
+    renderer.texture(4, assets.getAsset('image:m5x7.png'), 'bmfont.all');
+    loadBMFontSprite(renderer, 4, assets.getAsset('fnt:m5x7.fnt'));
+
     display.addEventListener('frame', e => {
         const { deltaTime } = e.detail;
 
@@ -34,7 +38,7 @@ export async function main(game) {
         renderer.popTransform();
 
         let margin = 40;
-        drawText(renderer, 'Hello World', margin + 20, display.height - 200 + 20);
+        drawBMText(renderer, 'Hello World.\nNice to meet you!', margin + 20, display.height - 200 + 20);
         drawNineBox(renderer, margin, display.height - 200, display.width - margin, display.height - margin);
     });
 }
@@ -97,6 +101,35 @@ function drawText(renderer, text, x, y)
     }
 }
 
+function drawBMText(renderer, text, x, y) {
+    let rootX = x;
+    let rootIndex = 32;
+    let spacingX = 13;
+    let spacingY = 18;
+    text = text.toUpperCase();
+    for(let i = 0; i < text.length; ++i)
+    {
+        let c = text.charAt(i);
+        if (c === '\n')
+        {
+            y += spacingY;
+            x = rootX;
+            continue;
+        }
+        else if (c === ' ')
+        {
+            x += spacingX;
+            continue;
+        }
+        else
+        {
+            x += spacingX;
+            let frame = Math.abs(text.charCodeAt(i) - rootIndex);
+            renderer.draw('bmfont', frame, x, y);
+        }
+    }
+}
+
 /** @param {FixedSpriteGLRenderer2d} renderer */
 function loadSpritesFromAtlas(renderer, textureUnit, atlas)
 {
@@ -144,6 +177,24 @@ function loadFontSprite(renderer, textureUnit)
         renderer.frame(name, textureUnit, u, v, s, t);
     }
     renderer.sprite('font', frames);
+}
+
+/**
+ * @param {FixedSpriteGLRenderer2d} renderer
+ * @param {import('src/loader/BMFontLoader.js').BMFontData} bmFontData
+ */
+function loadBMFontSprite(renderer, textureUnit, bmFontData) {
+    let frames = [];
+    for(let c of bmFontData.chars) {
+        let u = c.x;
+        let v = c.y;
+        let s = u + c.width;
+        let t = v + c.height;
+        let name = `bmfont.${c.id}`;
+        renderer.frame(name, textureUnit, u, v, s, t);
+        frames.push(name);
+    }
+    renderer.sprite('bmfont', frames);
 }
 
 /** @param {FixedSpriteGLRenderer2d} renderer */

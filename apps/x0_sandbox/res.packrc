@@ -43,6 +43,16 @@
                 "crc": -751127985
             },
             {
+                "name": "res/m5x7.fnt",
+                "bytes": 11043,
+                "crc": -1117035396
+            },
+            {
+                "name": "res/m5x7.png",
+                "bytes": 1259,
+                "crc": -865219032
+            },
+            {
                 "name": "res/pea.png",
                 "bytes": 163,
                 "crc": -2102375727
@@ -98,7 +108,7 @@
                 "crc": -842706858
             }
         ],
-        "totalBytes": 329905,
-        "checksum": 2028237194
+        "totalBytes": 342207,
+        "checksum": -489316814
     }
 }

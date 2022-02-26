@@ -8,6 +8,7 @@ import { loadImage } from './loader/ImageLoader.js';
 import { loadOBJ } from './loader/OBJLoader.js';
 import { loadAtlas } from './loader/AtlasLoader.js';
 import { loadAudioBuffer } from './loader/AudioBufferLoader.js';
+import { loadBMFont } from './loader/BMFontLoader.js';
 import { Sound } from './audio/Sound.js';
 
 // eslint-disable-next-line no-unused-vars
@@ -54,6 +55,8 @@ async function main()
         assets.cache('obj:' + uri.substring(4), await loadOBJ(assetData)));
     await assets.pipe('res/**/*.atlas', async (assetData, uri) =>
         assets.cache('atlas:' + uri.substring(4), await loadAtlas(assetData)));
+    await assets.pipe('res/**/*.fnt', async (assetData, uri) =>
+        assets.cache('fnt:' + uri.substring(4), await loadBMFont(assetData)));
     await assets.pipe('res/**/*.wav', async (assetData, uri) => {
         let audioContext = Sound.getAudioContext();
         let audioBuffer = await loadAudioBuffer(assetData, audioContext);
