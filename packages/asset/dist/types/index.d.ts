@@ -60,7 +60,7 @@ declare class AssetPack extends HTMLElement {
      */
     cacheAsset(uri: string, asset: any, opts?: {
         ephemeral?: boolean;
-    }): Promise<void>;
+    }): void;
     loadAsset(uri: any, timeout?: number): Promise<any>;
     clearAssets(): void;
     deleteAsset(uri: any): void;

@@ -1,6 +1,6 @@
 import { Sound } from 'src/audio/Sound.js';
 import { loadAudioBuffer } from 'src/loader/AudioBufferLoader.js';
-import { AssetRef } from './AssetRef.js';
+import { AssetRef } from 'src/loader/AssetRef.js';
 
 export const SoundStart = new AssetRef('sound://start.wav', 'res/start.wav', loadSound);
 export const SoundDead = new AssetRef('sound://dead.wav', 'res/dead.wav', loadSound);

@@ -6,6 +6,8 @@ import * as Starfield from './Starfield.js';
 import * as Inputs from './Inputs.js';
 import * as Assets from './Assets.js';
 
+document.title = 'Starfield';
+
 /**
  * @param {import('../game/Game.js').Game} game 
  */

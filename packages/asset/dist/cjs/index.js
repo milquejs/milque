@@ -167,7 +167,7 @@ class AssetPack extends HTMLElement {
      * @param {object} [opts]
      * @param {boolean} [opts.ephemeral]
      */
-    async cacheAsset(uri, asset, opts = {})
+    cacheAsset(uri, asset, opts = {})
     {
         const { ephemeral } = opts;
         const prevValue = this._cache[uri];

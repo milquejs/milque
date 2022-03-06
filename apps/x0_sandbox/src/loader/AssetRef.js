@@ -25,6 +25,22 @@ export class AssetRef {
         return this.parent.getAsset(this.uri);
     }
 
+    /**
+     * @param {number} [timeout]
+     * @returns {Promise<T>}
+     */
+    async load(timeout = undefined) {
+        return await this.parent.loadAsset(this.uri, timeout);
+    }
+
+    /**
+     * @param {T} asset
+     * @param {object} [opts]
+     */
+    cache(asset, opts = undefined) {
+        this.parent.cacheAsset(this.uri, asset, opts);
+    }
+
     /** @param {import('@milque/asset').AssetPack} assetPack */
     async register(assetPack) {
         let result = assetPack.files.get(this.path);
