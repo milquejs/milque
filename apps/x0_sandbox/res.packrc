@@ -3,6 +3,21 @@
     "manifest": {
         "files": [
             {
+                "name": "res/boom.wav",
+                "bytes": 882044,
+                "crc": 513133327
+            },
+            {
+                "name": "res/boop.wav",
+                "bytes": 87676,
+                "crc": 53799162
+            },
+            {
+                "name": "res/click.wav",
+                "bytes": 131846,
+                "crc": -366499944
+            },
+            {
                 "name": "res/cube.aseprite",
                 "bytes": 703,
                 "crc": 823822015
@@ -21,6 +36,11 @@
                 "name": "res/cube.png.meta",
                 "bytes": 214,
                 "crc": -1564594739
+            },
+            {
+                "name": "res/dead.wav",
+                "bytes": 1060414,
+                "crc": 293120324
             },
             {
                 "name": "res/dungeon.atlas",
@@ -51,6 +71,11 @@
                 "name": "res/m5x7.png",
                 "bytes": 1259,
                 "crc": -865219032
+            },
+            {
+                "name": "res/music.wav",
+                "bytes": 27344014,
+                "crc": 1757810222
             },
             {
                 "name": "res/pea.png",
@@ -98,6 +123,11 @@
                 "crc": 1090874061
             },
             {
+                "name": "res/start.wav",
+                "bytes": 1413214,
+                "crc": 1761775065
+            },
+            {
                 "name": "res/toast.aseprite",
                 "bytes": 615,
                 "crc": -391701269
@@ -113,7 +143,7 @@
                 "crc": -842706858
             }
         ],
-        "totalBytes": 342638,
-        "checksum": -676092092
+        "totalBytes": 31261846,
+        "checksum": -383901627
     }
 }

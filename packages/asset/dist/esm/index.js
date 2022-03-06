@@ -49,8 +49,41 @@ const INNER_STYLE = '';
 
 const DEFAULT_TIMEOUT_MILLIS = 5_000;
 
-class AssetPack extends HTMLElement
-{
+/**
+ * @typedef {(filePath: string) => boolean|{ key: string }} FileMatcher
+ */
+
+/**
+ * @param {string} filePath 
+ * @returns {boolean}
+ */
+function fileMatcher(filePath) {
+    return this.test(filePath);
+}
+
+class AssetPack extends HTMLElement {
+    
+    /**
+     * @param {string} filter 
+     * @returns {FileMatcher}
+     */
+    static createFileMatcher(filter) {
+        if (typeof filter === 'string') {
+            let pattern = makeRe(filter);
+            let matcher = fileMatcher.bind(pattern);
+            matcher.key = filter;
+            return matcher;
+        } else if (filter instanceof RegExp) {
+            /** @type {RegExp} */
+            let pattern = filter;
+            let matcher = fileMatcher.bind(pattern);
+            matcher.key = filter.source;
+            return matcher;
+        } else {
+            throw new Error('Filter must be either a RegExp or glob string.');
+        }
+    }
+
     /** @private */
     static get [Symbol.for('templateNode')]()
     {
@@ -112,14 +145,11 @@ class AssetPack extends HTMLElement
          * @type {Record<string, Loading>}
          */
         this._loading = {};
-        /**
-         * @private
-         * @type {Record<string, PipelineStage>}
-         */
-        this._pipeline = {};
 
         /** @private */
         this.onLoad = this.onLoad.bind(this);
+
+        this.loaded = false;
     }
 
     get files()
@@ -128,76 +158,24 @@ class AssetPack extends HTMLElement
     }
 
     /**
-     * @param {string|RegExp} filter 
-     * @param {(assetData, uri) => Promise<any>} handler
-     */
-    async pipe(filter, handler)
-    {
-        let filterKey;
-        if (typeof filter === 'string')
-        {
-            filterKey = filter;
-            if (!(filterKey in this._pipeline))
-            {
-                filter = makeRe(filter);
-            }
-        }
-        else if (filter instanceof RegExp)
-        {
-            filterKey = filter.source;
-        }
-        else
-        {
-            throw new Error('Filter must be either a RegExp or glob string.');
-        }
-
-        /** @type {PipelineStage} */
-        let stage;
-        if (filterKey in this._pipeline)
-        {
-            stage = this._pipeline[filterKey];
-        }
-        else
-        {
-            stage = new PipelineStage(filter);
-            this._pipeline[filterKey] = stage;
-        }
-        stage.addHandler(handler);
-        
-        // Process old assets with new handler...
-        await Promise.all(Object.entries(this._cache).map(([key, value]) => {
-            if (stage.matches(key))
-            {
-                return handler(value, key);
-            }
-            else
-            {
-                return null;
-            }
-        }));
-    }
-
-    /**
      * @param {string} uri 
      * @param {any} asset 
      * @param {object} [opts]
      * @param {boolean} [opts.ephemeral]
      */
-    async cache(uri, asset, opts = {})
+    async cacheAsset(uri, asset, opts = {})
     {
         const { ephemeral } = opts;
         const prevValue = this._cache[uri];
         const loading = this._loading[uri];
         this._cache[uri] = asset;
-        // Process the asset...
-        await Promise.all(Object.values(this._pipeline).map(stage => {
-            if (stage.matches(uri))
-            {
-                return stage.process(uri, asset);
-            }
-            else
-            {
-                return null;
+        // Notify others of a new asset...
+        this.dispatchEvent(new CustomEvent('cache', {
+            composed: true,
+            bubbles: false,
+            detail: {
+                uri,
+                value: asset,
             }
         }));
         // Send asset to awaiting loaders...
@@ -262,20 +240,19 @@ class AssetPack extends HTMLElement
         }
     }
 
-    getAsset(uri)
-    {
+    getAsset(uri) {
         return this._cache[uri];
     }
 
-    hasAsset(uri)
-    {
+    getAssetURIs() {
+        return Object.keys(this._cache);
+    }
+
+    hasAsset(uri) {
         let value = this._cache[uri];
-        if (value)
-        {
+        if (value) {
             return value;
-        }
-        else
-        {
+        } else {
             return false;
         }
     }
@@ -295,6 +272,7 @@ class AssetPack extends HTMLElement
                 this._src = value;
                 if (value)
                 {
+                    this.loaded = false;
                     fetch(value)
                         .then(this.onLoad)
                         .catch(e => console.error(
@@ -313,12 +291,9 @@ class AssetPack extends HTMLElement
         let arrayBuffer = await response.arrayBuffer();
         await new Promise((resolve, reject) => {
             unzip(new Uint8Array(arrayBuffer), (err, data) => {
-                if (err)
-                {
+                if (err) {
                     reject(err);
-                }
-                else
-                {
+                } else {
                     // TODO: These files should be ephemeral to save memory
                     let result = this._files;
                     Promise.all(Object.entries(data)
@@ -328,7 +303,7 @@ class AssetPack extends HTMLElement
                             // path = path.substring(i + 1);
                             // Put the file in cache
                             result.put(path, data);
-                            return this.cache(path, data);
+                            return this.cacheAsset(path, data);
                         }))
                         .then(() => resolve())
                         .catch(reject);
@@ -338,6 +313,7 @@ class AssetPack extends HTMLElement
         this.dispatchEvent(new CustomEvent('load', {
             composed: true,
         }));
+        this.loaded = true;
     }
 }
 AssetPack.define();
@@ -349,31 +325,6 @@ function upgradeProperty(element, propertyName)
         let value = element[propertyName];
         delete element[propertyName];
         element[propertyName] = value;
-    }
-}
-
-class PipelineStage
-{
-    constructor(filter)
-    {
-        /** @type {RegExp} */
-        this.filter = filter;
-        this.handlers = [];
-    }
-
-    matches(string)
-    {
-        return this.filter.test(string);
-    }
-
-    async process(uri, asset)
-    {
-        return Promise.all(this.handlers.map(value => value(uri, asset)));
-    }
-
-    addHandler(handler)
-    {
-        this.handlers.push(handler);
     }
 }
 

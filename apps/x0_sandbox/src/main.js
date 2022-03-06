@@ -28,6 +28,9 @@ import { main as BreadBox } from './044/main.js';
 import { main as Miners } from './045/main.js';
 // eslint-disable-next-line no-unused-vars
 import { main as Moonset } from './046/main.js';
+// eslint-disable-next-line no-unused-vars
+import { main as Starfield } from './047/main.js';
+import { AssetPipeline } from './loader/AssetPipeline.js';
 
 /**
  * @typedef {import('@milque/asset').AssetPack} AssetPack
@@ -50,23 +53,24 @@ async function main()
     });
     assets.src = 'res.pack';
     await promise;
-    await assets.pipe('res/**/*.md', async (assetData, uri) =>
-        assets.cache('txt:' + uri.substring(4), await loadText(assetData)));
-    await assets.pipe('res/**/*.txt', async (assetData, uri) =>
-        assets.cache('txt:' + uri.substring(4), await loadText(assetData)));
-    await assets.pipe('res/**/*.png', async (assetData, uri) =>
-        assets.cache('image:' + uri.substring(4), await loadImage(assetData, 'image/png')));
-    await assets.pipe('res/**/*.obj', async (assetData, uri) =>
-        assets.cache('obj:' + uri.substring(4), await loadOBJ(assetData)));
-    await assets.pipe('res/**/*.atlas', async (assetData, uri) =>
-        assets.cache('atlas:' + uri.substring(4), await loadAtlas(assetData)));
-    await assets.pipe('res/**/*.fnt', async (assetData, uri) =>
-        assets.cache('fnt:' + uri.substring(4), await loadBMFont(assetData)));
-    await assets.pipe('res/**/*.wav', async (assetData, uri) => {
+    const pipeline = new AssetPipeline(assets);
+    await pipeline.pipe('res/**/*.md', async (assetData, uri) =>
+        assets.cacheAsset('txt:' + uri.substring(4), await loadText(assetData)));
+    await pipeline.pipe('res/**/*.txt', async (assetData, uri) =>
+        assets.cacheAsset('txt:' + uri.substring(4), await loadText(assetData)));
+    await pipeline.pipe('res/**/*.png', async (assetData, uri) =>
+        assets.cacheAsset('image:' + uri.substring(4), await loadImage(assetData, 'image/png')));
+    await pipeline.pipe('res/**/*.obj', async (assetData, uri) =>
+        assets.cacheAsset('obj:' + uri.substring(4), await loadOBJ(assetData)));
+    await pipeline.pipe('res/**/*.atlas', async (assetData, uri) =>
+        assets.cacheAsset('atlas:' + uri.substring(4), await loadAtlas(assetData)));
+    await pipeline.pipe('res/**/*.fnt', async (assetData, uri) =>
+        assets.cacheAsset('fnt:' + uri.substring(4), await loadBMFont(assetData)));
+    await pipeline.pipe('res/**/*.wav', async (assetData, uri) => {
         let audioContext = Sound.getAudioContext();
         let audioBuffer = await loadAudioBuffer(assetData, audioContext);
         let sound = new Sound(audioContext, audioBuffer);
-        return assets.cache('sound:' + uri.substring(4), sound);
+        return assets.cacheAsset('sound:' + uri.substring(4), sound);
     });
 
     const game = new Game(display, inputs, assets);
@@ -86,5 +90,6 @@ async function main()
     // await BreadBox(game);
     // await GerryMan(game);
     // await Miners(game);
-    await Moonset(game);
+    // await Moonset(game);
+    await Starfield(game);
 }

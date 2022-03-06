@@ -22,6 +22,11 @@ declare class FileBufferMap {
 }
 
 declare class AssetPack extends HTMLElement {
+    /**
+     * @param {string} filter
+     * @returns {FileMatcher}
+     */
+    static createFileMatcher(filter: string): FileMatcher;
     static define(customElements?: CustomElementRegistry): void;
     /** @override */
     static get observedAttributes(): string[];
@@ -42,38 +47,33 @@ declare class AssetPack extends HTMLElement {
     private _loading;
     /**
      * @private
-     * @type {Record<string, PipelineStage>}
-     */
-    private _pipeline;
-    /**
-     * @private
      * @param {Response} response
      */
     private onLoad;
+    loaded: boolean;
     get files(): FileBufferMap;
-    /**
-     * @param {string|RegExp} filter
-     * @param {(assetData, uri) => Promise<any>} handler
-     */
-    pipe(filter: string | RegExp, handler: (assetData: any, uri: any) => Promise<any>): Promise<void>;
     /**
      * @param {string} uri
      * @param {any} asset
      * @param {object} [opts]
      * @param {boolean} [opts.ephemeral]
      */
-    cache(uri: string, asset: any, opts?: {
+    cacheAsset(uri: string, asset: any, opts?: {
         ephemeral?: boolean;
     }): Promise<void>;
     loadAsset(uri: any, timeout?: number): Promise<any>;
     clearAssets(): void;
     deleteAsset(uri: any): void;
     getAsset(uri: any): any;
+    getAssetURIs(): string[];
     hasAsset(uri: any): any;
     /** @override */
     connectedCallback(): void;
     /** @override */
     attributeChangedCallback(attribute: any, prev: any, value: any): void;
 }
+type FileMatcher = (filePath: string) => boolean | {
+    key: string;
+};
 
 export { AssetPack };
