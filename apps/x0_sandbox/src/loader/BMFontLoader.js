@@ -170,7 +170,6 @@ function parse(string)
         chars,
         kernings,
     };
-    console.log(data);
     return data;
 }
 

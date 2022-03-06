@@ -88,6 +88,11 @@
                 "crc": 1571288211
             },
             {
+                "name": "res/star.png",
+                "bytes": 457,
+                "crc": 1825883708
+            },
+            {
                 "name": "res/starfield.png",
                 "bytes": 193937,
                 "crc": 1090874061
@@ -108,7 +113,7 @@
                 "crc": -842706858
             }
         ],
-        "totalBytes": 342181,
-        "checksum": -993895362
+        "totalBytes": 342638,
+        "checksum": -676092092
     }
 }

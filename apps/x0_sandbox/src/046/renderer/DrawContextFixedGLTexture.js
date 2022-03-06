@@ -121,29 +121,31 @@ export class DrawContextFixedGLTexture extends DrawContextFixedGLShape {
         textureUnit = 0, x = 0, y = 0,
         rx = undefined, ry = undefined,
         u = 0, v = 0, s = undefined, t = undefined) {
-        let { width: twidth, height: theight } = this.textureList[textureUnit];
-        vec2.set(this.textureSize, twidth, theight);
+        let {
+            width: textureWidth,
+            height: textureHeight
+        } = this.textureList[textureUnit];
+        vec2.set(this.textureSize, textureWidth, textureHeight);
         if (typeof s === 'undefined') {
-            s = twidth;
+            s = textureWidth;
         }
         if (typeof t === 'undefined') {
-            t = theight;
+            t = textureHeight;
         }
         vec4.set(this.spriteVector, u, v, s, t);
 
+        let spriteWidth = s - u;
+        let spriteHeight = t - v;
         if (typeof rx === 'undefined') {
-            rx = twidth / 2;
+            rx = spriteWidth / 2;
         }
         if (typeof ry === 'undefined') {
-            ry = theight / 2;
+            ry = spriteHeight / 2;
         }
         let width = rx * 2;
         let height = ry * 2;
-        let spriteW = s - u;
-        let spriteH = t - v;
-        let scaleX = width / spriteW;
-        let scaleY = height / spriteH;
-
+        let scaleX = width / spriteWidth;
+        let scaleY = height / spriteHeight;
         return this.drawTexturedQuadImpl(
             textureUnit,
             x, y, this.depthFloat,
@@ -172,13 +174,12 @@ export class DrawContextFixedGLTexture extends DrawContextFixedGLShape {
         }
         let w = right - left;
         let h = bottom - top;
-        let spriteW = s - u;
-        let spriteH = t - v;
-        let scaleX = w / spriteW;
-        let scaleY = h / spriteH;
-        let x = left + spriteW / 2 * scaleX;
-        let y = top + spriteH / 2 * scaleY;
-
+        let spriteWidth = s - u;
+        let spriteHeight = t - v;
+        let scaleX = w / spriteWidth;
+        let scaleY = h / spriteHeight;
+        let x = left + spriteWidth / 2 * scaleX;
+        let y = top + spriteHeight / 2 * scaleY;
         return this.drawTexturedQuadImpl(
             textureUnit,
             x, y, this.depthFloat,
@@ -186,8 +187,7 @@ export class DrawContextFixedGLTexture extends DrawContextFixedGLShape {
     }
 
     /** @private */
-    drawTexturedQuadImpl(
-        textureUnit, x, y, z, scaleX, scaleY) {
+    drawTexturedQuadImpl(textureUnit, x, y, z, scaleX, scaleY) {
         const gl = this.gl;
         let spriteVector = this.spriteVector;
         let spriteWidth = spriteVector[2] - spriteVector[0];
@@ -199,13 +199,14 @@ export class DrawContextFixedGLTexture extends DrawContextFixedGLShape {
             vec3.fromValues(scaleX, scaleY, 1),
             vec3.fromValues(spriteWidth / 2, spriteHeight / 2, 0));
         // Scale with respect to top-left (instead of origin)
-        mat4.scale(modelMatrix, modelMatrix, vec3.fromValues(spriteWidth, spriteHeight, 1));
+        mat4.scale(modelMatrix, modelMatrix,
+            vec3.fromValues(spriteWidth, spriteHeight, 1));
         this.applyTransform(modelMatrix);
-        const { position, texcoord } = this.meshQuadTextured;
+        let mesh = this.meshQuadTextured;
         let textureSize = this.textureSize;
         this.texturedProgram.bind(gl)
-            .attribute('a_position', gl.FLOAT, position.handle)
-            .attribute('a_texcoord', gl.FLOAT, texcoord.handle)
+            .attribute('a_position', gl.FLOAT, mesh.position.handle)
+            .attribute('a_texcoord', gl.FLOAT, mesh.texcoord.handle)
             .uniform('u_model', modelMatrix)
             .uniform('u_texture', textureUnit)
             .uniform('u_sprite', spriteVector)

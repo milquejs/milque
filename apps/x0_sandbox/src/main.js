@@ -9,6 +9,7 @@ import { loadOBJ } from './loader/OBJLoader.js';
 import { loadAtlas } from './loader/AtlasLoader.js';
 import { loadAudioBuffer } from './loader/AudioBufferLoader.js';
 import { loadBMFont } from './loader/BMFontLoader.js';
+import { loadText } from './loader/TextLoader.js';
 import { Sound } from './audio/Sound.js';
 
 // eslint-disable-next-line no-unused-vars
@@ -49,6 +50,10 @@ async function main()
     });
     assets.src = 'res.pack';
     await promise;
+    await assets.pipe('res/**/*.md', async (assetData, uri) =>
+        assets.cache('txt:' + uri.substring(4), await loadText(assetData)));
+    await assets.pipe('res/**/*.txt', async (assetData, uri) =>
+        assets.cache('txt:' + uri.substring(4), await loadText(assetData)));
     await assets.pipe('res/**/*.png', async (assetData, uri) =>
         assets.cache('image:' + uri.substring(4), await loadImage(assetData, 'image/png')));
     await assets.pipe('res/**/*.obj', async (assetData, uri) =>

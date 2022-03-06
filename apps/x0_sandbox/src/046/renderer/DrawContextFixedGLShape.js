@@ -123,8 +123,10 @@ export class DrawContextFixedGLShape extends DrawContextFixedGLBase {
         let dx = toX - fromX;
         let dy = toY - fromY;
         let modelMatrix = this.modelMatrix;
-        mat4.fromTranslation(modelMatrix, vec3.fromValues(fromX, fromY, z));
-        mat4.scale(modelMatrix, modelMatrix, vec3.fromValues(dx, dy, 1));
+        mat4.fromRotationTranslationScale(modelMatrix,
+            quat.create(),
+            vec3.fromValues(fromX, fromY, z),
+            vec3.fromValues(dx, dy, 1));
         this.applyTransform(modelMatrix);
         this.shapeProgram.bind(gl)
             .attribute('a_position', gl.FLOAT, this.meshLine.handle)
@@ -194,10 +196,9 @@ export class DrawContextFixedGLShape extends DrawContextFixedGLBase {
     /** @private */
     drawBoxImpl(drawMode, x, y, z, rx, ry) {
         const gl = this.gl;
-        let angle = 0;
         let modelMatrix = this.modelMatrix;
         mat4.fromRotationTranslationScaleOrigin(modelMatrix,
-            quat.fromEuler(quat.create(), 0, 0, angle),
+            quat.create(),
             vec3.fromValues(x, y, z),
             vec3.fromValues(rx * 2, ry * 2, 1),
             vec3.fromValues(0.5, 0.5, 0));
@@ -216,7 +217,7 @@ export class DrawContextFixedGLShape extends DrawContextFixedGLBase {
         const gl = this.gl;
         let modelMatrix = this.modelMatrix;
         mat4.fromRotationTranslationScale(modelMatrix,
-            quat.fromEuler(quat.create(), 0, 0, 0),
+            quat.create(),
             vec3.fromValues(x, y, z),
             vec3.fromValues(r, r, 1));
         this.applyTransform(modelMatrix);
