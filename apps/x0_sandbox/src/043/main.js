@@ -1,4 +1,4 @@
-import { FixedSpriteGLRenderer2d } from 'src/renderer/FixedSpriteGLRenderer2d.js';
+import { FixedSpriteGLRenderer2d } from 'src/deprecated/fixedgl/FixedSpriteGLRenderer2d.js';
 
 /** @typedef {import('src/audio/Sound.js').Sound} Sound */
 

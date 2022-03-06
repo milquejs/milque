@@ -1,7 +1,7 @@
 /**
  * @typedef {import('@milque/input').InputContext} InputContext
  * @typedef {import('./World.js').World} World
- * @typedef {import('../renderer/FixedSpriteGLRenderer2d.js').FixedSpriteGLRenderer2d} Renderer
+ * @typedef {import('../deprecated/fixedgl/FixedSpriteGLRenderer2d.js').FixedSpriteGLRenderer2d} Renderer
  */
 
 export class EntityBase

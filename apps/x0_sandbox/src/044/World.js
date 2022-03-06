@@ -1,4 +1,4 @@
-import { FixedSpriteGLRenderer2d } from '../renderer/FixedSpriteGLRenderer2d.js';
+import { FixedSpriteGLRenderer2d } from '../deprecated/fixedgl/FixedSpriteGLRenderer2d.js';
 
 import { Player } from './Player.js';
 

@@ -1,4 +1,4 @@
-import { FixedGLWorld2d } from 'src/renderer/FixedGLWorld2d.js';
+import { FixedGLWorld2d } from 'src/deprecated/fixedgl/FixedGLWorld2d.js';
 
 /** @typedef {import('src/audio/Sound.js').Sound} Sound */
 

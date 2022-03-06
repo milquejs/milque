@@ -1,5 +1,5 @@
 import { Mouse } from '@milque/input';
-import { FixedSpriteGLRenderer2d } from 'src/renderer/FixedSpriteGLRenderer2d.js';
+import { FixedSpriteGLRenderer2d } from 'src/deprecated/fixedgl/FixedSpriteGLRenderer2d.js';
 import { MessageBox } from './MessageBox.js';
 import { load } from './Render.js';
 

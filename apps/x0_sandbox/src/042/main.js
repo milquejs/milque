@@ -2,8 +2,8 @@ import { Mouse } from '@milque/input';
 import { lerp } from '@milque/util';
 import { vec2 } from 'gl-matrix';
 
-import { FixedShapeGLRenderer2d } from 'src/renderer/FixedShapeGLRenderer2d.js';
-import { FixedSpriteGLRenderer2d } from 'src/renderer/FixedSpriteGLRenderer2d.js';
+import { FixedShapeGLRenderer2d } from 'src/deprecated/fixedgl/FixedShapeGLRenderer2d.js';
+import { FixedSpriteGLRenderer2d } from 'src/deprecated/fixedgl/FixedSpriteGLRenderer2d.js';
 
 import { cartToIso, isoToCart, renderChunk, TileMap, TILE_SIZE } from './TileMap.js';
 

@@ -2,7 +2,7 @@ import { mat4, quat, vec3 } from 'gl-matrix';
 import { OrthographicCamera } from '@milque/scene';
 import { BufferHelper, BufferInfoBuilder, ProgramInfoBuilder } from '@milque/mogli';
 
-import { hex } from './color.js';
+import { hex } from '../../renderer/color.js';
 import { FixedGLRenderer2d } from './FixedGLRenderer2d.js';
 
 const WEBGL_VERTEX_SHADER_SOURCE = `
