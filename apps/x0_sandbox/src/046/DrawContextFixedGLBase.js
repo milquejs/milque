@@ -1,5 +1,5 @@
 import { OrthographicCamera } from '@milque/scene';
-import { mat4, vec3 } from 'gl-matrix';
+import { mat4, quat, vec2, vec3 } from 'gl-matrix';
 import { hex } from 'src/renderer/color.js';
 
 export class DrawContextFixedGLBase {
@@ -25,6 +25,19 @@ export class DrawContextFixedGLBase {
         /** @protected */
         this.depthFloat = 0;
 
+        /** @protected */
+        this.transformStack = [];
+        /** @protected */
+        this.transformMatrix = mat4.create();
+        /** @protected */
+        this.translationVector = vec3.create();
+        /** @protected */
+        this.rotationQuat = quat.create();
+        /** @protected */
+        this.scaleVector = vec3.fromValues(1, 1, 1);
+        /** @protected */
+        this.originVector = vec3.create();
+
         // Initialize webgl state machine
         gl.enable(gl.DEPTH_TEST);
         gl.depthFunc(gl.LEQUAL);
@@ -35,6 +48,8 @@ export class DrawContextFixedGLBase {
         this.clear(0, 0, 0, 1);
         this.setColorVector(1, 1, 1);
         this.setDepthFloat(0);
+        this.resetTransform();
+        this.transformStack.length = 0;
     }
 
     /**
@@ -92,5 +107,59 @@ export class DrawContextFixedGLBase {
     setDepthFloat(z) {
         this.depthFloat = z;
         return this;
+    }
+
+    setTranslation(x, y, z = 0) {
+        vec3.set(this.translationVector, x, y, z);
+        return this;
+    }
+
+    setRotation(angle) {
+        quat.fromEuler(this.rotationQuat, 0, 0, angle);
+        return this;
+    }
+
+    setScale(x, y) {
+        vec3.set(this.scaleVector, x, y, 1);
+        return this;
+    }
+
+    setOrigin(x, y, z = 0) {
+        vec3.set(this.originVector, x, y, z);
+    }
+
+    resetTransform() {
+        vec3.zero(this.translationVector);
+        quat.identity(this.rotationQuat);
+        vec3.set(this.scaleVector, 1, 1, 1);
+        vec3.zero(this.originVector);
+    }
+
+    pushTransform() {
+        let matrix = mat4.fromRotationTranslationScaleOrigin(
+            mat4.create(),
+            this.rotationQuat,
+            this.translationVector,
+            this.scaleVector,
+            this.originVector);
+        this.transformStack.push(matrix);
+        this.resetTransform();
+    }
+
+    popTransform() {
+        this.transformStack.pop();
+    }
+
+    applyTransform(out) {
+        for(let i = this.transformStack.length - 1; i >= 0; --i) {
+            mat4.mul(out, this.transformStack[i], out);
+        }
+        mat4.mul(out, mat4.fromRotationTranslationScaleOrigin(
+            this.transformMatrix,
+            this.rotationQuat,
+            this.translationVector,
+            this.scaleVector,
+            this.originVector), out);
+        return out;
     }
 }

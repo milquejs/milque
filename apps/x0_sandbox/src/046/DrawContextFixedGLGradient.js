@@ -77,14 +77,16 @@ export class DrawContextFixedGLGradient extends DrawContextFixedGLTexture {
         let z = this.depthFloat;
 
         const gl = this.gl;
-        mat4.fromRotationTranslationScaleOrigin(this.modelMatrix,
+        let modelMatrix = this.modelMatrix;
+        mat4.fromRotationTranslationScaleOrigin(modelMatrix,
             quat.fromEuler(quat.create(), 0, 0, 0),
             vec3.fromValues(x, y, z),
             vec3.fromValues(rx * 2, ry * 2, 1),
             vec3.fromValues(0.5, 0.5, 0));
+        this.applyTransform(modelMatrix);
         this.gradientProgram.bind(gl)
             .attribute('a_position', gl.FLOAT, this.meshQuad.handle)
-            .uniform('u_model', this.modelMatrix)
+            .uniform('u_model', modelMatrix)
             .uniform('u_color_from', vec3.set(
                 this.gradientColor,
                 hex.redf(fromColor),

@@ -117,16 +117,16 @@ export class DrawContextFixedGLShape extends DrawContextFixedGLBase {
         return this;
     }
 
-    drawLine(fromX = 0, fromY = 0, toX = fromX + 16, toY = toY) {
+    drawLine(fromX = 0, fromY = 0, toX = fromX + 16, toY = fromY) {
         const gl = this.gl;
         let z = this.depthFloat;
         let dx = toX - fromX;
         let dy = toY - fromY;
-        let program = this.shapeProgram;
         let modelMatrix = this.modelMatrix;
         mat4.fromTranslation(modelMatrix, vec3.fromValues(fromX, fromY, z));
         mat4.scale(modelMatrix, modelMatrix, vec3.fromValues(dx, dy, 1));
-        program.bind(gl)
+        this.applyTransform(modelMatrix);
+        this.shapeProgram.bind(gl)
             .attribute('a_position', gl.FLOAT, this.meshLine.handle)
             .uniform('u_model', modelMatrix)
             .draw(gl, gl.LINES, 0, 2);
@@ -135,23 +135,24 @@ export class DrawContextFixedGLShape extends DrawContextFixedGLBase {
 
     drawRay(x = 0, y = 0, angle = 0, length = 16) {
         let radians = Math.PI * angle / 180;
-        return this.drawLine(x, y, x + Math.cos(radians) * length, y + Math.sin(radians) * length);
+        return this.drawLine(
+            x, y,
+            x + Math.cos(radians) * length,
+            y + Math.sin(radians) * length);
     }
 
     drawBox(x = 0, y = 0, rx = 8, ry = rx) {
-        const gl = this.gl;
-        drawBoxImpl(gl, this.shapeProgram, this.meshQuad,
-            this.modelMatrix, gl.TRIANGLES,
-            x, y, this.depthFloat, rx, ry);
-        return this;
+        return this.drawBoxImpl(
+            this.gl.TRIANGLES,
+            x, y, this.depthFloat,
+            rx, ry);
     }
 
     drawLineBox(x = 0, y = 0, rx = 8, ry = rx) {
-        const gl = this.gl;
-        drawBoxImpl(gl, this.shapeProgram, this.meshQuad,
-            this.modelMatrix, gl.LINE_LOOP,
-            x, y, this.depthFloat, rx, ry);
-        return this;
+        return this.drawBoxImpl(
+            this.gl.LINE_LOOP,
+            x, y, this.depthFloat,
+            rx, ry);
     }
 
     drawRect(left = 0, top = 0, right = 16, bottom = 16) {
@@ -175,46 +176,54 @@ export class DrawContextFixedGLShape extends DrawContextFixedGLBase {
     }
 
     drawCircle(x = 0, y = 0, r = 8) {
-        const gl = this.gl;
-        drawCircleImpl(
-            gl, this.shapeProgram, this.meshCircle,
-            CIRCLE_VERTEX_COUNT, this.modelMatrix,
-            gl.TRIANGLES, x, y, this.depthFloat, r);
+        return this.drawCircleImpl(
+            this.meshCircle,
+            CIRCLE_VERTEX_COUNT,
+            this.gl.TRIANGLES,
+            x, y, this.depthFloat, r);
     }
 
     drawLineCircle(x = 0, y = 0, r = 8) {
-        const gl = this.gl;
-        drawCircleImpl(
-            gl, this.shapeProgram, this.meshLineCircle,
-            LINE_CIRCLE_VERTEX_COUNT, this.modelMatrix,
-            gl.LINE_LOOP, x, y, this.depthFloat, r);
+        return this.drawCircleImpl(
+            this.meshLineCircle,
+            LINE_CIRCLE_VERTEX_COUNT,
+            this.gl.LINE_LOOP,
+            x, y, this.depthFloat, r);
     }
-}
 
-function drawBoxImpl(
-    gl, program, mesh, modelMatrix, drawMode,
-    x, y, z, rx, ry) {
-    let angle = 0;
-    mat4.fromRotationTranslationScaleOrigin(modelMatrix,
-        quat.fromEuler(quat.create(), 0, 0, angle),
-        vec3.fromValues(x, y, z),
-        vec3.fromValues(rx * 2, ry * 2, 1),
-        vec3.fromValues(0.5, 0.5, 0));
-    program.bind(gl)
-        .attribute('a_position', gl.FLOAT, mesh.handle)
-        .uniform('u_model', modelMatrix)
-        .draw(gl, drawMode, 0, 6);
-}
+    /** @private */
+    drawBoxImpl(drawMode, x, y, z, rx, ry) {
+        const gl = this.gl;
+        let angle = 0;
+        let modelMatrix = this.modelMatrix;
+        mat4.fromRotationTranslationScaleOrigin(modelMatrix,
+            quat.fromEuler(quat.create(), 0, 0, angle),
+            vec3.fromValues(x, y, z),
+            vec3.fromValues(rx * 2, ry * 2, 1),
+            vec3.fromValues(0.5, 0.5, 0));
+        this.applyTransform(modelMatrix);
+        this.shapeProgram.bind(gl)
+            .attribute('a_position', gl.FLOAT, this.meshQuad.handle)
+            .uniform('u_model', modelMatrix)
+            .draw(gl, drawMode, 0, 6);
+        return this;
+    }
 
-function drawCircleImpl(
-    gl, program, mesh, vertexCount, modelMatrix,
-    drawMode, x, y, z, r) {
-    mat4.fromRotationTranslationScale(modelMatrix,
-        quat.fromEuler(quat.create(), 0, 0, 0),
-        vec3.fromValues(x, y, z),
-        vec3.fromValues(r, r, 1));
-    program.bind(gl)
-        .attribute('a_position', gl.FLOAT, mesh.handle)
-        .uniform('u_model', modelMatrix)
-        .draw(gl, drawMode, 0, vertexCount);
+    /** @private */
+    drawCircleImpl(
+        mesh, vertexCount, drawMode,
+        x, y, z, r) {
+        const gl = this.gl;
+        let modelMatrix = this.modelMatrix;
+        mat4.fromRotationTranslationScale(modelMatrix,
+            quat.fromEuler(quat.create(), 0, 0, 0),
+            vec3.fromValues(x, y, z),
+            vec3.fromValues(r, r, 1));
+        this.applyTransform(modelMatrix);
+        this.shapeProgram.bind(gl)
+            .attribute('a_position', gl.FLOAT, mesh.handle)
+            .uniform('u_model', modelMatrix)
+            .draw(gl, drawMode, 0, vertexCount);
+        return this;
+    }
 }

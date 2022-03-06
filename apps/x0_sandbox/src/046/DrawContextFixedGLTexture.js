@@ -144,12 +144,10 @@ export class DrawContextFixedGLTexture extends DrawContextFixedGLShape {
         let scaleX = width / spriteW;
         let scaleY = height / spriteH;
 
-        const gl = this.gl;
-        drawTexturedQuadImpl(
-            gl, this.texturedProgram, this.meshQuadTextured, this.modelMatrix,
-            this.textureSize, this.spriteVector, x, y,
-            this.depthFloat, 0, scaleX, scaleY);
-        return this;
+        return this.drawTexturedQuadImpl(
+            textureUnit,
+            x, y, this.depthFloat,
+            scaleX, scaleY);
     }
     
     drawTexturedRect(
@@ -181,13 +179,41 @@ export class DrawContextFixedGLTexture extends DrawContextFixedGLShape {
         let x = left + spriteW / 2 * scaleX;
         let y = top + spriteH / 2 * scaleY;
 
+        return this.drawTexturedQuadImpl(
+            textureUnit,
+            x, y, this.depthFloat,
+            scaleX, scaleY);
+    }
+
+    /** @private */
+    drawTexturedQuadImpl(
+        textureUnit, x, y, z, scaleX, scaleY) {
         const gl = this.gl;
-        drawTexturedQuadImpl(
-            gl, this.texturedProgram, this.meshQuadTextured, this.modelMatrix,
-            this.textureSize, this.spriteVector, x, y,
-            this.depthFloat, 0, scaleX, scaleY);
+        let spriteVector = this.spriteVector;
+        let spriteWidth = spriteVector[2] - spriteVector[0];
+        let spriteHeight = spriteVector[3] - spriteVector[1];
+        let modelMatrix = this.modelMatrix;
+        mat4.fromRotationTranslationScaleOrigin(modelMatrix,
+            quat.fromEuler(quat.create(), 0, 0, 0),
+            vec3.fromValues(x - spriteWidth / 2, y - spriteHeight / 2, z),
+            vec3.fromValues(scaleX, scaleY, 1),
+            vec3.fromValues(spriteWidth / 2, spriteHeight / 2, 0));
+        // Scale with respect to top-left (instead of origin)
+        mat4.scale(modelMatrix, modelMatrix, vec3.fromValues(spriteWidth, spriteHeight, 1));
+        this.applyTransform(modelMatrix);
+        const { position, texcoord } = this.meshQuadTextured;
+        let textureSize = this.textureSize;
+        this.texturedProgram.bind(gl)
+            .attribute('a_position', gl.FLOAT, position.handle)
+            .attribute('a_texcoord', gl.FLOAT, texcoord.handle)
+            .uniform('u_model', modelMatrix)
+            .uniform('u_texture', textureUnit)
+            .uniform('u_sprite', spriteVector)
+            .uniform('u_texture_size', textureSize)
+            .draw(gl, gl.TRIANGLES, 0, 6);
         return this;
     }
+
 }
 
 /**
@@ -228,28 +254,4 @@ function createTexture(gl, image) {
  */
 function destroyTexture(gl, textureHandle) {
     gl.deleteTexture(textureHandle);
-}
-
-function drawTexturedQuadImpl(
-    gl, program, mesh, modelMatrix, textureSize,
-    spriteVector, x, y, z, angle, scaleX, scaleY) {
-    let spriteWidth = spriteVector[2] - spriteVector[0];
-    let spriteHeight = spriteVector[3] - spriteVector[1];
-    mat4.fromRotationTranslationScaleOrigin(modelMatrix,
-        quat.fromEuler(quat.create(), 0, 0, angle),
-        vec3.fromValues(x - spriteWidth / 2, y - spriteHeight / 2, z),
-        vec3.fromValues(scaleX, scaleY, 1),
-        vec3.fromValues(spriteWidth / 2, spriteHeight / 2, 0));
-    // Scale with respect to top-left (instead of origin)
-    mat4.scale(modelMatrix, modelMatrix, vec3.fromValues(spriteWidth, spriteHeight, 1));
-
-    const { position, texcoord } = mesh;
-    program.bind(gl)
-        .attribute('a_position', gl.FLOAT, position.handle)
-        .attribute('a_texcoord', gl.FLOAT, texcoord.handle)
-        .uniform('u_model', modelMatrix)
-        .uniform('u_texture', 0)
-        .uniform('u_sprite', spriteVector)
-        .uniform('u_texture_size', textureSize)
-        .draw(gl, gl.TRIANGLES, 0, 6);
 }
