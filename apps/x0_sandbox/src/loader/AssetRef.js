@@ -53,7 +53,7 @@ export class AssetRef {
         const parent = this.parent;
         const uri = this.uri;
         if (!parent) {
-            const [result, _] = await Promise.all([
+            const result = await Promise.race([
                 new Promise((resolve, reject) => {
                     this._loadResolves.push(resolve);
                     this._loadRejects.push(reject);
