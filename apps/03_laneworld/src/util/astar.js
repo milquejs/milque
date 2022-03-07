@@ -16,110 +16,108 @@
  * @param {(from: T, to: T) => number} weightsCallback Get the weight if travelling between the two nodes.
  * @returns {Array<T>} If the goal is not reachable from the start, it will return an empty array.
  */
-export function astarSearch(startId, goalId, neighborsCallback, heuristicCallback, weightsCallback)
-{
-    /** @type {NodeCache<T>} */
-    let cache = createCache();
-    cacheNode(cache, startId);
-    let opened = new Set();
-    let closed = new Set();
-    opened.add(startId);
-    while(opened.size > 0)
-    {
-        let minNodeId;
-        for(let openNodeId of opened)
-        {
-            if (minNodeId)
-            {
-                if (cache.fscore[openNodeId] < cache.fscore[minNodeId])
-                {
-                    minNodeId = openNodeId;
-                }
-            }
-            else
-            {
-                minNodeId = openNodeId;
-            }
+export function astarSearch(
+  startId,
+  goalId,
+  neighborsCallback,
+  heuristicCallback,
+  weightsCallback
+) {
+  /** @type {NodeCache<T>} */
+  let cache = createCache();
+  cacheNode(cache, startId);
+  let opened = new Set();
+  let closed = new Set();
+  opened.add(startId);
+  while (opened.size > 0) {
+    let minNodeId;
+    for (let openNodeId of opened) {
+      if (minNodeId) {
+        if (cache.fscore[openNodeId] < cache.fscore[minNodeId]) {
+          minNodeId = openNodeId;
         }
-
-        let currentNodeId = minNodeId;
-        if (currentNodeId === goalId)
-        {
-            // Completed!
-            let result = [];
-            while(cache.parents[currentNodeId])
-            {
-                result.push(currentNodeId);
-                currentNodeId = cache.parents[currentNodeId];
-            }
-            result.push(currentNodeId);
-            return result.reverse();
-        }
-        else
-        {
-            // Not there yet...
-            closed.add(currentNodeId);
-            opened.delete(currentNodeId);
-            for(let neighborNodeId of neighborsCallback(currentNodeId))
-            {
-                if (closed.has(neighborNodeId)) continue;
-                let weight = weightsCallback(currentNodeId, neighborNodeId);
-                if (!Number.isFinite(weight)) continue;
-                let g = cache.gscore[currentNodeId] + weight;
-                let flag = false;
-                if (!opened.has(neighborNodeId))
-                {
-                    flag = true;
-                    cacheNode(cache, neighborNodeId);
-                    cache.hscore[neighborNodeId] = heuristicCallback(neighborNodeId, goalId);
-                    opened.add(neighborNodeId);
-                }
-                else if (g < cache.gscore[neighborNodeId])
-                {
-                    flag = true;
-                }
-                // Use the new g score if better
-                if (flag)
-                {
-                    cache.parents[neighborNodeId] = currentNodeId;
-                    cache.gscore[neighborNodeId] = g;
-                    cache.fscore[neighborNodeId] = g + cache.hscore[neighborNodeId];
-                }
-            }
-        }
+      } else {
+        minNodeId = openNodeId;
+      }
     }
-    return [];
+
+    let currentNodeId = minNodeId;
+    if (currentNodeId === goalId) {
+      // Completed!
+      let result = [];
+      while (cache.parents[currentNodeId]) {
+        result.push(currentNodeId);
+        currentNodeId = cache.parents[currentNodeId];
+      }
+      result.push(currentNodeId);
+      return result.reverse();
+    } else {
+      // Not there yet...
+      closed.add(currentNodeId);
+      opened.delete(currentNodeId);
+      for (let neighborNodeId of neighborsCallback(currentNodeId)) {
+        if (closed.has(neighborNodeId)) continue;
+        let weight = weightsCallback(currentNodeId, neighborNodeId);
+        if (!Number.isFinite(weight)) continue;
+        let g = cache.gscore[currentNodeId] + weight;
+        let flag = false;
+        if (!opened.has(neighborNodeId)) {
+          flag = true;
+          cacheNode(cache, neighborNodeId);
+          cache.hscore[neighborNodeId] = heuristicCallback(
+            neighborNodeId,
+            goalId
+          );
+          opened.add(neighborNodeId);
+        } else if (g < cache.gscore[neighborNodeId]) {
+          flag = true;
+        }
+        // Use the new g score if better
+        if (flag) {
+          cache.parents[neighborNodeId] = currentNodeId;
+          cache.gscore[neighborNodeId] = g;
+          cache.fscore[neighborNodeId] = g + cache.hscore[neighborNodeId];
+        }
+      }
+    }
+  }
+  return [];
 }
 
 /**
  * @template T
  * @returns {NodeCache<T>}
  */
-function createCache()
-{
-    return {
-        fscore: {},
-        gscore: {},
-        hscore: {},
-        parents: {},
-    };
+function createCache() {
+  return {
+    fscore: {},
+    gscore: {},
+    hscore: {},
+    parents: {},
+  };
 }
 
 /**
  * @template T
- * @param {NodeCache<T>} cache 
- * @param {T} id 
- * @param {number} f 
- * @param {number} g 
- * @param {number} h 
- * @param {T} parent 
+ * @param {NodeCache<T>} cache
+ * @param {T} id
+ * @param {number} f
+ * @param {number} g
+ * @param {number} h
+ * @param {T} parent
  * @returns {T}
  */
-function cacheNode(cache, id, f = Number.POSITIVE_INFINITY, g = Number.POSITIVE_INFINITY, h = Number.NaN, parent = null)
-{
-    cache.fscore[id] = f;
-    cache.gscore[id] = g;
-    cache.hscore[id] = h;
-    cache.parents[id] = parent;
-    return id;
+function cacheNode(
+  cache,
+  id,
+  f = Number.POSITIVE_INFINITY,
+  g = Number.POSITIVE_INFINITY,
+  h = Number.NaN,
+  parent = null
+) {
+  cache.fscore[id] = f;
+  cache.gscore[id] = g;
+  cache.hscore[id] = h;
+  cache.parents[id] = parent;
+  return id;
 }

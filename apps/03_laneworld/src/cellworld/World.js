@@ -1,47 +1,43 @@
-export class World
-{
-    constructor(mapWidth = 8, mapHeight = 6)
-    {
-        const mapLength = mapWidth * mapHeight;
-        this.width = mapWidth;
-        this.height = mapHeight;
-        this.length = mapLength;
+export class World {
+  constructor(mapWidth = 8, mapHeight = 6) {
+    const mapLength = mapWidth * mapHeight;
+    this.width = mapWidth;
+    this.height = mapHeight;
+    this.length = mapLength;
 
-        this.offsetX = 0;
-        this.offsetY = 0;
+    this.offsetX = 0;
+    this.offsetY = 0;
 
-        this.cells = new Uint8Array(mapLength);
-        this.metas = new Array(mapLength);
+    this.cells = new Uint8Array(mapLength);
+    this.metas = new Array(mapLength);
 
-        this.lanes = {};
-        this.cellLanes = new Array(mapLength);
-        
-        this.carts = {};
-        this.factories = {};
-        this.ports = {};
-    }
+    this.lanes = {};
+    this.cellLanes = new Array(mapLength);
 
-    isWithinBounds(cellX, cellY)
-    {
-        return cellX >= 0 && cellY >= 0 && cellX < this.width && cellY < this.height;
-    }
+    this.carts = {};
+    this.factories = {};
+    this.ports = {};
+  }
 
-    setCell(cellX, cellY, cellId, cellMetadata = {})
-    {
-        let i = cellX + cellY * this.width;
-        this.cells[i] = cellId;
-        this.metas[i] = cellMetadata;
-    }
+  isWithinBounds(cellX, cellY) {
+    return (
+      cellX >= 0 && cellY >= 0 && cellX < this.width && cellY < this.height
+    );
+  }
 
-    getCellId(cellX, cellY)
-    {
-        let i = cellX + cellY * this.width;
-        return this.cells[i];
-    }
+  setCell(cellX, cellY, cellId, cellMetadata = {}) {
+    let i = cellX + cellY * this.width;
+    this.cells[i] = cellId;
+    this.metas[i] = cellMetadata;
+  }
 
-    getCellMetadata(cellX, cellY)
-    {
-        let i = cellX + cellY * this.width;
-        return this.metas[i];
-    }
+  getCellId(cellX, cellY) {
+    let i = cellX + cellY * this.width;
+    return this.cells[i];
+  }
+
+  getCellMetadata(cellX, cellY) {
+    let i = cellX + cellY * this.width;
+    return this.metas[i];
+  }
 }
