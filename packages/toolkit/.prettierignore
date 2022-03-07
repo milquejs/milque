@@ -1,11 +1,6 @@
 # Output directory
 dist
 out
-public
-tmp
-
-# Unused directory
-deprecated
 
 # Output files
 *.log

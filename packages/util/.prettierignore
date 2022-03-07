@@ -1,8 +1,6 @@
 # Output directory
 dist
 out
-public
-tmp
 
 # Output files
 *.log
