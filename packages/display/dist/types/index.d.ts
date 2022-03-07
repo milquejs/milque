@@ -15,6 +15,7 @@
  *          |MODE_FIT
  *          |MODE_NOSCALE
  *          |MODE_SCALE
+ *          |MODE_FILL
  *          |MODE_STRETCH} DisplayScaling
  */
 /**
@@ -50,8 +51,11 @@
  */
 declare class DisplayPort extends HTMLElement {
     static define(customElements?: CustomElementRegistry): void;
-    /** @override */
-    static get observedAttributes(): string[];
+    /**
+     * @protected
+     * Override for web component.
+     */
+    protected static get observedAttributes(): string[];
     set mode(arg: DisplayScaling);
     /**
      * The scaling mode.
@@ -136,12 +140,21 @@ declare class DisplayPort extends HTMLElement {
     private onDelayCanvasResize;
     /** Get the canvas element. */
     get canvas(): HTMLCanvasElement;
-    /** @override */
-    connectedCallback(): void;
-    /** @override */
-    disconnectedCallback(): void;
-    /** @override */
-    attributeChangedCallback(attribute: any, prev: any, value: any): void;
+    /**
+     * @protected
+     * Override for web component.
+     */
+    protected connectedCallback(): void;
+    /**
+     * @protected
+     * Override for web component.
+     */
+    protected disconnectedCallback(): void;
+    /**
+     * @protected
+     * Override for web component.
+     */
+    protected attributeChangedCallback(attribute: any, prev: any, value: any): void;
     /**
      * @param {'2d'|'webgl'|'webgl2'} [contextId]
      * @param {CanvasRenderingContext2DSettings} [options]
@@ -155,6 +168,6 @@ declare class DisplayPort extends HTMLElement {
     /** @private */
     private updateCanvasSize;
 }
-type DisplayScaling = "center" | "fit" | "noscale" | "scale" | "stretch";
+type DisplayScaling = "center" | "fit" | "noscale" | "scale" | "fill" | "stretch";
 
 export { DisplayPort };

@@ -4202,14 +4202,16 @@ packages:
       esbuild: 0.11.18
       esbuild-plugin-alias: 0.1.2
       eslint: 7.25.0
+      eslint-config-prettier: 8.3.0_eslint@7.25.0
       open: 8.0.7
+      prettier: 2.4.1
       rollup: 2.47.0
       stylelint: 13.13.1
       stylelint-config-standard: 22.0.0_stylelint@13.13.1
     dev: false
     name: '@rush-temp/display'
     resolution:
-      integrity: sha512-dnZRbzJ4QMgYRVAU8CeUt3QTvVo48IrF8KN0zyf0bX+fLgUKx3rUZ3papnOyjw9lRro23gVt3buVRn0gd24ULw==
+      integrity: sha512-ADz/4zxIAnPtw/81jLE9rqTHOkmVXmiRcs9+zqvnqBalDlu+0BPbbuNngICizHec7a8vTcwDAcoSZFL5dOVg3g==
       tarball: file:projects/display.tgz
     version: 0.0.0
   file:projects/input.tgz:
