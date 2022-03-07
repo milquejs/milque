@@ -23,13 +23,16 @@ declare class FileBufferMap {
 
 declare class AssetPack extends HTMLElement {
     /**
-     * @param {string} filter
+     * @param {string|RegExp} filter
      * @returns {FileMatcher}
      */
-    static createFileMatcher(filter: string): FileMatcher;
+    static createFileMatcher(filter: string | RegExp): FileMatcher;
     static define(customElements?: CustomElementRegistry): void;
-    /** @override */
-    static get observedAttributes(): string[];
+    /**
+     * @protected
+     * Override for web component.
+     */
+    protected static get observedAttributes(): string[];
     /** @param {string} value */
     set src(arg: string);
     /** @returns {string} */
@@ -92,10 +95,16 @@ declare class AssetPack extends HTMLElement {
      * @param {string} uri
      */
     isAssetLoading(uri: string): boolean;
-    /** @override */
-    connectedCallback(): void;
-    /** @override */
-    attributeChangedCallback(attribute: any, prev: any, value: any): void;
+    /**
+     * @protected
+     * Override for web component.
+     */
+    protected connectedCallback(): void;
+    /**
+     * @protected
+     * Override for web component.
+     */
+    protected attributeChangedCallback(attribute: any, prev: any, value: any): void;
 }
 type FileMatcher = (filePath: string) => boolean | {
     key: string;

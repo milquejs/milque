@@ -3,3 +3,6 @@ dist
 out
 public
 tmp
+
+# Output files
+*.log

@@ -1,42 +1,36 @@
-export class FileBufferMap
-{
-    constructor()
-    {
-        /**
-         * @private
-         * @type {Record<string, Uint8Array>}
-         */
-        this._buffers = {};
-    }
-
-    clear()
-    {
-        this._buffers = {};
-    }
-
+export class FileBufferMap {
+  constructor() {
     /**
-     * @param {string} filePath 
-     * @param {Uint8Array} fileBuffer 
+     * @private
+     * @type {Record<string, Uint8Array>}
      */
-    put(filePath, fileBuffer)
-    {
-        this._buffers[filePath] = fileBuffer;
-    }
+    this._buffers = {};
+  }
 
-    /**
-     * @param {string} filePath 
-     * @returns {Uint8Array}
-     */
-    get(filePath)
-    {
-        return this._buffers[filePath];
-    }
+  clear() {
+    this._buffers = {};
+  }
 
-    /**
-     * @returns {Array<string>}
-     */
-    keys()
-    {
-        return Object.keys(this._buffers);
-    }
+  /**
+   * @param {string} filePath
+   * @param {Uint8Array} fileBuffer
+   */
+  put(filePath, fileBuffer) {
+    this._buffers[filePath] = fileBuffer;
+  }
+
+  /**
+   * @param {string} filePath
+   * @returns {Uint8Array}
+   */
+  get(filePath) {
+    return this._buffers[filePath];
+  }
+
+  /**
+   * @returns {Array<string>}
+   */
+  keys() {
+    return Object.keys(this._buffers);
+  }
 }

@@ -1,27 +1,24 @@
+/* eslint-env node */
 module.exports = {
-    'env': {
-        'browser': true,
-        'es2021': true,
-        'node': true
+    env: {
+        browser: true,
+        es2021: true,
     },
-    'extends': 'eslint:recommended',
-    'parserOptions': {
-        'ecmaVersion': 12,
-        'sourceType': 'module'
+    extends: [
+        'eslint:recommended',
+        'prettier',
+    ],
+    parserOptions: {
+        ecmaVersion: 12,
+        sourceType: 'module',
     },
-    'rules': {
-        'indent': [
+    plugins: [],
+    rules: {
+        'no-console': 'error',
+        'no-unused-vars': [
             'error',
-            4,
-            { 'SwitchCase': 1 }
+            { vars: 'all', args: 'none', ignoreRestSiblings: false }
         ],
-        'quotes': [
-            'error',
-            'single'
-        ],
-        'semi': [
-            'error',
-            'always'
-        ]
-    }
+    },
 };
+  
