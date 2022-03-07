@@ -1,6 +1,13 @@
 # Output directory
 dist
 out
+public
+tmp
+res
 
 # Output files
 *.log
+
+# Resource files
+*.pack
+*.packrc

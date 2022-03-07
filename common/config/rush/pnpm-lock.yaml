@@ -4165,14 +4165,16 @@ packages:
   file:projects/asteroids.tgz:
     dependencies:
       eslint: 7.25.0
+      eslint-config-prettier: 8.3.0_eslint@7.25.0
       fflate: 0.6.10
       gl-matrix: 3.3.0
+      prettier: 2.4.1
       stylelint: 13.13.1
       stylelint-config-standard: 22.0.0_stylelint@13.13.1
     dev: false
     name: '@rush-temp/asteroids'
     resolution:
-      integrity: sha512-eqb86x/NBSMaml+5sICEKdcr/v8a5rdJbWY7niigIgGMpn3MOrrsxJH8kPGah5EXyuz8+YIL81kYmcBVyshxYg==
+      integrity: sha512-Cz/VEsRhh/4LWhbg05+aCjOAeDdoiTr1j9QKKbqJp4xOy7gWuvosMabI6U7nareiIVAs4UzxL6xjXCf2sbgTBg==
       tarball: file:projects/asteroids.tgz
     version: 0.0.0
   file:projects/build-tools.tgz:
