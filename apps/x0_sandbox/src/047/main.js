@@ -76,7 +76,8 @@ export async function main(game) {
     {
         console.log('Loading...');
         inputs.bindBindings(Object.values(Inputs));
-        await Assets.bindRefs(assets, Object.values(Assets));
+        Assets.bindRefs(assets, Object.values(Assets));
+        await Assets.loadRefs(Object.values(Assets));
         console.log('...loading complete!');
     }
 
@@ -141,7 +142,7 @@ export async function main(game) {
                     this.scene.bullets.push(bullet);
                 }
                 this.cooldown = PLAYER_SHOOT_COOLDOWN;
-                Assets.SoundShoot.get().play();
+                Assets.SoundShoot.current.play();
             }
         };
 
@@ -224,7 +225,7 @@ export async function main(game) {
         }
         if (this.gameWait && inputs.isAnyButtonPressed()) {
             if (this.gameStart) {
-                Assets.BackgroundMusic.get().play();
+                Assets.BackgroundMusic.current.play();
                 this.score = 0;
                 this.flashScore = true;
                 this.level = 0;
@@ -322,7 +323,7 @@ export async function main(game) {
                         localStorage.setItem('highscore', this.highScore);
                     }
                     explode(this, asteroid.x, asteroid.y, 10, Random.choose.bind(null, ASTEROID_EXPLODE_PARTICLE_COLORS));
-                    Assets.SoundPop.get().play();
+                    Assets.SoundPop.current.play();
                     bullet.destroy();
                     asteroid.breakUp(bullet.dx * ASTEROID_BREAK_DAMP_FACTOR, bullet.dy * ASTEROID_BREAK_DAMP_FACTOR);
                     break;
@@ -393,7 +394,7 @@ export async function main(game) {
         if (!this.gamePause && this.asteroids.length <= 0) {
             this.gamePause = true;
             this.showPlayer = true;
-            Assets.SoundStart.get().play();
+            Assets.SoundStart.current.play();
             setTimeout(() => this.gameWait = true, 1000);
         }
     }
@@ -662,15 +663,18 @@ export async function main(game) {
             scene.powerUpSpawner.spawn();
         }
 
-        if (!Assets.BackgroundMusic.get().isPlaying()) Assets.BackgroundMusic.get().play({ loop: true });
+        let music = Assets.BackgroundMusic.current;
+        if (!music.isPlaying()) {
+            music.play({ loop: true });
+        }
     }
 
     function killPlayer(scene) {
         scene.gamePause = true;
         scene.showPlayer = false;
         explode(scene, scene.player.x, scene.player.y, 100, Random.choose.bind(null, PLAYER_EXPLODE_PARTICLE_COLORS));
-        Assets.SoundDead.get().play();
-        Assets.SoundBoom.get().play();
+        Assets.SoundDead.current.play();
+        Assets.SoundBoom.current.play();
         setTimeout(() => scene.gameStart = scene.gameWait = true, 1000);
     }
 

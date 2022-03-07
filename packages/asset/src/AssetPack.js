@@ -134,7 +134,7 @@ export class AssetPack extends HTMLElement {
             bubbles: false,
             detail: {
                 uri,
-                value: asset,
+                current: asset,
             }
         }));
         // Send asset to awaiting loaders...
@@ -157,6 +157,10 @@ export class AssetPack extends HTMLElement {
         }
     }
 
+    /**
+     * @param {string} uri 
+     * @param {number} timeout
+     */
     async loadAsset(uri, timeout = DEFAULT_TIMEOUT_MILLIS)
     {
         let value = this._cache[uri];
@@ -186,6 +190,9 @@ export class AssetPack extends HTMLElement {
         this._cache = {};
     }
 
+    /**
+     * @param {string} uri 
+     */
     deleteAsset(uri)
     {
         if (uri in this._loading)
@@ -199,6 +206,9 @@ export class AssetPack extends HTMLElement {
         }
     }
 
+    /**
+     * @param {string} uri 
+     */
     getAsset(uri) {
         return this._cache[uri];
     }
@@ -207,13 +217,34 @@ export class AssetPack extends HTMLElement {
         return Object.keys(this._cache);
     }
 
+    /**
+     * @param {string} uri
+     */
     hasAsset(uri) {
         let value = this._cache[uri];
         if (value) {
-            return value;
+            return Boolean(value);
         } else {
             return false;
         }
+    }
+
+    /**
+     * Whether the asset has been cached (could still be null).
+     * 
+     * @param {string} uri
+     */
+    isAssetCached(uri) {
+        return uri in this._cache;
+    }
+
+    /**
+     * Whether the asset is still waiting to load.
+     * 
+     * @param {string} uri
+     */
+    isAssetLoading(uri) {
+        return uri in this._loading;
     }
 
     /** @override */

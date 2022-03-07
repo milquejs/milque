@@ -61,12 +61,37 @@ declare class AssetPack extends HTMLElement {
     cacheAsset(uri: string, asset: any, opts?: {
         ephemeral?: boolean;
     }): void;
-    loadAsset(uri: any, timeout?: number): Promise<any>;
+    /**
+     * @param {string} uri
+     * @param {number} timeout
+     */
+    loadAsset(uri: string, timeout?: number): Promise<any>;
     clearAssets(): void;
-    deleteAsset(uri: any): void;
-    getAsset(uri: any): any;
+    /**
+     * @param {string} uri
+     */
+    deleteAsset(uri: string): void;
+    /**
+     * @param {string} uri
+     */
+    getAsset(uri: string): any;
     getAssetURIs(): string[];
-    hasAsset(uri: any): any;
+    /**
+     * @param {string} uri
+     */
+    hasAsset(uri: string): boolean;
+    /**
+     * Whether the asset has been cached (could still be null).
+     *
+     * @param {string} uri
+     */
+    isAssetCached(uri: string): boolean;
+    /**
+     * Whether the asset is still waiting to load.
+     *
+     * @param {string} uri
+     */
+    isAssetLoading(uri: string): boolean;
     /** @override */
     connectedCallback(): void;
     /** @override */
