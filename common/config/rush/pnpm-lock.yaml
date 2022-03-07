@@ -4315,14 +4315,16 @@ packages:
   file:projects/scene.tgz:
     dependencies:
       eslint: 7.25.0
+      eslint-config-prettier: 8.3.0_eslint@7.25.0
       gl-matrix: 3.3.0
+      prettier: 2.4.1
       rollup: 2.47.0
       stylelint: 13.13.1
       stylelint-config-standard: 22.0.0_stylelint@13.13.1
     dev: false
     name: '@rush-temp/scene'
     resolution:
-      integrity: sha512-QBDxftVxWaPY+YI4i1MlWVKCdR3Frob65PYwqEtF8mg6jn49LJbBItTGk0nKXMladsZKiP6q91v4vyEznDrDdw==
+      integrity: sha512-wgDjowJ3CgiSmAaApWIZnjPHIAx7rRu5jmyOdbGoL7ZNMJEhXQk/+frtyHQ9y4gcP0nKUoWYQ2gBhSOvVyEdrQ==
       tarball: file:projects/scene.tgz
     version: 0.0.0
   file:projects/toolkit.tgz:

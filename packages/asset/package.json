@@ -21,7 +21,7 @@
   ],
   "scripts": {
     "build": "rollup -c --silent",
-    "lint": "eslint *.js",
+    "lint": "eslint **/*.js",
     "format": "prettier --write *"
   },
   "dependencies": {
