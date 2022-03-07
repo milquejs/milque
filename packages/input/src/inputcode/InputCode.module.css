@@ -1,44 +1,44 @@
 kbd {
-    position: relative;
-    display: inline-block;
-    border-radius: 3px;
-    border: 1px solid #888888;
-    font-size: 0.85em;
-    font-weight: 700;
-    text-rendering: optimizeLegibility;
-    line-height: 12px;
-    height: 14px;
-    padding: 2px 4px;
-    color: #444444;
-    background-color: #eeeeee;
-    box-shadow: inset 0 -3px 0 #aaaaaa;
-    overflow: hidden;
+  position: relative;
+  display: inline-block;
+  border-radius: 3px;
+  border: 1px solid #888888;
+  font-size: 0.85em;
+  font-weight: 700;
+  text-rendering: optimizeLegibility;
+  line-height: 12px;
+  height: 14px;
+  padding: 2px 4px;
+  color: #444444;
+  background-color: #eeeeee;
+  box-shadow: inset 0 -3px 0 #aaaaaa;
+  overflow: hidden;
 }
 
 kbd:empty::after {
-    content: "<?>";
-    opacity: 0.6;
+  content: '<?>';
+  opacity: 0.6;
 }
 
 .disabled {
-    opacity: 0.6;
-    box-shadow: none;
-    background-color: #aaaaaa;
+  opacity: 0.6;
+  box-shadow: none;
+  background-color: #aaaaaa;
 }
 
 .hidden {
-    display: none;
+  display: none;
 }
 
 #value {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    right: 0;
-    font-size: 0.85em;
-    padding: 0 4px;
-    padding-top: 2px;
-    color: #cccccc;
-    background-color: #333333;
-    box-shadow: inset 0 3px 0 #222222;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  font-size: 0.85em;
+  padding: 0 4px;
+  padding-top: 2px;
+  color: #cccccc;
+  background-color: #333333;
+  box-shadow: inset 0 3px 0 #222222;
 }

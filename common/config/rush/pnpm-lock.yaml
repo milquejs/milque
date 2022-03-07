@@ -4217,13 +4217,15 @@ packages:
   file:projects/input.tgz:
     dependencies:
       eslint: 7.25.0
+      eslint-config-prettier: 8.3.0_eslint@7.25.0
+      prettier: 2.4.1
       rollup: 2.47.0
       stylelint: 13.13.1
       stylelint-config-standard: 22.0.0_stylelint@13.13.1
     dev: false
     name: '@rush-temp/input'
     resolution:
-      integrity: sha512-MMc9Y0/IyoZHXW4yOjVDh9ZtQiUSjebWepFJOB4GABRLRgjtkA+cND2c3sfjxVfWnjTn0ttlfaQaIY3NbJChXw==
+      integrity: sha512-7yYRklln/IpBZ8l5m35CKCBdWMyvV0W9LAWK+XWja848a4J+qNqB3fZY9vZDDw/lGYp8ZepZkvK0Gth0gHtIWQ==
       tarball: file:projects/input.tgz
     version: 0.0.0
   file:projects/laneworld.tgz:

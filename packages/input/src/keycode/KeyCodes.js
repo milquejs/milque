@@ -1,11 +1,11 @@
 import { KeyCode } from './KeyCode.js';
 
 export function from(device, code) {
-    return new KeyCode(device, code);
+  return new KeyCode(device, code);
 }
 
 export function isKeyCode(object) {
-    return 'device' in object && 'code' in object;
+  return 'device' in object && 'code' in object;
 }
 
 export const KEYBOARD = 'Keyboard';
