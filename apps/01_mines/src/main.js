@@ -40,41 +40,40 @@ Maybe:
 */
 
 document.addEventListener('DOMContentLoaded', main);
-async function main()
-{
-    /** @type {DisplayPort} */
-    const display = document.querySelector('display-port');
-    const ctx = display.canvas.getContext('2d');
-    ctx.imageSmoothingEnabled = false;
+async function main() {
+  /** @type {DisplayPort} */
+  const display = document.querySelector('display-port');
+  const ctx = display.canvas.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
 
-    /** @type {InputContext} */
-    const inputs =  document.querySelector('input-port').getContext('axisbutton');
-    attach(inputs);
+  /** @type {InputContext} */
+  const inputs = document.querySelector('input-port').getContext('axisbutton');
+  attach(inputs);
 
-    /** @type {AssetPack} */
-    const assets = document.querySelector('asset-pack');
-    await new Promise((resolve, reject) => {
-        assets.addEventListener('load', resolve);
-        assets.addEventListener('error', reject);
-    });
+  /** @type {AssetPack} */
+  const assets = document.querySelector('asset-pack');
+  await new Promise((resolve, reject) => {
+    assets.addEventListener('load', resolve);
+    assets.addEventListener('error', reject);
+  });
 
-    const world = { display };
-    await MainRender.load.call(world, assets);
-    MainScene.onStart.call(world);
+  const world = { display };
+  await MainRender.load.call(world, assets);
+  MainScene.onStart.call(world);
 
-    display.addEventListener('frame', e => {
-        const dt = e.detail.deltaTime / 1000;
+  display.addEventListener('frame', (e) => {
+    const dt = e.detail.deltaTime / 1000;
 
-        MainScene.onPreUpdate.call(world, dt);
-        inputs.poll();
-        MainScene.onUpdate.call(world, dt);
+    MainScene.onPreUpdate.call(world, dt);
+    inputs.poll();
+    MainScene.onUpdate.call(world, dt);
 
-        const view = {
-            context: ctx,
-            width: display.width,
-            height: display.height,
-        };
-        ctx.clearRect(0, 0, view.width, view.height);
-        MainRender.onRender.call(world, view, world);
-    });
+    const view = {
+      context: ctx,
+      width: display.width,
+      height: display.height,
+    };
+    ctx.clearRect(0, 0, view.width, view.height);
+    MainRender.onRender.call(world, view, world);
+  });
 }
