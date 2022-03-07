@@ -13,7 +13,8 @@
     "munge": "node munge.js",
     "start": "node build.js --dev",
     "build": "node build.js",
-    "lint": "eslint **/*.js && stylelint **/*.css"
+    "lint": "eslint **/*.js && stylelint **/*.css",
+    "format": "prettier --write *"
   },
   "dependencies": {
     "gl-matrix": "~3.3.0",
@@ -28,7 +29,9 @@
   "devDependencies": {
     "@milque/toolkit": "~0.0.1",
     "eslint": "~7.25.0",
+    "eslint-config-prettier": "~8.3.0",
     "stylelint": "~13.13.1",
-    "stylelint-config-standard": "~22.0.0"
+    "stylelint-config-standard": "~22.0.0",
+    "prettier": "~2.4.1"
   }
 }

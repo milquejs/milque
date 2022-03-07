@@ -1,133 +1,111 @@
-class BlockRegistry
-{
-    constructor()
-    {
-        this.blocks = {};
-        this.components = {};
+class BlockRegistry {
+  constructor() {
+    this.blocks = {};
+    this.components = {};
+  }
+
+  register(blockId, ...components) {
+    if (blockId in this.blocks) {
+      throw new Error(`BlockId '${blockId}' already registered.`);
     }
 
-    register(blockId, ...components)
-    {
-        if (blockId in this.blocks)
-        {
-            throw new Error(`BlockId '${blockId}' already registered.`);
-        }
+    const componentOpts = components.map((opt) =>
+      !Array.isArray(opt) ? [opt, true] : opt
+    );
+    for (let [component, initial] of componentOpts) {
+      if (!(component in this.components)) this.components[component] = {};
 
-        const componentOpts = components.map(opt => !Array.isArray(opt) ? [ opt, true ] : opt);
-        for(let [component, initial] of componentOpts)
-        {
-            if (!(component in this.components)) this.components[component] = {};
-            
-            let blockComponents = this.components[component];
-            
-            if (blockId in blockComponents) throw new Error(`Component '${component}' for block '${blockId}' already registered.`);
+      let blockComponents = this.components[component];
 
-            let value;
-            if (typeof initial === 'object')
-            {
-                value = Object.assign({}, initial);
-            }
-            else
-            {
-                value = initial;
-            }
-            blockComponents[blockId] = value;
-        }
+      if (blockId in blockComponents)
+        throw new Error(
+          `Component '${component}' for block '${blockId}' already registered.`
+        );
 
-        let block = new Block(this, blockId, componentOpts);
-
-        this.blocks[blockId] = block;
-        return block;
+      let value;
+      if (typeof initial === 'object') {
+        value = Object.assign({}, initial);
+      } else {
+        value = initial;
+      }
+      blockComponents[blockId] = value;
     }
 
-    getBlock(blockId)
-    {
-        if (blockId in this.blocks)
-        {
-            return this.blocks[blockId];
-        }
-        else
-        {
-            return null;
-        }
-    }
+    let block = new Block(this, blockId, componentOpts);
 
-    getBlocks()
-    {
-        return Object.values(this.blocks);
-    }
+    this.blocks[blockId] = block;
+    return block;
+  }
 
-    getBlockIds()
-    {
-        return Object.keys(this.blocks);
+  getBlock(blockId) {
+    if (blockId in this.blocks) {
+      return this.blocks[blockId];
+    } else {
+      return null;
     }
+  }
 
-    getBlockComponents(blockId)
-    {
-        let result = [];
-        for(let blockComponents of this.components)
-        {
-            if (blockId in blockComponents)
-            {
-                result.push(blockComponents[blockId]);
-            }
-        }
-        return result;
-    }
+  getBlocks() {
+    return Object.values(this.blocks);
+  }
 
-    hasComponent(component, blockId)
-    {
-        return component in this.components
-            && blockId in this.components[component];
-    }
+  getBlockIds() {
+    return Object.keys(this.blocks);
+  }
 
-    getComponent(component, blockId)
-    {
-        if (component in this.components)
-        {
-            let blockComponents = this.components[component];
-            if (blockId in blockComponents)
-            {
-                return blockComponents[blockId];
-            }
-        }
-        return null;
+  getBlockComponents(blockId) {
+    let result = [];
+    for (let blockComponents of this.components) {
+      if (blockId in blockComponents) {
+        result.push(blockComponents[blockId]);
+      }
     }
+    return result;
+  }
 
-    getComponents(component)
-    {
-        if (component in this.components)
-        {
-            let blockComponents = this.components[component];
-            return Object.values(blockComponents);
-        }
-    }
+  hasComponent(component, blockId) {
+    return (
+      component in this.components && blockId in this.components[component]
+    );
+  }
 
-    getComponentNames()
-    {
-        return Object.keys(this.components);
+  getComponent(component, blockId) {
+    if (component in this.components) {
+      let blockComponents = this.components[component];
+      if (blockId in blockComponents) {
+        return blockComponents[blockId];
+      }
     }
+    return null;
+  }
+
+  getComponents(component) {
+    if (component in this.components) {
+      let blockComponents = this.components[component];
+      return Object.values(blockComponents);
+    }
+  }
+
+  getComponentNames() {
+    return Object.keys(this.components);
+  }
 }
 
-class Block
-{
-    constructor(blockRegistry, blockId, componentOpts)
-    {
-        this.blockRegistry = blockRegistry;
-        this.blockId = blockId;
-        this.blockOpts = componentOpts;
-        
-        for(let [component, values] of componentOpts)
-        {
-            this[component] = blockRegistry.getComponent(component, blockId);
-        }
-    }
+class Block {
+  constructor(blockRegistry, blockId, componentOpts) {
+    this.blockRegistry = blockRegistry;
+    this.blockId = blockId;
+    this.blockOpts = componentOpts;
 
-    /** @override */
-    toString()
-    {
-        return `Block#${this.blockId}`;
+    for (let [component, values] of componentOpts) {
+      this[component] = blockRegistry.getComponent(component, blockId);
     }
+  }
+
+  /** @override */
+  toString() {
+    return `Block#${this.blockId}`;
+  }
 }
 
 export const BLOCKS = new BlockRegistry();

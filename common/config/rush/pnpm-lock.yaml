@@ -4137,13 +4137,15 @@ packages:
   file:projects/arroyo.tgz:
     dependencies:
       eslint: 7.25.0
+      eslint-config-prettier: 8.3.0_eslint@7.25.0
       gl-matrix: 3.3.0
+      prettier: 2.4.1
       stylelint: 13.13.1
       stylelint-config-standard: 22.0.0_stylelint@13.13.1
     dev: false
     name: '@rush-temp/arroyo'
     resolution:
-      integrity: sha512-22UWbF4HLC4ruRsjLu5cbv7/g877aWGZSmGRk3ujr88yzHwcW58N0ff5gMeGz7r9hir3oWPZrlfTJsxlKysjnA==
+      integrity: sha512-z2J37gHs6bNC9ZShot5bYQ5FVFKyk+/nmvhdAQzzB32sBddHTBmJOA01LG2Hml+BTMxLJc0ak2sCg9Uk/EwUkw==
       tarball: file:projects/arroyo.tgz
     version: 0.0.0
   file:projects/asset.tgz:
