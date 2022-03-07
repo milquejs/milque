@@ -4349,13 +4349,15 @@ packages:
   file:projects/util.tgz:
     dependencies:
       eslint: 7.25.0
+      eslint-config-prettier: 8.3.0_eslint@7.25.0
+      prettier: 2.4.1
       rollup: 2.47.0
       stylelint: 13.13.1
       stylelint-config-standard: 22.0.0_stylelint@13.13.1
     dev: false
     name: '@rush-temp/util'
     resolution:
-      integrity: sha512-7O48mwkoI7op3xLxcXisUn0wxKZ++S4WegsNd1nUtTEKBOsRswtEkiFqGS3R2aBMJCVv47AfWo1GVblg1/ttpQ==
+      integrity: sha512-SifK3jg2riX4S7i0DqfVt5+6hWsXsAhugYLS/OHdRCMpX/6MPPTKyC72wUJi2vWTFAZTEJZrrv7kdtkjRi8SOw==
       tarball: file:projects/util.tgz
     version: 0.0.0
 specifiers:
