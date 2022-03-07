@@ -4282,6 +4282,8 @@ packages:
       '@rollup/plugin-typescript': 8.2.1_810b5a6d1c7477a73baaceebd2991e4b
       ava: 3.15.0
       eslint: 7.25.0
+      eslint-config-prettier: 8.3.0_eslint@7.25.0
+      prettier: 2.4.1
       rollup: 2.47.0
       rollup-plugin-clear: 2.0.7
       rollup-plugin-dts: 3.0.1_rollup@2.47.0+typescript@4.2.4
@@ -4292,7 +4294,7 @@ packages:
     dev: false
     name: '@rush-temp/random'
     resolution:
-      integrity: sha512-ezGAvx9Ul0mnLA7z/AVNm49OwNjdSujaCHYhQyyfisI9fP3K7VjNG0/BZvY6pVtfUkb9t2Q8fj+RiQe7z3NyCg==
+      integrity: sha512-GjKe81xnW8iCupTV1Wzl6ZNb3LK2jKvYo+R9pj+/x08w32WtG6StY+jWfcEVQ3LTuXWXkAYRkijSiUGIIBHMkA==
       tarball: file:projects/random.tgz
     version: 0.0.0
   file:projects/sandbox.tgz:

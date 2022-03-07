@@ -1,6 +1,11 @@
 {
-    "checkJs": true,
-    "exclude": [
-        "node_modules"
-    ]
+  "compilerOptions": {
+    "target": "ES2021",
+    "lib": ["ES2021", "DOM"],
+    "allowJs": true,
+    "noEmit": true,
+    "checkJs": true
+  },
+  "exclude": ["node_modules"],
+  "include": ["src/**/*.js"]
 }
