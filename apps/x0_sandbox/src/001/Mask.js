@@ -1,4 +1,3 @@
-export class Mask
-{
-    draw(ctx) {}
+export class Mask {
+  draw(ctx) {}
 }

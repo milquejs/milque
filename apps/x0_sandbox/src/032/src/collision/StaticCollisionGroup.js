@@ -1,32 +1,21 @@
 import { CollisionGroup } from './Collision.js';
 
-export class StaticCollisionGroup extends CollisionGroup
-{
-    static get supportedShapes()
-    {
-        return [
-            'aabb',
-            'circle',
-        ];
-    }
+export class StaticCollisionGroup extends CollisionGroup {
+  static get supportedShapes() {
+    return ['aabb', 'circle'];
+  }
 
-    constructor()
-    {
-        super();
-    }
+  constructor() {
+    super();
+  }
 
-    /** @override */
-    create()
-    {
-
-    }
+  /** @override */
+  create() {}
 }
 
-class StaticBody
-{
-    constructor()
-    {
-        this.x = 0;
-        this.y = 0;
-    }
+class StaticBody {
+  constructor() {
+    this.x = 0;
+    this.y = 0;
+  }
 }

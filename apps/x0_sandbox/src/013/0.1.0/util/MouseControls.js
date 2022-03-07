@@ -14,12 +14,12 @@ export const DOWN = CONTEXT.registerState('down', {
 */
 
 export const LEFT_DOWN = CONTEXT.registerState('ldown', {
-    'mouse[0].up': 0,
-    'mouse[0].down': 1,
+  'mouse[0].up': 0,
+  'mouse[0].down': 1,
 });
 export const RIGHT_DOWN = CONTEXT.registerState('rdown', {
-    'mouse[2].up': 0,
-    'mouse[2].down': 1,
+  'mouse[2].up': 0,
+  'mouse[2].down': 1,
 });
 
 export const CLICK = CONTEXT.registerAction('click', 'mouse.up');

@@ -9,22 +9,21 @@ const { ItemManager } = require('./world/item/ItemManager.js');
 const { CommandCenter } = require('./menu/CommandCenter.js');
 const CommandCenterMenu = require('./menu/CommandCenterMenu.js');
 
-async function main()
-{
-    let world = {
-        day: 0,
-        state: {},
-        itemManager: new ItemManager(),
-        commandCenter: new CommandCenter(),
-    };
+async function main() {
+  let world = {
+    day: 0,
+    state: {},
+    itemManager: new ItemManager(),
+    commandCenter: new CommandCenter(),
+  };
 
-    stars.init(world);
-    items.init(world);
-    player.init(world);
-    modules.init(world);
+  stars.init(world);
+  items.init(world);
+  player.init(world);
+  modules.init(world);
 
-    GameSequence.setNextScene(CommandCenterMenu, world);
-    await GameSequence.start();
+  GameSequence.setNextScene(CommandCenterMenu, world);
+  await GameSequence.start();
 }
 
 main();

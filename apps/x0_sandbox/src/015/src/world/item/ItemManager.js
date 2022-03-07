@@ -1,57 +1,47 @@
-class ItemManager
-{
-    constructor()
-    {
-        this.itemStacks = new Map();
-        this.items = new Map();
-        
-        this._nextItemStackId = 1;
-    }
+class ItemManager {
+  constructor() {
+    this.itemStacks = new Map();
+    this.items = new Map();
 
-    clear()
-    {
-        this.items.clear();
-        this.itemStacks.clear();
-    }
+    this._nextItemStackId = 1;
+  }
 
-    registerItem(itemId, item)
-    {
-        this.items.set(itemId, item.setItemId(itemId));
-        return this;
-    }
+  clear() {
+    this.items.clear();
+    this.itemStacks.clear();
+  }
 
-    unregisterItem(itemId)
-    {
-        this.items.delete(itemId);
-        return this;
-    }
+  registerItem(itemId, item) {
+    this.items.set(itemId, item.setItemId(itemId));
+    return this;
+  }
 
-    getItemById(itemId)
-    {
-        return this.items.get(itemId);
-    }
+  unregisterItem(itemId) {
+    this.items.delete(itemId);
+    return this;
+  }
 
-    createItemStack(itemId, stackSize = 1, metadata = {})
-    {
-        let stackId = this.getNextAvailableItemStackId();
-        this.itemStacks.set(stackId, { itemId, stackSize, metadata });
-        return stackId;
-    }
+  getItemById(itemId) {
+    return this.items.get(itemId);
+  }
 
-    destroyItemStack(stackId)
-    {
-        this.itemStacks.delete(stackId);
-    }
+  createItemStack(itemId, stackSize = 1, metadata = {}) {
+    let stackId = this.getNextAvailableItemStackId();
+    this.itemStacks.set(stackId, { itemId, stackSize, metadata });
+    return stackId;
+  }
 
-    getItemStackById(stackId)
-    {
-        return this.itemStacks.get(stackId);
-    }
+  destroyItemStack(stackId) {
+    this.itemStacks.delete(stackId);
+  }
 
-    getNextAvailableItemStackId()
-    {
-        return this._nextItemStackId++;
-    }
+  getItemStackById(stackId) {
+    return this.itemStacks.get(stackId);
+  }
+
+  getNextAvailableItemStackId() {
+    return this._nextItemStackId++;
+  }
 }
 
 module.exports = { ItemManager };

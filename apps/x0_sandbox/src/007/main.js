@@ -10,46 +10,47 @@ import * as SimplePhysics from './SimplePhysics.js';
 document.title = 'village';
 document.addEventListener('DOMContentLoaded', main);
 
-async function main()
-{
-    const display = document.querySelector('display-port');
-    const input = document.querySelector('input-context');
-    const camera = new Camera2D();
-    
-    const ctx = display.canvas.getContext('2d');
-    ctx.imageSmoothingEnabled = false;
+async function main() {
+  const display = document.querySelector('display-port');
+  const input = document.querySelector('input-context');
+  const camera = new Camera2D();
 
-    const world = {
-        display,
-        input,
-    };
+  const ctx = display.canvas.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
 
-    const systems = [
-        TileMap,
-        SimplePhysics,
-        Items,
-        Player,
-    ];
+  const world = {
+    display,
+    input,
+  };
 
-    await SystemUtils.loadSystems(world, systems);
-    SystemUtils.initializeSystems(world, systems);
+  const systems = [TileMap, SimplePhysics, Items, Player];
 
-    display.addEventListener('frame', e => {
-        // Update
-        {
-            const dt = (e.detail.deltaTime / 1000) * 100;
-            SystemUtils.updateSystems(world, dt, systems);
+  await SystemUtils.loadSystems(world, systems);
+  SystemUtils.initializeSystems(world, systems);
 
-            camera.moveTo(world.player.x - display.width / 2, world.player.y - display.height / 2);
-        }
-        // Render
-        {
-            ctx.clearRect(0, 0, display.width, display.height);
-            CanvasView.begin(ctx, camera.getViewMatrix(), camera.getProjectionMatrix());
-            {
-                SystemUtils.renderSystems(world, ctx, systems);
-            }
-            CanvasView.end(ctx);
-        }
-    });
+  display.addEventListener('frame', (e) => {
+    // Update
+    {
+      const dt = (e.detail.deltaTime / 1000) * 100;
+      SystemUtils.updateSystems(world, dt, systems);
+
+      camera.moveTo(
+        world.player.x - display.width / 2,
+        world.player.y - display.height / 2
+      );
+    }
+    // Render
+    {
+      ctx.clearRect(0, 0, display.width, display.height);
+      CanvasView.begin(
+        ctx,
+        camera.getViewMatrix(),
+        camera.getProjectionMatrix()
+      );
+      {
+        SystemUtils.renderSystems(world, ctx, systems);
+      }
+      CanvasView.end(ctx);
+    }
+  });
 }

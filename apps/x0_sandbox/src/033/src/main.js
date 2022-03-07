@@ -4,6 +4,4 @@ import './errorboundary/ErrorDialog.js';
 
 window.addEventListener('DOMContentLoaded', main);
 
-async function main()
-{
-}
+async function main() {}

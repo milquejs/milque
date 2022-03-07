@@ -15,14 +15,14 @@
  * @property {number} chnl The texture channel where the character image is
  *                         found (1 = blue, 2 = green, 4 = red, 8 = alpha,
  *                         15 = all channels).
- * 
+ *
  * @typedef BMFontKerning
  * @property {number} first The first character id.
  * @property {number} second The second character id.
  * @property {number} amount How much the x position should be adjusted when
  *                           drawing the second character immediately following
  *                           the first.
- * 
+ *
  * @typedef BMFontData
  * @property {object} info              This tag holds information on how the
  *                                      font was generated.
@@ -89,103 +89,98 @@
  */
 
 /**
- * @param {string} src 
+ * @param {string} src
  * @returns {BMFontData}
  */
-export async function loadBMFont(src)
-{
-    if (typeof src === 'string')
-    {
-        const response = await fetch(src);
-        const arrayBuffer = await response.arrayBuffer();
-        return loadBMFont(arrayBuffer);
-    }
-    else if (!(src instanceof ArrayBuffer || ArrayBuffer.isView(src)))
-    {
-        throw new Error(
-            'Cannot load from source - must be '
-            + 'an array buffer or fetchable url');
-    }
-    /** @type {ArrayBuffer} */
-    const arrayBuffer = src;
-    return parse(new TextDecoder().decode(arrayBuffer));
+export async function loadBMFont(src) {
+  if (typeof src === 'string') {
+    const response = await fetch(src);
+    const arrayBuffer = await response.arrayBuffer();
+    return loadBMFont(arrayBuffer);
+  } else if (!(src instanceof ArrayBuffer || ArrayBuffer.isView(src))) {
+    throw new Error(
+      'Cannot load from source - must be ' + 'an array buffer or fetchable url'
+    );
+  }
+  /** @type {ArrayBuffer} */
+  const arrayBuffer = src;
+  return parse(new TextDecoder().decode(arrayBuffer));
 }
 
 const TAG_PATTERN = /(.+?)\s+(.*)/;
 const LINE_PATTERN = /(.+)=(.+)/;
 
 /**
- * @param {string} string 
+ * @param {string} string
  * @returns {BMFontData}
  */
-function parse(string)
-{
-    let lines = string.split('\n');
-    let info = {};
-    let common = {};
-    let page = {};
-    let chars = [];
-    let kernings = [];
-    for(let line of lines) {
-        let array = TAG_PATTERN.exec(line);
-        if (!array) {
-            continue;
-        }
-        let [_, tag, props] = array;
-        switch(tag) {
-            case 'info':
-                parseBMLine(info, props);
-                break;
-            case 'common':
-                parseBMLine(common, props);
-                break;
-            case 'page':
-                parseBMLine(page, props);
-                break;
-            case 'chars':
-                // This only has count info. Ignore it.
-                break;
-            case 'char':
-                let char = {};
-                parseBMLine(char, props);
-                if ('id' in char) {
-                    chars.push(char);
-                }
-                break;
-            case 'kerning':
-                let kerning = {};
-                parseBMLine(kerning, props);
-                if ('first' in kerning) {
-                    kernings.push(kerning);
-                }
-                break;
-            default:
-                // Unknown tag.
-        }
+function parse(string) {
+  let lines = string.split('\n');
+  let info = {};
+  let common = {};
+  let page = {};
+  let chars = [];
+  let kernings = [];
+  for (let line of lines) {
+    let array = TAG_PATTERN.exec(line);
+    if (!array) {
+      continue;
     }
-    let data = {
-        info,
-        common,
-        page,
-        chars,
-        kernings,
-    };
-    return data;
+    let [_, tag, props] = array;
+    switch (tag) {
+      case 'info':
+        parseBMLine(info, props);
+        break;
+      case 'common':
+        parseBMLine(common, props);
+        break;
+      case 'page':
+        parseBMLine(page, props);
+        break;
+      case 'chars':
+        // This only has count info. Ignore it.
+        break;
+      case 'char':
+        let char = {};
+        parseBMLine(char, props);
+        if ('id' in char) {
+          chars.push(char);
+        }
+        break;
+      case 'kerning':
+        let kerning = {};
+        parseBMLine(kerning, props);
+        if ('first' in kerning) {
+          kernings.push(kerning);
+        }
+        break;
+      default:
+      // Unknown tag.
+    }
+  }
+  let data = {
+    info,
+    common,
+    page,
+    chars,
+    kernings,
+  };
+  return data;
 }
 
 function parseBMLine(out, line) {
-    let props = line.split(/\s+/);
-    for(let prop of props) {
-        let array = LINE_PATTERN.exec(prop);
-        if (!array) {
-            continue;
-        }
-        let [_, key, value] = array;
-        let result = JSON.parse(`[${value}]`);
-        if (result.length === 1) {
-            out[key] = result[0];
-        } else {
-            out[key] = result;
-        }
+  let props = line.split(/\s+/);
+  for (let prop of props) {
+    let array = LINE_PATTERN.exec(prop);
+    if (!array) {
+      continue;
     }
+    let [_, key, value] = array;
+    let result = JSON.parse(`[${value}]`);
+    if (result.length === 1) {
+      out[key] = result[0];
+    } else {
+      out[key] = result;
+    }
+  }
 }

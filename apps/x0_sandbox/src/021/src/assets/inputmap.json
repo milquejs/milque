@@ -1,34 +1,34 @@
 {
-    "moveUp": [
-        {"key": "keyboard:ArrowUp", "scale": 1},
-        {"key": "keyboard:KeyW", "scale": 1}
-    ],
-    "moveDown": [
-        {"key": "keyboard:ArrowDown", "scale": 1},
-        {"key": "keyboard:KeyS", "scale": 1}
-    ],
-    "moveLeft": [
-        {"key": "keyboard:ArrowLeft", "scale": 1},
-        {"key": "keyboard:KeyA", "scale": 1}
-    ],
-    "moveRight": [
-        {"key": "keyboard:ArrowRight", "scale": 1},
-        {"key": "keyboard:KeyD", "scale": 1}
-    ],
-    "mainAction": [
-        {"key": "keyboard:KeyE", "event": "down"},
-        {"key": "keyboard:Space", "event": "down"}
-    ],
-    "inventory": [
-        {"key": "keyboard:KeyF", "event": "up" },
-        {"key": "keyboard:KeyI", "event": "up"}
-    ],
-    "sprint": [
-        {"key": "keyboard:ShiftLeft", "scale": 1},
-        {"key": "keyboard:ShiftRight", "scale": 1}
-    ],
-    "sneak": [
-        {"key": "keyboard:ControlLeft", "scale": 1},
-        {"key": "keyboard:ControlRight", "scale": 1}
-    ]
+  "moveUp": [
+    { "key": "keyboard:ArrowUp", "scale": 1 },
+    { "key": "keyboard:KeyW", "scale": 1 }
+  ],
+  "moveDown": [
+    { "key": "keyboard:ArrowDown", "scale": 1 },
+    { "key": "keyboard:KeyS", "scale": 1 }
+  ],
+  "moveLeft": [
+    { "key": "keyboard:ArrowLeft", "scale": 1 },
+    { "key": "keyboard:KeyA", "scale": 1 }
+  ],
+  "moveRight": [
+    { "key": "keyboard:ArrowRight", "scale": 1 },
+    { "key": "keyboard:KeyD", "scale": 1 }
+  ],
+  "mainAction": [
+    { "key": "keyboard:KeyE", "event": "down" },
+    { "key": "keyboard:Space", "event": "down" }
+  ],
+  "inventory": [
+    { "key": "keyboard:KeyF", "event": "up" },
+    { "key": "keyboard:KeyI", "event": "up" }
+  ],
+  "sprint": [
+    { "key": "keyboard:ShiftLeft", "scale": 1 },
+    { "key": "keyboard:ShiftRight", "scale": 1 }
+  ],
+  "sneak": [
+    { "key": "keyboard:ControlLeft", "scale": 1 },
+    { "key": "keyboard:ControlRight", "scale": 1 }
+  ]
 }

@@ -1,19 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="utf-8">
-        <title>Tiles</title>
+  <head>
+    <meta charset="utf-8" />
+    <title>Tiles</title>
 
-        <style>body { margin: 0; }</style>
-    </head>
-    <body>
-        <display-port debug full></display-port>
-        <script type="module">
-            import { Game } from './milque.js';
-            import { MainScene } from './MainScene.js';
+    <style>
+      body {
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <display-port debug full></display-port>
+    <script type="module">
+      import { Game } from './milque.js';
+      import { MainScene } from './MainScene.js';
 
-            Game.registerScene('0', MainScene);
-            Game.start('0');
-        </script>
-    </body>
+      Game.registerScene('0', MainScene);
+      Game.start('0');
+    </script>
+  </body>
 </html>

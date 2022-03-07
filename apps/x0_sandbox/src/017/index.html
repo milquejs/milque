@@ -1,276 +1,291 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <title>Near Light</title>
-        <style>
-            html, body { margin: 0; }
-        </style>
-        <script src="./Util.js"></script>
+  <head>
+    <title>Near Light</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+      }
+    </style>
+    <script src="./Util.js"></script>
 
-        <!-- ---------------------------------------------------------------------------- UTILS -->
-        <script>
-            function createStat(name, statElement)
-            {
-                return {
-                    name,
-                    element: statElement,
-                    get value()
-                    {
-                        let progress = statElement.querySelector('progress');
-                        return Number(progress.value);
-                    },
-                    set value(value)
-                    {
-                        let progress = statElement.querySelector('progress');
-                        progress.value = value > progress.max ? progress.max : value < 0 ? 0 : value;
-                    },
-                    get capacity()
-                    {
-                        let progress = statElement.querySelector('progress');
-                        return Number(progress.max);
-                    },
-                    set capacity(value)
-                    {
-                        let progress = statElement.querySelector('progress');
-                        progress.max = value < 0 ? 0 : value;
-                    }
-                }
-            }
-        </script>
-        <!-- ---------------------------------------------------------------------------- SHIP -->
-        <template id="ship-object">
-            <fieldset id="ship">
-                <legend>Ship</legend>
-                <section id="stats">
-                    <p class="stat">
-                        <label for="hull" class="name">Hull</label>
-                        <progress id="hull"></progress>
-                    </p>
-                    <p class="stat">
-                        <label for="fuel" class="name">Fuel</label>
-                        <progress id="fuel"></progress>
-                    </p>
-                    <p class="stat">
-                        <label for="energy" class="name">Energy</label>
-                        <progress id="energy"></progress>
-                    </p>
-                </section>
-                <fieldset id="crew">
-                    <legend>Crew</legend>
-                    <ul>
-                        <slot name="crew"></slot>
-                    </ul>
-                </fieldset>
-                <slot name="rooms"></slot>
-            </fieldset>
-            <dialog id="crew-options" open>
-                <h1>???</h1>
-                <label for="room-select">Room</label>
-                <select id="room-select" autofocus>
-                    <option>Room 1</option>
-                    <option>Room 2</option>
-                </select>
-                <button>Move to Front</button>
-                <button>Move to Back</button>
-                <button onclick="this.parentElement.toggleAttribute('open')">Close</button>
-            </dialog>
-            <style>
-                .stat {
-                    display: inline-block;
-                    position: relative;
-                    margin: 0;
-                }
-                .stat label {
-                    position: absolute;
-                    left: 50%;
-                    top: 0;
-                    transform: translate(-50%, -50%);
-                }
-            </style>
-        </template>
-        <script>
-            class ShipObject extends HTMLElement
-            {
-                constructor()
-                {
-                    super();
-                    this.attachShadow({ mode: 'open' }).appendChild(
-                        document.querySelector('template#ship-object').content.cloneNode(true));
+    <!-- ---------------------------------------------------------------------------- UTILS -->
+    <script>
+      function createStat(name, statElement) {
+        return {
+          name,
+          element: statElement,
+          get value() {
+            let progress = statElement.querySelector('progress');
+            return Number(progress.value);
+          },
+          set value(value) {
+            let progress = statElement.querySelector('progress');
+            progress.value =
+              value > progress.max ? progress.max : value < 0 ? 0 : value;
+          },
+          get capacity() {
+            let progress = statElement.querySelector('progress');
+            return Number(progress.max);
+          },
+          set capacity(value) {
+            let progress = statElement.querySelector('progress');
+            progress.max = value < 0 ? 0 : value;
+          },
+        };
+      }
+    </script>
+    <!-- ---------------------------------------------------------------------------- SHIP -->
+    <template id="ship-object">
+      <fieldset id="ship">
+        <legend>Ship</legend>
+        <section id="stats">
+          <p class="stat">
+            <label for="hull" class="name">Hull</label>
+            <progress id="hull"></progress>
+          </p>
+          <p class="stat">
+            <label for="fuel" class="name">Fuel</label>
+            <progress id="fuel"></progress>
+          </p>
+          <p class="stat">
+            <label for="energy" class="name">Energy</label>
+            <progress id="energy"></progress>
+          </p>
+        </section>
+        <fieldset id="crew">
+          <legend>Crew</legend>
+          <ul>
+            <slot name="crew"></slot>
+          </ul>
+        </fieldset>
+        <slot name="rooms"></slot>
+      </fieldset>
+      <dialog id="crew-options" open>
+        <h1>???</h1>
+        <label for="room-select">Room</label>
+        <select id="room-select" autofocus>
+          <option>Room 1</option>
+          <option>Room 2</option>
+        </select>
+        <button>Move to Front</button>
+        <button>Move to Back</button>
+        <button onclick="this.parentElement.toggleAttribute('open')">
+          Close
+        </button>
+      </dialog>
+      <style>
+        .stat {
+          display: inline-block;
+          position: relative;
+          margin: 0;
+        }
+        .stat label {
+          position: absolute;
+          left: 50%;
+          top: 0;
+          transform: translate(-50%, -50%);
+        }
+      </style>
+    </template>
+    <script>
+      class ShipObject extends HTMLElement {
+        constructor() {
+          super();
+          this.attachShadow({ mode: 'open' }).appendChild(
+            document
+              .querySelector('template#ship-object')
+              .content.cloneNode(true)
+          );
 
-                    this.stats = {
-                        hull: createStat('hull', this.shadowRoot.querySelector('#hull')),
-                        fuel: createStat('fuel', this.shadowRoot.querySelector('#fuel')),
-                        energy: createStat('energy', this.shadowRoot.querySelector('#energy')),
-                    };
-                }
+          this.stats = {
+            hull: createStat('hull', this.shadowRoot.querySelector('#hull')),
+            fuel: createStat('fuel', this.shadowRoot.querySelector('#fuel')),
+            energy: createStat(
+              'energy',
+              this.shadowRoot.querySelector('#energy')
+            ),
+          };
+        }
 
-                get rooms() { return this.shadowRoot.querySelector('slot[name="rooms"]'); }
-                get crew() { return this.shadowRoot.querySelector('slot[name="crew"]'); }
+        get rooms() {
+          return this.shadowRoot.querySelector('slot[name="rooms"]');
+        }
+        get crew() {
+          return this.shadowRoot.querySelector('slot[name="crew"]');
+        }
 
-                assignedRooms()
-                {
-                    return this.shadowRoot.querySelector('slot[name="rooms"]').assignedNodes();
-                }
+        assignedRooms() {
+          return this.shadowRoot
+            .querySelector('slot[name="rooms"]')
+            .assignedNodes();
+        }
 
-                assignedCrew()
-                {
-                    return this.shadowRoot.querySelector('slot[name="crew"]').assignedNodes();
-                }
-            }
-            window.customElements.define('ship-object', ShipObject);
-        </script>
-        <!-- ---------------------------------------------------------------------------- ROOM -->
-        <template id="ship-room">
-            <fieldset>
-                <legend id="name">Room</legend>
-                <section id="stats">
-                    <p class="stat">
-                        <button class="add" onclick="onProgress(this.parentElement.querySelector('progress'), 1)">+</button>
-                        <button class="sub" onclick="onProgress(this.parentElement.querySelector('progress'), -1)">-</button>
-                        <label for="energy" class="name">Energy</label>
-                        <progress id="energy" value="0" max="2"></progress>
-                    </p>
-                </section>
-                <ul id="crew-list">
-                    <li>
-                        <button>...</button>
-                        <label>---</label>
-                    </li>
-                    <li>
-                        <button>...</button>
-                        <label>---</label>
-                    </li>
-                    <li>
-                        <button>...</button>
-                        <label>---</label>
-                    </li>
-                </ul>
-            </fieldset>
-            <style>
-                .stat {
-                    display: inline-block;
-                    position: relative;
-                    margin: 0;
-                }
-            </style>
-            <script>
-                function onProgress(target, amount)
-                {
-                    let newValue = Number(target.value) + amount;
-                    if (newValue < 0) target.value = 0;
-                    else if (newValue > target.max) target.value = target.max;
-                    else target.value = newValue;
-                } 
-            </script>
-        </template>
-        <script>
-            class ShipRoom extends HTMLElement
-            {
-                /** @override */
-                static get observedAttributes()
-                {
-                    return ['name'];
-                }
+        assignedCrew() {
+          return this.shadowRoot
+            .querySelector('slot[name="crew"]')
+            .assignedNodes();
+        }
+      }
+      window.customElements.define('ship-object', ShipObject);
+    </script>
+    <!-- ---------------------------------------------------------------------------- ROOM -->
+    <template id="ship-room">
+      <fieldset>
+        <legend id="name">Room</legend>
+        <section id="stats">
+          <p class="stat">
+            <button
+              class="add"
+              onclick="onProgress(this.parentElement.querySelector('progress'), 1)"
+            >
+              +
+            </button>
+            <button
+              class="sub"
+              onclick="onProgress(this.parentElement.querySelector('progress'), -1)"
+            >
+              -
+            </button>
+            <label for="energy" class="name">Energy</label>
+            <progress id="energy" value="0" max="2"></progress>
+          </p>
+        </section>
+        <ul id="crew-list">
+          <li>
+            <button>...</button>
+            <label>---</label>
+          </li>
+          <li>
+            <button>...</button>
+            <label>---</label>
+          </li>
+          <li>
+            <button>...</button>
+            <label>---</label>
+          </li>
+        </ul>
+      </fieldset>
+      <style>
+        .stat {
+          display: inline-block;
+          position: relative;
+          margin: 0;
+        }
+      </style>
+      <script>
+        function onProgress(target, amount) {
+          let newValue = Number(target.value) + amount;
+          if (newValue < 0) target.value = 0;
+          else if (newValue > target.max) target.value = target.max;
+          else target.value = newValue;
+        }
+      </script>
+    </template>
+    <script>
+      class ShipRoom extends HTMLElement {
+        /** @override */
+        static get observedAttributes() {
+          return ['name'];
+        }
 
-                constructor()
-                {
-                    super();
-                    this.attachShadow({ mode: 'open' }).appendChild(
-                        document.querySelector('template#ship-room').content.cloneNode(true));
-                }
+        constructor() {
+          super();
+          this.attachShadow({ mode: 'open' }).appendChild(
+            document.querySelector('template#ship-room').content.cloneNode(true)
+          );
+        }
 
-                /** @override */
-                connectedCallback()
-                {
-                    let ship = this.parentElement;
-                }
+        /** @override */
+        connectedCallback() {
+          let ship = this.parentElement;
+        }
 
-                /** @override */
-                attributeChangedCallback(attribute, prev, value)
-                {
-                    switch(attribute)
-                    {
-                        case 'name':
-                            this.shadowRoot.querySelector('#name').textContent = value;
-                            break;
-                    }
-                }
+        /** @override */
+        attributeChangedCallback(attribute, prev, value) {
+          switch (attribute) {
+            case 'name':
+              this.shadowRoot.querySelector('#name').textContent = value;
+              break;
+          }
+        }
 
-                get name() { return this.getAttribute('name'); }
-                set name(value) { this.setAttribute('name', value); }
-            }
-            window.customElements.define('ship-room', ShipRoom);
-        </script>
-        <!-- ---------------------------------------------------------------------------- CREW -->
-        <template id="ship-crew">
-            <li>
-                <label id="name">???</label>
-            </li>
-        </template>
-        <script>
-            class ShipCrew extends HTMLElement
-            {
-                /** @override */
-                static get observedAttributes()
-                {
-                    return ['name', 'location'];
-                }
+        get name() {
+          return this.getAttribute('name');
+        }
+        set name(value) {
+          this.setAttribute('name', value);
+        }
+      }
+      window.customElements.define('ship-room', ShipRoom);
+    </script>
+    <!-- ---------------------------------------------------------------------------- CREW -->
+    <template id="ship-crew">
+      <li>
+        <label id="name">???</label>
+      </li>
+    </template>
+    <script>
+      class ShipCrew extends HTMLElement {
+        /** @override */
+        static get observedAttributes() {
+          return ['name', 'location'];
+        }
 
-                constructor()
-                {
-                    super();
-                    this.attachShadow({ mode: 'open' }).appendChild(
-                        document.querySelector('template#ship-crew').content.cloneNode(true));
-                }
+        constructor() {
+          super();
+          this.attachShadow({ mode: 'open' }).appendChild(
+            document.querySelector('template#ship-crew').content.cloneNode(true)
+          );
+        }
 
-                /** @override */
-                connectedCallback()
-                {
-                }
+        /** @override */
+        connectedCallback() {}
 
-                /** @override */
-                attributeChangedCallback(attribute, prev, value)
-                {
-                    switch(attribute)
-                    {
-                        case 'name':
-                            this.shadowRoot.querySelector('#name').textContent = value;
-                            break;
-                        case 'location':
-                            if (prev !== value)
-                            {
+        /** @override */
+        attributeChangedCallback(attribute, prev, value) {
+          switch (attribute) {
+            case 'name':
+              this.shadowRoot.querySelector('#name').textContent = value;
+              break;
+            case 'location':
+              if (prev !== value) {
+              }
+              if (this.parentShip) {
+                console.log(this.parentShip.rooms);
+              }
+              break;
+          }
+        }
 
-                            }
-                            if (this.parentShip)
-                            {
-                                console.log(this.parentShip.rooms);
-                            }
-                            break;
-                    }
-                }
+        get name() {
+          return this.getAttribute('name');
+        }
+        set name(value) {
+          this.setAttribute('name', value);
+        }
 
-                get name() { return this.getAttribute('name'); }
-                set name(value) { this.setAttribute('name', value); }
-
-                get location()
-                {
-                    let rooms = this.parentElement.rooms;
-                    console.log(rooms);
-                    return this.getAttribute('location');
-                }
-                set location(value) { this.setAttribute('location', value); }
-            }
-            window.customElements.define('ship-crew', ShipCrew);
-        </script>
-        <!-- ---------------------------------------------------------------------------- OTHER -->
-    </head>
-    <body>
-        <ship-object>
-            <ship-crew name="Andrew" location="Room - Engine" slot="crew"></ship-crew>
-            <ship-crew name="Jose" slot="crew"></ship-crew>
-            <ship-crew name="George" slot="crew"></ship-crew>
-            <ship-room name="Room - Engine" slot="rooms"></ship-room>
-            <ship-room name="Room - Command" slot="rooms"></ship-room>
-        </ship-object>
-    </body>
+        get location() {
+          let rooms = this.parentElement.rooms;
+          console.log(rooms);
+          return this.getAttribute('location');
+        }
+        set location(value) {
+          this.setAttribute('location', value);
+        }
+      }
+      window.customElements.define('ship-crew', ShipCrew);
+    </script>
+    <!-- ---------------------------------------------------------------------------- OTHER -->
+  </head>
+  <body>
+    <ship-object>
+      <ship-crew name="Andrew" location="Room - Engine" slot="crew"></ship-crew>
+      <ship-crew name="Jose" slot="crew"></ship-crew>
+      <ship-crew name="George" slot="crew"></ship-crew>
+      <ship-room name="Room - Engine" slot="rooms"></ship-room>
+      <ship-room name="Room - Command" slot="rooms"></ship-room>
+    </ship-object>
+  </body>
 </html>

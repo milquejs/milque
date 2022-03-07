@@ -1,67 +1,80 @@
 <!DOCTYPE html>
 
 <html lang="en">
-    <head>
-        <meta charset="utf-8">
-        <title>Game</title>
+  <head>
+    <meta charset="utf-8" />
+    <title>Game</title>
 
-        <style>
-            html { width: 100vw; height: 100vh; }
-            body { margin: 0; width: 100%; height: 100%; }
-            dialog { position: absolute; left: 0; right: 0; top: 0; bottom: 0; }
-        </style>
+    <style>
+      html {
+        width: 100vw;
+        height: 100vh;
+      }
+      body {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+      }
+      dialog {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 0;
+        bottom: 0;
+      }
+    </style>
 
-        <script type="module" src="../../packages/display/src/index.js"></script>
-    </head>
-    <body>
-        <style>
-            article {
-                display: flex;
-                flex-direction: column;
-                width: 100%;
-                height: 100%;
-            }
+    <script type="module" src="../../packages/display/src/index.js"></script>
+  </head>
+  <body>
+    <style>
+      article {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        height: 100%;
+      }
 
-            header {
-                display: flex;
-                flex-direction: row;
-                overflow: auto;
-            }
-            header:not(:empty) {
-                flex: 1;
-            }
-            header > * {
-                flex: 1;
-            }
+      header {
+        display: flex;
+        flex-direction: row;
+        overflow: auto;
+      }
+      header:not(:empty) {
+        flex: 1;
+      }
+      header > * {
+        flex: 1;
+      }
 
-            footer {
-                display: flex;
-                flex-direction: row;
-                overflow: auto;
-            }
-            footer:not(:empty) {
-                flex: 1;
-            }
-            footer > * {
-                flex: 1;
-            }
+      footer {
+        display: flex;
+        flex-direction: row;
+        overflow: auto;
+      }
+      footer:not(:empty) {
+        flex: 1;
+      }
+      footer > * {
+        flex: 1;
+      }
 
-            section {
-                outline: 1px solid black;
-            }
+      section {
+        outline: 1px solid black;
+      }
 
-            .content {
-                height: 80%;
-            }
-        </style>
-        <article>
-            <header></header>
-            <div class="content">
-                <display-port mode="fit" id="main" debug></display-port>
-            </div>
-            <footer></footer>
-        </article>
+      .content {
+        height: 80%;
+      }
+    </style>
+    <article>
+      <header></header>
+      <div class="content">
+        <display-port mode="fit" id="main" debug></display-port>
+      </div>
+      <footer></footer>
+    </article>
 
-        <script type="module" src="main.js"></script>
-    </body>
+    <script type="module" src="main.js"></script>
+  </body>
 </html>

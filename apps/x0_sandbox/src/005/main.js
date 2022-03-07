@@ -3,9 +3,8 @@ import * as MainStage from './MainStage.js';
 
 document.title = 'spacetrain';
 
-function main()
-{
-    Game.start(MainStage);
+function main() {
+  Game.start(MainStage);
 }
 
 main();

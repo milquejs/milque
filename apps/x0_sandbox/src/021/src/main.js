@@ -1,10 +1,10 @@
 import {
-    InputContext,
-    SceneGraph,
-    EntityManager,
-    AxisAlignedBoundingBoxGraph,
-    CanvasView2D,
-    AssetLoader,
+  InputContext,
+  SceneGraph,
+  EntityManager,
+  AxisAlignedBoundingBoxGraph,
+  CanvasView2D,
+  AssetLoader,
 } from 'milque';
 
 import { World } from './World.js';
@@ -44,102 +44,87 @@ document.addEventListener('DOMContentLoaded', main);
 const PlayerControlled = {};
 
 const ENTITY_COMPONENT_FACTORY_MAP = {
-    Transform,
-    Renderable,
-    Motion,
-    PlayerControlled,
-    Collidable,
-    GameObject,
-    Sprite,
-    Solid,
-    Openable,
-    RenderWallInfo,
+  Transform,
+  Renderable,
+  Motion,
+  PlayerControlled,
+  Collidable,
+  GameObject,
+  Sprite,
+  Solid,
+  Openable,
+  RenderWallInfo,
 };
 
-async function setup()
-{
-    const display = document.querySelector('display-port');
-    const input = new InputContext(INPUT_MAP);
-    document.body.appendChild(input);
-    const view = new CanvasView2D(display);
+async function setup() {
+  const display = document.querySelector('display-port');
+  const input = new InputContext(INPUT_MAP);
+  document.body.appendChild(input);
+  const view = new CanvasView2D(display);
 
-    const sceneGraph = new SceneGraph();
-    const aabbGraph = new AxisAlignedBoundingBoxGraph();
-    const entityManager = new EntityManager({
-        componentFactoryMap: ENTITY_COMPONENT_FACTORY_MAP,
-    });
-    AssetLoader.defineAssetLoader('atlas', TextureAtlasLoader.loadTextureAtlas);
-    const assets = await AssetLoader.loadAssetMap(ASSET_MAP);
+  const sceneGraph = new SceneGraph();
+  const aabbGraph = new AxisAlignedBoundingBoxGraph();
+  const entityManager = new EntityManager({
+    componentFactoryMap: ENTITY_COMPONENT_FACTORY_MAP,
+  });
+  AssetLoader.defineAssetLoader('atlas', TextureAtlasLoader.loadTextureAtlas);
+  const assets = await AssetLoader.loadAssetMap(ASSET_MAP);
 
-    return {
-        display,
-        input,
-        view,
-        sceneGraph,
-        aabbGraph,
-        entityManager,
-        assets,
-    };
+  return {
+    display,
+    input,
+    view,
+    sceneGraph,
+    aabbGraph,
+    entityManager,
+    assets,
+  };
 }
 
-async function main()
-{
-    const world = World.provide(await setup());
+async function main() {
+  const world = World.provide(await setup());
 
-    const {
-        entityManager,
-        sceneGraph,
-        aabbGraph,
-        input,
-        display,
-        view,
-        assets,
-    } = world;
-    
-    const systems = [
-        new MotionSystem(entityManager),
-        new CameraSystem(entityManager, view, 4),
-        new PhysicsSystem(entityManager, aabbGraph),
-        new RenderSystem(entityManager, sceneGraph, aabbGraph, view)
-            .registerRenderer('sprite', SpriteRenderer)
-            .registerRenderer('wall', WallRenderer)
-            .registerRenderer('null', NullRenderer),
-        new GameObjectSystem(entityManager),
-    ];
+  const { entityManager, sceneGraph, aabbGraph, input, display, view, assets } =
+    world;
 
-    const rooms = [
-        createRoom(0, 0, 128, 128),
-    ];
-    const player = new Player();
-    const lever = new Lever();
+  const systems = [
+    new MotionSystem(entityManager),
+    new CameraSystem(entityManager, view, 4),
+    new PhysicsSystem(entityManager, aabbGraph),
+    new RenderSystem(entityManager, sceneGraph, aabbGraph, view)
+      .registerRenderer('sprite', SpriteRenderer)
+      .registerRenderer('wall', WallRenderer)
+      .registerRenderer('null', NullRenderer),
+    new GameObjectSystem(entityManager),
+  ];
 
-    display.addEventListener('frame', e => {
-        // Update
-        {
-            const dt = e.detail.deltaTime / 1000;
-            input.poll();
+  const rooms = [createRoom(0, 0, 128, 128)];
+  const player = new Player();
+  const lever = new Lever();
 
-            for(let system of systems)
-            {
-                if ('update' in system)
-                {
-                    system.update(dt);
-                }
-            }
+  display.addEventListener('frame', (e) => {
+    // Update
+    {
+      const dt = e.detail.deltaTime / 1000;
+      input.poll();
+
+      for (let system of systems) {
+        if ('update' in system) {
+          system.update(dt);
         }
+      }
+    }
 
-        // Render
-        {
-            const ctx = e.detail.context;
-            ctx.clearRect(0, 0, display.width, display.height);
+    // Render
+    {
+      const ctx = e.detail.context;
+      ctx.clearRect(0, 0, display.width, display.height);
 
-            for(let system of systems)
-            {
-                if ('render' in system)
-                {
-                    system.render(ctx);
-                }
-            }
+      for (let system of systems) {
+        if ('render' in system) {
+          system.render(ctx);
         }
-    });
+      }
+    }
+  });
 }

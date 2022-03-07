@@ -1,4 +1,4 @@
-import { AxisBinding, ButtonBinding } from '@milque/input'
+import { AxisBinding, ButtonBinding } from '@milque/input';
 
 export const MoveLeft = ButtonBinding.fromString('moveLeft', 'Keyboard.KeyA');
 export const MoveRight = ButtonBinding.fromString('moveRight', 'Keyboard.KeyD');

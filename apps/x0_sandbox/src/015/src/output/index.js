@@ -6,10 +6,10 @@ const branch = require('./branch.js');
 const timeout = require('./timeout.js');
 
 module.exports = {
-    ask,
-    say,
-    pause,
-    style,
-    branch,
-    timeout,
+  ask,
+  say,
+  pause,
+  style,
+  branch,
+  timeout,
 };

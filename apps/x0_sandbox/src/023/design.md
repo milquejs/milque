@@ -11,6 +11,7 @@ You take care of a cactus.
 - It will play with it.
 
 It has life stages:
+
 - Egg -> Death (happy or sad)
 
 So it has a happiness meter (that is hidden). You can see it on its face.

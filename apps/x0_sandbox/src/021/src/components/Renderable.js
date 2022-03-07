@@ -1,9 +1,8 @@
 export const Renderable = {
-    create(props)
-    {
-        const { renderType = 'null' } = props;
-        return {
-            renderType,
-        };
-    }
+  create(props) {
+    const { renderType = 'null' } = props;
+    return {
+      renderType,
+    };
+  },
 };

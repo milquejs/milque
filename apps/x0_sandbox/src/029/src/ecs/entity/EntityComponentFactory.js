@@ -1,42 +1,35 @@
 import { ComponentFactory } from '../component/factory/ComponentFactory.js';
 
-export class EntityComponentFactory extends ComponentFactory
-{
-    constructor()
-    {
-        super();
-        
-        this.instances = {};
-    }
+export class EntityComponentFactory extends ComponentFactory {
+  constructor() {
+    super();
 
-    /** @override */
-    create(entityId)
-    {
-        this.instances[entityId] = { ref: null };
-    }
+    this.instances = {};
+  }
 
-    /** @override */
-    delete(entityId)
-    {
-        this.instances[entityId] = undefined;
-    }
+  /** @override */
+  create(entityId) {
+    this.instances[entityId] = { ref: null };
+  }
 
-    /** @override */
-    get(entityId)
-    {
-        return this.instances[entityId].ref;
-    }
+  /** @override */
+  delete(entityId) {
+    this.instances[entityId] = undefined;
+  }
 
-    /** @override */
-    has(entityId)
-    {
-        let instance = this.instances[entityId];
-        return Boolean(instance && instance.ref);
-    }
+  /** @override */
+  get(entityId) {
+    return this.instances[entityId].ref;
+  }
 
-    /** @override */
-    clear()
-    {
-        this.instances = {};
-    }
+  /** @override */
+  has(entityId) {
+    let instance = this.instances[entityId];
+    return Boolean(instance && instance.ref);
+  }
+
+  /** @override */
+  clear() {
+    this.instances = {};
+  }
 }

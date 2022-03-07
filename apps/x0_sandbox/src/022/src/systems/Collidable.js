@@ -1,6 +1,5 @@
-export function Collidable()
-{
-    return {
-        collisions: [],
-    };
+export function Collidable() {
+  return {
+    collisions: [],
+  };
 }

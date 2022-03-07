@@ -4309,15 +4309,17 @@ packages:
     dependencies:
       chokidar: 3.5.1
       eslint: 7.25.0
+      eslint-config-prettier: 8.3.0_eslint@7.25.0
       fflate: 0.6.10
       gl-matrix: 3.3.0
       http-server: 0.12.3
+      prettier: 2.4.1
       stylelint: 13.13.1
       stylelint-config-standard: 22.0.0_stylelint@13.13.1
     dev: false
     name: '@rush-temp/sandbox'
     resolution:
-      integrity: sha512-UOKFjVDT18kmBd70hOz9IlV9vhfcpL1/XjuAASugGYChdMja6+OplcptZ9XM1KPp1DA0nbTphv/5j8SaRgY/0g==
+      integrity: sha512-Qy5MNLklJ4zJ4jvE3l918oCdJmFl+St2QsWzZ3HS6iZ7nH+kQsPm4O1pINBPVpFPpwQz+Q1Z2e6xolObfdxnOg==
       tarball: file:projects/sandbox.tgz
     version: 0.0.0
   file:projects/scene.tgz:

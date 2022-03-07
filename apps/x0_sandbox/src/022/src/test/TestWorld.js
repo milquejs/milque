@@ -21,80 +21,71 @@ import { GameObjectSystem } from '../systems/GameObjectSystem.js';
 import { createWall } from './Wall.js';
 import { Player } from './Player.js';
 
-export async function main()
-{
-    const display = document.querySelector('display-port');
-    const ctx = display.canvas.getContext('2d');
-    const inputSource = InputSource.from(display);
-    const input = new InputContext()
-        .setInputMap(INPUT_MAP)
-        .attach(inputSource);
-    const view = new CanvasView2D(display);
+export async function main() {
+  const display = document.querySelector('display-port');
+  const ctx = display.canvas.getContext('2d');
+  const inputSource = InputSource.from(display);
+  const input = new InputContext().setInputMap(INPUT_MAP).attach(inputSource);
+  const view = new CanvasView2D(display);
 
-    const entityManager = new EntityManager({ strictMode: true })
-        .register('Player')
-        .register('Wall')
-        .register(Collidable)
-        .register(GameObject)
-        .register(Transform)
-        .register(Motion)
-        .register(CollisionMask);
+  const entityManager = new EntityManager({ strictMode: true })
+    .register('Player')
+    .register('Wall')
+    .register(Collidable)
+    .register(GameObject)
+    .register(Transform)
+    .register(Motion)
+    .register(CollisionMask);
 
-    const systems = {
-        motion: new MotionSystem(entityManager),
-        collision: new CollisionSystem(entityManager),
-        gameObject: new GameObjectSystem(entityManager),
-    };
+  const systems = {
+    motion: new MotionSystem(entityManager),
+    collision: new CollisionSystem(entityManager),
+    gameObject: new GameObjectSystem(entityManager),
+  };
 
-    const player = new Player(entityManager, input, view);
-    createWall(entityManager, -100, 0, 100, 8);
-    createWall(entityManager, -100, 8, -100 + 16, 100);
-    createWall(entityManager, 100 - 16, 8, 100, 100);
+  const player = new Player(entityManager, input, view);
+  createWall(entityManager, -100, 0, 100, 8);
+  createWall(entityManager, -100, 8, -100 + 16, 100);
+  createWall(entityManager, 100 - 16, 8, 100, 100);
 
-    const world = World.provide({
-        display,
-        input,
-        view,
-        entityManager,
-        player,
-        systems,
-        tileMap,
-    });
+  const world = World.provide({
+    display,
+    input,
+    view,
+    entityManager,
+    player,
+    systems,
+    tileMap,
+  });
 
-    display.addEventListener('frame', ({ detail: { deltaTime } }) => {
-        const dt = deltaTime / 1000;
-        inputSource.poll();
+  display.addEventListener('frame', ({ detail: { deltaTime } }) => {
+    const dt = deltaTime / 1000;
+    inputSource.poll();
 
-        updateWorld(dt, world);
-        renderWorld(ctx, world);
-    });
+    updateWorld(dt, world);
+    renderWorld(ctx, world);
+  });
 }
 
-function updateWorld(dt, world)
-{
-    const { systems } = world;
-    for(let system of Object.values(systems))
-    {
-        if ('update' in system)
-        {
-            system.update(dt);
-        }
+function updateWorld(dt, world) {
+  const { systems } = world;
+  for (let system of Object.values(systems)) {
+    if ('update' in system) {
+      system.update(dt);
     }
+  }
 }
 
-function renderWorld(ctx, world)
-{
-    const { systems, view } = world;
-    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-    view.transformCanvas(ctx);
-    {
-        for(let system of Object.values(systems))
-        {
-            if ('render' in system)
-            {
-                system.render(ctx);
-            }
-        }
+function renderWorld(ctx, world) {
+  const { systems, view } = world;
+  ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+  view.transformCanvas(ctx);
+  {
+    for (let system of Object.values(systems)) {
+      if ('render' in system) {
+        system.render(ctx);
+      }
     }
-    ctx.setTransform();
+  }
+  ctx.setTransform();
 }

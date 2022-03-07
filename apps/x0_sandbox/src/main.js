@@ -39,57 +39,65 @@ import { AssetPipeline } from './loader/AssetPipeline.js';
  */
 
 window.addEventListener('DOMContentLoaded', main);
-async function main()
-{
-    /** @type {DisplayPort} */
-    const display = document.querySelector('#display');
-    /** @type {InputContext} */
-    const inputs = document.querySelector('#inputs').getContext('axisbutton');
-    /** @type {AssetPack} */
-    const assets = document.querySelector('#assets');
-    let promise = new Promise((resolve, reject) => {
-        assets.addEventListener('load', resolve);
-        assets.addEventListener('error', reject);
-    });
-    assets.src = 'res.pack';
-    await promise;
-    const pipeline = new AssetPipeline(assets);
-    await pipeline.pipe('res/**/*.md', async (assetData, uri) =>
-        assets.cacheAsset('txt:' + uri.substring(4), await loadText(assetData)));
-    await pipeline.pipe('res/**/*.txt', async (assetData, uri) =>
-        assets.cacheAsset('txt:' + uri.substring(4), await loadText(assetData)));
-    await pipeline.pipe('res/**/*.png', async (assetData, uri) =>
-        assets.cacheAsset('image:' + uri.substring(4), await loadImage(assetData, 'image/png')));
-    await pipeline.pipe('res/**/*.obj', async (assetData, uri) =>
-        assets.cacheAsset('obj:' + uri.substring(4), await loadOBJ(assetData)));
-    await pipeline.pipe('res/**/*.atlas', async (assetData, uri) =>
-        assets.cacheAsset('atlas:' + uri.substring(4), await loadAtlas(assetData)));
-    await pipeline.pipe('res/**/*.fnt', async (assetData, uri) =>
-        assets.cacheAsset('fnt:' + uri.substring(4), await loadBMFont(assetData)));
-    await pipeline.pipe('res/**/*.wav', async (assetData, uri) => {
-        let audioContext = Sound.getAudioContext();
-        let audioBuffer = await loadAudioBuffer(assetData, audioContext);
-        let sound = new Sound(audioContext, audioBuffer);
-        return assets.cacheAsset('sound:' + uri.substring(4), sound);
-    });
+async function main() {
+  /** @type {DisplayPort} */
+  const display = document.querySelector('#display');
+  /** @type {InputContext} */
+  const inputs = document.querySelector('#inputs').getContext('axisbutton');
+  /** @type {AssetPack} */
+  const assets = document.querySelector('#assets');
+  let promise = new Promise((resolve, reject) => {
+    assets.addEventListener('load', resolve);
+    assets.addEventListener('error', reject);
+  });
+  assets.src = 'res.pack';
+  await promise;
+  const pipeline = new AssetPipeline(assets);
+  await pipeline.pipe('res/**/*.md', async (assetData, uri) =>
+    assets.cacheAsset('txt:' + uri.substring(4), await loadText(assetData))
+  );
+  await pipeline.pipe('res/**/*.txt', async (assetData, uri) =>
+    assets.cacheAsset('txt:' + uri.substring(4), await loadText(assetData))
+  );
+  await pipeline.pipe('res/**/*.png', async (assetData, uri) =>
+    assets.cacheAsset(
+      'image:' + uri.substring(4),
+      await loadImage(assetData, 'image/png')
+    )
+  );
+  await pipeline.pipe('res/**/*.obj', async (assetData, uri) =>
+    assets.cacheAsset('obj:' + uri.substring(4), await loadOBJ(assetData))
+  );
+  await pipeline.pipe('res/**/*.atlas', async (assetData, uri) =>
+    assets.cacheAsset('atlas:' + uri.substring(4), await loadAtlas(assetData))
+  );
+  await pipeline.pipe('res/**/*.fnt', async (assetData, uri) =>
+    assets.cacheAsset('fnt:' + uri.substring(4), await loadBMFont(assetData))
+  );
+  await pipeline.pipe('res/**/*.wav', async (assetData, uri) => {
+    let audioContext = Sound.getAudioContext();
+    let audioBuffer = await loadAudioBuffer(assetData, audioContext);
+    let sound = new Sound(audioContext, audioBuffer);
+    return assets.cacheAsset('sound:' + uri.substring(4), sound);
+  });
 
-    const game = new Game(display, inputs, assets);
-    display.addEventListener('frame', (e) => {
-        const { deltaTime, prevTime, now } = e.detail;
-        game.deltaTime = deltaTime;
-        game.prevTime = prevTime;
-        game.now = now;
-        inputs.poll(now);
-        game.emit('frame');
-    });
+  const game = new Game(display, inputs, assets);
+  display.addEventListener('frame', (e) => {
+    const { deltaTime, prevTime, now } = e.detail;
+    game.deltaTime = deltaTime;
+    game.prevTime = prevTime;
+    game.now = now;
+    inputs.poll(now);
+    game.emit('frame');
+  });
 
-    // await Archaea(game);
-    // await Architect(game);
-    // await Bioform(game);
-    // await IsoGame(game);
-    // await BreadBox(game);
-    // await GerryMan(game);
-    // await Miners(game);
-    // await Moonset(game);
-    await Starfield(game);
+  // await Archaea(game);
+  // await Architect(game);
+  // await Bioform(game);
+  // await IsoGame(game);
+  // await BreadBox(game);
+  // await GerryMan(game);
+  // await Miners(game);
+  // await Moonset(game);
+  await Starfield(game);
 }

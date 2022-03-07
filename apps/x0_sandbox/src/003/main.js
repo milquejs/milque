@@ -4,9 +4,8 @@ import * as MainStage from './MainStage.js';
 
 document.title = 'dungeon';
 
-function main()
-{
-    Game.start(MainStage);
+function main() {
+  Game.start(MainStage);
 }
 
 main();

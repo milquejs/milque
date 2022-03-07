@@ -1,37 +1,29 @@
 import { GameObject } from '../entity/GameObject.js';
 
-export class GameObjectSystem
-{
-    constructor(entityManager)
-    {
-        this.entityManager = entityManager;
+export class GameObjectSystem {
+  constructor(entityManager) {
+    this.entityManager = entityManager;
+  }
+
+  /** @override */
+  update(dt) {
+    const { entityManager } = this;
+
+    for (let gameObject of entityManager.getComponentInstances(GameObject)) {
+      if ('onUpdate' in gameObject) {
+        gameObject.onUpdate(dt);
+      }
     }
+  }
 
-    /** @override */
-    update(dt)
-    {
-        const { entityManager } = this;
+  /** @override */
+  render(ctx) {
+    const { entityManager } = this;
 
-        for(let gameObject of entityManager.getComponentInstances(GameObject))
-        {
-            if ('onUpdate' in gameObject)
-            {
-                gameObject.onUpdate(dt);
-            }
-        }
+    for (let gameObject of entityManager.getComponentInstances(GameObject)) {
+      if ('onRender' in gameObject) {
+        gameObject.onRender(ctx);
+      }
     }
-
-    /** @override */
-    render(ctx)
-    {
-        const { entityManager } = this;
-
-        for(let gameObject of entityManager.getComponentInstances(GameObject))
-        {
-            if ('onRender' in gameObject)
-            {
-                gameObject.onRender(ctx);
-            }
-        }
-    }
+  }
 }

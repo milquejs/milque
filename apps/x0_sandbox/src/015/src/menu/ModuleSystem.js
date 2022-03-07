@@ -1,24 +1,21 @@
-class ModuleSystem
-{
-    constructor()
-    {
-        this.name = null;
-    }
+class ModuleSystem {
+  constructor() {
+    this.name = null;
+  }
 
-    setName(name)
-    {
-        this.name = name;
-        return this;
-    }
+  setName(name) {
+    this.name = name;
+    return this;
+  }
 
-    /** @abstract */
-    onAttach(commandCenter) {}
+  /** @abstract */
+  onAttach(commandCenter) {}
 
-    /** @abstract */
-    onDetach(commandCenter) {}
+  /** @abstract */
+  onDetach(commandCenter) {}
 
-    /** @abstract */
-    async onBanner(world) {}
+  /** @abstract */
+  async onBanner(world) {}
 }
 
 module.exports = { ModuleSystem };

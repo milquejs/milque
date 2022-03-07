@@ -4,92 +4,75 @@
  * ## 1.0.0
  * - Created ChunkMap
  */
-export class ChunkMap
-{
-    static computeKey(chunkX, chunkY)
-    {
-        return `${chunkX},${chunkY}`;
-    }
+export class ChunkMap {
+  static computeKey(chunkX, chunkY) {
+    return `${chunkX},${chunkY}`;
+  }
 
-    static parseKey(key)
-    {
-        let separator = key.indexOf(',');
-        return [
-            Number.parseInt(separator.substring(0, separator)),
-            Number.parseInt(separator.substring(separator + 1))
-        ];
-    }
+  static parseKey(key) {
+    let separator = key.indexOf(',');
+    return [
+      Number.parseInt(separator.substring(0, separator)),
+      Number.parseInt(separator.substring(separator + 1)),
+    ];
+  }
 
-    constructor(chunkLoader)
-    {
-        this.loader = chunkLoader;
-        this.loadedChunks = new Map();
-        this.loadingChunks = new Map();
-    }
+  constructor(chunkLoader) {
+    this.loader = chunkLoader;
+    this.loadedChunks = new Map();
+    this.loadingChunks = new Map();
+  }
 
-    async load(chunkX, chunkY)
-    {
-        let key = ChunkMap.computeKey(chunkX, chunkY);
-        let result;
-        if (this.loadingChunks.has(key))
-        {
-            result = this.loadingChunks.get(key);
-        }
-        else
-        {
-            result = this.loader
-                .load(chunkX, chunkY)
-                .then(() => this.loadingChunks.delete(key));
-            this.loadingChunks.set(key, result);
-        }
-        return await result;
+  async load(chunkX, chunkY) {
+    let key = ChunkMap.computeKey(chunkX, chunkY);
+    let result;
+    if (this.loadingChunks.has(key)) {
+      result = this.loadingChunks.get(key);
+    } else {
+      result = this.loader
+        .load(chunkX, chunkY)
+        .then(() => this.loadingChunks.delete(key));
+      this.loadingChunks.set(key, result);
     }
+    return await result;
+  }
 
-    async unload(chunkX, chunkY)
-    {
-        let key = ChunkMap.computeKey(chunkX, chunkY);
-        if (this.loadedChunks.has(key))
-        {
-            let chunk = this.loadedChunks.get(key);
-            this.loadedChunks.delete(key);
-            await this.loader.unload(chunkX, chunkY, chunk);
-            return true;
-        }
-        return false;
+  async unload(chunkX, chunkY) {
+    let key = ChunkMap.computeKey(chunkX, chunkY);
+    if (this.loadedChunks.has(key)) {
+      let chunk = this.loadedChunks.get(key);
+      this.loadedChunks.delete(key);
+      await this.loader.unload(chunkX, chunkY, chunk);
+      return true;
     }
+    return false;
+  }
 
-    async unloadAll()
-    {
-        for(let [key, chunk] of this.loadedChunks.entries())
-        {
-            let [chunkX, chunkY] = ChunkMap.parseKey(key);
-            this.loadedChunks.delete(key);
-            await this.loader.unload(chunkX, chunkY, chunk);
-        }
+  async unloadAll() {
+    for (let [key, chunk] of this.loadedChunks.entries()) {
+      let [chunkX, chunkY] = ChunkMap.parseKey(key);
+      this.loadedChunks.delete(key);
+      await this.loader.unload(chunkX, chunkY, chunk);
     }
+  }
 
-    get(chunkX, chunkY)
-    {
-        return this.loadedChunks.get(ChunkMap.computeKey(chunkX, chunkY));
-    }
-    
-    has(chunkX, chunkY)
-    {
-        return this.loadedChunks.has(ChunkMap.computeKey(chunkX, chunkY));
-    }
+  get(chunkX, chunkY) {
+    return this.loadedChunks.get(ChunkMap.computeKey(chunkX, chunkY));
+  }
 
-    keys()
-    {
-        return this.loadedChunks.keys();
-    }
+  has(chunkX, chunkY) {
+    return this.loadedChunks.has(ChunkMap.computeKey(chunkX, chunkY));
+  }
 
-    values()
-    {
-        return this.loadedChunks.values();
-    }
+  keys() {
+    return this.loadedChunks.keys();
+  }
 
-    entries()
-    {
-        return this.loadedChunks.entries();
-    }
+  values() {
+    return this.loadedChunks.values();
+  }
+
+  entries() {
+    return this.loadedChunks.entries();
+  }
 }

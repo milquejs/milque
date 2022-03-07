@@ -1,16 +1,16 @@
 /**
  * ECS
- * 
+ *
  * Queries are fancy objects that return entities/components matching the filter.
- * 
+ *
  * Entities are simply Numbers (similar to WebGL handles)
- * 
+ *
  * Components are data blobs (structs of data)
- * 
+ *
  * Systems are functions that accept component lists
  */
 
- /*
+/*
 import { System, Not, Optional, Query } from './system/index.js';
 
 import { EntityManager } from './EntityManager.js';

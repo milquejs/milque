@@ -1,29 +1,48 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8">
+  <head>
+    <meta charset="UTF-8" />
 
-        <title>Winter</title>
+    <title>Winter</title>
 
-        <script type="module" src="../../packages/display/src/index.js"></script>
-        <script type="module" src="./InputRegistry.js"></script>
-    </head>
-    <body>
-        <display-port contexttype="2d"></display-port>
+    <script type="module" src="../../packages/display/src/index.js"></script>
+    <script type="module" src="./InputRegistry.js"></script>
+  </head>
+  <body>
+    <display-port contexttype="2d"></display-port>
 
-        <input-registry priority="desc">
-            <h3>Alternative</h3>
-            <input-context name="alt" disabled>
-            </input-context>
-            <h3>Player</h3>
-            <input-context name="playerControls">
-                <input-mapping name="up" adapter="state" params="down:keyboard_ArrowUp.down, up:keyboard_ArrowUp.up">Move Forward</input-mapping>
-                <input-mapping name="down" adapter="state" params="down:keyboard_ArrowDown.down, up:keyboard_ArrowDown.up">Move Backward</input-mapping>
-                <input-mapping name="left" adapter="state" params="down:keyboard_ArrowLeft.down, up:keyboard_ArrowLeft.up">Move Left</input-mapping>
-                <input-mapping name="right" adapter="state" params="down:keyboard_ArrowRight.down, up:keyboard_ArrowRight.up">Move Right</input-mapping>
-            </input-context>
-        </input-registry>
-        <!--
+    <input-registry priority="desc">
+      <h3>Alternative</h3>
+      <input-context name="alt" disabled> </input-context>
+      <h3>Player</h3>
+      <input-context name="playerControls">
+        <input-mapping
+          name="up"
+          adapter="state"
+          params="down:keyboard_ArrowUp.down, up:keyboard_ArrowUp.up"
+          >Move Forward</input-mapping
+        >
+        <input-mapping
+          name="down"
+          adapter="state"
+          params="down:keyboard_ArrowDown.down, up:keyboard_ArrowDown.up"
+          >Move Backward</input-mapping
+        >
+        <input-mapping
+          name="left"
+          adapter="state"
+          params="down:keyboard_ArrowLeft.down, up:keyboard_ArrowLeft.up"
+          >Move Left</input-mapping
+        >
+        <input-mapping
+          name="right"
+          adapter="state"
+          params="down:keyboard_ArrowRight.down, up:keyboard_ArrowRight.up"
+          >Move Right</input-mapping
+        >
+      </input-context>
+    </input-registry>
+    <!--
 
 
 What Do I Want From Input?
@@ -40,85 +59,72 @@ InputContextGroup
 - InputState (the object with single level access to all inputs of a context)
         -->
 
+    <script type="module">
+      import { Keyboard, Mouse } from '../../packages/input/src/index.js';
 
-        <script type="module">
-            import { Keyboard, Mouse } from '../../packages/input/src/index.js';
+      const world = {};
 
-            const world = {};
+      const display = document.querySelector('display-port');
+      const ctx = display.canvas.getContext('2d');
+      ctx.imageSmoothingEnabled = false;
+      display.addEventListener('frame', (e) => {
+        const dt = e.detail.deltaTime;
 
-            const display = document.querySelector('display-port');
-            const ctx = display.canvas.getContext('2d');
-            ctx.imageSmoothingEnabled = false;
-            display.addEventListener('frame', e => {
-                const dt = e.detail.deltaTime;
+        if (world.update) world.update(dt);
+        if (world.render) world.render(ctx);
+      });
 
-                if (world.update) world.update(dt);
-                if (world.render) world.render(ctx);
-            });
+      const input = document.querySelector('input-registry');
+      const playerControls = input.getContextualInputState('playerControls');
 
-            const input = document.querySelector('input-registry');
-            const playerControls = input.getContextualInputState('playerControls');
+      main();
 
-            main();
+      function main() {
+        world.entities = setupEntities() || [];
+        world.update = (dt) => {
+          updateInput();
 
-            function main()
-            {
-                world.entities = setupEntities() || [];
-                world.update = dt => {
-                    updateInput();
+          for (let entity of world.entities) {
+            entity.update(dt);
+          }
+        };
+        world.render = (ctx) => {
+          for (let entity of world.entities) {
+            entity.render(ctx);
+          }
+        };
+      }
 
-                    for(let entity of world.entities)
-                    {
-                        entity.update(dt);
-                    }
-                };
-                world.render = ctx => {
-                    for(let entity of world.entities)
-                    {
-                        entity.render(ctx);
-                    }
-                };
+      function updateInput() {}
+
+      function setupEntities() {
+        return [Player()];
+      }
+
+      function Player() {
+        return {
+          x: 0,
+          y: 0,
+          update(dt) {
+            if (playerControls.down) {
+              this.y += 1;
             }
-
-            function updateInput()
-            {
-                
+            if (playerControls.up) {
+              this.y -= 1;
             }
-
-            function setupEntities()
-            {
-                return [
-                    Player()
-                ];
+            if (playerControls.left) {
+              this.x -= 1;
             }
-
-            function Player()
-            {
-                return {
-                    x: 0,
-                    y: 0,
-                    update(dt)
-                    {
-                        if (playerControls.down) {
-                            this.y += 1;
-                        }
-                        if (playerControls.up) {
-                            this.y -= 1;
-                        }
-                        if (playerControls.left) {
-                            this.x -= 1;
-                        }
-                        if (playerControls.right) {
-                            this.x += 1;
-                        }
-                    },
-                    render(ctx)
-                    {
-                        ctx.fillStyle = 'white';
-                        ctx.fillRect(this.x, this.y, 16, 16);
-                    }
-                };
+            if (playerControls.right) {
+              this.x += 1;
             }
-        </script>
-    </body>
+          },
+          render(ctx) {
+            ctx.fillStyle = 'white';
+            ctx.fillRect(this.x, this.y, 16, 16);
+          },
+        };
+      }
+    </script>
+  </body>
 </html>

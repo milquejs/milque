@@ -4,237 +4,299 @@ import { KeyMapBuilder, createKeyState } from './InputHelper.js';
 
 document.title = 'winter';
 
-function main()
-{
-    const display = document.querySelector('display-port');
-    const ctx = display.canvas.getContext('2d');
-    ctx.imageSmoothingEnabled = false;
-    
-    // This is what the user sees and can edit.
-    const keyMap = KeyMapBuilder()
-        .set('up', 'ArrowUp')
-        .set('down', 'ArrowDown')
-        .set('left', 'ArrowLeft')
-        .set('right', 'ArrowRight')
-        .build();
-    const keyState = createKeyState(display, keyMap);
+function main() {
+  const display = document.querySelector('display-port');
+  const ctx = display.canvas.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
 
-    // input.getContextualInputState('playerControls');
-    // Easy to access, fast, and serializable
-    const playerControls = {
-        get down() { return keyState.state.down.value; },
-        get up() { return keyState.state.up.value; },
-        get left() { return keyState.state.left.value; },
-        get right() { return keyState.state.right.value; },
-    };
+  // This is what the user sees and can edit.
+  const keyMap = KeyMapBuilder()
+    .set('up', 'ArrowUp')
+    .set('down', 'ArrowDown')
+    .set('left', 'ArrowLeft')
+    .set('right', 'ArrowRight')
+    .build();
+  const keyState = createKeyState(display, keyMap);
 
-    const world = {
-        entities: [],
-        update(dt)
-        {
-            for(let entity of this.entities)
-            {
-                entity.update(dt);
-            }
-        },
-        render(ctx)
-        {
-            for(let entity of this.entities)
-            {
-                entity.render(ctx);
-            }
-        },
-        poll()
-        {
-            keyState.poll();
-        }
-    };
+  // input.getContextualInputState('playerControls');
+  // Easy to access, fast, and serializable
+  const playerControls = {
+    get down() {
+      return keyState.state.down.value;
+    },
+    get up() {
+      return keyState.state.up.value;
+    },
+    get left() {
+      return keyState.state.left.value;
+    },
+    get right() {
+      return keyState.state.right.value;
+    },
+  };
 
-    display.addEventListener('frame', e => {
-        const dt = e.detail.deltaTime / 60;
+  const world = {
+    entities: [],
+    update(dt) {
+      for (let entity of this.entities) {
+        entity.update(dt);
+      }
+    },
+    render(ctx) {
+      for (let entity of this.entities) {
+        entity.render(ctx);
+      }
+    },
+    poll() {
+      keyState.poll();
+    },
+  };
 
-        if (world.poll) world.poll();
-        if (world.update) world.update(dt);
+  display.addEventListener('frame', (e) => {
+    const dt = e.detail.deltaTime / 60;
 
-        // Transform canvas to first quadrant; (0,0) = bottom left, (width, height) = top right.
-        ctx.setTransform(1, 0, 0, -1, 0, 0);
-        ctx.translate(0, -display.height);
+    if (world.poll) world.poll();
+    if (world.update) world.update(dt);
 
-        // Paint it black.
-        ctx.fillStyle = 'black';
-        ctx.fillRect(0, 0, display.width, display.height);
+    // Transform canvas to first quadrant; (0,0) = bottom left, (width, height) = top right.
+    ctx.setTransform(1, 0, 0, -1, 0, 0);
+    ctx.translate(0, -display.height);
 
-        if (world.render) world.render(ctx);
+    // Paint it black.
+    ctx.fillStyle = 'black';
+    ctx.fillRect(0, 0, display.width, display.height);
 
-        if (world.physics)
-        {
-            world.physics.update(dt);
-            world.physics.render(ctx);
-        }
-    });
+    if (world.render) world.render(ctx);
 
-    main();
-
-    function main()
-    {
-        let player = Player();
-        world.entities = [
-            player
-        ];
-
-        let physics = IntersectionWorld.createIntersectionWorld();
-        physics.dynamics.push(player.masks.aabb);
-        physics.masks.push(...[
-            player.masks.ground,
-            player.masks.motion,
-            player.masks.aabbHit,
-        ]);
-        physics.statics.push(...[
-            IntersectionHelper.createRect(50, 0, 150, 16),
-            IntersectionHelper.createRect(20, 30, 30, 110),
-            IntersectionHelper.createRect(0, 0, 10, display.height),
-            IntersectionHelper.createRect(0, 0, display.width, 10),
-            IntersectionHelper.createRect(display.width - 10, 0, display.width, display.height),
-            IntersectionHelper.createRect(0, display.height - 10, display.width, display.height),
-        ]);
-        world.physics = physics;
+    if (world.physics) {
+      world.physics.update(dt);
+      world.physics.render(ctx);
     }
+  });
 
-    function Player()
-    {
-        let player = {
-            x: 100,
-            y: 100,
-            dx: 0,
-            dy: 0,
-            motionX: 0,
-            motionY: 0,
-            jumping: false,
-            masks: {
-                aabb: {
-                    get x() { return player.x; },
-                    get y() { return player.y; },
-                    set x(x) { player.x = x; },
-                    set y(y) { player.y = y; },
-                    rx: 8,
-                    ry: 8,
+  main();
 
-                    get dx() { return player.dx; },
-                    get dy() { return player.dy; },
-                    set dx(dx) { player.dx = dx; },
-                    set dy(dy) { player.dy = dy; },
-                    hit: null,
-                },
-                motion: {
-                    type: 'segment',
-                    get x() { return player.masks.aabb.x; },
-                    get y() { return player.masks.aabb.y; },
-                    get dx() { return player.motionX; },
-                    get dy() { return player.motionY; },
-                    px: 0,
-                    py: 0,
-                    
-                    hit: null,
-                },
-                ground: {
-                    type: 'segment',
-                    get x() { return player.masks.aabb.x - player.masks.aabb.rx; },
-                    get y() { return player.masks.aabb.y - player.masks.aabb.ry - 0.1; },
-                    get dx() { return player.masks.aabb.rx * 2; },
-                    get dy() { return 0; },
-                    px: 0,
-                    py: 0,
-                    
-                    hit: null,
-                },
-                aabbHit: {
-                    type: 'point',
-                    get x() { return player.masks.aabb.hit ? player.masks.aabb.hit.x : player.masks.aabb.x; },
-                    get y() { return player.masks.aabb.hit ? player.masks.aabb.hit.y : player.masks.aabb.y; },
-                    
-                    hit: null,
-                },
-            },
-            update(dt)
-            {
-                const maxMoveSpeed = 8;
-                const moveSpeed = 0.6;
-                const moveFriction = 0.85;
-                const jumpSpeed = 12;
-                const jumpMoveFriction = 0.9;
-                const gravitySpeed = 0.8;
-                const wallSlideFriction = 0.3;
+  function main() {
+    let player = Player();
+    world.entities = [player];
 
-                const hit = this.masks.aabb.hit;
-                const hitGround = hit && hit.ny > 0;
+    let physics = IntersectionWorld.createIntersectionWorld();
+    physics.dynamics.push(player.masks.aabb);
+    physics.masks.push(
+      ...[player.masks.ground, player.masks.motion, player.masks.aabbHit]
+    );
+    physics.statics.push(
+      ...[
+        IntersectionHelper.createRect(50, 0, 150, 16),
+        IntersectionHelper.createRect(20, 30, 30, 110),
+        IntersectionHelper.createRect(0, 0, 10, display.height),
+        IntersectionHelper.createRect(0, 0, display.width, 10),
+        IntersectionHelper.createRect(
+          display.width - 10,
+          0,
+          display.width,
+          display.height
+        ),
+        IntersectionHelper.createRect(
+          0,
+          display.height - 10,
+          display.width,
+          display.height
+        ),
+      ]
+    );
+    world.physics = physics;
+  }
 
-                if (hitGround && this.motionY < 0) {
-                    this.motionY = 0;
-                } else {
-                    this.motionY -= gravitySpeed;
-                }
+  function Player() {
+    let player = {
+      x: 100,
+      y: 100,
+      dx: 0,
+      dy: 0,
+      motionX: 0,
+      motionY: 0,
+      jumping: false,
+      masks: {
+        aabb: {
+          get x() {
+            return player.x;
+          },
+          get y() {
+            return player.y;
+          },
+          set x(x) {
+            player.x = x;
+          },
+          set y(y) {
+            player.y = y;
+          },
+          rx: 8,
+          ry: 8,
 
-                // Wall slide / bounce
-                if (hit && (hit.nx < 0 && playerControls.right || hit.nx > 0 && playerControls.left)) {
+          get dx() {
+            return player.dx;
+          },
+          get dy() {
+            return player.dy;
+          },
+          set dx(dx) {
+            player.dx = dx;
+          },
+          set dy(dy) {
+            player.dy = dy;
+          },
+          hit: null,
+        },
+        motion: {
+          type: 'segment',
+          get x() {
+            return player.masks.aabb.x;
+          },
+          get y() {
+            return player.masks.aabb.y;
+          },
+          get dx() {
+            return player.motionX;
+          },
+          get dy() {
+            return player.motionY;
+          },
+          px: 0,
+          py: 0,
 
-                    if (playerControls.up) {
-                        this.motionX = hit.nx * jumpSpeed;
-                        this.motionY = jumpSpeed;
-                    } else {
-                        this.motionY *= wallSlideFriction;
-                    }
-                }
+          hit: null,
+        },
+        ground: {
+          type: 'segment',
+          get x() {
+            return player.masks.aabb.x - player.masks.aabb.rx;
+          },
+          get y() {
+            return player.masks.aabb.y - player.masks.aabb.ry - 0.1;
+          },
+          get dx() {
+            return player.masks.aabb.rx * 2;
+          },
+          get dy() {
+            return 0;
+          },
+          px: 0,
+          py: 0,
 
-                if (hitGround && playerControls.up) {
-                    this.motionY = jumpSpeed;
-                }
+          hit: null,
+        },
+        aabbHit: {
+          type: 'point',
+          get x() {
+            return player.masks.aabb.hit
+              ? player.masks.aabb.hit.x
+              : player.masks.aabb.x;
+          },
+          get y() {
+            return player.masks.aabb.hit
+              ? player.masks.aabb.hit.y
+              : player.masks.aabb.y;
+          },
 
-                if (playerControls.down) {
-                    if (this.masks.aabb.ry > 4) {
-                        this.masks.aabb.ry = 4;
-                        this.y -= 4;
-                    }
-                } else {
-                    if (this.masks.aabb.ry < 8) {
-                        this.masks.aabb.ry = 8;
-                        this.y += 4;
-                    }
-                }
+          hit: null,
+        },
+      },
+      update(dt) {
+        const maxMoveSpeed = 8;
+        const moveSpeed = 0.6;
+        const moveFriction = 0.85;
+        const jumpSpeed = 12;
+        const jumpMoveFriction = 0.9;
+        const gravitySpeed = 0.8;
+        const wallSlideFriction = 0.3;
 
-                if (playerControls.left) {
-                    this.motionX -= moveSpeed;
-                }
-                if (playerControls.right) {
-                    this.motionX += moveSpeed;
-                }
-                
-                this.motionX *= hitGround ? moveFriction : jumpMoveFriction;
-                if (Math.abs(this.motionX) > maxMoveSpeed) this.motionX = maxMoveSpeed * Math.sign(this.motionX);
+        const hit = this.masks.aabb.hit;
+        const hitGround = hit && hit.ny > 0;
 
-                if (hit && Math.abs(hit.nx) > 0 && Math.sign(hit.nx) !== Math.sign(this.motionX)) {
-                    this.motionX = 0;
-                }
+        if (hitGround && this.motionY < 0) {
+          this.motionY = 0;
+        } else {
+          this.motionY -= gravitySpeed;
+        }
 
-                if (hit && Math.abs(hit.ny) > 0 && Math.sign(hit.ny) !== Math.sign(this.motionY)) {
-                    this.motionY = hit.ny < 0 ? -gravitySpeed : 0;
-                }
+        // Wall slide / bounce
+        if (
+          hit &&
+          ((hit.nx < 0 && playerControls.right) ||
+            (hit.nx > 0 && playerControls.left))
+        ) {
+          if (playerControls.up) {
+            this.motionX = hit.nx * jumpSpeed;
+            this.motionY = jumpSpeed;
+          } else {
+            this.motionY *= wallSlideFriction;
+          }
+        }
 
-                this.dx += this.motionX;
-                this.dy += this.motionY;
+        if (hitGround && playerControls.up) {
+          this.motionY = jumpSpeed;
+        }
 
-                // Never fall off
-                if (this.y <= 0) this.y = 0;
-            },
-            render(ctx)
-            {
-                ctx.fillStyle = 'white';
-                ctx.fillRect(this.x - this.masks.aabb.rx, this.y - this.masks.aabb.ry, this.masks.aabb.rx * 2, this.masks.aabb.ry * 2);
-            }
-        };
-        return player;
-    }
+        if (playerControls.down) {
+          if (this.masks.aabb.ry > 4) {
+            this.masks.aabb.ry = 4;
+            this.y -= 4;
+          }
+        } else {
+          if (this.masks.aabb.ry < 8) {
+            this.masks.aabb.ry = 8;
+            this.y += 4;
+          }
+        }
+
+        if (playerControls.left) {
+          this.motionX -= moveSpeed;
+        }
+        if (playerControls.right) {
+          this.motionX += moveSpeed;
+        }
+
+        this.motionX *= hitGround ? moveFriction : jumpMoveFriction;
+        if (Math.abs(this.motionX) > maxMoveSpeed)
+          this.motionX = maxMoveSpeed * Math.sign(this.motionX);
+
+        if (
+          hit &&
+          Math.abs(hit.nx) > 0 &&
+          Math.sign(hit.nx) !== Math.sign(this.motionX)
+        ) {
+          this.motionX = 0;
+        }
+
+        if (
+          hit &&
+          Math.abs(hit.ny) > 0 &&
+          Math.sign(hit.ny) !== Math.sign(this.motionY)
+        ) {
+          this.motionY = hit.ny < 0 ? -gravitySpeed : 0;
+        }
+
+        this.dx += this.motionX;
+        this.dy += this.motionY;
+
+        // Never fall off
+        if (this.y <= 0) this.y = 0;
+      },
+      render(ctx) {
+        ctx.fillStyle = 'white';
+        ctx.fillRect(
+          this.x - this.masks.aabb.rx,
+          this.y - this.masks.aabb.ry,
+          this.masks.aabb.rx * 2,
+          this.masks.aabb.ry * 2
+        );
+      },
+    };
+    return player;
+  }
 }
 
 window.addEventListener('DOMContentLoaded', () => {
-    main();
+  main();
 });

@@ -1,22 +1,20 @@
 import { GameObject } from './GameObject.js';
 
-export class Wall extends GameObject
-{
-    constructor(left = 0, top = 0, right = left + 10, bottom = top + 10)
-    {
-        super();
+export class Wall extends GameObject {
+  constructor(left = 0, top = 0, right = left + 10, bottom = top + 10) {
+    super();
 
-        const width = right - left;
-        const height = bottom - top;
-        const rx = width / 2;
-        const ry = height / 2;
-        const x = left + rx;
-        const y = top + ry;
+    const width = right - left;
+    const height = bottom - top;
+    const rx = width / 2;
+    const ry = height / 2;
+    const x = left + rx;
+    const y = top + ry;
 
-        this.add('Transform', { x, y });
-        this.add('Renderable', { renderType: 'wall' });
-        this.add('RenderWallInfo', { rx, ry });
-        this.add('Collidable', { masks: { main: { x, y, rx, ry } } });
-        this.add('Solid', { masks: ['main']});
-    }
+    this.add('Transform', { x, y });
+    this.add('Renderable', { renderType: 'wall' });
+    this.add('RenderWallInfo', { rx, ry });
+    this.add('Collidable', { masks: { main: { x, y, rx, ry } } });
+    this.add('Solid', { masks: ['main'] });
+  }
 }

@@ -1,22 +1,26 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="utf-8">
-        <title>Pineapple</title>
+  <head>
+    <meta charset="utf-8" />
+    <title>Pineapple</title>
 
-        <style>body { margin: 0; }</style>
-    </head>
-    <body>
-        <display-port debug full></display-port>
-        <script type="module">
-            import * as Game from './Game.js';
+    <style>
+      body {
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <display-port debug full></display-port>
+    <script type="module">
+      import * as Game from './Game.js';
 
-            import { SplashScene } from './SplashScene.js';
-            import * as MainScene from './MainScene.js';
+      import { SplashScene } from './SplashScene.js';
+      import * as MainScene from './MainScene.js';
 
-            Game.registerScene('0', new SplashScene('Powered by Milque.js', '1'));
-            Game.registerScene('1', MainScene);
-            Game.start('0');
-        </script>
-    </body>
+      Game.registerScene('0', new SplashScene('Powered by Milque.js', '1'));
+      Game.registerScene('1', MainScene);
+      Game.start('0');
+    </script>
+  </body>
 </html>

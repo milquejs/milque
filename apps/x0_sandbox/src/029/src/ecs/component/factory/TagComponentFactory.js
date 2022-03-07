@@ -1,41 +1,34 @@
 import { ComponentFactory } from './ComponentFactory.js';
 
-export class TagComponentFactory extends ComponentFactory
-{
-    constructor()
-    {
-        super();
-        
-        this.instances = new Set();
-    }
+export class TagComponentFactory extends ComponentFactory {
+  constructor() {
+    super();
 
-    /** @override */
-    create(entityId)
-    {
-        this.instances.add(entityId);
-    }
+    this.instances = new Set();
+  }
 
-    /** @override */
-    delete(entityId)
-    {
-        this.instances.delete(entityId);
-    }
+  /** @override */
+  create(entityId) {
+    this.instances.add(entityId);
+  }
 
-    /** @override */
-    get(entityId)
-    {
-        return this.instances.has(entityId);
-    }
+  /** @override */
+  delete(entityId) {
+    this.instances.delete(entityId);
+  }
 
-    /** @override */
-    has(entityId)
-    {
-        return this.instances.has(entityId);
-    }
+  /** @override */
+  get(entityId) {
+    return this.instances.has(entityId);
+  }
 
-    /** @override */
-    clear()
-    {
-        this.instances.clear();
-    }
+  /** @override */
+  has(entityId) {
+    return this.instances.has(entityId);
+  }
+
+  /** @override */
+  clear() {
+    this.instances.clear();
+  }
 }

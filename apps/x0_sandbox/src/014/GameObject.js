@@ -1,11 +1,5 @@
 import { EntityBase } from './milque.js';
 
-class GameObject2D extends EntityBase
-{
+class GameObject2D extends EntityBase {}
 
-}
-
-export function createGameObject2D()
-{
-    
-}
+export function createGameObject2D() {}

@@ -1,12 +1,11 @@
 import { AnimatedText } from './AnimatedText.js';
 
-export function load(world)
-{
-    let container = document.createElement('div');
-    container.style.position = 'absolute';
-    container.style.bottom = '0.8em';
-    container.style.right = '0.8em';
-    container.innerHTML = `
+export function load(world) {
+  let container = document.createElement('div');
+  container.style.position = 'absolute';
+  container.style.bottom = '0.8em';
+  container.style.right = '0.8em';
+  container.innerHTML = `
         <style>
             .container {
                 position: relative;
@@ -27,24 +26,19 @@ export function load(world)
             </article>
         </div>`;
 
-    world.display.appendChild(container);
-    let article = container.querySelector('article');
-    article.addEventListener('click', () => {
-        AnimatedText.skip(article);
-    });
-    AnimatedText.play(article);
+  world.display.appendChild(container);
+  let article = container.querySelector('article');
+  article.addEventListener('click', () => {
+    AnimatedText.skip(article);
+  });
+  AnimatedText.play(article);
 
-    world.dialogue = {
-        text: '',
-        element: container,
-    };
+  world.dialogue = {
+    text: '',
+    element: container,
+  };
 }
 
-export function update(dt, world)
-{
-    
-}
+export function update(dt, world) {}
 
-export function render(ctx, world)
-{
-}
+export function render(ctx, world) {}
