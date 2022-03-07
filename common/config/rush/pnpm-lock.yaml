@@ -4335,13 +4335,15 @@ packages:
       esbuild-plugin-alias: 0.1.2
       esbuild-plugin-d.ts: 1.0.2_typescript@4.2.4
       eslint: 7.25.0
+      eslint-config-prettier: 8.3.0_eslint@7.25.0
       fflate: 0.6.10
       open: 8.0.7
+      prettier: 2.4.1
       typescript: 4.2.4
     dev: false
     name: '@rush-temp/toolkit'
     resolution:
-      integrity: sha512-0ed6KeKA7oPD7OuWFfkgfkR/GQACrSc0LuGJjSgZ/X7D+1ZIaJ8kHu1otM7uTHVyy4HkH1niahPw8TSB65svxw==
+      integrity: sha512-CvJiiP5ZR5h+9kv0OPU1t0JqUDzPOPyFxRLUB6O6D96ch+j7PpTNPtKBrW/Z2+wAb/RaUpp8UZ+oyJrb/hDd/g==
       tarball: file:projects/toolkit.tgz
     version: 0.0.0
   file:projects/util.tgz:

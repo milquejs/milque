@@ -1,35 +1,38 @@
 {
-    "name": "@milque/toolkit",
-    "version": "0.0.1",
-    "description": "The helper tools for milque.js",
-    "type": "module",
-    "main": "./dist/esm/index.js",
-    "bin": {
-        "@milque/toolkit": "bin/index.js",
-        "milque-toolkit": "bin/index.js"
-    },
-    "author": "Andrew Kuo",
-    "license": "MIT",
-    "keywords": [
-        "milque",
-        "toolkit",
-        "cli"
-    ],
-    "scripts": {
-        "build": "rollup -c --silent",
-        "lint": "eslint **/*.js"
-    },
-    "dependencies": {
-        "esbuild": "~0.11.18",
-        "esbuild-plugin-alias": "~0.1.2",
-        "@esbuild-plugins/node-modules-polyfill": "~0.1.1",
-        "open": "~8.0.7",
-        "typescript": "~4.2.4",
-        "chokidar": "~3.5.1",
-        "fflate": "~0.6.10"
-    },
-    "devDependencies": {
-        "@milque-dev/build-tools": "~1.0.0",
-        "eslint": "~7.25.0"
-    }
+  "name": "@milque/toolkit",
+  "version": "0.0.1",
+  "description": "The helper tools for milque.js",
+  "type": "module",
+  "main": "./dist/esm/index.js",
+  "bin": {
+    "@milque/toolkit": "bin/index.js",
+    "milque-toolkit": "bin/index.js"
+  },
+  "author": "Andrew Kuo",
+  "license": "MIT",
+  "keywords": [
+    "milque",
+    "toolkit",
+    "cli"
+  ],
+  "scripts": {
+    "build": "rollup -c --silent",
+    "lint": "eslint **/*.js",
+    "format": "prettier --write *"
+  },
+  "dependencies": {
+    "esbuild": "~0.11.18",
+    "esbuild-plugin-alias": "~0.1.2",
+    "@esbuild-plugins/node-modules-polyfill": "~0.1.1",
+    "open": "~8.0.7",
+    "typescript": "~4.2.4",
+    "chokidar": "~3.5.1",
+    "fflate": "~0.6.10"
+  },
+  "devDependencies": {
+    "@milque-dev/build-tools": "~1.0.0",
+    "eslint": "~7.25.0",
+    "eslint-config-prettier": "~8.3.0",
+    "prettier": "~2.4.1"
+  }
 }
