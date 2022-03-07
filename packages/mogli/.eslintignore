@@ -1,3 +1,5 @@
 # Output directory
-/dist/
-/out/
+dist
+out
+public
+tmp

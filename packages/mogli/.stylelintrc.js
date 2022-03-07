@@ -1,7 +1,2 @@
-module.exports = {
-    'extends': 'stylelint-config-standard',
-    'rules': {
-        'color-hex-length': 'long',
-        'indentation': 4
-    }
-};
+/* eslint-env node */
+module.exports = require('../../.stylelintrc.js');

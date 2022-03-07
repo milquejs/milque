@@ -1,50 +1,43 @@
 import { ProgramInfo } from './ProgramInfo.js';
 import { ProgramBuilder } from './ProgramBuilder.js';
 
-export class ProgramInfoBuilder
-{
-    /**
-     * @param {WebGLRenderingContextBase} gl 
-     * @param {WebGLProgram} [program]
-     */
-    constructor(gl, program = undefined)
-    {
-        /** @private */
-        this.programBuilder = new ProgramBuilder(gl, program);
-    }
-    
-    get gl()
-    {
-        return this.programBuilder.gl;
-    }
+export class ProgramInfoBuilder {
+  /**
+   * @param {WebGLRenderingContextBase} gl
+   * @param {WebGLProgram} [program]
+   */
+  constructor(gl, program = undefined) {
+    /** @private */
+    this.programBuilder = new ProgramBuilder(gl, program);
+  }
 
-    get handle()
-    {
-        return this.programBuilder.handle;
-    }
+  get gl() {
+    return this.programBuilder.gl;
+  }
 
-    get shaders()
-    {
-        return this.programBuilder.shaders;
-    }
+  get handle() {
+    return this.programBuilder.handle;
+  }
 
-    /**
-     * @param {GLenum} shaderType 
-     * @param {string} shaderSource 
-     * @returns {ProgramInfoBuilder}
-     */
-    shader(shaderType, shaderSource)
-    {
-        this.programBuilder.shader(shaderType, shaderSource);
-        return this;
-    }
+  get shaders() {
+    return this.programBuilder.shaders;
+  }
 
-    /**
-     * @returns {ProgramInfo}
-     */
-    link()
-    {
-        const handle = this.programBuilder.link();
-        return new ProgramInfo(this.gl, handle);
-    }
+  /**
+   * @param {GLenum} shaderType
+   * @param {string} shaderSource
+   * @returns {ProgramInfoBuilder}
+   */
+  shader(shaderType, shaderSource) {
+    this.programBuilder.shader(shaderType, shaderSource);
+    return this;
+  }
+
+  /**
+   * @returns {ProgramInfo}
+   */
+  link() {
+    const handle = this.programBuilder.link();
+    return new ProgramInfo(this.gl, handle);
+  }
 }

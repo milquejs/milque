@@ -4265,14 +4265,16 @@ packages:
   file:projects/mogli.tgz:
     dependencies:
       eslint: 7.25.0
+      eslint-config-prettier: 8.3.0_eslint@7.25.0
       gl-matrix: 3.3.0
+      prettier: 2.4.1
       rollup: 2.47.0
       stylelint: 13.13.1
       stylelint-config-standard: 22.0.0_stylelint@13.13.1
     dev: false
     name: '@rush-temp/mogli'
     resolution:
-      integrity: sha512-Ym4iWNpLpNjlD/cMrywIqP0/UOF0YDWMNuqTgiij4yS4TnPk3LLAUoAqMeoQ+/fBt2q6GZU/sEoUqHUOVps54A==
+      integrity: sha512-rTAd0TEklQ8kIzEcQAs8W/V1Eo1t49oTwDMtuE96qkzdZyZaq+g8YmPcLx/MNWgloI/3DgTJ9JAPckSeDLEWzw==
       tarball: file:projects/mogli.tgz
     version: 0.0.0
   file:projects/random.tgz:
