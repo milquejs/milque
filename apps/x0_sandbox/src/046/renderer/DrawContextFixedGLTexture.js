@@ -9,6 +9,8 @@ import {
   QUAD_VERTICES,
 } from './DrawContextFixedGLShape';
 
+/** @typedef {import('@milque/mogli').BufferInfo} BufferInfo */
+
 const VERTEX_SHADER_SOURCE = `
 attribute vec2 a_position;
 attribute vec2 a_texcoord;
@@ -34,6 +36,7 @@ uniform sampler2D u_texture;
 uniform vec2 u_texture_size;
 uniform vec4 u_sprite;
 uniform vec3 u_color;
+uniform float u_opacity_inv;
 
 void main() {
     float spriteWidth = u_sprite.z - u_sprite.x;
@@ -47,7 +50,7 @@ void main() {
         texcolor.r * u_color.r,
         texcolor.g * u_color.g,
         texcolor.b * u_color.b,
-        texcolor.a);
+        texcolor.a * (1.0 - u_opacity_inv));
 }`;
 
 export class DrawContextFixedGLTexture extends DrawContextFixedGLShape {
@@ -97,6 +100,13 @@ export class DrawContextFixedGLTexture extends DrawContextFixedGLShape {
   setColorVector(redf, greenf, bluef) {
     super.setColorVector(redf, greenf, bluef);
     this.texturedProgram.bind(this.gl).uniform('u_color', this.colorVector);
+    return this;
+  }
+
+  /** @override */
+  setOpacityFloat(opacity) {
+    super.setOpacityFloat(opacity);
+    this.texturedProgram.bind(this.gl).uniform('u_opacity_inv', 1 - this.opacityFloat);
     return this;
   }
 

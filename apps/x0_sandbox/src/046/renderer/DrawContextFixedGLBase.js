@@ -1,5 +1,5 @@
 import { OrthographicCamera } from '@milque/scene';
-import { mat4, quat, vec2, vec3 } from 'gl-matrix';
+import { mat4, quat, vec3 } from 'gl-matrix';
 import { hex } from 'src/renderer/color.js';
 
 export class DrawContextFixedGLBase {
@@ -23,6 +23,8 @@ export class DrawContextFixedGLBase {
     this.colorVector = vec3.create();
     /** @protected */
     this.depthFloat = 0;
+    /** @protected */
+    this.opacityFloat = 1;
 
     /** @protected */
     this.transformStack = [];
@@ -40,6 +42,8 @@ export class DrawContextFixedGLBase {
     // Initialize webgl state machine
     gl.enable(gl.DEPTH_TEST);
     gl.depthFunc(gl.LEQUAL);
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
   }
 
   reset() {
@@ -101,9 +105,15 @@ export class DrawContextFixedGLBase {
     );
   }
 
-  /** @param {Number} z */
+  /** @param {number} z */
   setDepthFloat(z) {
     this.depthFloat = z;
+    return this;
+  }
+
+  /** @param {number} opacity */
+  setOpacityFloat(opacity) {
+    this.opacityFloat = opacity;
     return this;
   }
 
@@ -146,7 +156,12 @@ export class DrawContextFixedGLBase {
   }
 
   popTransform() {
-    this.transformStack.pop();
+    let matrix = this.transformStack.pop();
+    mat4.getRotation(this.rotationQuat, matrix);
+    mat4.getTranslation(this.translationVector, matrix);
+    mat4.getScaling(this.scaleVector, matrix);
+    // HACK: Origin is not preserved :(
+    vec3.zero(this.originVector);
   }
 
   applyTransform(out) {

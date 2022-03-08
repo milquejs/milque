@@ -20,9 +20,10 @@ const FRAGMENT_SHADER_SOURCE = `
 precision mediump float;
 
 uniform vec3 u_color;
+uniform float u_opacity_inv;
 
 void main() {
-    gl_FragColor = vec4(u_color.rgb, 1.0);
+    gl_FragColor = vec4(u_color.rgb, 1.0 - u_opacity_inv);
 }`;
 
 export const CIRCLE_ITERATIONS = 16;
@@ -116,6 +117,13 @@ export class DrawContextFixedGLShape extends DrawContextFixedGLBase {
   setColorVector(redf, greenf, bluef) {
     super.setColorVector(redf, greenf, bluef);
     this.shapeProgram.bind(this.gl).uniform('u_color', this.colorVector);
+    return this;
+  }
+
+  /** @override */
+  setOpacityFloat(opacity) {
+    super.setOpacityFloat(opacity);
+    this.shapeProgram.bind(this.gl).uniform('u_opacity_inv', 1 - this.opacityFloat);
     return this;
   }
 

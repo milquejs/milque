@@ -22,6 +22,7 @@ precision mediump float;
 varying vec2 v_position;
 
 uniform vec3 u_color;
+uniform float u_opacity_inv;
 
 uniform vec3 u_color_from;
 uniform vec3 u_color_to;
@@ -31,7 +32,7 @@ uniform vec4 u_gradient_rect;
 void main() {
     // float fx = (gl_FragCoord.x - u_gradient_rect.x) / u_gradient_rect.z;
     float fy = (gl_FragCoord.y - u_gradient_rect.y) / u_gradient_rect.w;
-    gl_FragColor = vec4(mix(u_color_to, u_color_from, fy), 1);
+    gl_FragColor = vec4(mix(u_color_to, u_color_from, fy), 1.0 - u_opacity_inv);
 }`;
 
 export class DrawContextFixedGLGradient extends DrawContextFixedGLTexture {
@@ -65,6 +66,13 @@ export class DrawContextFixedGLGradient extends DrawContextFixedGLTexture {
   setColorVector(redf, greenf, bluef) {
     super.setColorVector(redf, greenf, bluef);
     this.gradientProgram.bind(this.gl).uniform('u_color', this.colorVector);
+    return this;
+  }
+
+  /** @override */
+  setOpacityFloat(opacity) {
+    super.setOpacityFloat(opacity);
+    this.gradientProgram.bind(this.gl).uniform('u_opacity_inv', 1 - this.opacityFloat);
     return this;
   }
 
