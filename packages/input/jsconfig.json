@@ -1,9 +1,8 @@
 {
   "compilerOptions": {
-    "target": "ES2021",
+    "target": "ES5",
     "lib": ["ES2021", "DOM"],
     "allowJs": true,
-    "noEmit": true,
     "checkJs": true
   },
   "exclude": ["node_modules", "dist", "out", "deprecated"],

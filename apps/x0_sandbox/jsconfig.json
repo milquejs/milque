@@ -1,15 +1,14 @@
 {
   "compilerOptions": {
-    "target": "ES2021",
+    "target": "ES5",
     "lib": ["ES2021", "DOM"],
     "allowJs": true,
-    "noEmit": true,
     "checkJs": true,
     "baseUrl": ".",
     "paths": {
       "src/*": ["./src/*"]
     }
   },
-  "exclude": ["node_modules", "out", "dist", "public"],
+  "exclude": ["node_modules", "dist", "out", "public"],
   "include": ["src/**/*.js"]
 }
