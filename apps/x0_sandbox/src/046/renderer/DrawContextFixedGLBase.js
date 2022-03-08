@@ -36,8 +36,6 @@ export class DrawContextFixedGLBase {
     this.rotationQuat = quat.create();
     /** @protected */
     this.scaleVector = vec3.fromValues(1, 1, 1);
-    /** @protected */
-    this.originVector = vec3.create();
 
     // Initialize webgl state machine
     gl.enable(gl.DEPTH_TEST);
@@ -51,6 +49,7 @@ export class DrawContextFixedGLBase {
     this.clear(0, 0, 0, 1);
     this.setColorVector(1, 1, 1);
     this.setDepthFloat(0);
+    this.setOpacityFloat(1);
     this.resetTransform();
     this.transformStack.length = 0;
   }
@@ -132,24 +131,18 @@ export class DrawContextFixedGLBase {
     return this;
   }
 
-  setOrigin(x, y, z = 0) {
-    vec3.set(this.originVector, x, y, z);
-  }
-
   resetTransform() {
     vec3.zero(this.translationVector);
     quat.identity(this.rotationQuat);
     vec3.set(this.scaleVector, 1, 1, 1);
-    vec3.zero(this.originVector);
   }
 
   pushTransform() {
-    let matrix = mat4.fromRotationTranslationScaleOrigin(
+    let matrix = mat4.fromRotationTranslationScale(
       mat4.create(),
       this.rotationQuat,
       this.translationVector,
-      this.scaleVector,
-      this.originVector
+      this.scaleVector
     );
     this.transformStack.push(matrix);
     this.resetTransform();
@@ -160,8 +153,6 @@ export class DrawContextFixedGLBase {
     mat4.getRotation(this.rotationQuat, matrix);
     mat4.getTranslation(this.translationVector, matrix);
     mat4.getScaling(this.scaleVector, matrix);
-    // HACK: Origin is not preserved :(
-    vec3.zero(this.originVector);
   }
 
   applyTransform(out) {
@@ -170,12 +161,11 @@ export class DrawContextFixedGLBase {
     }
     mat4.mul(
       out,
-      mat4.fromRotationTranslationScaleOrigin(
+      mat4.fromRotationTranslationScale(
         this.transformMatrix,
         this.rotationQuat,
         this.translationVector,
-        this.scaleVector,
-        this.originVector
+        this.scaleVector
       ),
       out
     );
