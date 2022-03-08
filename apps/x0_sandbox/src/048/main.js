@@ -13,14 +13,13 @@ export async function main(game) {
   const ctx = new DrawContextFixedGLText(canvas.getContext('webgl'));
   ctx.reset();
 
-  const image = assets.getAsset('image:water_tile.png');
-  const fontData = assets.getAsset('fnt:m5x7.fnt');
-  const fontImage = assets.getAsset('image:m5x7.png');
   const star = assets.getAsset('image:star.png');
   const blurStroke = assets.getAsset('image:blur_stroke.png');
   const circle = assets.getAsset('image:circle.png');
   const mountains = assets.getAsset('image:mountains.png');
   const cloud = assets.getAsset('image:cloud.png');
+  const waveA = assets.getAsset('image:wave1.png');
+  const waveB = assets.getAsset('image:wave2.png');
 
   const STAR_COLORS = [
     0xfafafa
@@ -31,11 +30,19 @@ export async function main(game) {
     0xb4a0e6,
     0xcdbff2,
   ];
+  const SEA_COLUMN_COLORS = [
+    0xa2bee5,
+    0x5381c1,
+    0x4c4593,
+  ];
+  const SEA_ROWS_COLORS = [
+    0x4979bc,
+    0x3865a5,
+    0x1b4f99,
+    0x184789,
+  ];
 
-  let stars = [];
-  let streaks = [];
-  let bigStreaks = [];
-  let shades = [];
+  const stars = [];
   for(let i = 0; i < 40; ++i) {
     stars.push({
       x: Random.rangeInt(0, canvas.width),
@@ -48,6 +55,7 @@ export async function main(game) {
     });
   }
 
+  const streaks = [];
   for(let i = 0; i < 12; ++i) {
     let x = Random.range(-canvas.width / 2, canvas.width);
     let y = Random.range(0, canvas.height);
@@ -69,6 +77,7 @@ export async function main(game) {
     });
   }
 
+  const bigStreaks = [];
   for(let i = 0; i < 4; ++i) {
     let x = Random.range(-canvas.width / 2, canvas.width);
     let y = Random.rangeInt(0, canvas.height);
@@ -84,6 +93,7 @@ export async function main(game) {
     });
   }
 
+  const shades = [];
   for(let i = 0; i < 6; ++i) {
     let x = Random.range(0, canvas.width);
     let y = Random.range(0, canvas.height);
@@ -98,7 +108,7 @@ export async function main(game) {
     });
   }
 
-  let clouds = [];
+  const clouds = [];
   for(let i = 0; i < 8; ++i) {
     let x = Random.range(0, canvas.width);
     let y = Random.range(0, canvas.height * 0.6);
@@ -116,11 +126,69 @@ export async function main(game) {
     });
   }
 
+  const seaSparkles = [];
+  for(let i = 0; i < 60; ++i) {
+    let x = Random.range(0, canvas.width);
+    let y = Random.range(canvas.height - 190, canvas.height - 150);
+    seaSparkles.push({
+      x, y,
+      sparkleOffset: Random.range(0, Math.PI * 2),
+    });
+  }
+
+  const seaFoam = [];
+  for(let i = 0; i < 40; ++i) {
+    let x = Random.range(0, canvas.width);
+    let y = Random.range(canvas.height - 150, canvas.height);
+    let wave = Random.choose([0, 1]);
+    seaFoam.push({
+      x, y,
+      wave,
+      opacity: Random.range(0, Math.PI * 2),
+    });
+  }
+
+  const seaColumn = [];
+  for(let i = 0; i < 10; ++i) {
+    let x = Random.range(0, canvas.width);
+    let color = Random.choose(SEA_COLUMN_COLORS);
+    let width = Random.range(50, 100);
+    seaColumn.push({
+      x,
+      color,
+      width,
+    });
+  }
+
+  const seaRows = [];
+  for(let i = 0; i < 8; ++i) {
+    let x = Random.range(0, canvas.width);
+    let y = Random.range(canvas.height - 190, canvas.height - 20);
+    let height = Random.range(20, 60);
+    let color;
+    if (Random.next() < 0.6) {
+      let dy = ((y - (canvas.height - 190)) / 200);
+      if (dy < 0.3) {
+        color = SEA_ROWS_COLORS[0];
+      } else if (dy < 0.6) {
+        color = SEA_ROWS_COLORS[1];
+      } else {
+        color = SEA_ROWS_COLORS[2];
+      }
+    } else {
+      color = Random.choose(SEA_ROWS_COLORS);
+    }
+    seaRows.push({
+      x, y,
+      color,
+      height,
+    });
+  }
   
   display.addEventListener('frame', (e) => {
     let { deltaTime, now } = e.detail;
 
-    const worldSpeed = 30;
+    const worldSpeed = 1;
     deltaTime *= worldSpeed;
     now *= worldSpeed;
 
@@ -217,7 +285,7 @@ export async function main(game) {
     // Moon
     ctx.setColor(STAR_COLORS[0]);
     ctx.setTextureImage(3, circle);
-    ctx.drawTexturedBox(3, canvas.width * 0.66, 60);
+    ctx.drawTexturedBox(3, canvas.width * 0.66, 200);
 
     // Cloud
     ctx.setTextureImage(4, cloud);
@@ -237,77 +305,69 @@ export async function main(game) {
     }
     ctx.resetTransform();
 
-    // Ground
-    ctx.setColor(0x726351);
-    ctx.drawRect(0, canvas.height - 100, canvas.width, canvas.height);
-
-    // Mountains
-    ctx.setColor(0xEED0FF);
-    ctx.setTextureImage(4, mountains);
-    ctx.drawTexturedBox(4, canvas.width / 2, canvas.height - 100);
-
-    /*
+    // Sea
+    let horizon = canvas.height - 200;
     ctx.setColor(0xFFFFFF);
-    ctx.setTextureImage(2, blurStroke);
-    ctx.drawTexturedBox(2, 200, 100, 16, 16);
+    ctx.drawGradientRect(0x4979bc, 0x1b4f99, 0, horizon, canvas.width, canvas.height);
+    
+    // Sea Column
+    ctx.setOpacityFloat(0.6);
+    for(let s of seaColumn) {
+      ctx.setColor(s.color);
+      ctx.drawRect(s.x, horizon, s.x + s.width, canvas.height);
+    }
+    ctx.setOpacityFloat(1);
 
-    ctx.setColor(0x0000aa);
-    drawLineShapes(ctx);
-
-    ctx.setColor(0x00aa66);
-    drawFillShapes(ctx);
-
-    ctx.setTranslation(100, 100, 0);
-    ctx.setScale(2, 2);
-    ctx.setRotation(45);
-    ctx.setColor(0xffffff);
-    drawLineShapes(ctx);
-    drawFillShapes(ctx);
-    ctx.setTextureImage(0, image);
-    ctx.drawTexturedBox(0, 72, 32);
-    ctx.setColor(0xff0000);
-    ctx.setBMFontTexture(1, fontImage, fontData);
-    ctx.drawText(1, 'Do we need more donuts?', 100, 32);
+    // Sea Rows
+    for(let s of seaRows) {
+      ctx.setColor(s.color);
+      ctx.setScale(s.height, 1);
+      ctx.setTranslation(s.x, s.y);
+      ctx.drawCircle();
+    }
     ctx.resetTransform();
 
-    ctx.setColor(0xffffff);
-    ctx.setTextureImage(0, image);
-    ctx.drawTexturedBox(0, 72, 32);
+    let startSparkleY = canvas.height - 150;
+    let sparkleRangeY = startSparkleY - horizon;
+    // Sea Sparkles
+    ctx.setRotation(45);
+    for(let s of seaSparkles) {
+      ctx.setColor(0xFFFFFF);
+      let opacity = (Math.sin(now / 1000 + s.sparkleOffset) + 1) / 2;
+      ctx.setOpacityFloat(opacity);
+      let dx = 10 * (Math.sin(now / 5000 + s.sparkleOffset) + 1) / 2;
+      ctx.setTranslation(s.x + dx, s.y);
+      let dy = (horizon - s.y) / sparkleRangeY;
+      ctx.setScale(0.5 + dy, 0.5 + dy);
+      ctx.drawBox();
+    }
+    ctx.setOpacityFloat(1);
+    ctx.resetTransform();
 
-    ctx.setColor(0xff0000);
-    ctx.setBMFontTexture(1, fontImage, fontData);
-    ctx.drawText(1, 'Do we need more donuts?', 100, 32);
-
-    ctx.setColor(0xffffff);
-    */
+    let foamRangeY = canvas.height - horizon;
+    // Sea Foam
+    for(let s of seaFoam) {
+      ctx.setColor(0xFFFFFF);
+      let opacity = clamp((Math.sin(now / 1000 + s.opacity) + 1) / 2 * 2, 0, 1);
+      ctx.setOpacityFloat(opacity);
+      let dx = 100 * (Math.sin(now / 5000 + s.opacity) + 1) / 2;
+      ctx.setTranslation(s.x + dx, s.y);
+      let dy = (s.y - startSparkleY) / foamRangeY;
+      ctx.setScale(0.1 + dy, (0.1 + dy) * 0.5);
+      let wave;
+      switch(s.wave) {
+        case 0:
+          wave = waveA;
+          break;
+        default:
+        case 1:
+          wave = waveB;
+          break;
+      }
+      ctx.setTextureImage(5, wave);
+      ctx.drawTexturedBox(5);
+    }
+    ctx.setOpacityFloat(1);
+    ctx.resetTransform();
   });
-}
-
-function drawStreak(ctx, x, y, angle, radius, length) {
-  ctx.pushTransform();
-  ctx.setTranslation(x, y);
-  ctx.setRotation(angle);
-  ctx.setScale(1, length);
-  ctx.drawCircle(0, 0, radius);
-  ctx.popTransform();
-}
-
-function drawCapsule(ctx, x, y, radius, length) {
-  ctx.drawCircle(x - length, y, radius);
-  ctx.drawBox(x, y, length, radius);
-  ctx.drawCircle(x + length, y, radius);
-}
-
-function drawLineShapes(ctx) {
-  ctx.drawLine(16, 16);
-  ctx.drawLineBox(24, 32);
-  ctx.drawLineRect(16, 48, 40, 64);
-  ctx.drawLineCircle(24, 80);
-}
-
-function drawFillShapes(ctx) {
-  ctx.drawRay(40, 16);
-  ctx.drawBox(48, 32);
-  ctx.drawRect(48, 48, 56, 64);
-  ctx.drawCircle(48, 80);
 }
