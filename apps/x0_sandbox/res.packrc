@@ -3,6 +3,11 @@
     "manifest": {
         "files": [
             {
+                "name": "res/blur_stroke.png",
+                "bytes": 1928,
+                "crc": -1808357908
+            },
+            {
                 "name": "res/boom.wav",
                 "bytes": 882044,
                 "crc": 513133327
@@ -13,9 +18,19 @@
                 "crc": 53799162
             },
             {
+                "name": "res/circle.png",
+                "bytes": 3445,
+                "crc": -1901160448
+            },
+            {
                 "name": "res/click.wav",
                 "bytes": 131846,
                 "crc": -366499944
+            },
+            {
+                "name": "res/cloud.png",
+                "bytes": 1749,
+                "crc": 2100736471
             },
             {
                 "name": "res/cube.aseprite",
@@ -71,6 +86,11 @@
                 "name": "res/m5x7.png",
                 "bytes": 1259,
                 "crc": -865219032
+            },
+            {
+                "name": "res/mountains.png",
+                "bytes": 389888,
+                "crc": 1257039726
             },
             {
                 "name": "res/music.wav",
@@ -143,7 +163,7 @@
                 "crc": -842706858
             }
         ],
-        "totalBytes": 31261846,
-        "checksum": -383901627
+        "totalBytes": 31658856,
+        "checksum": -1797978407
     }
 }

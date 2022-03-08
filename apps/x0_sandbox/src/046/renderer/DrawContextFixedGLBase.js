@@ -72,10 +72,10 @@ export class DrawContextFixedGLBase {
   }
 
   /**
-   * @param {Number} redf
-   * @param {Number} greenf
-   * @param {Number} bluef
-   * @param {Number} [alphaf=1]
+   * @param {number} redf
+   * @param {number} greenf
+   * @param {number} bluef
+   * @param {number} [alphaf=1]
    */
   clear(redf, greenf, bluef, alphaf = 1) {
     const gl = this.gl;
@@ -84,9 +84,9 @@ export class DrawContextFixedGLBase {
   }
 
   /**
-   * @param {Number} redf
-   * @param {Number} greenf
-   * @param {Number} bluef
+   * @param {number} redf
+   * @param {number} greenf
+   * @param {number} bluef
    */
   setColorVector(redf, greenf, bluef) {
     vec3.set(this.colorVector, redf, greenf, bluef);
@@ -94,7 +94,7 @@ export class DrawContextFixedGLBase {
   }
 
   /**
-   * @param {Number} colorHex
+   * @param {number} colorHex
    */
   setColor(colorHex) {
     return this.setColorVector(

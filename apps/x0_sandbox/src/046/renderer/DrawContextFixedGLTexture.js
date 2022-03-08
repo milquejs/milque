@@ -45,7 +45,7 @@ void main() {
         (u_sprite.x / u_texture_size.x) + v_texcoord.x * (spriteWidth / u_texture_size.x),
         (u_sprite.y / u_texture_size.y) + v_texcoord.y * (spriteHeight / u_texture_size.y));
     vec4 texcolor = texture2D(u_texture, texcoord);
-    if (texcolor.a < 0.5) discard;
+    if (texcolor.a <= 0.0) discard;
     gl_FragColor = vec4(
         texcolor.r * u_color.r,
         texcolor.g * u_color.g,
@@ -163,11 +163,18 @@ export class DrawContextFixedGLTexture extends DrawContextFixedGLShape {
 
     let spriteWidth = s - u;
     let spriteHeight = t - v;
+    let flag = false;
     if (typeof rx === 'undefined') {
       rx = spriteWidth / 2;
+    } else {
+      flag = true;
     }
     if (typeof ry === 'undefined') {
-      ry = spriteHeight / 2;
+      if (flag) {
+        ry = rx;
+      } else {
+        ry = spriteHeight / 2;
+      }
     }
     let width = rx * 2;
     let height = ry * 2;
