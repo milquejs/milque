@@ -60,7 +60,9 @@ export class AssetRef {
   /** @returns {T} */
   get current() {
     if (!this.parent) {
-      throw new Error(`Cannot resolve unregistered asset ref for '${this.uri}'.`);
+      throw new Error(
+        `Cannot resolve unregistered asset ref for '${this.uri}'.`
+      );
     }
     return this.parent.getAsset(this.uri);
   }

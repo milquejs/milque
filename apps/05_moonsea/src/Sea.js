@@ -8,17 +8,8 @@ import { loadImage } from './loader/ImageLoader';
  * @typedef {import('./main.js').Game} Game
  */
 
-const SEA_COLUMN_COLORS = [
-  0xa2bee5,
-  0x5381c1,
-  0x4c4593,
-];
-const SEA_ROWS_COLORS = [
-  0x4979bc,
-  0x3865a5,
-  0x1b4f99,
-  0x184789,
-];
+const SEA_COLUMN_COLORS = [0xa2bee5, 0x5381c1, 0x4c4593];
+const SEA_ROWS_COLORS = [0x4979bc, 0x3865a5, 0x1b4f99, 0x184789];
 
 const SEA_SPARKLE_COUNT = 60;
 const SEA_FOAM_COUNT = 40;
@@ -91,8 +82,15 @@ export function render(ctx, game, world) {
   const { columns, rows, sparkles, foams } = world;
 
   let horizon = canvas.height - 200;
-  ctx.setColor(0xFFFFFF);
-  ctx.drawGradientRect(0x4979bc, 0x1b4f99, 0, horizon, canvasWidth, canvasHeight);
+  ctx.setColor(0xffffff);
+  ctx.drawGradientRect(
+    0x4979bc,
+    0x1b4f99,
+    0,
+    horizon,
+    canvasWidth,
+    canvasHeight
+  );
 
   // Sea Column
   ctx.setOpacityFloat(0.6);
@@ -119,10 +117,10 @@ export function render(ctx, game, world) {
   // Sea Sparkles
   ctx.setRotation(0, 0, 45);
   for (let s of sparkles) {
-    ctx.setColor(0xFFFFFF);
+    ctx.setColor(0xffffff);
     let opacity = (Math.sin(now / 1000 + s.sparkleOffset) + 1) / 2;
     ctx.setOpacityFloat(opacity);
-    let dx = 10 * (Math.sin(now / 5000 + s.sparkleOffset) + 1) / 2;
+    let dx = (10 * (Math.sin(now / 5000 + s.sparkleOffset) + 1)) / 2;
     ctx.setTranslation(s.x + dx, s.y, SURFACE_DEPTH);
     let dy = (horizon - s.y) / sparkleRangeY;
     ctx.setScale(0.5 + dy, 0.5 + dy);
@@ -134,10 +132,10 @@ export function render(ctx, game, world) {
   let foamRangeY = canvas.height - horizon;
   // Sea Foam
   for (let s of foams) {
-    ctx.setColor(0xFFFFFF);
-    let opacity = clamp((Math.sin(now / 1000 + s.opacity) + 1) / 2 * 2, 0, 1);
+    ctx.setColor(0xffffff);
+    let opacity = clamp(((Math.sin(now / 1000 + s.opacity) + 1) / 2) * 2, 0, 1);
     ctx.setOpacityFloat(opacity);
-    let dx = 100 * (Math.sin(now / 5000 + s.opacity) + 1) / 2;
+    let dx = (100 * (Math.sin(now / 5000 + s.opacity) + 1)) / 2;
     ctx.setTranslation(s.x + dx, s.y, SURFACE_DEPTH);
     let dy = (s.y - startSparkleY) / foamRangeY;
     ctx.setScale(0.1 + dy, (0.1 + dy) * 0.5);
@@ -166,7 +164,8 @@ function createSparkle(canvasWidth, canvasHeight) {
   let x = Random.range(0, canvasWidth);
   let y = Random.range(canvasHeight - 190, canvasHeight - 150);
   return {
-    x, y,
+    x,
+    y,
     sparkleOffset: Random.range(0, Math.PI * 2),
   };
 }
@@ -180,7 +179,8 @@ function createFoam(canvasWidth, canvasHeight) {
   let y = Random.range(canvasHeight - 150, canvasHeight);
   let wave = Random.choose([0, 1]);
   return {
-    x, y,
+    x,
+    y,
     wave,
     opacity: Random.range(0, Math.PI * 2),
   };
@@ -211,7 +211,7 @@ function createRow(canvasWidth, canvasHeight) {
   let height = Random.range(20, 60);
   let color;
   if (Random.next() < 0.6) {
-    let dy = ((y - (canvasHeight - 190)) / 200);
+    let dy = (y - (canvasHeight - 190)) / 200;
     if (dy < 0.3) {
       color = SEA_ROWS_COLORS[0];
     } else if (dy < 0.6) {
@@ -223,7 +223,8 @@ function createRow(canvasWidth, canvasHeight) {
     color = Random.choose(SEA_ROWS_COLORS);
   }
   return {
-    x, y,
+    x,
+    y,
     color,
     height,
   };

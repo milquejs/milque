@@ -31,8 +31,14 @@ export const ASSETS = {
 };
 
 export const INPUTS = {
-  MoveLeft: new ButtonBinding('moveLeft', [KeyCodes.KEY_A, KeyCodes.ARROW_LEFT]),
-  MoveRight: new ButtonBinding('moveRight', [KeyCodes.KEY_D, KeyCodes.ARROW_RIGHT]),
+  MoveLeft: new ButtonBinding('moveLeft', [
+    KeyCodes.KEY_A,
+    KeyCodes.ARROW_LEFT,
+  ]),
+  MoveRight: new ButtonBinding('moveRight', [
+    KeyCodes.KEY_D,
+    KeyCodes.ARROW_RIGHT,
+  ]),
   Fish: new ButtonBinding('fish', [KeyCodes.SPACE]),
 };
 
@@ -55,7 +61,7 @@ async function main() {
 }
 
 /**
- * @param {Game} game 
+ * @param {Game} game
  */
 async function start(game) {
   const { display } = game;
@@ -74,12 +80,13 @@ async function start(game) {
   const seaWorld = Sea.init(game);
 
   let fishes = [];
-  for(let i = 0; i < 6; ++i) {
+  for (let i = 0; i < 6; ++i) {
     let x = Random.range(0, canvasWidth);
     let y = Random.range(canvasHeight - 100, canvasHeight);
     let offset = Random.range(0, Math.PI * 2);
     fishes.push({
-      x, y,
+      x,
+      y,
       offset,
       size: Random.range(0.3, 0.5),
       speed: Random.range(1, 3) * Random.sign(),
@@ -87,7 +94,7 @@ async function start(game) {
   }
 
   let ripples = [];
-  for(let i = 0; i < 10; ++i) {
+  for (let i = 0; i < 10; ++i) {
     ripples.push({
       x: 0,
       y: 0,
@@ -124,8 +131,9 @@ async function start(game) {
     Sky.update(deltaTime, game, skyWorld);
     Sea.update(deltaTime, game, seaWorld);
 
-    for(let fish of fishes) {
-      fish.x += (0.2 + (Math.sin(now / 1000 + fish.offset) + 1) / 2) * fish.speed;
+    for (let fish of fishes) {
+      fish.x +=
+        (0.2 + (Math.sin(now / 1000 + fish.offset) + 1) / 2) * fish.speed;
       if (fish.x > canvasWidth) {
         fish.x = 0;
         fish.y = Random.range(canvasHeight - 100, canvasHeight);
@@ -134,10 +142,12 @@ async function start(game) {
         fish.x = canvasWidth;
         fish.y = Random.range(canvasHeight - 100, canvasHeight);
       }
-      if (Math.floor(now / 10 + fish.y * 10) % 400 === 0
-        && Math.random() < 0.1) {
+      if (
+        Math.floor(now / 10 + fish.y * 10) % 400 === 0 &&
+        Math.random() < 0.1
+      ) {
         let target = null;
-        for(let ripple of ripples) {
+        for (let ripple of ripples) {
           if (ripple.age <= 0) {
             target = ripple;
           }
@@ -149,7 +159,7 @@ async function start(game) {
         }
       }
     }
-    for(let ripple of ripples) {
+    for (let ripple of ripples) {
       if (ripple.age > 0) {
         ripple.age -= deltaTime;
       }
@@ -157,7 +167,7 @@ async function start(game) {
 
     // Boat
     let dx = INPUTS.MoveRight.value - INPUTS.MoveLeft.value;
-    boat.x += dx * deltaTime / 10;
+    boat.x += (dx * deltaTime) / 10;
     boat.y = canvas.height - 160;
 
     if (!player.fishing) {
@@ -189,14 +199,14 @@ async function start(game) {
       Sea.render(ctx, game, seaWorld);
     }
     ctx.popTransform();
-    
+
     ctx.setTextureImage(6, ASSETS.FishImage.current);
     ctx.setColor(0x333333);
-    for(let fish of fishes) {
+    for (let fish of fishes) {
       ctx.pushTransform();
       let dt = Math.sin(fish.x / 5 + fish.y);
       let dt2 = Math.cos(fish.x / 20);
-      ctx.setTranslation(fish.x, fish.y + (dt2 * 4));
+      ctx.setTranslation(fish.x, fish.y + dt2 * 4);
       ctx.setOpacityFloat(0.5);
       ctx.setRotation(0, 0, 90 + dt * 4 + (fish.speed < 0 ? 180 : 0));
       ctx.setScale(fish.size, fish.size + ((dt2 + 1) / 2) * 0.1);
@@ -206,8 +216,8 @@ async function start(game) {
     ctx.setOpacityFloat(1);
     ctx.resetTransform();
 
-    ctx.setColor(0xFFFFFF);
-    for(let ripple of ripples) {
+    ctx.setColor(0xffffff);
+    for (let ripple of ripples) {
       if (ripple.age <= 0) continue;
       let dr = ripple.age / 10_000;
       ctx.setTranslation(ripple.x, ripple.y, 10);
@@ -229,18 +239,23 @@ async function start(game) {
     let dh = 20;
     ctx.drawBox(boat.x, boat.y + dy, dw, dh);
     ctx.setColor(0x4f3b2a);
-    ctx.drawRect(boat.x - dw, boat.y + dh - 5 - dy, boat.x + dw, boat.y + dh + 5);
+    ctx.drawRect(
+      boat.x - dw,
+      boat.y + dh - 5 - dy,
+      boat.x + dw,
+      boat.y + dh + 5
+    );
     ctx.resetTransform();
 
     // Player
     if (player.fishing) {
-      ctx.setColor(0x00FFAA);
+      ctx.setColor(0x00ffaa);
     } else {
-      ctx.setColor(0xFFFFFF);
+      ctx.setColor(0xffffff);
     }
     ctx.drawCircle(boat.x, boat.y - 80);
 
-    ctx.setColor(0xFFFFFF);
+    ctx.setColor(0xffffff);
     ctx.drawLineBox(player.fishSpotX, player.fishSpotY);
   });
 }

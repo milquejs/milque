@@ -9,15 +9,10 @@ import { hex } from './renderer/color.js';
  * @typedef {import('./main.js').Game} Game
  */
 
-const STAR_COLORS = [
-  0xfafafa
-];
+const STAR_COLORS = [0xfafafa];
 const GRADIENT_TOP = 0x8278b4;
 const GRADIENT_BOTTOM = 0xb4bee6;
-const STREAK_COLORS = [
-  0xb4a0e6,
-  0xcdbff2,
-];
+const STREAK_COLORS = [0xb4a0e6, 0xcdbff2];
 
 const SKY_STAR_COUNT = 40;
 const SKY_STREAK_COUNT = 12;
@@ -27,7 +22,11 @@ const SKY_CLOUD_COUNT = 8;
 
 export const ASSETS = {
   StarImage: new AssetRef('star.png', 'res/star.png', loadImage),
-  BlurStrokeImage: new AssetRef('blur_stroke.png', 'res/blur_stroke.png', loadImage),
+  BlurStrokeImage: new AssetRef(
+    'blur_stroke.png',
+    'res/blur_stroke.png',
+    loadImage
+  ),
   CircleImage: new AssetRef('circle.png', 'res/circle.png', loadImage),
   CloudImage: new AssetRef('cloud.png', 'res/cloud.png', loadImage),
 };
@@ -51,19 +50,19 @@ export function init(game) {
     stars.push(inst);
   }
   const streaks = [];
-  for(let i = 0; i < SKY_STREAK_COUNT; ++i) {
+  for (let i = 0; i < SKY_STREAK_COUNT; ++i) {
     streaks.push(createStreak(canvasWidth, canvasHeight));
   }
   const bigStreaks = [];
-  for(let i = 0; i < SKY_BIG_STREAK_COUNT; ++i) {
+  for (let i = 0; i < SKY_BIG_STREAK_COUNT; ++i) {
     bigStreaks.push(createBigStreak(canvasWidth, canvasHeight));
   }
   const shades = [];
-  for(let i = 0; i < SKY_SHADE_COUNT; ++i) {
+  for (let i = 0; i < SKY_SHADE_COUNT; ++i) {
     shades.push(createShade(canvasWidth, canvasHeight));
   }
   const clouds = [];
-  for(let i = 0; i < SKY_CLOUD_COUNT; ++i) {
+  for (let i = 0; i < SKY_CLOUD_COUNT; ++i) {
     clouds.push(createCloud(canvasWidth, canvasHeight));
   }
   return {
@@ -138,7 +137,14 @@ export function render(ctx, game, world) {
   const { shades, streaks, bigStreaks, stars, clouds } = world;
 
   // Sky
-  ctx.drawGradientRect(GRADIENT_TOP, GRADIENT_BOTTOM, 0, 0, canvasWidth, canvasHeight);
+  ctx.drawGradientRect(
+    GRADIENT_TOP,
+    GRADIENT_BOTTOM,
+    0,
+    0,
+    canvasWidth,
+    canvasHeight
+  );
 
   // Shades
   for (let s of shades) {
@@ -181,7 +187,13 @@ export function render(ctx, game, world) {
     let f = Math.sin((now / 500) * s.wiggleSpeed + s.wiggleOffset) + 1;
     let x = (s.x + starOffsetX) % canvasWidth;
     let y = (s.y + starOffsetY) % canvasHeight;
-    ctx.drawTexturedBox(0, x, canvasHeight - y, 16 * s.scale, 16 * s.scale + f * s.scale * 8);
+    ctx.drawTexturedBox(
+      0,
+      x,
+      canvasHeight - y,
+      16 * s.scale,
+      16 * s.scale + f * s.scale * 8
+    );
   }
   ctx.setOpacityFloat(1);
 
@@ -199,8 +211,8 @@ export function render(ctx, game, world) {
     ctx.setColor(c.highlight);
     ctx.setScale(c.w * 1.2, c.h * 1.2);
     ctx.setTranslation(x, c.y);
-    let ratio = (x / canvasWidth);
-    ctx.drawTexturedBox(4, (10 * (-ratio * 2 + 1)), cloudOffsetY);
+    let ratio = x / canvasWidth;
+    ctx.drawTexturedBox(4, 10 * (-ratio * 2 + 1), cloudOffsetY);
 
     ctx.setColor(c.lowlight);
     ctx.setScale(c.w, c.h);
@@ -241,7 +253,8 @@ function createStreak(canvasWidth, canvasHeight) {
   }
   let scale = Random.range(1, 2);
   return {
-    x, y,
+    x,
+    y,
     color,
     progress: Random.range(0, canvasHeight),
     speed: Random.range(0.1, 1.5),
@@ -260,7 +273,8 @@ function createBigStreak(canvasWidth, canvasHeight) {
   let y = Random.rangeInt(0, canvasHeight);
   let color = STREAK_COLORS[1];
   return {
-    x, y,
+    x,
+    y,
     color,
     progress: 0,
     speed: Random.range(0.1, 0.5),
@@ -277,7 +291,11 @@ function createBigStreak(canvasWidth, canvasHeight) {
 function createShade(canvasWidth, canvasHeight) {
   let x = Random.range(0, canvasWidth);
   let y = Random.range(0, canvasHeight);
-  let color = hex.mix(GRADIENT_BOTTOM, GRADIENT_TOP, clamp(y / canvasHeight -0.06, 0, 1));
+  let color = hex.mix(
+    GRADIENT_BOTTOM,
+    GRADIENT_TOP,
+    clamp(y / canvasHeight - 0.06, 0, 1)
+  );
   let height = Random.range(50, 80);
   return {
     x,
@@ -297,11 +315,13 @@ function createCloud(canvasWidth, canvasHeight) {
   let y = Random.range(0, canvasHeight * 0.6);
   let w = Random.range(2, 4);
   let h = Random.range(0.2, 1);
-  let highlight = 0xFFFFFF;
-  let lowlight = 0xE0EEFF;
+  let highlight = 0xffffff;
+  let lowlight = 0xe0eeff;
   return {
-    x, y,
-    w, h,
+    x,
+    y,
+    w,
+    h,
     highlight,
     lowlight,
     progress: 0,

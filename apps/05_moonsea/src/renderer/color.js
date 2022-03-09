@@ -28,9 +28,11 @@ export const hex = {
     let g = Math.floor(Math.max(Math.min(greenf, 1), 0) * 255);
     let b = Math.floor(Math.max(Math.min(bluef, 1), 0) * 255);
     let a = Math.floor(Math.max(Math.min(alphaf, 1), 0) * 255);
-    return (a & 0xff) << 24 | (r & 0xff) << 16 | (g & 0xff) << 8 | (b & 0xff);
+    return (
+      ((a & 0xff) << 24) | ((r & 0xff) << 16) | ((g & 0xff) << 8) | (b & 0xff)
+    );
   },
-  mix(from = 0x000000, to = 0xFFFFFF, delta = 0.5) {
+  mix(from = 0x000000, to = 0xffffff, delta = 0.5) {
     if (to < from) {
       let temp = from;
       from = to;
@@ -48,5 +50,5 @@ export const hex = {
       af = undefined;
     }
     return this.hexf(rf, gf, bf, af);
-  }
+  },
 };
