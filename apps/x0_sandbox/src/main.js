@@ -30,8 +30,6 @@ import { main as Miners } from './045/main.js';
 import { main as Moonset } from './046/main.js';
 // eslint-disable-next-line no-unused-vars
 import { main as Starfield } from './047/main.js';
-// eslint-disable-next-line no-unused-vars
-import { main as Moonsea } from './048/main.js';
 
 import { AssetPipeline } from './loader/AssetPipeline.js';
 
@@ -101,7 +99,6 @@ async function main() {
   // await BreadBox(game);
   // await GerryMan(game);
   // await Miners(game);
-  // await Moonset(game);
+  await Moonset(game);
   // await Starfield(game);
-  await Moonsea(game);
 }

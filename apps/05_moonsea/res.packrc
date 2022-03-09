@@ -1,0 +1,44 @@
+{
+    "version": "1.0.0",
+    "manifest": {
+        "files": [
+            {
+                "name": "res/blur_stroke.png",
+                "bytes": 1928,
+                "crc": -1808357908
+            },
+            {
+                "name": "res/circle.png",
+                "bytes": 3445,
+                "crc": -1901160448
+            },
+            {
+                "name": "res/cloud.png",
+                "bytes": 1749,
+                "crc": 2100736471
+            },
+            {
+                "name": "res/fish_shadow.png",
+                "bytes": 1572,
+                "crc": 612103120
+            },
+            {
+                "name": "res/star.png",
+                "bytes": 457,
+                "crc": 1825883708
+            },
+            {
+                "name": "res/wave1.png",
+                "bytes": 1378,
+                "crc": 921011613
+            },
+            {
+                "name": "res/wave2.png",
+                "bytes": 1295,
+                "crc": -1905161632
+            }
+        ],
+        "totalBytes": 11824,
+        "checksum": -664013745
+    }
+}

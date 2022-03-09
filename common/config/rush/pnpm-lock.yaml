@@ -9,9 +9,11 @@ dependencies:
   '@rush-temp/display': file:projects/display.tgz
   '@rush-temp/input': file:projects/input.tgz
   '@rush-temp/laneworld': file:projects/laneworld.tgz
+  '@rush-temp/marde': file:projects/marde.tgz
   '@rush-temp/milque': file:projects/milque.tgz
   '@rush-temp/mines': file:projects/mines.tgz
   '@rush-temp/mogli': file:projects/mogli.tgz
+  '@rush-temp/moonsea': file:projects/moonsea.tgz
   '@rush-temp/random': file:projects/random.tgz
   '@rush-temp/sandbox': file:projects/sandbox.tgz
   '@rush-temp/scene': file:projects/scene.tgz
@@ -4246,6 +4248,20 @@ packages:
       integrity: sha512-bolCtrk29gQpmqW308S5udmQdWrX1Rgc8vStdTaG5nR4Xm1ch/c5k0u98hYnLyF5ZbXzo+n9F1lJpYQcIoXtsA==
       tarball: file:projects/laneworld.tgz
     version: 0.0.0
+  file:projects/marde.tgz:
+    dependencies:
+      eslint: 7.25.0
+      eslint-config-prettier: 8.3.0_eslint@7.25.0
+      gl-matrix: 3.3.0
+      prettier: 2.4.1
+      stylelint: 13.13.1
+      stylelint-config-standard: 22.0.0_stylelint@13.13.1
+    dev: false
+    name: '@rush-temp/marde'
+    resolution:
+      integrity: sha512-D1AMk4eaFWJXm4TRgbCye5bNptJPC4Eh2lABDRGXGHaOK+Co11ebMSg6DeUJyAOujYMziAWtnpp11pP+x2W+xA==
+      tarball: file:projects/marde.tgz
+    version: 0.0.0
   file:projects/milque.tgz:
     dependencies:
       eslint: 7.25.0
@@ -4284,6 +4300,20 @@ packages:
     resolution:
       integrity: sha512-rTAd0TEklQ8kIzEcQAs8W/V1Eo1t49oTwDMtuE96qkzdZyZaq+g8YmPcLx/MNWgloI/3DgTJ9JAPckSeDLEWzw==
       tarball: file:projects/mogli.tgz
+    version: 0.0.0
+  file:projects/moonsea.tgz:
+    dependencies:
+      eslint: 7.25.0
+      eslint-config-prettier: 8.3.0_eslint@7.25.0
+      gl-matrix: 3.3.0
+      prettier: 2.4.1
+      stylelint: 13.13.1
+      stylelint-config-standard: 22.0.0_stylelint@13.13.1
+    dev: false
+    name: '@rush-temp/moonsea'
+    resolution:
+      integrity: sha512-rA8bCI5ukdcsIFqGjT5xY9oUnrg7iGpisVvoOl9j4mtaN6TgHHH+hi6uyow+8qvimxWP8AwqjMXMbJ95kGcO7g==
+      tarball: file:projects/moonsea.tgz
     version: 0.0.0
   file:projects/random.tgz:
     dependencies:
@@ -4381,9 +4411,11 @@ specifiers:
   '@rush-temp/display': file:./projects/display.tgz
   '@rush-temp/input': file:./projects/input.tgz
   '@rush-temp/laneworld': file:./projects/laneworld.tgz
+  '@rush-temp/marde': file:./projects/marde.tgz
   '@rush-temp/milque': file:./projects/milque.tgz
   '@rush-temp/mines': file:./projects/mines.tgz
   '@rush-temp/mogli': file:./projects/mogli.tgz
+  '@rush-temp/moonsea': file:./projects/moonsea.tgz
   '@rush-temp/random': file:./projects/random.tgz
   '@rush-temp/sandbox': file:./projects/sandbox.tgz
   '@rush-temp/scene': file:./projects/scene.tgz
