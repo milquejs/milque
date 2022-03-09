@@ -121,8 +121,8 @@ export class DrawContextFixedGLBase {
     return this;
   }
 
-  setRotation(angle) {
-    quat.fromEuler(this.rotationQuat, 0, 0, angle);
+  setRotation(angleX, angleY, angleZ) {
+    quat.fromEuler(this.rotationQuat, angleX, angleY, angleZ);
     return this;
   }
 

@@ -68,6 +68,11 @@
                 "crc": 1540253337
             },
             {
+                "name": "res/fish_shadow.png",
+                "bytes": 1572,
+                "crc": 612103120
+            },
+            {
                 "name": "res/font.atlas",
                 "bytes": 420,
                 "crc": 1225781864
@@ -173,7 +178,7 @@
                 "crc": -1905161632
             }
         ],
-        "totalBytes": 31661529,
-        "checksum": -98095830
+        "totalBytes": 31663101,
+        "checksum": -942651521
     }
 }

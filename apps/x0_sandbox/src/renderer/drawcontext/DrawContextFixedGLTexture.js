@@ -115,7 +115,7 @@ export class DrawContextFixedGLTexture extends DrawContextFixedGLShape {
    *
    * @param {number} textureUnit The unique texture unit
    * slot to use for this image.
-   * @param {Image} image The texture image source.
+   * @param {TexImageSource} image The texture image source.
    */
   setTextureImage(textureUnit, image) {
     let textureList = this.textureList;
@@ -273,7 +273,7 @@ export class DrawContextFixedGLTexture extends DrawContextFixedGLShape {
 
 /**
  * @param {WebGLRenderingContext} gl
- * @param {Image} image
+ * @param {TexImageSource} image
  * @returns {{ handle: WebGLTexture, width: number, height: number }}
  */
 function createTexture(gl, image) {

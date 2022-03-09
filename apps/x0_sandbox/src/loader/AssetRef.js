@@ -6,12 +6,34 @@ const DEFAULT_TIMEOUT_MILLIS = 5_000;
  */
 
 /**
+ * @param {import('@milque/asset').AssetPack} assetPack
+ * @param {Array<AssetRef>} refs
+ */
+export function bindRefs(assetPack, refs) {
+  for (let ref of refs) {
+    if (ref instanceof AssetRef) {
+      ref.register(assetPack);
+    }
+  }
+}
+
+export async function loadRefs(refs) {
+  let promises = [];
+  for (let ref of refs) {
+    if (ref instanceof AssetRef) {
+      promises.push(ref.load());
+    }
+  }
+  await Promise.all(promises);
+}
+
+/**
  * @template T
  */
 export class AssetRef {
   /**
    * @param {string} uri
-   * @param {string|Uint8Array|() => Promise<Uint8Array>} [source]
+   * @param {string|Uint8Array|(() => Promise<Uint8Array>)} [source]
    * @param {AssetLoader} [loader]
    */
   constructor(uri, source = null, loader = null) {
@@ -131,10 +153,9 @@ export class AssetRef {
 }
 
 /**
- *
  * @param {AssetPack} assetPack
  * @param {string} uri
- * @param {string|Uint8Array} source
+ * @param {string|Uint8Array|(() => Promise<any>)} source
  * @param {AssetLoader} loader
  * @param {number} timeout
  */
