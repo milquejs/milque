@@ -10,6 +10,7 @@ import { AssetRef, bindRefs, loadRefs } from './loader/AssetRef.js';
 import { Random } from '@milque/random';
 import { ButtonBinding, KeyCodes } from '@milque/input';
 import { loadImage } from './loader/ImageLoader.js';
+import { hex } from './renderer/color.js';
 
 /**
  * @typedef {import('@milque/asset').AssetPack} AssetPack
@@ -28,6 +29,7 @@ import { loadImage } from './loader/ImageLoader.js';
 
 export const ASSETS = {
   FishImage: new AssetRef('fish_shadow.png', 'res/fish_shadow.png', loadImage),
+  CanoeImage: new AssetRef('canoe.png', 'res/canoe.png', loadImage),
 };
 
 export const INPUTS = {
@@ -103,15 +105,20 @@ async function start(game) {
   }
 
   let boat = {
-    x: 0,
+    x: canvas.width,
     y: canvas.height - 100,
   };
 
   let player = {
     chargeTime: 0,
     fishing: false,
-    fishSpotX: 0,
-    fishSpotY: 0,
+    fishSpotX: boat.x,
+    fishSpotY: boat.y,
+    casting: false,
+    chargeX: 0,
+    chargeY: 0,
+    chargeMotionX: 0,
+    chargeMotionY: 0,
   };
 
   display.addEventListener('frame', (/** @type {CustomEvent} */ e) => {
@@ -172,7 +179,10 @@ async function start(game) {
 
     if (!player.fishing) {
       if (INPUTS.Fish.down) {
-        player.chargeTime += deltaTime;
+        player.chargeTime += deltaTime + player.chargeTime / 4;
+        if (player.chargeTime > 4000) {
+          player.chargeTime = 4000;
+        }
       } else if (INPUTS.Fish.released && player.chargeTime > 0) {
         player.chargeTime = 0;
         player.fishing = true;
@@ -180,7 +190,12 @@ async function start(game) {
       if (player.chargeTime > 0) {
         let ct = player.chargeTime / 10;
         player.fishSpotX = boat.x - ct;
-        player.fishSpotY = boat.y + 60 + ct / 4;
+        player.fishSpotY = boat.y + 20 + ct / 4;
+        player.chargeMotionY = -ct / 100;
+        player.chargeMotionX = -ct / 100;
+        player.chargeX = boat.x;
+        player.chargeY = boat.y;
+        player.casting = true;
       }
     } else {
       if (INPUTS.Fish.pressed) {
@@ -216,34 +231,28 @@ async function start(game) {
     ctx.setOpacityFloat(1);
     ctx.resetTransform();
 
-    ctx.setColor(0xffffff);
     for (let ripple of ripples) {
       if (ripple.age <= 0) continue;
-      let dr = ripple.age / 10_000;
-      ctx.setTranslation(ripple.x, ripple.y, 10);
-      let ds = (1 - dr) * 0.9;
-      ctx.setScale(2 + ds * 2, 0.5 + ds);
-      ctx.setOpacityFloat(dr);
-      ctx.drawLineCircle();
-      let dt = (1 - dr) * 0.5;
-      ctx.setScale(1 + dt * 2, 0.1 + dt);
-      ctx.drawLineCircle();
+      drawRipple(ctx, ripple.x, ripple.y, ripple.age);
     }
-    ctx.setOpacityFloat(1);
-    ctx.resetTransform();
 
     // Boat
     ctx.setColor(0x725842);
     let dy = Math.sin(now / 400) * 2;
-    let dw = 80;
+    let dw = 100;
     let dh = 20;
-    ctx.drawBox(boat.x, boat.y + dy, dw, dh);
+    let dr = Math.cos(now / 300);
+    ctx.setRotation(0, 0, dr);
+    ctx.setTranslation(boat.x, boat.y + dy);
+    ctx.setTextureImage(7, ASSETS.CanoeImage.current);
+    ctx.drawTexturedBox(7, 0, 0, dw, dh);
+    ctx.resetTransform();
     ctx.setColor(0x4f3b2a);
     ctx.drawRect(
-      boat.x - dw,
-      boat.y + dh - 5 - dy,
-      boat.x + dw,
-      boat.y + dh + 5
+      boat.x - dw + 10,
+      boat.y + dh - 10 - dy,
+      boat.x + dw - 10,
+      boat.y + dh + 2
     );
     ctx.resetTransform();
 
@@ -253,9 +262,68 @@ async function start(game) {
     } else {
       ctx.setColor(0xffffff);
     }
-    ctx.drawCircle(boat.x, boat.y - 80);
+    ctx.drawCircle(boat.x, boat.y - 15);
 
-    ctx.setColor(0xffffff);
-    ctx.drawLineBox(player.fishSpotX, player.fishSpotY);
+    // Fishing rod
+    if (player.casting) {
+      if (player.chargeY > player.fishSpotY) {
+        player.fishSpotX = player.chargeX;
+        player.fishSpotY = player.chargeY;
+        player.casting = false;
+      } else {
+        player.chargeMotionY += 0.4;
+        player.chargeX += player.chargeMotionX;
+        player.chargeY += player.chargeMotionY;
+  
+        let x = player.chargeX;
+        let y = player.chargeY;
+  
+        // Fishing Line
+        ctx.setColor(0x000000);
+        ctx.drawLine(boat.x, boat.y, x, y);
+  
+        // Bauble
+        ctx.setColor(0xFF0000);
+        ctx.drawCircle(x, y);
+        ctx.setColor(0xFFFFFF);
+        ctx.drawBox(x, y, 8, 2);
+      }
+    } else if (player.fishing) {
+      let bob = Math.sin(now / 400);
+      let bobRatio = (bob + 1) / 2;
+      let spotX = player.fishSpotX;
+      let spotY = player.fishSpotY + bob;
+
+      // Ripple?
+      if (bob > 0) {
+        // drawRipple(ctx, spotX, spotY, bob);
+      }
+  
+      // Fishing Line
+      ctx.setColor(0x000000);
+      ctx.drawLine(boat.x, boat.y, spotX, spotY);
+  
+      // Bauble
+      ctx.setColor(hex.mix(0xFF0000, 0xAA0000, bobRatio));
+      ctx.drawCircle(spotX, spotY);
+      ctx.setColor(hex.mix(0xFFFFFF, 0xAAAAAA, bobRatio));
+      ctx.drawBox(spotX, spotY, 8, 2);
+    }
   });
+}
+
+function drawRipple(ctx, x, y, age) {
+  if (age <= 0) return;
+  ctx.setColor(0xffffff);
+  let dr = age / 10_000;
+  ctx.setTranslation(x, y, 10);
+  let ds = (1 - dr) * 0.9;
+  ctx.setScale(2 + ds * 2, 0.5 + ds);
+  ctx.setOpacityFloat(dr);
+  ctx.drawLineCircle();
+  let dt = (1 - dr) * 0.5;
+  ctx.setScale(1 + dt * 2, 0.1 + dt);
+  ctx.drawLineCircle();
+  ctx.setOpacityFloat(1);
+  ctx.resetTransform();
 }

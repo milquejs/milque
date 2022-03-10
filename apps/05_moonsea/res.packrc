@@ -8,6 +8,11 @@
                 "crc": -1808357908
             },
             {
+                "name": "res/canoe.png",
+                "bytes": 1342,
+                "crc": 1001121453
+            },
+            {
                 "name": "res/circle.png",
                 "bytes": 3445,
                 "crc": -1901160448
@@ -38,7 +43,7 @@
                 "crc": -1905161632
             }
         ],
-        "totalBytes": 11824,
-        "checksum": -664013745
+        "totalBytes": 13166,
+        "checksum": 229345387
     }
 }

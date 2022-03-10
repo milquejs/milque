@@ -33,11 +33,6 @@ export const hex = {
     );
   },
   mix(from = 0x000000, to = 0xffffff, delta = 0.5) {
-    if (to < from) {
-      let temp = from;
-      from = to;
-      to = temp;
-    }
     let rm = this.redf(from);
     let gm = this.greenf(from);
     let bm = this.bluef(from);
