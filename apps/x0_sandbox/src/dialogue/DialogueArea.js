@@ -94,7 +94,7 @@ export class DialogueArea extends HTMLElement {
         if (value) {
             this.pause();
         } else {
-            this.resume();
+            this.play();
         }
     }
 
@@ -159,7 +159,7 @@ export class DialogueArea extends HTMLElement {
         this._containerElement.innerHTML = '';
     }
 
-    resume() {
+    play() {
         this._paused = false;
         for(let animation of this._currentAnimations) {
             animation.play();
@@ -284,8 +284,8 @@ export class DialogueArea extends HTMLElement {
         }
         this._typeWriteIndex = 0;
 
-        if (this.hasAttribute('autostart')) {
-            this.resume();
+        if (this.hasAttribute('autoplay')) {
+            this.play();
         }
     }
 
