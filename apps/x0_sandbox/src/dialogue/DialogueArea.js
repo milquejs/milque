@@ -98,6 +98,14 @@ export class DialogueArea extends HTMLElement {
         }
     }
 
+    get autoplay() {
+        return this.hasAttribute('autoplay');
+    }
+
+    set autoplay(value) {
+        this.toggleAttribute('autoplay', value);
+    }
+
     constructor() {
         super();
         const shadowRoot = this.attachShadow({ mode: 'open' });
@@ -148,6 +156,8 @@ export class DialogueArea extends HTMLElement {
      * Override for web component.
      */
     connectedCallback() {
+        upgradeProperty(this, 'autoplay');
+
         this.onSlotChange();
     }
 
