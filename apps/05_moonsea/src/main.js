@@ -11,6 +11,7 @@ import { Random } from '@milque/random';
 import { ButtonBinding, KeyCodes } from '@milque/input';
 import { loadImage } from './loader/ImageLoader.js';
 import { hex } from './renderer/color.js';
+import { clamp } from '@milque/util';
 
 /**
  * @typedef {import('@milque/asset').AssetPack} AssetPack
@@ -28,8 +29,11 @@ import { hex } from './renderer/color.js';
  */
 
 export const ASSETS = {
-  FishImage: new AssetRef('fish_shadow.png', 'res/fish_shadow.png', loadImage),
-  CanoeImage: new AssetRef('canoe.png', 'res/canoe.png', loadImage),
+  FishImage: new AssetRef('fish_shadow', 'res/fish_shadow.png', loadImage),
+  CanoeImage: new AssetRef('canoe', 'res/canoe.png', loadImage),
+  PierImage: new AssetRef('pier', 'res/pier.png', loadImage),
+  PierLegImage: new AssetRef('pierLeg', 'res/pier_leg.png', loadImage),
+  BucketImage: new AssetRef('bucket', 'res/bucket.png', loadImage),
 };
 
 export const INPUTS = {
@@ -312,6 +316,42 @@ async function start(game) {
       ctx.setColor(hex.mix(0xFFFFFF, 0xAAAAAA, bobRatio));
       ctx.drawBox(spotX, spotY, 8, 2);
     }
+
+    // Pier Shadow
+    ctx.setTranslation(canvasWidth - 50, canvasHeight - 110)
+    ctx.setScale(20, 3);
+    ctx.setColor(0x333333);
+    ctx.setOpacityFloat(0.3);
+    ctx.drawCircle();
+    ctx.resetTransform();
+
+    // Pier Leg Ripples
+    ctx.setColor(0xffffff);
+    let rippleProgress = Math.sin(now / 800) * 2_000 + 3_000;
+    let rippleProgressAlt = Math.cos(now / 800) * 2_000 + 3_000;
+    drawRipple(ctx, canvasWidth - 180, canvasHeight - 113, rippleProgress);
+    drawRipple(ctx, canvasWidth - 100, canvasHeight - 92, rippleProgressAlt);
+
+    // Pier
+    ctx.setTranslation(0, 0, 20);
+    {
+      ctx.setColor(0x99775a);
+      ctx.setTextureImage(8, ASSETS.PierLegImage.current);
+      ctx.drawTexturedBox(8, canvasWidth - 100, canvasHeight - 110, 10, 20);
+      ctx.drawTexturedBox(8, canvasWidth - 180, canvasHeight - 120, 8, 10, 0, 30);
+      ctx.setTextureImage(7, ASSETS.PierImage.current);
+      ctx.drawTexturedRect(7, canvasWidth - ASSETS.PierImage.current.width, canvasHeight - 140, canvasWidth, canvasHeight - 100);
+    }
+    ctx.resetTransform();
+
+    // Objects
+    ctx.setTranslation(0, 0, 30);
+    {
+      ctx.setTextureImage(9, ASSETS.BucketImage.current);
+      ctx.setColor(0xc3d3d8);
+      ctx.drawTexturedBox(9, canvasWidth - 140, canvasHeight - 140, 15);
+    }
+    ctx.resetTransform();
   });
 }
 

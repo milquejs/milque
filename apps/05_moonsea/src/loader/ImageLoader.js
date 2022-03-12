@@ -1,3 +1,8 @@
+/**
+ * @param {string|ArrayBuffer} src 
+ * @param {string} imageType 
+ * @returns {Promise<HTMLImageElement>}
+ */
 export async function loadImage(src, imageType = undefined) {
   if (typeof src === 'string') {
     const response = await fetch(src);

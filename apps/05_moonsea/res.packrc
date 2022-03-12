@@ -8,6 +8,11 @@
                 "crc": -1808357908
             },
             {
+                "name": "res/bucket.png",
+                "bytes": 4570,
+                "crc": -1199825004
+            },
+            {
                 "name": "res/canoe.png",
                 "bytes": 1342,
                 "crc": 1001121453
@@ -28,6 +33,16 @@
                 "crc": 612103120
             },
             {
+                "name": "res/pier_leg.png",
+                "bytes": 1240,
+                "crc": 1492970702
+            },
+            {
+                "name": "res/pier.png",
+                "bytes": 13365,
+                "crc": 1719327555
+            },
+            {
                 "name": "res/star.png",
                 "bytes": 457,
                 "crc": 1825883708
@@ -43,7 +58,7 @@
                 "crc": -1905161632
             }
         ],
-        "totalBytes": 13166,
-        "checksum": 229345387
+        "totalBytes": 32341,
+        "checksum": 798114000
     }
 }
