@@ -33,6 +33,26 @@
                 "crc": 612103120
             },
             {
+                "name": "res/music_1.wav",
+                "bytes": 8102752,
+                "crc": -1978189953
+            },
+            {
+                "name": "res/music_2.wav",
+                "bytes": 8102752,
+                "crc": -1239564233
+            },
+            {
+                "name": "res/music_back.wav",
+                "bytes": 3885196,
+                "crc": 1314222384
+            },
+            {
+                "name": "res/music.flp",
+                "bytes": 86233,
+                "crc": -91477353
+            },
+            {
                 "name": "res/pier_leg.png",
                 "bytes": 1240,
                 "crc": 1492970702
@@ -58,7 +78,7 @@
                 "crc": -1905161632
             }
         ],
-        "totalBytes": 32341,
-        "checksum": 798114000
+        "totalBytes": 20209274,
+        "checksum": 1103098225
     }
 }

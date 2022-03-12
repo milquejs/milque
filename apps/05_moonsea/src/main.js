@@ -5,15 +5,16 @@ import './error.js';
 
 import './dialogue/DialogueArea.js';
 
-import { DrawContextFixedGLText } from './renderer/drawcontext/DrawContextFixedGLText.js';
-import * as Sky from './Sky.js';
-import * as Sea from './Sea.js';
-import { AssetRef, bindRefs, loadRefs } from './loader/AssetRef.js';
 import { Random } from '@milque/random';
 import { ButtonBinding, KeyCodes } from '@milque/input';
+
+import { DrawContextFixedGLText } from './renderer/drawcontext/DrawContextFixedGLText.js';
+import { AssetRef, bindRefs, loadRefs } from './loader/AssetRef.js';
 import { loadImage } from './loader/ImageLoader.js';
+import { loadSound } from './sound/SoundLoader.js';
 import { hex } from './renderer/color.js';
-import { clamp } from '@milque/util';
+import * as Sky from './Sky.js';
+import * as Sea from './Sea.js';
 
 /**
  * @typedef {import('@milque/asset').AssetPack} AssetPack
@@ -36,6 +37,9 @@ export const ASSETS = {
   PierImage: new AssetRef('pier', 'res/pier.png', loadImage),
   PierLegImage: new AssetRef('pierLeg', 'res/pier_leg.png', loadImage),
   BucketImage: new AssetRef('bucket', 'res/bucket.png', loadImage),
+  MusicBack: new AssetRef('musicBack', 'res/music_back.wav', loadSound),
+  MusicLayer1: new AssetRef('musicLayer1', 'res/music_1.wav', loadSound),
+  MusicLayer2: new AssetRef('musicLayer2', 'res/music_2.wav', loadSound),
 };
 
 export const INPUTS = {
@@ -130,12 +134,17 @@ async function start(game) {
     chargeMotionY: 0,
   };
 
+  let musicCtx = {
+    progression: 0,
+  };
+
   display.addEventListener('frame', (/** @type {CustomEvent} */ e) => {
     let { deltaTime, now } = e.detail;
     canvasWidth = game.display.width;
     canvasHeight = game.display.height;
 
     game.inputs.poll(now);
+    musicLoop(musicCtx);
 
     const worldSpeed = INPUTS.FastForward.down ? 30 : 1;
     deltaTime *= worldSpeed;
@@ -371,4 +380,22 @@ function drawRipple(ctx, x, y, age) {
   ctx.drawLineCircle();
   ctx.setOpacityFloat(1);
   ctx.resetTransform();
+}
+
+function musicLoop(ctx) {
+  if (!ASSETS.MusicBack.current.isPlaying()) {
+    ASSETS.MusicBack.current.setGain(0.4).play();
+    if (!ASSETS.MusicLayer1.current.isPlaying() && !ASSETS.MusicLayer2.current.isPlaying()) {
+      let delta = Random.rangeInt(4, 6);
+      ctx.progression += delta;
+
+      if (ctx.progression <= 8 && Random.next() < ctx.progression / 8) {
+        ASSETS.MusicLayer1.current.setGain(0.6).play();
+        ctx.progression += Random.rangeInt(-2, 4);
+      } else if (ctx.progression > 8) {
+        ASSETS.MusicLayer2.current.setGain(0.6).play();
+        ctx.progression /= 2;
+      }
+    }
+  }
 }
