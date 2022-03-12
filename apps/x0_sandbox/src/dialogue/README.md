@@ -104,6 +104,42 @@ execute this
 * Option 1 -> home
 * Option 2 -> elsewhere
 
--> home
+{ goto home }
+
+
+
+
+## Renpy script
+
+
+dialogue lines are assigned to speakers
+
+>person: Hi there!
+>me: Well hello.
+
+Speakers can have different colors.
+
+Showing images:
+- scene background
+- character profile
+- hiding
+
+Transitions
+- Fade
+- Dissolve
+
+Positioning images (at anchor points?)
+
+Play/Stop music/ sound
+- Fade in or out
+
+Pause / wait for user input or time
+
+
+Choices, Labels, and GOTOs
+
+Set/Get state flags
+
+Conditionals
 
 

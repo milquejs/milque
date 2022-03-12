@@ -105,7 +105,7 @@ async function start(game) {
   }
 
   let boat = {
-    x: canvas.width,
+    x: canvas.width + 100,
     y: canvas.height - 100,
   };
 
