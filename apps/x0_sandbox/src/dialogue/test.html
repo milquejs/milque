@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Test</title>
+    <style>
+      dialogue-area {
+        font-size: 2em;
+        line-height: 1.5em;
+      }
+    </style>
+  </head>
+  <body>
+    <p>
+      I... met a traveller from an antique land
+      Who said: "Two vast and trunkless legs of stone
+      Stand in the desert. Near them, on the sand,
+    </p>
+    <dialogue-area autostart>
+      <p>I... met a <a href="wat">traveller</a> from an antique land
+      <p>Who said: "Two vast and trunkless legs of stone
+      <p>Stand in the desert. Near them, on the sand,
+      <p>Half sunk, a shattered visage lies, whose frown,
+      <p>And wrinkled lip, and sneer of cold command,
+      <p>Tell that its <span style="color: red;">
+      <a href="wat"><p-wave>sculptor</p-wave></a></span>
+      well those passions read
+      <p>Which yet survive, stamped on these lifeless things,
+      <p>The hand that mocked them and the heart that fed:
+      <p>And on the pedestal these words appear:
+      <p-wait>8</p-wait>
+      <p>"My name is <a href="wat"><b><p-wave>Ozymandias</p-wave></b></a>, king of kings;
+      Look on my works, ye Mighty, and despair!"</p>
+      
+      <p>Nothing beside remains. Round the decay
+      <p>Of that colossal wreck, boundless and bare
+      <p>The lone and level sands stretch far away.
+    </dialogue-area>
+
+    <script src="main.js"></script>
+    <button onclick="document.querySelector('dialogue-area').resume()">Resume</button>
+    <button onclick="document.querySelector('dialogue-area').pause()">Pause</button>
+    <button onclick="document.querySelector('dialogue-area').reset()">Reset</button>
+    <button onclick="document.querySelector('dialogue-area').skip()">Skip</button>
+  </body>
+</html>
