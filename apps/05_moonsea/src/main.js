@@ -41,7 +41,10 @@ export const INPUTS = {
     KeyCodes.KEY_D,
     KeyCodes.ARROW_RIGHT,
   ]),
-  Fish: new ButtonBinding('fish', [KeyCodes.SPACE]),
+  Fish: new ButtonBinding('fish', [KeyCodes.KEY_Z]),
+  FastForward: new ButtonBinding('fastForward', [
+    KeyCodes.SPACE
+  ]),
 };
 
 window.addEventListener('DOMContentLoaded', main);
@@ -128,7 +131,7 @@ async function start(game) {
 
     game.inputs.poll(now);
 
-    const worldSpeed = 1;
+    const worldSpeed = INPUTS.FastForward.down ? 30 : 1;
     deltaTime *= worldSpeed;
     now *= worldSpeed;
     game.deltaTime = deltaTime;
