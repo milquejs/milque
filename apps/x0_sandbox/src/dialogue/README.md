@@ -84,3 +84,26 @@ needing to press anything.
 [RenPy](https://www.renpy.org/dl/4.1/tutorial.html)
 
 Let's use mdx :D
+
+
+## Script
+
+> someone: what about this?
+> someone else: and?
+
+The previous person just says this?
+- And this can be the response?
+Maybe, or something else?
+- This is pretty good.
+
+```
+execute this
+```
+
+> [someone else](:face="sad"): Nothing else?
+* Option 1 -> home
+* Option 2 -> elsewhere
+
+-> home
+
+

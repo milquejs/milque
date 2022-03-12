@@ -134,9 +134,13 @@ export class DialogueArea extends HTMLElement {
         this._paused = true;
 
         /** @protected */
+        this.onSlotChange = this.onSlotChange.bind(this);
+        /** @protected */
         this.onAnimationFinish = this.onAnimationFinish.bind(this);
         /** @protected */
         this.onWaitTimeout = this.onWaitTimeout.bind(this);
+
+        this._slotElement.addEventListener('slotchange', this.onSlotChange);
     }
 
     /**
@@ -144,21 +148,7 @@ export class DialogueArea extends HTMLElement {
      * Override for web component.
      */
     connectedCallback() {
-        const textFragment = createTextFragment(this._slotElement);
-        this._containerElement.appendChild(textFragment);
-        const children = this._containerElement.querySelectorAll('.outer');
-        let result = this._typeWriteQueue;
-        result.length = 0;
-        const l = children.length;
-        for (let i = 0; i < l; ++i) {
-            let outer = /** @type {HTMLElement} */ (children.item(i));
-            result.push(outer);
-        }
-        this._typeWriteIndex = 0;
-
-        if (this.hasAttribute('autostart')) {
-            this.resume();
-        }
+        this.onSlotChange();
     }
 
     /**
@@ -273,6 +263,30 @@ export class DialogueArea extends HTMLElement {
             inner.style.transform = 'scale(1,1)';
         }
         this._typeWriteIndex = queue.length;
+    }
+
+    /** @protected */
+    onSlotChange() {
+        this.reset();
+        
+        const container = this._containerElement;
+        const textFragment = createTextFragment(this._slotElement);
+        container.innerHTML = '';
+        container.appendChild(textFragment);
+
+        const children = container.querySelectorAll('.outer');
+        let queue = this._typeWriteQueue;
+        queue.length = 0;
+        const l = children.length;
+        for (let i = 0; i < l; ++i) {
+            let outer = /** @type {HTMLElement} */ (children.item(i));
+            queue.push(outer);
+        }
+        this._typeWriteIndex = 0;
+
+        if (this.hasAttribute('autostart')) {
+            this.resume();
+        }
     }
 
     /** @protected */
