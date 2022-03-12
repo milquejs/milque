@@ -17,9 +17,28 @@
       display-port {
         background-color: #000000;
       }
+      #subtitle {
+        position: absolute;
+        left: 0.5em;
+        bottom: 0.5em;
+        z-index: 10;
+        text-align: center;
+        text-shadow: 2px 2px 2px rgba(0, 0, 0, 0.5);
+        color: #ffffff;
+        font-size: 2em;
+        margin: 0;
+      }
     </style>
   </head>
   <body>
+    <dialogue-area id="subtitle" speed="0.5">
+      <p-wave>Moonsea</p-wave>
+    </dialogue-area>
+    <script>
+      setTimeout(() => {
+        document.querySelector('#subtitle').play();
+      }, 3_000);
+    </script>
     <display-port
       id="display"
       mode="scale"

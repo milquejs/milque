@@ -3,6 +3,8 @@ import '@milque/input';
 import '@milque/asset';
 import './error.js';
 
+import './dialogue/DialogueArea.js';
+
 import { DrawContextFixedGLText } from './renderer/drawcontext/DrawContextFixedGLText.js';
 import * as Sky from './Sky.js';
 import * as Sea from './Sea.js';
