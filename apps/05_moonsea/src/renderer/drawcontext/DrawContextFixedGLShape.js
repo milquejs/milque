@@ -85,7 +85,9 @@ export const HALF_CIRCLE_VERTICES = (() => {
   }
   return result;
 })();
-export const HALF_CIRCLE_VERTEX_COUNT = Math.trunc(HALF_CIRCLE_VERTICES.length / 2);
+export const HALF_CIRCLE_VERTEX_COUNT = Math.trunc(
+  HALF_CIRCLE_VERTICES.length / 2
+);
 export const QUAD_VERTICES = [
   // Top-Left
   0, 0, 1, 0, 0, 1,
@@ -174,17 +176,22 @@ export class DrawContextFixedGLShape extends DrawContextFixedGLBase {
     return this;
   }
 
-  drawQuadratic(fromX = 0, fromY = 0, toX = fromX + 16, toY = fromY, height = 16, segments = 9) {
+  drawQuadratic(
+    fromX = 0,
+    fromY = 0,
+    toX = fromX + 16,
+    toY = fromY,
+    height = 16,
+    segments = 9
+  ) {
     const dx = toX - fromX;
     const dy = toY - fromY;
     const centerX = dx / 2 + fromX;
     const centerY = dy / 2 + fromY + height;
-    let p = [
-      fromX, fromY, centerX, centerY, toX, toY
-    ];
+    let p = [fromX, fromY, centerX, centerY, toX, toY];
     findQuadraticPoints(p, p, segments);
     let l = p.length;
-    for(let i = 2; i <= l - 2; i += 2) {
+    for (let i = 2; i <= l - 2; i += 2) {
       this.drawLine(p[i - 2], p[i - 1], p[i], p[i + 1]);
     }
   }
@@ -245,8 +252,14 @@ export class DrawContextFixedGLShape extends DrawContextFixedGLBase {
 
   drawHalfCircle(x = 0, y = 0, r = 8) {
     return this.drawCircleImpl(
-      this.meshHalfCircle, HALF_CIRCLE_VERTEX_COUNT,
-      this.gl.TRIANGLES, x, y, this.depthFloat, r);
+      this.meshHalfCircle,
+      HALF_CIRCLE_VERTEX_COUNT,
+      this.gl.TRIANGLES,
+      x,
+      y,
+      this.depthFloat,
+      r
+    );
   }
 
   /** @private */
@@ -291,8 +304,8 @@ export class DrawContextFixedGLShape extends DrawContextFixedGLBase {
 
 /**
  * @param {Array<number>} out
- * @param {Array<number>} points 
- * @param {number} segments 
+ * @param {Array<number>} points
+ * @param {number} segments
  * @returns {Array<number>}
  */
 function findQuadraticPoints(out, points, segments) {
@@ -305,15 +318,20 @@ function findQuadraticPoints(out, points, segments) {
     fromX * fromX,
     centerX * centerX,
     toX * toX,
-    fromX, centerX, toX,
-    1, 1, 1);
+    fromX,
+    centerX,
+    toX,
+    1,
+    1,
+    1
+  );
   let vec = vec3.fromValues(fromY, centerY, toY);
   mat3.invert(mat, mat);
   let coeffs = vec3.transformMat3(vec, vec, mat);
   out.length = 0;
   out.push(fromX, fromY);
   let dx = toX - fromX;
-  for(let i = 1; i < segments - 1; ++i) {
+  for (let i = 1; i < segments - 1; ++i) {
     let j = i / segments;
     let x = dx * j + fromX;
     let y = coeffs[0] * x * x + coeffs[1] * x + coeffs[2];

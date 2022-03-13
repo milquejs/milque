@@ -10,9 +10,7 @@ export const INPUTS = {
     KeyCodes.ARROW_RIGHT,
   ]),
   Fish: new ButtonBinding('fish', [KeyCodes.KEY_Z]),
-  FastForward: new ButtonBinding('fastForward', [
-    KeyCodes.SPACE
-  ]),
+  FastForward: new ButtonBinding('fastForward', [KeyCodes.SPACE]),
 };
 
 /** @param {import('@milque/input').InputContext} inputContext */

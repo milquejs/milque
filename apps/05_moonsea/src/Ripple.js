@@ -6,8 +6,7 @@ import { bindRefs, loadRefs } from './loader/AssetRef.js';
  * @typedef {import('./main.js').Game} Game
  */
 
-export const ASSETS = {
-};
+export const ASSETS = {};
 
 /** @param {Game} game */
 export async function load(game) {
@@ -64,9 +63,9 @@ export function render(ctx, game, world) {
 }
 
 /**
- * @param {ReturnType<init>} rippleWorld 
- * @param {number} x 
- * @param {number} y 
+ * @param {ReturnType<init>} rippleWorld
+ * @param {number} x
+ * @param {number} y
  * @param {number} now
  */
 export function startRipple(rippleWorld, x, y, now) {
@@ -97,7 +96,7 @@ export function drawRippleEffect(ctx, x, y, startTime, now, loop = false) {
     return;
   }
 
-  let dr = 1 - (dt / MAX_RIPPLE_AGE);
+  let dr = 1 - dt / MAX_RIPPLE_AGE;
   let ds = (1 - dr) * 0.9;
   let du = (1 - dr) * 0.5;
 

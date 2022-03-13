@@ -123,7 +123,9 @@ export class DrawContextFixedGLShape extends DrawContextFixedGLBase {
   /** @override */
   setOpacityFloat(opacity) {
     super.setOpacityFloat(opacity);
-    this.shapeProgram.bind(this.gl).uniform('u_opacity_inv', 1 - this.opacityFloat);
+    this.shapeProgram
+      .bind(this.gl)
+      .uniform('u_opacity_inv', 1 - this.opacityFloat);
     return this;
   }
 

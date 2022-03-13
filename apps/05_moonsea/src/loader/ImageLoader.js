@@ -1,6 +1,6 @@
 /**
- * @param {string|ArrayBuffer} src 
- * @param {string} imageType 
+ * @param {string|ArrayBuffer} src
+ * @param {string} imageType
  * @returns {Promise<HTMLImageElement>}
  */
 export async function loadImage(src, imageType = undefined) {

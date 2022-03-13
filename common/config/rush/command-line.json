@@ -11,6 +11,15 @@
    * "rush my-global-command --help".
    */
   "commands": [
+    {
+      "commandKind": "bulk",
+      "name": "format",
+      "summary": "Format source files",
+      "description": "This is a command that formats source files for each project.",
+      "enableParallelism": true,
+      "ignoreDependencyOrder": true,
+      "ignoreMissingScript": true
+    }
     // {
     //   /**
     //    * (Required) Determines the type of custom command.

@@ -72,7 +72,9 @@ export class DrawContextFixedGLGradient extends DrawContextFixedGLTexture {
   /** @override */
   setOpacityFloat(opacity) {
     super.setOpacityFloat(opacity);
-    this.gradientProgram.bind(this.gl).uniform('u_opacity_inv', 1 - this.opacityFloat);
+    this.gradientProgram
+      .bind(this.gl)
+      .uniform('u_opacity_inv', 1 - this.opacityFloat);
     return this;
   }
 

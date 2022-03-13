@@ -129,8 +129,22 @@ async function start(game) {
 
     // Pier Leg Ripples
     ctx.setColor(0xffffff);
-    Ripple.drawRippleEffect(ctx, canvasWidth - 180, canvasHeight - 113, 3_000, now, true);
-    Ripple.drawRippleEffect(ctx, canvasWidth - 100, canvasHeight - 92, 5_000, now, true);
+    Ripple.drawRippleEffect(
+      ctx,
+      canvasWidth - 180,
+      canvasHeight - 113,
+      3_000,
+      now,
+      true
+    );
+    Ripple.drawRippleEffect(
+      ctx,
+      canvasWidth - 100,
+      canvasHeight - 92,
+      5_000,
+      now,
+      true
+    );
 
     // Pier
     ctx.setTranslation(0, 0, 20);
@@ -138,9 +152,23 @@ async function start(game) {
       ctx.setColor(0x99775a);
       ctx.setTextureImage(8, ASSETS.PierLegImage.current);
       ctx.drawTexturedBox(8, canvasWidth - 100, canvasHeight - 110, 10, 20);
-      ctx.drawTexturedBox(8, canvasWidth - 180, canvasHeight - 120, 8, 10, 0, 30);
+      ctx.drawTexturedBox(
+        8,
+        canvasWidth - 180,
+        canvasHeight - 120,
+        8,
+        10,
+        0,
+        30
+      );
       ctx.setTextureImage(7, ASSETS.PierImage.current);
-      ctx.drawTexturedRect(7, canvasWidth - ASSETS.PierImage.current.width, canvasHeight - 140, canvasWidth, canvasHeight - 100);
+      ctx.drawTexturedRect(
+        7,
+        canvasWidth - ASSETS.PierImage.current.width,
+        canvasHeight - 140,
+        canvasWidth,
+        canvasHeight - 100
+      );
     }
     ctx.resetTransform();
 
@@ -164,7 +192,10 @@ async function start(game) {
 function musicLoop(ctx) {
   if (!ASSETS.MusicBack.current.isPlaying()) {
     ASSETS.MusicBack.current.setGain(0.4).play();
-    if (!ASSETS.MusicLayer1.current.isPlaying() && !ASSETS.MusicLayer2.current.isPlaying()) {
+    if (
+      !ASSETS.MusicLayer1.current.isPlaying() &&
+      !ASSETS.MusicLayer2.current.isPlaying()
+    ) {
       let delta = Random.rangeInt(4, 6);
       ctx.progression += delta;
 

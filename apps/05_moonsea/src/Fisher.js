@@ -8,8 +8,7 @@ import { drawRippleEffect } from './Ripple.js';
  * @typedef {import('./main.js').Game} Game
  */
 
-export const ASSETS = {
-};
+export const ASSETS = {};
 
 /** @param {Game} game */
 export async function load(game) {
@@ -75,25 +74,29 @@ export function update(dt, game, world) {
 
   const fishingY = canvasHeight - 60;
 
-  switch(world.fishingState) {
+  switch (world.fishingState) {
     case FISHING_STATE.IDLE:
       // Do nothing.
       break;
-    case FISHING_STATE.POWERING: {
-      world.bobX = world.headX;
-      world.bobY = world.headY;
-    } break;
-    case FISHING_STATE.CASTING: {
-      world.castingPowerY -= CASTING_GRAVITY;
-      let powerX = world.castingPowerX;
-      let powerY = world.castingPowerY * -1;
-      world.bobX += powerX;
-      world.bobY += powerY;
-      if (world.bobY >= fishingY) {
-        world.bobY = fishingY;
-        world.fishingState = FISHING_STATE.PLOPPING;
+    case FISHING_STATE.POWERING:
+      {
+        world.bobX = world.headX;
+        world.bobY = world.headY;
       }
-    } break;
+      break;
+    case FISHING_STATE.CASTING:
+      {
+        world.castingPowerY -= CASTING_GRAVITY;
+        let powerX = world.castingPowerX;
+        let powerY = world.castingPowerY * -1;
+        world.bobX += powerX;
+        world.bobY += powerY;
+        if (world.bobY >= fishingY) {
+          world.bobY = fishingY;
+          world.fishingState = FISHING_STATE.PLOPPING;
+        }
+      }
+      break;
     case FISHING_STATE.PLOPPING:
       // Create splash and animate.
       // Then move on.
@@ -102,24 +105,28 @@ export function update(dt, game, world) {
     case FISHING_STATE.BOBBING:
       // Bob away until bite.
       break;
-    case FISHING_STATE.NIBBLING: {
-      // Nibble away until reel or bob.
-      let dt = game.now - world.nibblingStartTime;
-      if (dt > MAX_NIBBLING_TIME) {
-        // Return to bobbing.
-        world.fishingState = FISHING_STATE.BOBBING;
+    case FISHING_STATE.NIBBLING:
+      {
+        // Nibble away until reel or bob.
+        let dt = game.now - world.nibblingStartTime;
+        if (dt > MAX_NIBBLING_TIME) {
+          // Return to bobbing.
+          world.fishingState = FISHING_STATE.BOBBING;
+        }
       }
-    } break;
-    case FISHING_STATE.BITING: {
-      // Bite away until reel or bob.
-      let dt = game.now - world.bitingStartTime;
-      let maxTime = getMaxBitingTimeForItem(world.hookedItem);
-      if (dt > maxTime) {
-        // Return to bobbing.
-        world.hookedItem = null;
-        world.fishingState = FISHING_STATE.BOBBING;
+      break;
+    case FISHING_STATE.BITING:
+      {
+        // Bite away until reel or bob.
+        let dt = game.now - world.bitingStartTime;
+        let maxTime = getMaxBitingTimeForItem(world.hookedItem);
+        if (dt > maxTime) {
+          // Return to bobbing.
+          world.hookedItem = null;
+          world.fishingState = FISHING_STATE.BOBBING;
+        }
       }
-    } break;
+      break;
     case FISHING_STATE.REELING:
       let dx = world.headX - world.bobX;
       let dy = world.headY - world.bobY;
@@ -144,34 +151,41 @@ export function update(dt, game, world) {
 
 /**
  * @param {Game} game
- * @param {ReturnType<init>} world 
+ * @param {ReturnType<init>} world
  */
 function input(game, world) {
-  switch(world.fishingState) {
-    case FISHING_STATE.IDLE: {
-      if (INPUTS.Fish.pressed) {
-        world.fishingState = FISHING_STATE.POWERING;
-        world.castingStartTime = game.now;
+  switch (world.fishingState) {
+    case FISHING_STATE.IDLE:
+      {
+        if (INPUTS.Fish.pressed) {
+          world.fishingState = FISHING_STATE.POWERING;
+          world.castingStartTime = game.now;
+        }
       }
-    } break;
-    case FISHING_STATE.POWERING: {
-      if (INPUTS.Fish.released) {
-        let dt = game.now - world.castingStartTime;
-        let power = clamp(dt, MIN_CASTING_POWER, MAX_CASTING_POWER) / MAX_CASTING_POWER;
-        world.castingPowerX = -15 * power;
-        world.castingPowerY = 15 * power;
-        world.fishingState = FISHING_STATE.CASTING;
+      break;
+    case FISHING_STATE.POWERING:
+      {
+        if (INPUTS.Fish.released) {
+          let dt = game.now - world.castingStartTime;
+          let power =
+            clamp(dt, MIN_CASTING_POWER, MAX_CASTING_POWER) / MAX_CASTING_POWER;
+          world.castingPowerX = -15 * power;
+          world.castingPowerY = 15 * power;
+          world.fishingState = FISHING_STATE.CASTING;
+        }
       }
-    } break;
+      break;
     case FISHING_STATE.CASTING:
     case FISHING_STATE.PLOPPING:
     case FISHING_STATE.BOBBING:
     case FISHING_STATE.NIBBLING:
-    case FISHING_STATE.BITING: {
-      if (INPUTS.Fish.pressed) {
-        world.fishingState = FISHING_STATE.REELING;
+    case FISHING_STATE.BITING:
+      {
+        if (INPUTS.Fish.pressed) {
+          world.fishingState = FISHING_STATE.REELING;
+        }
       }
-    } break;
+      break;
     case FISHING_STATE.REELING:
     case FISHING_STATE.CAUGHT:
       // No input allowed.
@@ -216,9 +230,12 @@ export function render(ctx, game, world) {
       ctx.drawLine(world.headX, world.headY, x, y);
     } else {
       ctx.drawQuadratic(
-        world.headX, world.headY,
-        x, y,
-        clamp(40 - dx / 60, 0, 40));
+        world.headX,
+        world.headY,
+        x,
+        y,
+        clamp(40 - dx / 60, 0, 40)
+      );
     }
   }
 
@@ -251,7 +268,7 @@ export function render(ctx, game, world) {
 }
 
 /**
- * @param {ReturnType<init>} fisher 
+ * @param {ReturnType<init>} fisher
  */
 export function startNibbling(fisher, worldTime) {
   if (fisher.fishingState !== FISHING_STATE.BOBBING) {
@@ -262,11 +279,13 @@ export function startNibbling(fisher, worldTime) {
 }
 
 /**
- * @param {ReturnType<init>} fisher 
+ * @param {ReturnType<init>} fisher
  */
 export function startBiting(fisher, worldTime) {
-  if (fisher.fishingState !== FISHING_STATE.BOBBING
-    && fisher.fishingState !== FISHING_STATE.NIBBLING) {
+  if (
+    fisher.fishingState !== FISHING_STATE.BOBBING &&
+    fisher.fishingState !== FISHING_STATE.NIBBLING
+  ) {
     return;
   }
   fisher.fishingState = FISHING_STATE.BITING;
