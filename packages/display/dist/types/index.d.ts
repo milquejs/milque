@@ -132,8 +132,14 @@ declare class DisplayPort extends HTMLElement {
     private _prevAnimationFrameTime;
     /** @private */
     private _resizeTimeoutHandle;
-    _resizeCanvasWidth: number;
-    _resizeCanvasHeight: number;
+    /** @private */
+    private _resizeCanvasWidth;
+    /** @private */
+    private _resizeCanvasHeight;
+    /** @private */
+    private _frameEvent;
+    /** @private */
+    private _resizeEvent;
     /** @private */
     private update;
     /** @private */

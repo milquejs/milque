@@ -3,7 +3,7 @@ import {
   BufferInfoBuilder,
   ProgramInfoBuilder,
 } from '@milque/mogli';
-import { mat4, quat, vec3 } from 'gl-matrix';
+import { mat3, mat4, quat, vec3 } from 'gl-matrix';
 import { DrawContextFixedGLBase } from './DrawContextFixedGLBase.js';
 
 const VERTEX_SHADER_SOURCE = `
@@ -66,6 +66,26 @@ export const LINE_CIRCLE_VERTICES = (() => {
 export const LINE_CIRCLE_VERTEX_COUNT = Math.trunc(
   LINE_CIRCLE_VERTICES.length / 2
 );
+export const HALF_CIRCLE_ITERATIONS = CIRCLE_ITERATIONS / 2;
+export const HALF_CIRCLE_VERTICES = (() => {
+  let result = [];
+  let iterations = HALF_CIRCLE_ITERATIONS;
+  let rads = Math.PI / iterations;
+  let prevX = 1,
+    prevY = 0;
+  let nextX, nextY;
+  for (let i = 0; i <= iterations; ++i) {
+    nextX = Math.cos(i * rads);
+    nextY = Math.sin(i * rads);
+    result.push(0, 0);
+    result.push(prevX, prevY);
+    result.push(nextX, nextY);
+    prevX = nextX;
+    prevY = nextY;
+  }
+  return result;
+})();
+export const HALF_CIRCLE_VERTEX_COUNT = Math.trunc(HALF_CIRCLE_VERTICES.length / 2);
 export const QUAD_VERTICES = [
   // Top-Left
   0, 0, 1, 0, 0, 1,
@@ -102,6 +122,10 @@ export class DrawContextFixedGLShape extends DrawContextFixedGLBase {
     /** @protected */
     this.meshLineCircle = new BufferInfoBuilder(gl, gl.ARRAY_BUFFER)
       .data(BufferHelper.createBufferSource(gl, gl.FLOAT, LINE_CIRCLE_VERTICES))
+      .build();
+    /** @protected */
+    this.meshHalfCircle = new BufferInfoBuilder(gl, gl.ARRAY_BUFFER)
+      .data(BufferHelper.createBufferSource(gl, gl.FLOAT, HALF_CIRCLE_VERTICES))
       .build();
   }
 
@@ -148,6 +172,21 @@ export class DrawContextFixedGLShape extends DrawContextFixedGLBase {
       .uniform('u_model', modelMatrix)
       .draw(gl, gl.LINES, 0, 2);
     return this;
+  }
+
+  drawQuadratic(fromX = 0, fromY = 0, toX = fromX + 16, toY = fromY, height = 16, segments = 9) {
+    const dx = toX - fromX;
+    const dy = toY - fromY;
+    const centerX = dx / 2 + fromX;
+    const centerY = dy / 2 + fromY + height;
+    let p = [
+      fromX, fromY, centerX, centerY, toX, toY
+    ];
+    findQuadraticPoints(p, p, segments);
+    let l = p.length;
+    for(let i = 2; i <= l - 2; i += 2) {
+      this.drawLine(p[i - 2], p[i - 1], p[i], p[i + 1]);
+    }
   }
 
   drawRay(x = 0, y = 0, angle = 0, length = 16) {
@@ -204,6 +243,12 @@ export class DrawContextFixedGLShape extends DrawContextFixedGLBase {
     );
   }
 
+  drawHalfCircle(x = 0, y = 0, r = 8) {
+    return this.drawCircleImpl(
+      this.meshHalfCircle, HALF_CIRCLE_VERTEX_COUNT,
+      this.gl.TRIANGLES, x, y, this.depthFloat, r);
+  }
+
   /** @private */
   drawBoxImpl(drawMode, x, y, z, rx, ry) {
     const gl = this.gl;
@@ -242,4 +287,38 @@ export class DrawContextFixedGLShape extends DrawContextFixedGLBase {
       .draw(gl, drawMode, 0, vertexCount);
     return this;
   }
+}
+
+/**
+ * @param {Array<number>} out
+ * @param {Array<number>} points 
+ * @param {number} segments 
+ * @returns {Array<number>}
+ */
+function findQuadraticPoints(out, points, segments) {
+  if (points.length < 6) {
+    throw new Error('Cannot find quadratic points from less than 3 points.');
+  }
+  let [fromX, fromY, centerX, centerY, toX, toY] = points;
+  // A * x^2 + B * x + C = y
+  let mat = mat3.fromValues(
+    fromX * fromX,
+    centerX * centerX,
+    toX * toX,
+    fromX, centerX, toX,
+    1, 1, 1);
+  let vec = vec3.fromValues(fromY, centerY, toY);
+  mat3.invert(mat, mat);
+  let coeffs = vec3.transformMat3(vec, vec, mat);
+  out.length = 0;
+  out.push(fromX, fromY);
+  let dx = toX - fromX;
+  for(let i = 1; i < segments - 1; ++i) {
+    let j = i / segments;
+    let x = dx * j + fromX;
+    let y = coeffs[0] * x * x + coeffs[1] * x + coeffs[2];
+    out.push(x, y);
+  }
+  out.push(toX, toY);
+  return out;
 }

@@ -568,7 +568,7 @@ class InputBinding {
 
   /** @returns {number} */
   get value() {
-    if (!this.ref) {
+    if (!this.ref || this.disabled) {
       return 0;
     }
     return this.ref.value;
@@ -583,6 +583,9 @@ class InputBinding {
 
     /** @protected */
     this.ref = null;
+
+    /** @protected */
+    this.disabled = false;
   }
 
   /**
@@ -593,12 +596,17 @@ class InputBinding {
     throw new Error('Unsupported operation.');
   }
 
+  disable(force = true) {
+    this.disabled = force;
+    return this;
+  }
+
   /**
    * @param {number} code
    * @returns {number}
    */
   getState(code) {
-    if (!this.ref) {
+    if (!this.ref || this.disabled) {
       return 0;
     }
     return this.ref.getState(code);
@@ -868,7 +876,7 @@ class AxisBinding extends InputBinding {
 
   /** @returns {number} */
   get delta() {
-    if (!this.ref) {
+    if (!this.ref || this.disabled) {
       return 0;
     }
     return this.ref.delta;
@@ -929,7 +937,7 @@ class ButtonBinding extends InputBinding {
 
   /** @returns {boolean} */
   get pressed() {
-    if (!this.ref) {
+    if (!this.ref || this.disabled) {
       return false;
     }
     return this.ref.pressed;
@@ -937,7 +945,7 @@ class ButtonBinding extends InputBinding {
 
   /** @returns {boolean} */
   get repeated() {
-    if (!this.ref) {
+    if (!this.ref || this.disabled) {
       return false;
     }
     return this.ref.repeated;
@@ -945,7 +953,7 @@ class ButtonBinding extends InputBinding {
 
   /** @returns {boolean} */
   get released() {
-    if (!this.ref) {
+    if (!this.ref || this.disabled) {
       return false;
     }
     return this.ref.released;
@@ -953,7 +961,7 @@ class ButtonBinding extends InputBinding {
 
   /** @returns {boolean} */
   get down() {
-    if (!this.ref) {
+    if (!this.ref || this.disabled) {
       return false;
     }
     return this.ref.down;
@@ -1012,7 +1020,7 @@ class AxisButtonBinding extends AxisBinding {
    * @param {KeyCode} positiveKeyCode
    */
   constructor(name, negativeKeyCode, positiveKeyCode) {
-    super(name);
+    super(name, []);
 
     if (negativeKeyCode.device !== positiveKeyCode.device) {
       throw new Error('Cannot create axis-button codes for different devices.');
@@ -1786,17 +1794,20 @@ class DeviceInputAdapter {
   constructor(bindings) {
     /** @private */
     this.onInput = this.onInput.bind(this);
+    /** @private */
     this.onPoll = this.onPoll.bind(this);
 
     this.bindings = bindings;
   }
 
+  /** @private */
   onPoll(now) {
     for (let input of this.bindings.getInputs()) {
       input.onPoll(now);
     }
   }
 
+  /** @private */
   onInput(e) {
     const {
       device,
@@ -1899,7 +1910,7 @@ class InputBindings {
    * @param {KeyCode} code
    * @param {BindingOptions} [opts]
    */
-  bind(input, device, code, opts = {}) {
+  bind(input, device, code, opts = { inverted: false }) {
     let binding;
 
     let inputMap = this.inputMap;
@@ -2072,7 +2083,7 @@ class InputContext {
     return this.autopoller.running;
   }
 
-  set autopoll(value = undefined) {
+  set autopoll(value) {
     this.toggleAutoPoll(value);
   }
 
@@ -2153,7 +2164,7 @@ class InputContext {
     const { type } = e;
     let flag = 0;
     for (let listener of this.listeners[type]) {
-      flag |= listener(e);
+      flag |= listener(e) ? 1 : 0;
     }
     return Boolean(flag);
   }
@@ -2342,7 +2353,7 @@ class InputContext {
    * @returns {Button}
    */
   getButton(name) {
-    return this.inputs[name];
+    return /** @type {Button} */ (this.inputs[name]);
   }
 
   /**
@@ -2351,7 +2362,7 @@ class InputContext {
    * @returns {Axis}
    */
   getAxis(name) {
-    return this.inputs[name];
+    return /** @type {Axis} */ (this.inputs[name]);
   }
 
   /**
@@ -2376,7 +2387,7 @@ class InputContext {
    * @returns {boolean}
    */
   isButtonDown(name) {
-    return this.inputs[name].down;
+    return /** @type {Button} */ (this.inputs[name]).down;
   }
 
   /**
@@ -2385,7 +2396,7 @@ class InputContext {
    * @returns {boolean}
    */
   isButtonPressed(name) {
-    return this.inputs[name].pressed;
+    return /** @type {Button} */ (this.inputs[name]).pressed;
   }
 
   /**
@@ -2394,7 +2405,7 @@ class InputContext {
    * @returns {boolean}
    */
   isButtonReleased(name) {
-    return this.inputs[name].released;
+    return /** @type {Button} */ (this.inputs[name]).released;
   }
 
   /**
@@ -2426,7 +2437,7 @@ class InputContext {
    * @returns {number}
    */
   getAxisDelta(name) {
-    return this.inputs[name].delta;
+    return /** @type {Axis} */ (this.inputs[name]).delta;
   }
 
   /** @returns {boolean} */
@@ -2436,7 +2447,7 @@ class InputContext {
     } else {
       let buttons = this.inputs;
       for (let name of include) {
-        let button = buttons[name];
+        let button = /** @type {Button} */ (buttons[name]);
         if (button.down) {
           return true;
         }
@@ -2452,7 +2463,7 @@ class InputContext {
     } else {
       let buttons = this.inputs;
       for (let name of include) {
-        let button = buttons[name];
+        let button = /** @type {Button} */ (buttons[name]);
         if (button.pressed) {
           return true;
         }
@@ -2468,7 +2479,7 @@ class InputContext {
     } else {
       let buttons = this.inputs;
       for (let name of include) {
-        let button = buttons[name];
+        let button = /** @type {Button} */ (buttons[name]);
         if (button.released) {
           return true;
         }
@@ -2500,7 +2511,7 @@ class InputContext {
     } else {
       let axes = this.inputs;
       for (let name of include) {
-        let axis = axes[name];
+        let axis = /** @type {Axis} */ (axes[name]);
         if (axis.delta) {
           return axis.delta;
         }
@@ -2525,14 +2536,12 @@ class InputContext {
     return this.anyAxisCode;
   }
 
-  /** @returns {MouseDevice} */
   getMouse() {
-    return this.devices[0];
+    return /** @type {MouseDevice}*/ (this.devices[0]);
   }
 
-  /** @returns {KeyboardDevice} */
   getKeyboard() {
-    return this.devices[1];
+    return /** @type {KeyboardDevice}*/ (this.devices[1]);
   }
 }
 
@@ -2593,22 +2602,22 @@ class InputPort extends HTMLElement {
 
   constructor() {
     super();
-    this.attachShadow({ mode: 'open' });
-    this.shadowRoot.appendChild(
+    const shadowRoot = this.attachShadow({ mode: 'open' });
+    shadowRoot.appendChild(
       this.constructor[Symbol.for('templateNode')].content.cloneNode(true)
     );
-    this.shadowRoot.appendChild(
+    shadowRoot.appendChild(
       this.constructor[Symbol.for('styleNode')].cloneNode(true)
     );
 
     /** @private */
-    this._titleElement = this.shadowRoot.querySelector('#title');
+    this._titleElement = shadowRoot.querySelector('#title');
     /** @private */
-    this._pollElement = this.shadowRoot.querySelector('#poll');
+    this._pollElement = shadowRoot.querySelector('#poll');
     /** @private */
-    this._focusElement = this.shadowRoot.querySelector('#focus');
+    this._focusElement = shadowRoot.querySelector('#focus');
     /** @private */
-    this._bodyElement = this.shadowRoot.querySelector('tbody');
+    this._bodyElement = shadowRoot.querySelector('tbody');
     /** @private */
     this._outputElements = {};
 
@@ -2627,9 +2636,14 @@ class InputPort extends HTMLElement {
 
     /** @private */
     this._context = null;
+
+    /** @private */
     this.onInputContextBind = this.onInputContextBind.bind(this);
+    /** @private */
     this.onInputContextUnbind = this.onInputContextUnbind.bind(this);
+    /** @private */
     this.onInputContextFocus = this.onInputContextFocus.bind(this);
+    /** @private */
     this.onInputContextBlur = this.onInputContextBlur.bind(this);
   }
 
@@ -2655,12 +2669,13 @@ class InputPort extends HTMLElement {
 
   /** @override */
   disconnectedCallback() {
-    if (this._context) {
-      this._context.removeEventListener('bind', this.onInputContextBind);
-      this._context.removeEventListener('unbind', this.onInputContextUnbind);
-      this._context.removeEventListener('blur', this.onInputContextBlur);
-      this._context.removeEventListener('focus', this.onInputContextFocus);
-      this._context.destroy();
+    let ctx = this._context;
+    if (ctx) {
+      ctx.removeEventListener('bind', this.onInputContextBind);
+      ctx.removeEventListener('unbind', this.onInputContextUnbind);
+      ctx.removeEventListener('blur', this.onInputContextBlur);
+      ctx.removeEventListener('focus', this.onInputContextFocus);
+      ctx.destroy();
       this._context = null;
     }
   }
@@ -2707,21 +2722,25 @@ class InputPort extends HTMLElement {
   /** @private */
   onInputContextBind() {
     this.updateTable();
+    return true;
   }
 
   /** @private */
   onInputContextUnbind() {
     this.updateTable();
+    return true;
   }
 
   /** @private */
   onInputContextFocus() {
     this._focusElement.innerHTML = '✓';
+    return true;
   }
 
   /** @private */
   onInputContextBlur() {
     this._focusElement.innerHTML = '';
+    return true;
   }
 
   /**
@@ -2733,14 +2752,15 @@ class InputPort extends HTMLElement {
     switch (contextId) {
       case 'axisbutton':
         if (!this._context) {
-          this._context = new InputContext(this._eventTarget, options);
-          this._context.addEventListener('bind', this.onInputContextBind);
-          this._context.addEventListener('unbind', this.onInputContextUnbind);
-          this._context.addEventListener('blur', this.onInputContextBlur);
-          this._context.addEventListener('focus', this.onInputContextFocus);
+          let ctx = new InputContext(this._eventTarget, options);
+          ctx.addEventListener('bind', this.onInputContextBind);
+          ctx.addEventListener('unbind', this.onInputContextUnbind);
+          ctx.addEventListener('blur', this.onInputContextBlur);
+          ctx.addEventListener('focus', this.onInputContextFocus);
           if (this._autopoll) {
-            this._context.toggleAutoPoll(true);
+            ctx.toggleAutoPoll(true);
           }
+          this._context = ctx;
         }
         return this._context;
       default:

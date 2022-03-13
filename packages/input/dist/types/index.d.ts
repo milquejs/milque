@@ -408,8 +408,10 @@ declare class DeviceInputAdapter {
      * @param {InputBindings} bindings
      */
     constructor(bindings: InputBindings);
-    onInput(e: any): boolean;
-    onPoll(now: any): void;
+    /** @private */
+    private onInput;
+    /** @private */
+    private onPoll;
     bindings: InputBindings$1;
 }
 type InputBindings = InputBindings$1;
@@ -771,9 +773,7 @@ declare class InputContext {
     getLastButtonCode(): string;
     getLastAxisDevice(): string;
     getLastAxisCode(): string;
-    /** @returns {MouseDevice} */
     getMouse(): MouseDevice;
-    /** @returns {KeyboardDevice} */
     getKeyboard(): KeyboardDevice;
 }
 type InputDevice = InputDevice$1;
@@ -802,11 +802,14 @@ declare class InputBinding {
     protected name: string;
     /** @protected */
     protected ref: any;
+    /** @protected */
+    protected disabled: boolean;
     /**
      * @abstract
      * @param {import('../InputContext.js').InputContext} inputContext
      */
     register(inputContext: InputContext): void;
+    disable(force?: boolean): InputBinding;
     /**
      * @param {number} code
      * @returns {number}
