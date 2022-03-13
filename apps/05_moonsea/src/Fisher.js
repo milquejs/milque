@@ -1,9 +1,7 @@
 import { clamp } from '@milque/util';
-import { mat3, mat4, vec2, vec3 } from 'gl-matrix';
-import { INPUTS } from './Inputs';
-import { AssetRef, bindRefs, loadRefs } from './loader/AssetRef';
-import { hex } from './renderer/color';
-import { drawRipple } from './Ripple';
+import { INPUTS } from './Inputs.js';
+import { bindRefs, loadRefs } from './loader/AssetRef.js';
+import { drawRipple } from './Ripple.js';
 
 /**
  * @typedef {import('./renderer/drawcontext/DrawContextFixedGLText.js').DrawContextFixedGLText} DrawContextFixedGLText
@@ -23,6 +21,7 @@ const REELING_NEAR_RANGE = 4;
 const CASTING_GRAVITY = 0.6;
 const MAX_CASTING_POWER = 800;
 const MIN_CASTING_POWER = 100;
+const MAX_NIBBLING_TIME = 1000;
 export const FISHING_STATE = {
   IDLE: 0,
   POWERING: 1,
@@ -55,10 +54,16 @@ export function init(game) {
     castingPowerY: 10,
     nibblingStartTime: 0,
     bitingStartTime: 0,
+    hookedItem: null,
   };
 }
 
+function getMaxBitingTimeForItem(item) {
+  return 2_000;
+}
+
 /**
+ * @param {number} dt
  * @param {Game} game
  * @param {ReturnType<init>} world
  */
@@ -71,22 +76,12 @@ export function update(dt, game, world) {
   const fishingY = canvasHeight - 60;
 
   switch(world.fishingState) {
-    case FISHING_STATE.IDLE: {
-      if (INPUTS.Fish.pressed) {
-        world.fishingState = FISHING_STATE.POWERING;
-        world.castingStartTime = game.now;
-      }
-    } break;
+    case FISHING_STATE.IDLE:
+      // Do nothing.
+      break;
     case FISHING_STATE.POWERING: {
       world.bobX = world.headX;
       world.bobY = world.headY;
-      if (INPUTS.Fish.released) {
-        let dt = game.now - world.castingStartTime;
-        let power = clamp(dt, MIN_CASTING_POWER, MAX_CASTING_POWER) / MAX_CASTING_POWER;
-        world.castingPowerX = -15 * power;
-        world.castingPowerY = 15 * power;
-        world.fishingState = FISHING_STATE.CASTING;
-      }
     } break;
     case FISHING_STATE.CASTING: {
       world.castingPowerY -= CASTING_GRAVITY;
@@ -98,28 +93,33 @@ export function update(dt, game, world) {
         world.bobY = fishingY;
         world.fishingState = FISHING_STATE.PLOPPING;
       }
-      if (INPUTS.Fish.pressed) {
-        world.fishingState = FISHING_STATE.REELING;
-      }
     } break;
     case FISHING_STATE.PLOPPING:
       // Create splash and animate.
       // Then move on.
       world.fishingState = FISHING_STATE.BOBBING;
-      if (INPUTS.Fish.pressed) {
-        world.fishingState = FISHING_STATE.REELING;
-      }
       break;
     case FISHING_STATE.BOBBING:
       // Bob away until bite.
-      if (INPUTS.Fish.pressed) {
-        world.fishingState = FISHING_STATE.REELING;
+      break;
+    case FISHING_STATE.NIBBLING: {
+      // Nibble away until reel or bob.
+      let dt = game.now - world.nibblingStartTime;
+      if (dt > MAX_NIBBLING_TIME) {
+        // Return to bobbing.
+        world.fishingState = FISHING_STATE.BOBBING;
       }
-      break;
-    case FISHING_STATE.NIBBLING:
-      break;
-    case FISHING_STATE.BITING:
-      break;
+    } break;
+    case FISHING_STATE.BITING: {
+      // Bite away until reel or bob.
+      let dt = game.now - world.bitingStartTime;
+      let maxTime = getMaxBitingTimeForItem(world.hookedItem);
+      if (dt > maxTime) {
+        // Return to bobbing.
+        world.hookedItem = null;
+        world.fishingState = FISHING_STATE.BOBBING;
+      }
+    } break;
     case FISHING_STATE.REELING:
       let dx = world.headX - world.bobX;
       let dy = world.headY - world.bobY;
@@ -136,6 +136,45 @@ export function update(dt, game, world) {
       // Animate catching the fish.
       // Then move on.
       world.fishingState = FISHING_STATE.IDLE;
+      break;
+  }
+
+  input(game, world);
+}
+
+/**
+ * @param {Game} game
+ * @param {ReturnType<init>} world 
+ */
+function input(game, world) {
+  switch(world.fishingState) {
+    case FISHING_STATE.IDLE: {
+      if (INPUTS.Fish.pressed) {
+        world.fishingState = FISHING_STATE.POWERING;
+        world.castingStartTime = game.now;
+      }
+    } break;
+    case FISHING_STATE.POWERING: {
+      if (INPUTS.Fish.released) {
+        let dt = game.now - world.castingStartTime;
+        let power = clamp(dt, MIN_CASTING_POWER, MAX_CASTING_POWER) / MAX_CASTING_POWER;
+        world.castingPowerX = -15 * power;
+        world.castingPowerY = 15 * power;
+        world.fishingState = FISHING_STATE.CASTING;
+      }
+    } break;
+    case FISHING_STATE.CASTING:
+    case FISHING_STATE.PLOPPING:
+    case FISHING_STATE.BOBBING:
+    case FISHING_STATE.NIBBLING:
+    case FISHING_STATE.BITING: {
+      if (INPUTS.Fish.pressed) {
+        world.fishingState = FISHING_STATE.REELING;
+      }
+    } break;
+    case FISHING_STATE.REELING:
+    case FISHING_STATE.CAUGHT:
+      // No input allowed.
       break;
   }
 }
@@ -200,6 +239,10 @@ export function render(ctx, game, world) {
     // Bobber Ripple
     ctx.setColor(0xffffff);
     drawRipple(ctx, x, world.bobY, now % 8_000);
+  }
+
+  if (world.hookedItem) {
+    // TODO: Draw a hooked fish!
   }
 }
 

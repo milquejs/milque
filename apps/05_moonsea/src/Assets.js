@@ -3,7 +3,6 @@ import { loadImage } from './loader/ImageLoader.js';
 import { loadSound } from './sound/SoundLoader.js';
 
 export const ASSETS = {
-  FishImage: new AssetRef('fishShadow', 'res/fish_shadow.png', loadImage),
   CanoeImage: new AssetRef('canoe', 'res/canoe.png', loadImage),
   PierImage: new AssetRef('pier', 'res/pier.png', loadImage),
   PierLegImage: new AssetRef('pierLeg', 'res/pier_leg.png', loadImage),

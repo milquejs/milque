@@ -14,7 +14,9 @@ import { DrawContextFixedGLText } from './renderer/drawcontext/DrawContextFixedG
 import * as Sky from './Sky.js';
 import * as Sea from './Sea.js';
 import * as Fisher from './Fisher.js';
-import { drawRipple } from './Ripple.js';
+import * as Fish from './Fish.js';
+import * as Ripple from './Ripple.js';
+import * as Player from './Player.js';
 
 /**
  * @typedef {import('@milque/asset').AssetPack} AssetPack
@@ -65,38 +67,15 @@ async function start(game) {
   await Sky.load(game);
   await Sea.load(game);
   await Fisher.load(game);
+  await Fish.load(game);
+  await Ripple.load(game);
+  await Player.load(game);
   const skyWorld = Sky.init(game);
   const seaWorld = Sea.init(game);
   const fisher = Fisher.init(game);
-
-  let fishes = [];
-  for (let i = 0; i < 6; ++i) {
-    let x = Random.range(0, canvasWidth);
-    let y = Random.range(canvasHeight - 100, canvasHeight);
-    let offset = Random.range(0, Math.PI * 2);
-    fishes.push({
-      x,
-      y,
-      offset,
-      size: Random.range(0.3, 0.5),
-      speed: Random.range(1, 3) * Random.sign(),
-    });
-  }
-
-  let ripples = [];
-  for (let i = 0; i < 10; ++i) {
-    ripples.push({
-      x: 0,
-      y: 0,
-      age: 0,
-    });
-  }
-
-  let player = {
-    x: canvasWidth - 100,
-    y: 0,
-    motionX: 0,
-  };
+  const rippleWorld = Ripple.init(game);
+  const fishWorld = Fish.init(game);
+  const player = Player.init(game);
 
   let musicCtx = {
     progression: 0,
@@ -120,61 +99,9 @@ async function start(game) {
     Sky.update(deltaTime, game, skyWorld);
     Sea.update(deltaTime, game, seaWorld);
     Fisher.update(deltaTime, game, fisher);
-
-    for (let fish of fishes) {
-      fish.x +=
-        (0.2 + (Math.sin(now / 1000 + fish.offset) + 1) / 2) * fish.speed;
-      if (fish.x > canvasWidth) {
-        fish.x = 0;
-        fish.y = Random.range(canvasHeight - 100, canvasHeight);
-      }
-      if (fish.x < 0) {
-        fish.x = canvasWidth;
-        fish.y = Random.range(canvasHeight - 100, canvasHeight);
-      }
-      if (
-        Math.floor(now / 10 + fish.y * 10) % 400 === 0 &&
-        Math.random() < 0.1
-      ) {
-        let target = null;
-        for (let ripple of ripples) {
-          if (ripple.age <= 0) {
-            target = ripple;
-          }
-        }
-        if (target) {
-          target.x = fish.x;
-          target.y = fish.y;
-          target.age = Random.range(5_000, 10_000);
-        }
-      }
-    }
-    for (let ripple of ripples) {
-      if (ripple.age > 0) {
-        ripple.age -= deltaTime;
-      }
-    }
-
-    // Player
-    let friction = 0.4;
-    let invFriction = 1 - friction;
-    let dx = INPUTS.MoveRight.value - INPUTS.MoveLeft.value;
-    player.motionX += (dx * deltaTime) * 0.1;
-    player.motionX *= invFriction;
-    player.x += player.motionX;
-    player.y = canvasHeight - 200;
-    fisher.headX = player.x;
-    fisher.headY = player.y;
-    if (fisher.fishingState === Fisher.FISHING_STATE.IDLE
-      || fisher.fishingState === Fisher.FISHING_STATE.POWERING) {
-      fisher.bobX = player.x;
-      fisher.bobY - player.y;
-    }
-    if (player.x > canvasWidth - 10) {
-      player.x = canvasWidth - 10;
-    } else if (player.x < canvasWidth - 130) {
-      player.x = canvasWidth - 130;
-    }
+    Ripple.update(deltaTime, game, rippleWorld);
+    Fish.update(deltaTime, game, fishWorld, rippleWorld);
+    Player.update(deltaTime, game, player, fisher);
 
     // Draw
     ctx.resize();
@@ -188,29 +115,11 @@ async function start(game) {
     }
     ctx.popTransform();
 
-    ctx.setTextureImage(6, ASSETS.FishImage.current);
-    ctx.setColor(0x333333);
-    for (let fish of fishes) {
-      ctx.pushTransform();
-      let dt = Math.sin(fish.x / 5 + fish.y);
-      let dt2 = Math.cos(fish.x / 20);
-      ctx.setTranslation(fish.x, fish.y + dt2 * 4);
-      ctx.setOpacityFloat(0.5);
-      ctx.setRotation(0, 0, 90 + dt * 4 + (fish.speed < 0 ? 180 : 0));
-      ctx.setScale(fish.size, fish.size + ((dt2 + 1) / 2) * 0.1);
-      ctx.drawTexturedBox(6, 0, 20);
-      ctx.popTransform();
-    }
-    ctx.setOpacityFloat(1);
-    ctx.resetTransform();
-
-    for (let ripple of ripples) {
-      if (ripple.age <= 0) continue;
-      drawRipple(ctx, ripple.x, ripple.y, ripple.age);
-    }
+    Fish.render(ctx, game, fishWorld);
+    Ripple.render(ctx, game, rippleWorld);
 
     // Pier Shadow
-    ctx.setTranslation(canvasWidth - 50, canvasHeight - 110)
+    ctx.setTranslation(canvasWidth - 50, canvasHeight - 110);
     ctx.setScale(20, 3);
     ctx.setColor(0x333333);
     ctx.setOpacityFloat(0.3);
@@ -222,8 +131,8 @@ async function start(game) {
     ctx.setColor(0xffffff);
     let rippleProgress = Math.sin(now / 800) * 2_000 + 3_000;
     let rippleProgressAlt = Math.cos(now / 800) * 2_000 + 3_000;
-    drawRipple(ctx, canvasWidth - 180, canvasHeight - 113, rippleProgress);
-    drawRipple(ctx, canvasWidth - 100, canvasHeight - 92, rippleProgressAlt);
+    Ripple.drawRipple(ctx, canvasWidth - 180, canvasHeight - 113, rippleProgress);
+    Ripple.drawRipple(ctx, canvasWidth - 100, canvasHeight - 92, rippleProgressAlt);
 
     // Pier
     ctx.setTranslation(0, 0, 20);
@@ -245,22 +154,8 @@ async function start(game) {
       ctx.setColor(0xc3d3d8);
       ctx.drawTexturedBox(9, canvasWidth - 140, canvasHeight - 140, 15);
 
-      // Player
-      ctx.setColor(0x00ffaa);
-      ctx.drawCircle(player.x, player.y);
-  
-      // Player Shadow
-      ctx.pushTransform();
-      {
-        ctx.setTranslation(player.x, player.y + 75);
-        ctx.setScale(3, 1);
-        ctx.setColor(0x333333);
-        ctx.setOpacityFloat(0.3);
-        ctx.drawCircle();
-        ctx.setOpacityFloat(1);
-      }
-      ctx.popTransform();
-      
+      // Player stuff
+      Player.render(ctx, game, player);
       // Fisher stuff
       Fisher.render(ctx, game, fisher);
     }
