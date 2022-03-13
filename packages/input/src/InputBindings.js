@@ -61,7 +61,7 @@ export class InputBindings {
    * @param {KeyCode} code
    * @param {BindingOptions} [opts]
    */
-  bind(input, device, code, opts = {}) {
+  bind(input, device, code, opts = { inverted: false }) {
     let binding;
 
     let inputMap = this.inputMap;

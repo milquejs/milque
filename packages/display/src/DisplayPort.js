@@ -248,33 +248,33 @@ export class DisplayPort extends HTMLElement {
 
   constructor() {
     super();
-    this.attachShadow({ mode: 'open' });
-    this.shadowRoot.appendChild(
+    const shadowRoot = this.attachShadow({ mode: 'open' });
+    shadowRoot.appendChild(
       this.constructor[Symbol.for('templateNode')].content.cloneNode(true)
     );
-    this.shadowRoot.appendChild(
+    shadowRoot.appendChild(
       this.constructor[Symbol.for('styleNode')].cloneNode(true)
     );
 
     /** @private */
-    this._canvasElement = this.shadowRoot.querySelector('canvas');
+    this._canvasElement = shadowRoot.querySelector('canvas');
     /**
      * @private
      * @type {HTMLDivElement}
      */
-    this._contentElement = this.shadowRoot.querySelector('.content');
+    this._contentElement = shadowRoot.querySelector('.content');
     /**
      * @private
      * @type {HTMLSlotElement}
      */
-    this._innerElement = this.shadowRoot.querySelector('#inner');
+    this._innerElement = shadowRoot.querySelector('#inner');
 
     /** @private */
-    this._titleElement = this.shadowRoot.querySelector('#title');
+    this._titleElement = shadowRoot.querySelector('#title');
     /** @private */
-    this._fpsElement = this.shadowRoot.querySelector('#fps');
+    this._fpsElement = shadowRoot.querySelector('#fps');
     /** @private */
-    this._dimensionElement = this.shadowRoot.querySelector('#dimension');
+    this._dimensionElement = shadowRoot.querySelector('#dimension');
 
     /** @private */
     this._debug = false;
@@ -294,8 +294,31 @@ export class DisplayPort extends HTMLElement {
 
     /** @private */
     this._resizeTimeoutHandle = 0;
+    /** @private */
     this._resizeCanvasWidth = 0;
+    /** @private */
     this._resizeCanvasHeight = 0;
+
+    /** @private */
+    this._frameEvent = new CustomEvent('frame', {
+      composed: true,
+      bubbles: false,
+      detail: {
+        now: 0,
+        prevTime: 0,
+        deltaTime: 0,
+        canvas: this._canvasElement,
+      }
+    });
+    /** @private */
+    this._resizeEvent = new CustomEvent('resize', {
+      composed: true,
+      bubbles: false,
+      detail: {
+        width: 0,
+        height: 0,
+      }
+    });
 
     /** @private */
     this.update = this.update.bind(this);
@@ -452,18 +475,12 @@ export class DisplayPort extends HTMLElement {
       }
     }
 
-    this.dispatchEvent(
-      new CustomEvent('frame', {
-        detail: {
-          now,
-          prevTime: this._prevAnimationFrameTime,
-          deltaTime: deltaTime,
-          canvas: this._canvasElement,
-        },
-        bubbles: false,
-        composed: true,
-      })
-    );
+    let event = this._frameEvent;
+    let detail = event.detail;
+    detail.now = now;
+    detail.prevTime = this._prevAnimationFrameTime;
+    detail.deltaTime = deltaTime;
+    this.dispatchEvent(this._frameEvent);
   }
 
   /** @private */
@@ -560,16 +577,11 @@ export class DisplayPort extends HTMLElement {
         this._height = canvasHeight;
       }
 
-      this.dispatchEvent(
-        new CustomEvent('resize', {
-          detail: {
-            width: canvasWidth,
-            height: canvasHeight,
-          },
-          bubbles: false,
-          composed: true,
-        })
-      );
+      let event = this._resizeEvent;
+      let detail = event.detail;
+      detail.width = canvasWidth;
+      detail.height = canvasHeight;
+      this.dispatchEvent(this._resizeEvent);
     }
   }
 }

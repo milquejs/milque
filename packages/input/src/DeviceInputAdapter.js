@@ -15,17 +15,20 @@ export class DeviceInputAdapter {
   constructor(bindings) {
     /** @private */
     this.onInput = this.onInput.bind(this);
+    /** @private */
     this.onPoll = this.onPoll.bind(this);
 
     this.bindings = bindings;
   }
 
+  /** @private */
   onPoll(now) {
     for (let input of this.bindings.getInputs()) {
       input.onPoll(now);
     }
   }
 
+  /** @private */
   onInput(e) {
     const {
       device,

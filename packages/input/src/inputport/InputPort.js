@@ -61,22 +61,22 @@ export class InputPort extends HTMLElement {
 
   constructor() {
     super();
-    this.attachShadow({ mode: 'open' });
-    this.shadowRoot.appendChild(
+    const shadowRoot = this.attachShadow({ mode: 'open' });
+    shadowRoot.appendChild(
       this.constructor[Symbol.for('templateNode')].content.cloneNode(true)
     );
-    this.shadowRoot.appendChild(
+    shadowRoot.appendChild(
       this.constructor[Symbol.for('styleNode')].cloneNode(true)
     );
 
     /** @private */
-    this._titleElement = this.shadowRoot.querySelector('#title');
+    this._titleElement = shadowRoot.querySelector('#title');
     /** @private */
-    this._pollElement = this.shadowRoot.querySelector('#poll');
+    this._pollElement = shadowRoot.querySelector('#poll');
     /** @private */
-    this._focusElement = this.shadowRoot.querySelector('#focus');
+    this._focusElement = shadowRoot.querySelector('#focus');
     /** @private */
-    this._bodyElement = this.shadowRoot.querySelector('tbody');
+    this._bodyElement = shadowRoot.querySelector('tbody');
     /** @private */
     this._outputElements = {};
 
@@ -95,9 +95,14 @@ export class InputPort extends HTMLElement {
 
     /** @private */
     this._context = null;
+
+    /** @private */
     this.onInputContextBind = this.onInputContextBind.bind(this);
+    /** @private */
     this.onInputContextUnbind = this.onInputContextUnbind.bind(this);
+    /** @private */
     this.onInputContextFocus = this.onInputContextFocus.bind(this);
+    /** @private */
     this.onInputContextBlur = this.onInputContextBlur.bind(this);
   }
 
@@ -123,12 +128,13 @@ export class InputPort extends HTMLElement {
 
   /** @override */
   disconnectedCallback() {
-    if (this._context) {
-      this._context.removeEventListener('bind', this.onInputContextBind);
-      this._context.removeEventListener('unbind', this.onInputContextUnbind);
-      this._context.removeEventListener('blur', this.onInputContextBlur);
-      this._context.removeEventListener('focus', this.onInputContextFocus);
-      this._context.destroy();
+    let ctx = this._context;
+    if (ctx) {
+      ctx.removeEventListener('bind', this.onInputContextBind);
+      ctx.removeEventListener('unbind', this.onInputContextUnbind);
+      ctx.removeEventListener('blur', this.onInputContextBlur);
+      ctx.removeEventListener('focus', this.onInputContextFocus);
+      ctx.destroy();
       this._context = null;
     }
   }
@@ -175,21 +181,25 @@ export class InputPort extends HTMLElement {
   /** @private */
   onInputContextBind() {
     this.updateTable();
+    return true;
   }
 
   /** @private */
   onInputContextUnbind() {
     this.updateTable();
+    return true;
   }
 
   /** @private */
   onInputContextFocus() {
     this._focusElement.innerHTML = '✓';
+    return true;
   }
 
   /** @private */
   onInputContextBlur() {
     this._focusElement.innerHTML = '';
+    return true;
   }
 
   /**
@@ -201,14 +211,15 @@ export class InputPort extends HTMLElement {
     switch (contextId) {
       case 'axisbutton':
         if (!this._context) {
-          this._context = new InputContext(this._eventTarget, options);
-          this._context.addEventListener('bind', this.onInputContextBind);
-          this._context.addEventListener('unbind', this.onInputContextUnbind);
-          this._context.addEventListener('blur', this.onInputContextBlur);
-          this._context.addEventListener('focus', this.onInputContextFocus);
+          let ctx = new InputContext(this._eventTarget, options);
+          ctx.addEventListener('bind', this.onInputContextBind);
+          ctx.addEventListener('unbind', this.onInputContextUnbind);
+          ctx.addEventListener('blur', this.onInputContextBlur);
+          ctx.addEventListener('focus', this.onInputContextFocus);
           if (this._autopoll) {
-            this._context.toggleAutoPoll(true);
+            ctx.toggleAutoPoll(true);
           }
+          this._context = ctx;
         }
         return this._context;
       default:

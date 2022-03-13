@@ -28,7 +28,7 @@ export class ButtonBinding extends InputBinding {
 
   /** @returns {boolean} */
   get pressed() {
-    if (!this.ref) {
+    if (!this.ref || this.disabled) {
       return false;
     }
     return this.ref.pressed;
@@ -36,7 +36,7 @@ export class ButtonBinding extends InputBinding {
 
   /** @returns {boolean} */
   get repeated() {
-    if (!this.ref) {
+    if (!this.ref || this.disabled) {
       return false;
     }
     return this.ref.repeated;
@@ -44,7 +44,7 @@ export class ButtonBinding extends InputBinding {
 
   /** @returns {boolean} */
   get released() {
-    if (!this.ref) {
+    if (!this.ref || this.disabled) {
       return false;
     }
     return this.ref.released;
@@ -52,7 +52,7 @@ export class ButtonBinding extends InputBinding {
 
   /** @returns {boolean} */
   get down() {
-    if (!this.ref) {
+    if (!this.ref || this.disabled) {
       return false;
     }
     return this.ref.down;

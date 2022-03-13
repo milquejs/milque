@@ -25,7 +25,7 @@ export class AxisButtonBinding extends AxisBinding {
    * @param {KeyCode} positiveKeyCode
    */
   constructor(name, negativeKeyCode, positiveKeyCode) {
-    super(name);
+    super(name, []);
 
     if (negativeKeyCode.device !== positiveKeyCode.device) {
       throw new Error('Cannot create axis-button codes for different devices.');

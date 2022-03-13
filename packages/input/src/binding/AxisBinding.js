@@ -28,7 +28,7 @@ export class AxisBinding extends InputBinding {
 
   /** @returns {number} */
   get delta() {
-    if (!this.ref) {
+    if (!this.ref || this.disabled) {
       return 0;
     }
     return this.ref.delta;

@@ -9,7 +9,7 @@ export class InputBinding {
 
   /** @returns {number} */
   get value() {
-    if (!this.ref) {
+    if (!this.ref || this.disabled) {
       return 0;
     }
     return this.ref.value;
@@ -24,6 +24,9 @@ export class InputBinding {
 
     /** @protected */
     this.ref = null;
+
+    /** @protected */
+    this.disabled = false;
   }
 
   /**
@@ -34,12 +37,17 @@ export class InputBinding {
     throw new Error('Unsupported operation.');
   }
 
+  disable(force = true) {
+    this.disabled = force;
+    return this;
+  }
+
   /**
    * @param {number} code
    * @returns {number}
    */
   getState(code) {
-    if (!this.ref) {
+    if (!this.ref || this.disabled) {
       return 0;
     }
     return this.ref.getState(code);

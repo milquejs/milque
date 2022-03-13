@@ -93,7 +93,7 @@ export class InputContext {
     return this.autopoller.running;
   }
 
-  set autopoll(value = undefined) {
+  set autopoll(value) {
     this.toggleAutoPoll(value);
   }
 
@@ -174,7 +174,7 @@ export class InputContext {
     const { type } = e;
     let flag = 0;
     for (let listener of this.listeners[type]) {
-      flag |= listener(e);
+      flag |= listener(e) ? 1 : 0;
     }
     return Boolean(flag);
   }
@@ -363,7 +363,7 @@ export class InputContext {
    * @returns {Button}
    */
   getButton(name) {
-    return this.inputs[name];
+    return /** @type {Button} */ (this.inputs[name]);
   }
 
   /**
@@ -372,7 +372,7 @@ export class InputContext {
    * @returns {Axis}
    */
   getAxis(name) {
-    return this.inputs[name];
+    return /** @type {Axis} */ (this.inputs[name]);
   }
 
   /**
@@ -397,7 +397,7 @@ export class InputContext {
    * @returns {boolean}
    */
   isButtonDown(name) {
-    return this.inputs[name].down;
+    return /** @type {Button} */ (this.inputs[name]).down;
   }
 
   /**
@@ -406,7 +406,7 @@ export class InputContext {
    * @returns {boolean}
    */
   isButtonPressed(name) {
-    return this.inputs[name].pressed;
+    return /** @type {Button} */ (this.inputs[name]).pressed;
   }
 
   /**
@@ -415,7 +415,7 @@ export class InputContext {
    * @returns {boolean}
    */
   isButtonReleased(name) {
-    return this.inputs[name].released;
+    return /** @type {Button} */ (this.inputs[name]).released;
   }
 
   /**
@@ -447,7 +447,7 @@ export class InputContext {
    * @returns {number}
    */
   getAxisDelta(name) {
-    return this.inputs[name].delta;
+    return /** @type {Axis} */ (this.inputs[name]).delta;
   }
 
   /** @returns {boolean} */
@@ -457,7 +457,7 @@ export class InputContext {
     } else {
       let buttons = this.inputs;
       for (let name of include) {
-        let button = buttons[name];
+        let button = /** @type {Button} */ (buttons[name]);
         if (button.down) {
           return true;
         }
@@ -473,7 +473,7 @@ export class InputContext {
     } else {
       let buttons = this.inputs;
       for (let name of include) {
-        let button = buttons[name];
+        let button = /** @type {Button} */ (buttons[name]);
         if (button.pressed) {
           return true;
         }
@@ -489,7 +489,7 @@ export class InputContext {
     } else {
       let buttons = this.inputs;
       for (let name of include) {
-        let button = buttons[name];
+        let button = /** @type {Button} */ (buttons[name]);
         if (button.released) {
           return true;
         }
@@ -521,7 +521,7 @@ export class InputContext {
     } else {
       let axes = this.inputs;
       for (let name of include) {
-        let axis = axes[name];
+        let axis = /** @type {Axis} */ (axes[name]);
         if (axis.delta) {
           return axis.delta;
         }
@@ -546,13 +546,11 @@ export class InputContext {
     return this.anyAxisCode;
   }
 
-  /** @returns {MouseDevice} */
   getMouse() {
-    return this.devices[0];
+    return /** @type {MouseDevice}*/ (this.devices[0]);
   }
 
-  /** @returns {KeyboardDevice} */
   getKeyboard() {
-    return this.devices[1];
+    return /** @type {KeyboardDevice}*/ (this.devices[1]);
   }
 }
