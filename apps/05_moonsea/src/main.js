@@ -129,10 +129,8 @@ async function start(game) {
 
     // Pier Leg Ripples
     ctx.setColor(0xffffff);
-    let rippleProgress = Math.sin(now / 800) * 2_000 + 3_000;
-    let rippleProgressAlt = Math.cos(now / 800) * 2_000 + 3_000;
-    Ripple.drawRipple(ctx, canvasWidth - 180, canvasHeight - 113, rippleProgress);
-    Ripple.drawRipple(ctx, canvasWidth - 100, canvasHeight - 92, rippleProgressAlt);
+    Ripple.drawRippleEffect(ctx, canvasWidth - 180, canvasHeight - 113, 3_000, now, true);
+    Ripple.drawRippleEffect(ctx, canvasWidth - 100, canvasHeight - 92, 5_000, now, true);
 
     // Pier
     ctx.setTranslation(0, 0, 20);

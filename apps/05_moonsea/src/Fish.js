@@ -67,7 +67,7 @@ export function update(dt, game, world, rippleWorld) {
             Math.floor(now / 10 + fish.y * 10) % 400 === 0 &&
             Math.random() < 0.1
         ) {
-            startRipple(rippleWorld, fish.x, fish.y - 5);
+            startRipple(rippleWorld, fish.x, fish.y - 5, now);
         }
     }
 }

@@ -1,7 +1,7 @@
 import { clamp } from '@milque/util';
 import { INPUTS } from './Inputs.js';
 import { bindRefs, loadRefs } from './loader/AssetRef.js';
-import { drawRipple } from './Ripple.js';
+import { drawRippleEffect } from './Ripple.js';
 
 /**
  * @typedef {import('./renderer/drawcontext/DrawContextFixedGLText.js').DrawContextFixedGLText} DrawContextFixedGLText
@@ -238,7 +238,7 @@ export function render(ctx, game, world) {
   if (world.fishingState === FISHING_STATE.BOBBING) {
     // Bobber Ripple
     ctx.setColor(0xffffff);
-    drawRipple(ctx, x, world.bobY, now % 8_000);
+    drawRippleEffect(ctx, x, world.bobY, 0, now, true);
   }
 
   if (world.hookedItem) {
