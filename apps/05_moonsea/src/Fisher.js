@@ -238,7 +238,11 @@ export function render(ctx, game, world) {
   if (world.fishingState === FISHING_STATE.BOBBING) {
     // Bobber Ripple
     ctx.setColor(0xffffff);
+    ctx.setTranslation(0, 0, 50);
+    ctx.pushTransform();
     drawRippleEffect(ctx, x, world.bobY, 0, now, true);
+    ctx.popTransform();
+    ctx.resetTransform();
   }
 
   if (world.hookedItem) {
