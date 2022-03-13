@@ -1,7 +1,7 @@
 import path from 'path';
 import chokidar from 'chokidar';
+import { constants, createWriteStream, createReadStream } from 'fs';
 import fs from 'fs/promises';
-import { createWriteStream, createReadStream } from 'fs';
 import { Zip, AsyncZipDeflate, Unzip, AsyncUnzipInflate } from 'fflate';
 import { fileURLToPath } from 'url';
 import alias from 'esbuild-plugin-alias';
@@ -11,7 +11,7 @@ import open from 'open';
 
 async function exists(filePath) {
   try {
-    await fs.stat(filePath);
+    await fs.access(filePath);
   } catch (e) {
     return false;
   }
@@ -19,23 +19,21 @@ async function exists(filePath) {
 }
 
 async function verifyFile(filePath) {
-  let stats;
   try {
-    stats = await fs.stat(filePath);
+    await fs.access(filePath, constants.R_OK);
   } catch (e) {
     return false;
   }
-  return stats.isFile();
+  return true;
 }
 
 async function verifyDirectory(dirPath) {
-  let stats;
   try {
-    stats = await fs.stat(dirPath);
+    await fs.access(dirPath);
   } catch (e) {
     return false;
   }
-  return stats.isDirectory();
+  return true;
 }
 
 async function copyFile(inputPath, outputPath) {
@@ -383,6 +381,94 @@ function* flatten(array, depth = 100) {
   }
 }
 
+function logInfo$1(message) {
+  /* eslint-disable no-console */
+  console.log(message);
+}
+
+async function munge(inFile, outDir, opts = {}) {
+  const packFile = path.basename(inFile);
+  const packExt = path.extname(inFile);
+  const packName = packFile.substring(0, packFile.length - packExt.length);
+  const packDir = outDir;
+  const packZip = inFile;
+  const packRC = `${packName}.packrc`;
+  const date = new Date();
+  const backupDir = 'tmp';
+  const backupName = `${date.getFullYear()}-${String(date.getMonth()).padStart(
+    2,
+    '0'
+  )}-${String(date.getDate()).padStart(2, '0')}-${String(
+    date.getHours()
+  ).padStart(2, '0')}-${String(date.getMinutes()).padStart(2, '0')}-${String(
+    date.getSeconds()
+  ).padStart(2, '0')}`;
+  const backupZip = path.join(
+    backupDir,
+    `${backupName}.${packName}.pack.backup`
+  );
+
+  const hasZip = await exists(packZip);
+  const hasDir = await exists(packDir);
+
+  let manifest = null;
+
+  // Copy the backup if nothing exists
+  if (!hasZip) {
+    logInfo$1('Creating packfile...');
+    await fs.mkdir(packDir, { recursive: true });
+    manifest = await createZip(packZip, packDir);
+  }
+  // If zip exists, but no source files. Extract!
+  else if (!hasDir) {
+    logInfo$1('Extracting packfile...');
+    manifest = await createUnzip(packZip, '.');
+  }
+  // If zip and source exists. Diff!
+  else {
+    logInfo$1('Diffing packfile...');
+    const tempDir = backupDir;
+    const tempZip = path.join(backupDir, 'tmp.pack');
+    await fs.mkdir(tempDir, { recursive: true });
+    await createZip(tempZip, packDir);
+    let zipManifest = await getZipManifest(packZip);
+    let srcManifest = await getZipManifest(tempZip);
+
+    // If different, overwrite zip with source
+    if (zipManifest.checksum !== srcManifest.checksum) {
+      logInfo$1('Updating packfile...');
+      // Always make backup first
+      await fs.mkdir(backupDir, { recursive: true });
+      await fs.copyFile(packZip, backupZip);
+      // Then continue...
+      await fs.copyFile(tempZip, packZip);
+      manifest = srcManifest;
+    } else {
+      await fs.rm(tempZip);
+      manifest = zipManifest;
+    }
+  }
+
+  // Write to .packrc
+  let packConfig = {
+    version: '1.0.0',
+    manifest,
+  };
+  if (await exists(packRC)) {
+    let config;
+    try {
+      config = JSON.parse(await (await fs.readFile(packRC)).toString());
+    } catch (e) {
+      config = {};
+    }
+    packConfig = {
+      ...config,
+      ...packConfig,
+    };
+  }
+  await fs.writeFile(packRC, JSON.stringify(packConfig, undefined, 4));
+}
+
 class FileManager {
   /**
    * @param {string} outputDir
@@ -419,6 +505,7 @@ class FileManager {
       await copyFile(inputFile, outputPath);
     }
     if (this.watching) {
+      console.log('...watching', inputFile, '...');
       let watcher = chokidar.watch(inputFile);
       watcher.on('all', async (event) => {
         switch (event) {
@@ -447,6 +534,7 @@ class FileManager {
       await createZip(outputPath, inputDir);
     }
     if (this.watching) {
+      console.log('...watching', inputDir, '...');
       let watcher = chokidar.watch(inputDir);
       watcher.on('all', async (event) => {
         switch (event) {
@@ -454,6 +542,7 @@ class FileManager {
           case 'change':
           case 'unlink':
             if (await verifyDirectory(inputDir)) {
+              console.log('Zipping...', inputDir);
               await createZip(outputPath, inputDir);
             }
             break;
@@ -471,6 +560,7 @@ class FileManager {
       await createUnzip(inputFile, outputPath);
     }
     if (this.watching) {
+      console.log('...watching', inputFile, '...');
       let watcher = chokidar.watch(inputFile);
       watcher.on('all', async (event) => {
         switch (event) {
@@ -479,6 +569,31 @@ class FileManager {
           case 'unlink':
             if (await verifyFile(inputFile)) {
               await createUnzip(inputFile, outputPath);
+            }
+            break;
+          default:
+            return;
+        }
+      });
+      this.activeWatchers.push(watcher);
+    }
+  }
+
+  async munge(inputDir, outputPath) {
+    outputPath = path.join(this.outputDir, outputPath);
+    if (await verifyDirectory(inputDir)) {
+      await munge(outputPath, inputDir);
+    }
+    if (this.watching) {
+      console.log('...watching', inputDir, '...');
+      let watcher = chokidar.watch(inputDir, { ignoreInitial: true });
+      watcher.on('all', async (event) => {
+        switch (event) {
+          case 'add':
+          case 'change':
+          case 'unlink':
+            if (await verifyDirectory(inputDir)) {
+              await munge(outputPath, inputDir);
             }
             break;
           default:
@@ -573,7 +688,7 @@ function mergeConfigurations(...configs) {
   }, {});
 }
 
-function logInfo$1(message) {
+function logInfo(message) {
   /* eslint-disable no-console */
   console.log(message);
 }
@@ -596,9 +711,9 @@ async function startDevServer(config, serveDir, outputDir, opts = {}) {
   );
   if (startOpen) {
     let url = `http://${server.host}:${server.port}`;
-    logInfo$1(`Launching browser at '${url}'`);
+    logInfo(`Launching browser at '${url}'`);
     await open(url, { wait: true });
-    logInfo$1('Closed browser.');
+    logInfo('Closed browser.');
   }
 }
 
@@ -759,94 +874,6 @@ class BuildManager extends FileManager {
       });
     }
   }
-}
-
-function logInfo(message) {
-  /* eslint-disable no-console */
-  console.log(message);
-}
-
-async function munge(inFile, outDir, opts = {}) {
-  const packFile = path.basename(inFile);
-  const packExt = path.extname(inFile);
-  const packName = packFile.substring(0, packFile.length - packExt.length);
-  const packDir = outDir;
-  const packZip = inFile;
-  const packRC = `${packName}.packrc`;
-  const date = new Date();
-  const backupDir = 'tmp';
-  const backupName = `${date.getFullYear()}-${String(date.getMonth()).padStart(
-    2,
-    '0'
-  )}-${String(date.getDate()).padStart(2, '0')}-${String(
-    date.getHours()
-  ).padStart(2, '0')}-${String(date.getMinutes()).padStart(2, '0')}-${String(
-    date.getSeconds()
-  ).padStart(2, '0')}`;
-  const backupZip = path.join(
-    backupDir,
-    `${backupName}.${packName}.pack.backup`
-  );
-
-  const hasZip = await exists(packZip);
-  const hasDir = await exists(packDir);
-
-  let manifest = null;
-
-  // Copy the backup if nothing exists
-  if (!hasZip) {
-    logInfo('Creating packfile...');
-    await fs.mkdir(packDir, { recursive: true });
-    manifest = await createZip(packZip, packDir);
-  }
-  // If zip exists, but no source files. Extract!
-  else if (!hasDir) {
-    logInfo('Extracting packfile...');
-    manifest = await createUnzip(packZip, '.');
-  }
-  // If zip and source exists. Diff!
-  else {
-    logInfo('Diffing packfile...');
-    const tempDir = backupDir;
-    const tempZip = path.join(backupDir, 'tmp.pack');
-    await fs.mkdir(tempDir, { recursive: true });
-    await createZip(tempZip, packDir);
-    let zipManifest = await getZipManifest(packZip);
-    let srcManifest = await getZipManifest(tempZip);
-
-    // If different, overwrite zip with source
-    if (zipManifest.checksum !== srcManifest.checksum) {
-      logInfo('Updating packfile...');
-      // Always make backup first
-      await fs.mkdir(backupDir, { recursive: true });
-      await fs.copyFile(packZip, backupZip);
-      // Then continue...
-      await fs.copyFile(tempZip, packZip);
-      manifest = srcManifest;
-    } else {
-      await fs.rm(tempZip);
-      manifest = zipManifest;
-    }
-  }
-
-  // Write to .packrc
-  let packConfig = {
-    version: '1.0.0',
-    manifest,
-  };
-  if (await exists(packRC)) {
-    let config;
-    try {
-      config = JSON.parse(await fs.readFile(packRC));
-    } catch (e) {
-      config = {};
-    }
-    packConfig = {
-      ...config,
-      ...packConfig,
-    };
-  }
-  await fs.writeFile(packRC, JSON.stringify(packConfig, undefined, 4));
 }
 
 export { BuildManager, FileManager, build, exists, getZipManifest, loadPackageJson, munge, start, createUnzip as unzip, createZip as zip };

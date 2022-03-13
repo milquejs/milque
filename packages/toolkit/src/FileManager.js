@@ -9,6 +9,7 @@ import {
   deleteFiles,
 } from './FileUtil.js';
 import { createUnzip, createZip } from './Zipper.js';
+import { munge } from './munge3.js';
 
 export class FileManager {
   /**
@@ -46,6 +47,7 @@ export class FileManager {
       await copyFile(inputFile, outputPath);
     }
     if (this.watching) {
+      console.log('...watching', inputFile, '...');
       let watcher = chokidar.watch(inputFile);
       watcher.on('all', async (event) => {
         switch (event) {
@@ -74,6 +76,7 @@ export class FileManager {
       await createZip(outputPath, inputDir);
     }
     if (this.watching) {
+      console.log('...watching', inputDir, '...');
       let watcher = chokidar.watch(inputDir);
       watcher.on('all', async (event) => {
         switch (event) {
@@ -81,6 +84,7 @@ export class FileManager {
           case 'change':
           case 'unlink':
             if (await verifyDirectory(inputDir)) {
+              console.log('Zipping...', inputDir);
               await createZip(outputPath, inputDir);
             }
             break;
@@ -98,6 +102,7 @@ export class FileManager {
       await createUnzip(inputFile, outputPath);
     }
     if (this.watching) {
+      console.log('...watching', inputFile, '...');
       let watcher = chokidar.watch(inputFile);
       watcher.on('all', async (event) => {
         switch (event) {
@@ -106,6 +111,31 @@ export class FileManager {
           case 'unlink':
             if (await verifyFile(inputFile)) {
               await createUnzip(inputFile, outputPath);
+            }
+            break;
+          default:
+            return;
+        }
+      });
+      this.activeWatchers.push(watcher);
+    }
+  }
+
+  async munge(inputDir, outputPath) {
+    outputPath = path.join(this.outputDir, outputPath);
+    if (await verifyDirectory(inputDir)) {
+      await munge(outputPath, inputDir);
+    }
+    if (this.watching) {
+      console.log('...watching', inputDir, '...');
+      let watcher = chokidar.watch(inputDir, { ignoreInitial: true });
+      watcher.on('all', async (event) => {
+        switch (event) {
+          case 'add':
+          case 'change':
+          case 'unlink':
+            if (await verifyDirectory(inputDir)) {
+              await munge(outputPath, inputDir);
             }
             break;
           default:

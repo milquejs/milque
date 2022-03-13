@@ -1,9 +1,10 @@
+import { constants } from 'fs';
 import fs from 'fs/promises';
 import path from 'path';
 
 export async function exists(filePath) {
   try {
-    await fs.stat(filePath);
+    await fs.access(filePath);
   } catch (e) {
     return false;
   }
@@ -13,21 +14,20 @@ export async function exists(filePath) {
 export async function verifyFile(filePath) {
   let stats;
   try {
-    stats = await fs.stat(filePath);
+    await fs.access(filePath, constants.R_OK);
   } catch (e) {
     return false;
   }
-  return stats.isFile();
+  return true;
 }
 
 export async function verifyDirectory(dirPath) {
-  let stats;
   try {
-    stats = await fs.stat(dirPath);
+    await fs.access(dirPath);
   } catch (e) {
     return false;
   }
-  return stats.isDirectory();
+  return true;
 }
 
 export async function copyFile(inputPath, outputPath) {

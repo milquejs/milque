@@ -79,7 +79,7 @@ export async function munge(inFile, outDir, opts = {}) {
   if (await exists(packRC)) {
     let config;
     try {
-      config = JSON.parse(await fs.readFile(packRC));
+      config = JSON.parse(await (await fs.readFile(packRC)).toString());
     } catch (e) {
       config = {};
     }
