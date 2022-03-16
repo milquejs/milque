@@ -1,3 +1,4 @@
+import { AssetManager } from '@milque/asset';
 import { createSound } from './audio.js';
 
 const SOUNDS = {};
@@ -6,14 +7,14 @@ export function sounds() {
   return SOUNDS;
 }
 
-export async function loadSounds(assets) {
+export async function loadSounds() {
   await Promise.all([
-    registerSound('start', assets.files.get('res/start.wav')),
-    registerSound('dead', assets.files.get('res/dead.wav')),
-    registerSound('pop', assets.files.get('res/boop.wav')),
-    registerSound('music', assets.files.get('res/music.wav')),
-    registerSound('shoot', assets.files.get('res/click.wav')),
-    registerSound('boom', assets.files.get('res/boom.wav')),
+    registerSound('start', AssetManager.get('raw://start.wav')),
+    registerSound('dead', AssetManager.get('raw://dead.wav')),
+    registerSound('pop', AssetManager.get('raw://boop.wav')),
+    registerSound('music', AssetManager.get('raw://music.wav')),
+    registerSound('shoot', AssetManager.get('raw://click.wav')),
+    registerSound('boom', AssetManager.get('raw://boom.wav')),
   ]);
 }
 

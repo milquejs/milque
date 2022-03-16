@@ -1,7 +1,9 @@
 import '@milque/display';
 import '@milque/input';
-import '@milque/asset';
 import './error.js';
+
+import { AssetManager } from '@milque/asset';
+import { AssetPipeline } from './loader/AssetPipeline.js';
 
 import { Game } from './game/Game.js';
 import { loadImage } from './loader/ImageLoader.js';
@@ -31,8 +33,6 @@ import { main as Moonset } from './046/main.js';
 // eslint-disable-next-line no-unused-vars
 import { main as Starfield } from './047/main.js';
 
-import { AssetPipeline } from './loader/AssetPipeline.js';
-
 /**
  * @typedef {import('@milque/asset').AssetPack} AssetPack
  * @typedef {import('@milque/display').DisplayPort} DisplayPort
@@ -44,45 +44,38 @@ async function main() {
   /** @type {DisplayPort} */
   const display = document.querySelector('#display');
   /** @type {InputContext} */
-  const inputs = document.querySelector('#inputs').getContext('axisbutton');
-  /** @type {AssetPack} */
-  const assets = document.querySelector('#assets');
-  let promise = new Promise((resolve, reject) => {
-    assets.addEventListener('load', resolve);
-    assets.addEventListener('error', reject);
-  });
-  assets.src = 'res.pack';
-  await promise;
-  const pipeline = new AssetPipeline(assets);
+  const inputs = /** @type {import('@milque/input').InputPort} */ (document.querySelector('#inputs')).getContext('axisbutton');
+  const pipeline = new AssetPipeline();
+  await AssetManager.loadAssetPack('res.pack', (src, uri, path) => AssetManager.cache('res/' + path, src));
   await pipeline.pipe('res/**/*.md', async (assetData, uri) =>
-    assets.cacheAsset('txt:' + uri.substring(4), await loadText(assetData))
+    AssetManager.cache('txt:' + uri.substring(4), await loadText(assetData))
   );
   await pipeline.pipe('res/**/*.txt', async (assetData, uri) =>
-    assets.cacheAsset('txt:' + uri.substring(4), await loadText(assetData))
+    AssetManager.cache('txt:' + uri.substring(4), await loadText(assetData))
   );
   await pipeline.pipe('res/**/*.png', async (assetData, uri) =>
-    assets.cacheAsset(
+    AssetManager.cache(
       'image:' + uri.substring(4),
-      await loadImage(assetData, 'image/png')
+      await loadImage(assetData, 'image/png'),
     )
   );
   await pipeline.pipe('res/**/*.obj', async (assetData, uri) =>
-    assets.cacheAsset('obj:' + uri.substring(4), await loadOBJ(assetData))
+    AssetManager.cache('obj:' + uri.substring(4), await loadOBJ(assetData))
   );
   await pipeline.pipe('res/**/*.atlas', async (assetData, uri) =>
-    assets.cacheAsset('atlas:' + uri.substring(4), await loadAtlas(assetData))
+    AssetManager.cache('atlas:' + uri.substring(4), await loadAtlas(assetData))
   );
   await pipeline.pipe('res/**/*.fnt', async (assetData, uri) =>
-    assets.cacheAsset('fnt:' + uri.substring(4), await loadBMFont(assetData))
+    AssetManager.cache('fnt:' + uri.substring(4), await loadBMFont(assetData))
   );
   await pipeline.pipe('res/**/*.wav', async (assetData, uri) => {
     let audioContext = Sound.getAudioContext();
     let audioBuffer = await loadAudioBuffer(assetData, audioContext);
     let sound = new Sound(audioContext, audioBuffer);
-    return assets.cacheAsset('sound:' + uri.substring(4), sound);
+    return AssetManager.cache('sound:' + uri.substring(4), sound);
   });
 
-  const game = new Game(display, inputs, assets);
+  const game = new Game(display, inputs);
   display.addEventListener('frame', (/** @type {CustomEvent} */ e) => {
     const { deltaTime, prevTime, now } = e.detail;
     game.deltaTime = deltaTime;

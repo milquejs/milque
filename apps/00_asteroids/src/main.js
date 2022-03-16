@@ -1,10 +1,10 @@
 import '@milque/display';
-import '@milque/asset';
 import { Random } from '@milque/random';
 import './error.js';
 
 import { loadSounds, sounds } from './assets.js';
 import * as Starfield from './Starfield.js';
+import { AssetManager } from '@milque/asset';
 
 /**
  * @typedef {import('@milque/display').DisplayPort} DisplayPort
@@ -108,14 +108,8 @@ let SHOW_COLLISION = false;
 
 async function load() {
   console.log('Loading...');
-  const assets = document.querySelector('#assets');
-  const promise = new Promise((resolve, reject) => {
-    assets.addEventListener('load', resolve);
-    assets.addEventListener('error', reject);
-  });
-  assets.src = 'res.pack';
-  await promise;
-  await loadSounds(assets);
+  await AssetManager.loadAssetPack('res.pack');
+  await loadSounds();
   console.log('...loading complete!');
 }
 

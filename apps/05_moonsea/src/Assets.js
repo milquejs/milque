@@ -1,19 +1,18 @@
-import { AssetRef, bindRefs, loadRefs } from './loader/AssetRef.js';
+import { AssetRef } from '@milque/asset';
+import { loadAssetRefs } from './loader/AssetHelper.js';
 import { loadImage } from './loader/ImageLoader.js';
 import { loadSound } from './sound/SoundLoader.js';
 
 export const ASSETS = {
-  CanoeImage: new AssetRef('canoe', 'res/canoe.png', loadImage),
-  PierImage: new AssetRef('pier', 'res/pier.png', loadImage),
-  PierLegImage: new AssetRef('pierLeg', 'res/pier_leg.png', loadImage),
-  BucketImage: new AssetRef('bucket', 'res/bucket.png', loadImage),
-  MusicBack: new AssetRef('musicBack', 'res/music_back.wav', loadSound),
-  MusicLayer1: new AssetRef('musicLayer1', 'res/music_1.wav', loadSound),
-  MusicLayer2: new AssetRef('musicLayer2', 'res/music_2.wav', loadSound),
+  CanoeImage: new AssetRef('canoe', 'raw://canoe.png', loadImage),
+  PierImage: new AssetRef('pier', 'raw://pier.png', loadImage),
+  PierLegImage: new AssetRef('pierLeg', 'raw://pier_leg.png', loadImage),
+  BucketImage: new AssetRef('bucket', 'raw://bucket.png', loadImage),
+  MusicBack: new AssetRef('musicBack', 'raw://music_back.wav', loadSound),
+  MusicLayer1: new AssetRef('musicLayer1', 'raw://music_1.wav', loadSound),
+  MusicLayer2: new AssetRef('musicLayer2', 'raw://music_2.wav', loadSound),
 };
 
-/** @param {import('@milque/asset').AssetPack} assetPack */
-export async function initAssets(assetPack) {
-  bindRefs(assetPack, Object.values(ASSETS));
-  await loadRefs(Object.values(ASSETS));
+export async function initAssets() {
+  await loadAssetRefs(Object.values(ASSETS));
 }

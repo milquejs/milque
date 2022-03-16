@@ -301,7 +301,7 @@ class DisplayPort extends HTMLElement {
         prevTime: 0,
         deltaTime: 0,
         canvas: this._canvasElement,
-      }
+      },
     });
     /** @private */
     this._resizeEvent = new CustomEvent('resize', {
@@ -310,7 +310,7 @@ class DisplayPort extends HTMLElement {
       detail: {
         width: 0,
         height: 0,
-      }
+      },
     });
 
     /** @private */

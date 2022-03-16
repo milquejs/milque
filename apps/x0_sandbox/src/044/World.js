@@ -22,9 +22,9 @@ export class World {
   async onLoad() {
     const { display, assets } = this.game;
     this.renderer = new FixedSpriteGLRenderer2d(display.canvas);
-    let toastImage = assets.getAsset('image:toast.png');
+    let toastImage = assets.get('image:toast.png');
     this.renderer.texture(0, toastImage, 'toast');
-    let slimeImage = assets.getAsset('image:slime.png');
+    let slimeImage = assets.get('image:slime.png');
     this.renderer.texture(1, slimeImage, 'slime');
   }
 

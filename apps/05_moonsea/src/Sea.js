@@ -1,7 +1,8 @@
 import { Random } from '@milque/random';
+import { AssetRef } from '@milque/asset';
 import { clamp } from '@milque/util';
-import { AssetRef, bindRefs, loadRefs } from './loader/AssetRef';
-import { loadImage } from './loader/ImageLoader';
+import { loadAssetRefs } from './loader/AssetHelper.js';
+import { loadImage } from './loader/ImageLoader.js';
 
 /**
  * @typedef {import('./renderer/drawcontext/DrawContextFixedGLText.js').DrawContextFixedGLText} DrawContextFixedGLText
@@ -17,14 +18,13 @@ const SEA_COLUMN_COUNT = 10;
 const SEA_ROW_COUNT = 8;
 
 export const ASSETS = {
-  Wave1Image: new AssetRef('wave1.png', 'res/wave1.png', loadImage),
-  Wave2Image: new AssetRef('wave2.png', 'res/wave2.png', loadImage),
+  Wave1Image: new AssetRef('wave1.png', 'raw://wave1.png', loadImage),
+  Wave2Image: new AssetRef('wave2.png', 'raw://wave2.png', loadImage),
 };
 
 /** @param {Game} game */
 export async function load(game) {
-  bindRefs(game.assets, Object.values(ASSETS));
-  await loadRefs(Object.values(ASSETS));
+  await loadAssetRefs(Object.values(ASSETS));
 }
 
 /** @param {Game} game */

@@ -13,11 +13,11 @@ export async function main(game) {
   const canvas = display.canvas;
   canvas.style = 'cursor: none';
   const renderer = new FixedSpriteGLRenderer2d(display.canvas);
-  renderer.texture(0, assets.getAsset('image:cube.png'), 'cube');
-  renderer.texture(1, assets.getAsset('image:font.png'), 'font.all');
-  renderer.texture(2, assets.getAsset('image:toast.png'), 'toast');
-  renderer.texture(3, assets.getAsset('image:slime.png'), 'slime.all');
-  loadSpritesFromAtlas(renderer, 3, assets.getAsset('atlas:slime.atlas'));
+  renderer.texture(0, assets.get('image:cube.png'), 'cube');
+  renderer.texture(1, assets.get('image:font.png'), 'font.all');
+  renderer.texture(2, assets.get('image:toast.png'), 'toast');
+  renderer.texture(3, assets.get('image:slime.png'), 'slime.all');
+  loadSpritesFromAtlas(renderer, 3, assets.get('atlas:slime.atlas'));
   loadFontSprite(renderer);
 
   let slimes = [
@@ -45,7 +45,7 @@ export async function main(game) {
 
     if (inputs.isButtonPressed('activate')) {
       /** @type {Sound} */
-      let pop = assets.getAsset('sound:pop.wav');
+      let pop = assets.get('sound:pop.wav');
       pop.play({ pitch: (Math.random() - 0.5) * 10, gain: 0.5 });
     }
   });

@@ -1,19 +1,19 @@
 export async function load(assets, renderer) {
   // Dungeon
-  renderer.texture(1, assets.getAsset('image:dungeon.png'), 'dungeon.all');
-  loadSpritesFromAtlas(renderer, 1, assets.getAsset('atlas:dungeon.atlas'));
+  renderer.texture(1, assets.get('image:dungeon.png'), 'dungeon.all');
+  loadSpritesFromAtlas(renderer, 1, assets.get('atlas:dungeon.atlas'));
 
   // Font
-  renderer.texture(2, assets.getAsset('image:font.png'), 'font.all');
+  renderer.texture(2, assets.get('image:font.png'), 'font.all');
   loadFontSprite(renderer, 2);
 
   // NineBox
-  renderer.texture(3, assets.getAsset('image:water_tile.png'), 'nine.all');
+  renderer.texture(3, assets.get('image:water_tile.png'), 'nine.all');
   loadNineSprite(renderer, 3, 16, 16);
 
   // BMFont
-  renderer.texture(4, assets.getAsset('image:m5x7.png'), 'bmfont.all');
-  loadBMFontSprite(renderer, 4, assets.getAsset('fnt:m5x7.fnt'));
+  renderer.texture(4, assets.get('image:m5x7.png'), 'bmfont.all');
+  loadBMFontSprite(renderer, 4, assets.get('fnt:m5x7.fnt'));
 }
 
 export function drawNineBox(renderer, left, top, right = left, bottom = top) {

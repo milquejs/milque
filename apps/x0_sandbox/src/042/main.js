@@ -26,7 +26,7 @@ export async function main(game) {
   const mouse = new Mouse(display);
 
   const { width: cubeWidth, height: cubeHeight } =
-    assets.getAsset('image:cube.png');
+    assets.get('image:cube.png');
   const halfCubeWidth = cubeWidth / 2;
   const halfCubeHeight = cubeHeight / 2;
 
@@ -57,12 +57,12 @@ export async function main(game) {
   }
   // Cube
   spriteRenderer
-    .texture(0, assets.getAsset('image:cube.png'), 'cube.0')
+    .texture(0, assets.get('image:cube.png'), 'cube.0')
     .sprite('cube', ['cube.0']);
 
   // Dungeon
-  let dungeonAtlas = assets.getAsset('atlas:dungeon.atlas');
-  let dungeonImage = assets.getAsset('image:dungeon.png');
+  let dungeonAtlas = assets.get('atlas:dungeon.atlas');
+  let dungeonImage = assets.get('image:dungeon.png');
   spriteRenderer.texture(1, dungeonImage, 'dungeon.0');
   for (let key in dungeonAtlas) {
     let { u, v, w, h, frames } = dungeonAtlas[key];

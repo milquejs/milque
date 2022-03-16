@@ -1,17 +1,16 @@
 import '@milque/display';
 import '@milque/input';
-import '@milque/asset';
 import './error.js';
 
 import * as MainScene from './MainScene.js';
 import * as MainRender from './MainRender.js';
 
 import { attach } from './MinesControls.js';
+import { AssetManager } from '@milque/asset';
 
 /**
  * @typedef {import('@milque/display').DisplayPort} DisplayPort
  * @typedef {import('@milque/input').InputContext} InputContext
- * @typedef {import('@milque/asset').AssetPack} AssetPack
  */
 
 /*
@@ -50,12 +49,8 @@ async function main() {
   const inputs = document.querySelector('input-port').getContext('axisbutton');
   attach(inputs);
 
-  /** @type {AssetPack} */
-  const assets = document.querySelector('asset-pack');
-  await new Promise((resolve, reject) => {
-    assets.addEventListener('load', resolve);
-    assets.addEventListener('error', reject);
-  });
+  const assets = AssetManager;
+  await AssetManager.loadAssetPack('res.pack');
 
   const world = { display };
   await MainRender.load.call(world, assets);

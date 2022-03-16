@@ -1,6 +1,5 @@
 import '@milque/display';
 import '@milque/input';
-import '@milque/asset';
 import './error.js';
 
 import { Random } from '@milque/random';
@@ -38,6 +37,7 @@ import {
 } from './Config.js';
 import { ASSETS } from './asset/Assets.js';
 import { loadAudio } from './asset/Audio.js';
+import { AssetManager } from '@milque/asset';
 
 // TODO: Move the camera towards the placed block each time.
 // TODO: Regionize the block maps.
@@ -56,8 +56,8 @@ import { loadAudio } from './asset/Audio.js';
 document.addEventListener('DOMContentLoaded', main);
 
 async function load(assets) {
-  ASSETS['audio:flick'] = await loadAudio(assets.files.get('res/flick.wav'));
-  ASSETS['audio:melt'] = await loadAudio(assets.files.get('res/melt.mp3'));
+  ASSETS['audio:flick'] = await loadAudio(assets.get('raw://flick.wav'));
+  ASSETS['audio:melt'] = await loadAudio(assets.get('raw://melt.mp3'));
   ASSETS['audio:reset'] = ASSETS['audio:flick'];
   ASSETS['audio:background'] = ASSETS['audio:melt'];
   await MaterialSystem.load(assets);
@@ -77,13 +77,8 @@ async function main() {
   inputs.bindButton('Save', 'Keyboard', 'KeyS');
   inputs.bindButton('Load', 'Keyboard', 'KeyL');
 
-  /** @type {AssetPack} */
-  const assets = document.querySelector('#assets');
-  await new Promise((resolve, reject) => {
-    assets.addEventListener('load', resolve);
-    assets.addEventListener('error', reject);
-  });
-  await load(assets);
+  await AssetManager.loadAssetPack('res.pack');
+  await load(AssetManager);
 
   // Initialize world
   const world = {

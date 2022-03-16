@@ -13,7 +13,7 @@ export async function main(game) {
   await load(assets, renderer);
   const mouse = new Mouse(canvas);
 
-  let text = assets.getAsset('txt:tablev3.md');
+  let text = assets.get('txt:tablev3.md');
   console.log(text);
 
   let messagebox = new MessageBox();

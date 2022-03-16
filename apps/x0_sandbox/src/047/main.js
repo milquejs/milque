@@ -99,8 +99,7 @@ export async function main(game) {
   async function load() {
     console.log('Loading...');
     inputs.bindBindings(Object.values(Inputs));
-    Assets.bindRefs(assets, Object.values(Assets));
-    await Assets.loadRefs(Object.values(Assets));
+    Assets.loadAssetRefs(Object.values(Assets));
     console.log('...loading complete!');
   }
 

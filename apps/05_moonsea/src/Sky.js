@@ -1,8 +1,9 @@
 import { Random } from '@milque/random';
 import { clamp } from '@milque/util';
-import { AssetRef, bindRefs, loadRefs } from './loader/AssetRef';
-import { loadImage } from './loader/ImageLoader';
+import { AssetRef } from '@milque/asset';
+import { loadImage } from './loader/ImageLoader.js';
 import { hex } from './renderer/color.js';
+import { loadAssetRefs } from './loader/AssetHelper.js';
 
 /**
  * @typedef {import('./renderer/drawcontext/DrawContextFixedGLText.js').DrawContextFixedGLText} DrawContextFixedGLText
@@ -21,20 +22,19 @@ const SKY_SHADE_COUNT = 6;
 const SKY_CLOUD_COUNT = 8;
 
 export const ASSETS = {
-  StarImage: new AssetRef('star.png', 'res/star.png', loadImage),
+  StarImage: new AssetRef('star.png', 'raw://star.png', loadImage),
   BlurStrokeImage: new AssetRef(
     'blur_stroke.png',
-    'res/blur_stroke.png',
+    'raw://blur_stroke.png',
     loadImage
   ),
-  CircleImage: new AssetRef('circle.png', 'res/circle.png', loadImage),
-  CloudImage: new AssetRef('cloud.png', 'res/cloud.png', loadImage),
+  CircleImage: new AssetRef('circle.png', 'raw://circle.png', loadImage),
+  CloudImage: new AssetRef('cloud.png', 'raw://cloud.png', loadImage),
 };
 
 /** @param {Game} game */
 export async function load(game) {
-  bindRefs(game.assets, Object.values(ASSETS));
-  await loadRefs(Object.values(ASSETS));
+  await loadAssetRefs(Object.values(ASSETS));
 }
 
 /** @param {Game} game */

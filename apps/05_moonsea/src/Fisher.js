@@ -1,7 +1,7 @@
 import { clamp } from '@milque/util';
 import { INPUTS } from './Inputs.js';
-import { bindRefs, loadRefs } from './loader/AssetRef.js';
 import { drawRippleEffect } from './Ripple.js';
+import { loadAssetRefs } from './loader/AssetHelper.js';
 
 /**
  * @typedef {import('./renderer/drawcontext/DrawContextFixedGLText.js').DrawContextFixedGLText} DrawContextFixedGLText
@@ -12,8 +12,7 @@ export const ASSETS = {};
 
 /** @param {Game} game */
 export async function load(game) {
-  bindRefs(game.assets, Object.values(ASSETS));
-  await loadRefs(Object.values(ASSETS));
+  await loadAssetRefs(Object.values(ASSETS));
 }
 
 const REELING_NEAR_RANGE = 4;

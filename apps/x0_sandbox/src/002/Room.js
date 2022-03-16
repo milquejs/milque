@@ -100,7 +100,7 @@ export class Sprite {
   }
 
   render(ctx, assets) {
-    let image = assets.getAsset(this.src);
+    let image = assets.get(this.src);
     if (image) {
       ctx.drawImage(image, this.offsetX, this.offsetY);
     } else {

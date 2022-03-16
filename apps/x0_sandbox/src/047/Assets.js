@@ -1,5 +1,5 @@
+import { AssetRef } from '@milque/asset';
 import { loadSound } from 'src/audio/SoundLoader.js';
-import { AssetRef } from 'src/loader/AssetRef.js';
 
 export const SoundStart = new AssetRef(
   'sound://start.wav',
@@ -32,24 +32,6 @@ export const BackgroundMusic = new AssetRef(
   loadSound
 );
 
-/**
- * @param {import('@milque/asset').AssetPack} assetPack
- * @param {Array<AssetRef>} refs
- */
-export function bindRefs(assetPack, refs) {
-  for (let ref of refs) {
-    if (ref instanceof AssetRef) {
-      ref.register(assetPack);
-    }
-  }
-}
-
-export async function loadRefs(refs) {
-  let promises = [];
-  for (let ref of refs) {
-    if (ref instanceof AssetRef) {
-      promises.push(ref.load());
-    }
-  }
-  await Promise.all(promises);
+export async function loadAssetRefs(refs) {
+  await Promise.all(refs.map(ref => ref.load()));
 }

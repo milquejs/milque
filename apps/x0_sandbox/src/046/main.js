@@ -14,14 +14,14 @@ export async function main(game) {
   const ctx = new DrawContextFixedGLText(canvas.getContext('webgl'));
   ctx.reset();
 
-  const image = assets.getAsset('image:water_tile.png');
-  const fontData = assets.getAsset('fnt:m5x7.fnt');
-  const fontImage = assets.getAsset('image:m5x7.png');
-  const star = assets.getAsset('image:star.png');
-  const blurStroke = assets.getAsset('image:blur_stroke.png');
-  const circle = assets.getAsset('image:circle.png');
-  const mountains = assets.getAsset('image:mountains.png');
-  const cloud = assets.getAsset('image:cloud.png');
+  const image = assets.get('image:water_tile.png');
+  const fontData = assets.get('fnt:m5x7.fnt');
+  const fontImage = assets.get('image:m5x7.png');
+  const star = assets.get('image:star.png');
+  const blurStroke = assets.get('image:blur_stroke.png');
+  const circle = assets.get('image:circle.png');
+  const mountains = assets.get('image:mountains.png');
+  const cloud = assets.get('image:cloud.png');
 
   const STAR_COLORS = [0xfafafa];
   const GRADIENT_TOP = 0x8278b4;

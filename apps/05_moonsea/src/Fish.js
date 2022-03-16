@@ -1,5 +1,7 @@
 import { Random } from '@milque/random';
-import { AssetRef, bindRefs, loadRefs } from './loader/AssetRef.js';
+import { AssetRef } from '@milque/asset';
+import { ComponentClass } from './ComponentClass.js';
+import { loadAssetRefs } from './loader/AssetHelper.js';
 import { loadImage } from './loader/ImageLoader.js';
 import { startRipple } from './Ripple.js';
 
@@ -9,13 +11,19 @@ import { startRipple } from './Ripple.js';
  */
 
 const ASSETS = {
-  FishImage: new AssetRef('fishShadow', 'res/fish_shadow.png', loadImage),
+  FishImage: new AssetRef('fishShadow', 'raw://fish_shadow.png', loadImage),
 };
+
+const FishComponent = new ComponentClass('fish', () => ({
+  x: 0, y: 0,
+  offset: 0,
+  size: 0,
+  speed: 0,
+}));
 
 /** @param {Game} game */
 export async function load(game) {
-  bindRefs(game.assets, Object.values(ASSETS));
-  await loadRefs(Object.values(ASSETS));
+  await loadAssetRefs(Object.values(ASSETS));
 }
 
 /** @param {Game} game */
@@ -25,16 +33,13 @@ export function init(game) {
 
   let fishes = [];
   for (let i = 0; i < 6; ++i) {
-    let x = Random.range(0, canvasWidth);
-    let y = Random.range(canvasHeight - 100, canvasHeight);
-    let offset = Random.range(0, Math.PI * 2);
-    fishes.push({
-      x,
-      y,
-      offset,
-      size: Random.range(0.3, 0.5),
-      speed: Random.range(1, 3) * Random.sign(),
-    });
+    let result = FishComponent.create();
+    result.x = Random.range(0, canvasWidth);
+    result.y = Random.range(canvasHeight - 100, canvasHeight);
+    result.offset = Random.range(0, Math.PI * 2);
+    result.size = Random.range(0.3, 0.5);
+    result.speed = Random.range(1, 3) * Random.sign();
+    fishes.push(result);
   }
   return {
     fishes,

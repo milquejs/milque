@@ -17,38 +17,22 @@ import * as Fisher from './Fisher.js';
 import * as Fish from './Fish.js';
 import * as Ripple from './Ripple.js';
 import * as Player from './Player.js';
+import { game } from './Game.js';
+import { AssetManager } from '@milque/asset';
 
 /**
  * @typedef {import('@milque/asset').AssetPack} AssetPack
  * @typedef {import('@milque/display').DisplayPort} DisplayPort
  * @typedef {import('@milque/input').InputContext} InputContext
+ * @typedef {ReturnType<import('./Game.js').game>} Game
  */
 
-/**
- * @typedef Game
- * @property {DisplayPort} display
- * @property {AssetPack} assets
- * @property {InputContext} inputs
- * @property {number} deltaTime
- * @property {number} now
- */
 
 window.addEventListener('DOMContentLoaded', main);
 async function main() {
-  /** @type {DisplayPort} */
-  const display = document.querySelector('#display');
-  /** @type {InputContext} */
-  const inputs = document.querySelector('#inputs').getContext('axisbutton');
-  /** @type {AssetPack} */
-  const assets = document.querySelector('#assets');
-  let promise = new Promise((resolve, reject) => {
-    assets.addEventListener('load', resolve);
-    assets.addEventListener('error', reject);
-  });
-  assets.src = 'res.pack';
-  await promise;
-
-  await start({ display, inputs, assets, deltaTime: 0, now: 0 });
+  const g = game();
+  await AssetManager.loadAssetPack('res.pack');
+  await start(g);
 }
 
 /**
@@ -62,7 +46,7 @@ async function start(game) {
   let canvasHeight = display.height;
 
   initInputs(game.inputs);
-  await initAssets(game.assets);
+  await initAssets();
 
   await Sky.load(game);
   await Sea.load(game);

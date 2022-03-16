@@ -1,21 +1,20 @@
+import { AssetManager } from '@milque/asset';
+import { Eventable } from '@milque/util';
+
 /**
- * @typedef {import('@milque/asset').AssetPack} AssetPack
  * @typedef {import('@milque/display').DisplayPort} DisplayPort
  * @typedef {import('@milque/input').InputContext} InputContext
  */
-
-import { Eventable } from '@milque/util';
 
 export class Game {
   /**
    * @param {DisplayPort} display
    * @param {InputContext} inputs
-   * @param {AssetPack} assets
    */
-  constructor(display, inputs, assets) {
+  constructor(display, inputs) {
     this.display = display;
     this.inputs = inputs;
-    this.assets = assets;
+    this.assets = AssetManager;
 
     this.deltaTime = 0;
     this.prevTime = 0;

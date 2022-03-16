@@ -8,12 +8,12 @@ const ASSETS = {
 };
 
 /**
- * @param {import('@milque/asset').AssetPack} assets
+ * @param {import('@milque/asset').AssetManager} assets
  */
 export async function load(assets) {
-  ASSETS.TILE_IMAGE = await loadImage(assets.files.get('res/tile.png'));
-  ASSETS.NUMS_IMAGE = await loadImage(assets.files.get('res/nums.png'));
-  ASSETS.MARK_IMAGE = await loadImage(assets.files.get('res/flag.png'));
+  ASSETS.TILE_IMAGE = await loadImage(assets.get('raw://tile.png'));
+  ASSETS.NUMS_IMAGE = await loadImage(assets.get('raw://nums.png'));
+  ASSETS.MARK_IMAGE = await loadImage(assets.get('raw://flag.png'));
   ASSETS.LOADED = true;
 }
 

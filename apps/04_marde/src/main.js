@@ -1,6 +1,5 @@
 import '@milque/display';
 import '@milque/input';
-import '@milque/asset';
 import './error.js';
 
 import * as Background from './Background.js';
@@ -8,7 +7,6 @@ import * as DialogueBox from './DialogueBox.js';
 import * as TaxiMeter from './TaxiMeter.js';
 
 /**
- * @typedef {import('@milque/asset').AssetPack} AssetPack
  * @typedef {import('@milque/display').DisplayPort} DisplayPort
  * @typedef {import('@milque/input').InputContext} InputContext
  */

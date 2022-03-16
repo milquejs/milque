@@ -3,13 +3,13 @@ import * as AcreWorld from './AcreWorld.js';
 /**
  * @typedef {import('@milque/display').DisplayPort} DisplayPort
  * @typedef {import('@milque/input').InputContext} InputContext
- * @typedef {import('@milque/asset').AssetPack} AssetPack
+ * @typedef {import('@milque/asset').AssetManager} AssetManager
  */
 
 /**
  * @param {DisplayPort} display
  * @param {InputContext} inputs
- * @param {AssetPack} assets
+ * @param {AssetManager} assets
  */
 export async function main(display, inputs, assets) {
   inputs.bindAxis('cursorX', 'Mouse', 'PosX');

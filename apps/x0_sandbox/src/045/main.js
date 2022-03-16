@@ -24,7 +24,7 @@ export async function main(game) {
     if (inputs.isButtonPressed('activate')) {
       player.x = Math.random() * display.width;
       player.y = Math.random() * display.height;
-      let pop = /** @type {Sound} */ (assets.getAsset('sound:pop.wav'));
+      let pop = /** @type {Sound} */ (assets.get('sound:pop.wav'));
       playVariation(pop, -10, 10);
     }
   });

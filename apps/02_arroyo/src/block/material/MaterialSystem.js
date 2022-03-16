@@ -7,10 +7,10 @@ import { BLOCKS } from '../BlockRegistry.js';
 export const MATERIAL_COMPONENT = 'material';
 
 export async function load(assets) {
-  ASSETS['audio:dirt'] = await loadAudio(assets.files.get('res/dirt.wav'));
-  ASSETS['audio:stone'] = await loadAudio(assets.files.get('res/stone.wav'));
-  ASSETS['audio:fluid'] = await loadAudio(assets.files.get('res/waterpop.wav'));
-  ASSETS['audio:metal'] = await loadAudio(assets.files.get('res/ding.wav'));
+  ASSETS['audio:dirt'] = await loadAudio(assets.get('raw://dirt.wav'));
+  ASSETS['audio:stone'] = await loadAudio(assets.get('raw://stone.wav'));
+  ASSETS['audio:fluid'] = await loadAudio(assets.get('raw://waterpop.wav'));
+  ASSETS['audio:metal'] = await loadAudio(assets.get('raw://ding.wav'));
 }
 
 export function initialize(world) {}
