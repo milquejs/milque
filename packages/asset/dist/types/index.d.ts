@@ -66,6 +66,13 @@ declare function load<T>(uri: string, src: string, loader: (src: string | ArrayB
  */
 declare function loadAssetPack(url: string, callback?: (src: Uint8Array, uri: string, path: string) => void): Promise<void>;
 /**
+ * This is the same as calling `await AssetRef.load()` for each ref.
+ *
+ * @param {Array<import('./AssetRef.js').AssetRef>} refs
+ * @param {number} [timeout]
+ */
+declare function loadAssetRefs(refs: Array<AssetRef<any>>, timeout?: number): Promise<void>;
+/**
  * @template T
  * @param {string} uri
  * @param {T} asset
@@ -131,6 +138,7 @@ declare function on(event: any, listener: any): void;
 
 declare const AssetManager_load: typeof load;
 declare const AssetManager_loadAssetPack: typeof loadAssetPack;
+declare const AssetManager_loadAssetRefs: typeof loadAssetRefs;
 declare const AssetManager_cache: typeof cache;
 declare const AssetManager_cacheDefault: typeof cacheDefault;
 declare const AssetManager_unload: typeof unload;
@@ -148,6 +156,7 @@ declare namespace AssetManager {
   export {
     AssetManager_load as load,
     AssetManager_loadAssetPack as loadAssetPack,
+    AssetManager_loadAssetRefs as loadAssetRefs,
     AssetManager_cache as cache,
     AssetManager_cacheDefault as cacheDefault,
     AssetManager_unload as unload,

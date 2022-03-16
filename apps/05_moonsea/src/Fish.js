@@ -1,7 +1,6 @@
 import { Random } from '@milque/random';
-import { AssetRef } from '@milque/asset';
+import { AssetManager, AssetRef } from '@milque/asset';
 import { ComponentClass } from './ComponentClass.js';
-import { loadAssetRefs } from './loader/AssetHelper.js';
 import { loadImage } from './loader/ImageLoader.js';
 import { startRipple } from './Ripple.js';
 
@@ -23,7 +22,7 @@ const FishComponent = new ComponentClass('fish', () => ({
 
 /** @param {Game} game */
 export async function load(game) {
-  await loadAssetRefs(Object.values(ASSETS));
+  await AssetManager.loadAssetRefs(Object.values(ASSETS));
 }
 
 /** @param {Game} game */

@@ -1,5 +1,4 @@
-import { AssetRef } from '@milque/asset';
-import { loadAssetRefs } from './loader/AssetHelper.js';
+import { AssetManager, AssetRef } from '@milque/asset';
 import { loadImage } from './loader/ImageLoader.js';
 import { loadSound } from './sound/SoundLoader.js';
 
@@ -14,5 +13,5 @@ export const ASSETS = {
 };
 
 export async function initAssets() {
-  await loadAssetRefs(Object.values(ASSETS));
+  await AssetManager.loadAssetRefs(Object.values(ASSETS));
 }

@@ -124,6 +124,20 @@ async function loadAssetPack(url, callback = undefined) {
 }
 
 /**
+ * This is the same as calling `await AssetRef.load()` for each ref.
+ * 
+ * @param {Array<import('./AssetRef.js').AssetRef>} refs 
+ * @param {number} [timeout] 
+ */
+async function loadAssetRefs(refs, timeout = DEFAULT_TIMEOUT) {
+    let promises = [];
+    for(let ref of refs) {
+        promises.push(ref.load(timeout));
+    }
+    await Promise.allSettled(promises);
+}
+
+/**
  * @template T
  * @param {string} uri
  * @param {T} asset
@@ -357,6 +371,7 @@ var AssetManager = /*#__PURE__*/Object.freeze({
     __proto__: null,
     load: load,
     loadAssetPack: loadAssetPack,
+    loadAssetRefs: loadAssetRefs,
     cache: cache,
     cacheDefault: cacheDefault,
     unload: unload,

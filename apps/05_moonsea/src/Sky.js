@@ -1,9 +1,8 @@
 import { Random } from '@milque/random';
 import { clamp } from '@milque/util';
-import { AssetRef } from '@milque/asset';
+import { AssetManager, AssetRef } from '@milque/asset';
 import { loadImage } from './loader/ImageLoader.js';
 import { hex } from './renderer/color.js';
-import { loadAssetRefs } from './loader/AssetHelper.js';
 
 /**
  * @typedef {import('./renderer/drawcontext/DrawContextFixedGLText.js').DrawContextFixedGLText} DrawContextFixedGLText
@@ -34,7 +33,7 @@ export const ASSETS = {
 
 /** @param {Game} game */
 export async function load(game) {
-  await loadAssetRefs(Object.values(ASSETS));
+  await AssetManager.loadAssetRefs(Object.values(ASSETS));
 }
 
 /** @param {Game} game */

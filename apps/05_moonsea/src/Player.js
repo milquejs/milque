@@ -1,6 +1,6 @@
+import { AssetManager } from '@milque/asset';
 import { FISHING_STATE } from './Fisher.js';
 import { INPUTS } from './Inputs.js';
-import { loadAssetRefs } from './loader/AssetHelper.js';
 
 /**
  * @typedef {import('./renderer/drawcontext/DrawContextFixedGLText.js').DrawContextFixedGLText} DrawContextFixedGLText
@@ -11,7 +11,7 @@ const ASSETS = {};
 
 /** @param {Game} game */
 export async function load(game) {
-  await loadAssetRefs(Object.values(ASSETS));
+  await AssetManager.loadAssetRefs(Object.values(ASSETS));
 }
 
 /** @param {Game} game */
