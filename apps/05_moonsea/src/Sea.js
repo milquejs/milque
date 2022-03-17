@@ -2,14 +2,12 @@ import { Random } from '@milque/random';
 import { AssetManager, AssetRef } from '@milque/asset';
 import { clamp } from '@milque/util';
 import { loadImage } from './loader/ImageLoader.js';
+import { getDayDelta, getDayIndex, mixDaylightColor, spicyDaylightColor } from './Colors.js';
 
 /**
  * @typedef {import('./renderer/drawcontext/DrawContextFixedGLText.js').DrawContextFixedGLText} DrawContextFixedGLText
  * @typedef {import('./main.js').Game} Game
  */
-
-const SEA_COLUMN_COLORS = [0xa2bee5, 0x5381c1, 0x4c4593];
-const SEA_ROWS_COLORS = [0x4979bc, 0x3865a5, 0x1b4f99, 0x184789];
 
 const SEA_SPARKLE_COUNT = 60;
 const SEA_FOAM_COUNT = 40;
@@ -28,45 +26,43 @@ export async function load(game) {
 
 /** @param {Game} game */
 export function init(game) {
-  const { display } = game;
-  const canvas = display.canvas;
   const canvasWidth = game.display.width;
   const canvasHeight = game.display.height;
-
-  const sparkles = [];
-  for (let i = 0; i < SEA_SPARKLE_COUNT; ++i) {
-    sparkles.push(createSparkle(canvasWidth, canvasHeight));
-  }
-  const foams = [];
-  for (let i = 0; i < SEA_FOAM_COUNT; ++i) {
-    foams.push(createFoam(canvasWidth, canvasHeight));
-  }
-  const columns = [];
-  for (let i = 0; i < SEA_COLUMN_COUNT; ++i) {
-    columns.push(createColumn(canvasWidth, canvasHeight));
-  }
-  const rows = [];
-  for (let i = 0; i < SEA_ROW_COUNT; ++i) {
-    rows.push(createRow(canvasWidth, canvasHeight));
-  }
   return {
-    sparkles,
-    foams,
-    columns,
-    rows,
+    sparkles: createFilledArray(
+      () => createSparkle(canvasWidth, canvasHeight),
+      SEA_SPARKLE_COUNT),
+    foams: createFilledArray(
+      () => createFoam(canvasWidth, canvasHeight),
+      SEA_FOAM_COUNT),
+    columns: createFilledArray(
+      () => createColumn(canvasWidth, canvasHeight),
+      SEA_COLUMN_COUNT),
+    rows: createFilledArray(
+      () => createRow(canvasWidth, canvasHeight),
+      SEA_ROW_COUNT),
   };
+}
+
+/**
+ * @template T
+ * @param {() => T} factory 
+ * @param {number} count 
+ * @returns {Array<T>}
+ */
+function createFilledArray(factory, count) {
+  let result = [];
+  for (let i = 0; i < count; ++i) {
+    result.push(factory());
+  }
+  return result;
 }
 
 /**
  * @param {Game} game
  * @param {ReturnType<init>} world
  */
-export function update(dt, game, world) {
-  const deltaTime = dt;
-  const canvas = game.display.canvas;
-  const canvasWidth = game.display.width;
-  const canvasHeight = game.display.height;
-}
+export function update(dt, game, world) {}
 
 /**
  * @param {DrawContextFixedGLText} ctx
@@ -79,12 +75,19 @@ export function render(ctx, game, world) {
   const canvasWidth = game.display.width;
   const canvasHeight = game.display.height;
   const { columns, rows, sparkles, foams } = world;
+  const MAX_WORLD_TIME = 600_000;
+  const worldTime = now % MAX_WORLD_TIME;
+  const dayIndex = getDayIndex(worldTime, MAX_WORLD_TIME);
+  const dayDelta = getDayDelta(worldTime, MAX_WORLD_TIME);
 
   let horizon = canvas.height - 200;
-  ctx.setColor(0xffffff);
+
+  // Sea
+  const gradientTop = mixDaylightColor(dayIndex, dayDelta, 'seas', 0);
+  const gradientBot = mixDaylightColor(dayIndex, dayDelta, 'seas', 1);
   ctx.drawGradientRect(
-    0x4979bc,
-    0x1b4f99,
+    gradientTop,
+    gradientBot,
     0,
     horizon,
     canvasWidth,
@@ -94,14 +97,16 @@ export function render(ctx, game, world) {
   // Sea Column
   ctx.setOpacityFloat(0.6);
   for (let s of columns) {
-    ctx.setColor(s.color);
+    let color = spicyDaylightColor(dayIndex, dayDelta, s.spicy, 'columns');
+    ctx.setColor(color);
     ctx.drawRect(s.x, horizon, s.x + s.width, canvas.height);
   }
   ctx.setOpacityFloat(1);
 
   // Sea Rows
   for (let s of rows) {
-    ctx.setColor(s.color);
+    let color = spicyDaylightColor(dayIndex, dayDelta, s.spicy, 'rows');
+    ctx.setColor(color);
     ctx.setScale(s.height, 1);
     ctx.setTranslation(s.x, s.y);
     ctx.drawCircle();
@@ -191,12 +196,11 @@ function createFoam(canvasWidth, canvasHeight) {
  */
 function createColumn(canvasWidth, canvasHeight) {
   let x = Random.range(0, canvasWidth);
-  let color = Random.choose(SEA_COLUMN_COLORS);
   let width = Random.range(50, 100);
   return {
     x,
-    color,
     width,
+    spicy: Random.next(),
   };
 }
 
@@ -208,23 +212,23 @@ function createRow(canvasWidth, canvasHeight) {
   let x = Random.range(0, canvasWidth);
   let y = Random.range(canvasHeight - 190, canvasHeight - 20);
   let height = Random.range(20, 60);
-  let color;
+  let spicy;
   if (Random.next() < 0.6) {
     let dy = (y - (canvasHeight - 190)) / 200;
     if (dy < 0.3) {
-      color = SEA_ROWS_COLORS[0];
+      spicy = 0;
     } else if (dy < 0.6) {
-      color = SEA_ROWS_COLORS[1];
+      spicy = 0.4;
     } else {
-      color = SEA_ROWS_COLORS[2];
+      spicy = 0.9;
     }
   } else {
-    color = Random.choose(SEA_ROWS_COLORS);
+    spicy = Random.next();
   }
   return {
     x,
     y,
-    color,
     height,
+    spicy,
   };
 }

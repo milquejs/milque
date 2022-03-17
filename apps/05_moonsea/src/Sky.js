@@ -3,16 +3,12 @@ import { clamp } from '@milque/util';
 import { AssetManager, AssetRef } from '@milque/asset';
 import { loadImage } from './loader/ImageLoader.js';
 import { hex } from './renderer/color.js';
+import { cloudyDaylightColor, getDayDelta, getDayIndex, mixDaylightColor, spicyDaylightColor } from './Colors.js';
 
 /**
  * @typedef {import('./renderer/drawcontext/DrawContextFixedGLText.js').DrawContextFixedGLText} DrawContextFixedGLText
  * @typedef {import('./main.js').Game} Game
  */
-
-const STAR_COLORS = [0xfafafa];
-const GRADIENT_TOP = 0x8278b4;
-const GRADIENT_BOTTOM = 0xb4bee6;
-const STREAK_COLORS = [0xb4a0e6, 0xcdbff2];
 
 const SKY_STAR_COUNT = 40;
 const SKY_STREAK_COUNT = 12;
@@ -38,39 +34,39 @@ export async function load(game) {
 
 /** @param {Game} game */
 export function init(game) {
-  const { display } = game;
-  const canvas = display.canvas;
   const canvasWidth = game.display.width;
   const canvasHeight = game.display.height;
-
-  const stars = [];
-  for (let i = 0; i < SKY_STAR_COUNT; ++i) {
-    let inst = createStar(canvasWidth, canvasHeight);
-    stars.push(inst);
-  }
-  const streaks = [];
-  for (let i = 0; i < SKY_STREAK_COUNT; ++i) {
-    streaks.push(createStreak(canvasWidth, canvasHeight));
-  }
-  const bigStreaks = [];
-  for (let i = 0; i < SKY_BIG_STREAK_COUNT; ++i) {
-    bigStreaks.push(createBigStreak(canvasWidth, canvasHeight));
-  }
-  const shades = [];
-  for (let i = 0; i < SKY_SHADE_COUNT; ++i) {
-    shades.push(createShade(canvasWidth, canvasHeight));
-  }
-  const clouds = [];
-  for (let i = 0; i < SKY_CLOUD_COUNT; ++i) {
-    clouds.push(createCloud(canvasWidth, canvasHeight));
-  }
   return {
-    stars,
-    streaks,
-    bigStreaks,
-    shades,
-    clouds,
+    stars: createFilledArray(
+      () => createStar(canvasWidth, canvasHeight),
+      SKY_STAR_COUNT),
+    streaks: createFilledArray(
+      () => createStreak(canvasWidth, canvasHeight),
+      SKY_STREAK_COUNT),
+    bigStreaks: createFilledArray(
+      () => createBigStreak(canvasWidth, canvasHeight),
+      SKY_BIG_STREAK_COUNT),
+    shades: createFilledArray(
+      () => createShade(canvasWidth, canvasHeight),
+      SKY_SHADE_COUNT),
+    clouds: createFilledArray(
+      () => createCloud(canvasWidth, canvasHeight),
+      SKY_CLOUD_COUNT),
   };
+}
+
+/**
+ * @template T
+ * @param {() => T} factory 
+ * @param {number} count 
+ * @returns {Array<T>}
+ */
+function createFilledArray(factory, count) {
+  let result = [];
+  for (let i = 0; i < count; ++i) {
+    result.push(factory());
+  }
+  return result;
 }
 
 /**
@@ -79,7 +75,6 @@ export function init(game) {
  */
 export function update(dt, game, world) {
   const deltaTime = dt;
-  const canvas = game.display.canvas;
   const canvasWidth = game.display.width;
   const canvasHeight = game.display.height;
 
@@ -130,24 +125,33 @@ export function update(dt, game, world) {
  */
 export function render(ctx, game, world) {
   const now = game.now;
-  const canvas = game.display.canvas;
   const canvasWidth = game.display.width;
   const canvasHeight = game.display.height;
   const { shades, streaks, bigStreaks, stars, clouds } = world;
-
+  const MAX_WORLD_TIME = 600_000;
+  const worldTime = now % MAX_WORLD_TIME;
+  const dayIndex = getDayIndex(worldTime, MAX_WORLD_TIME);
+  const dayDelta = getDayDelta(worldTime, MAX_WORLD_TIME);
+  
   // Sky
+  const gradientTop = mixDaylightColor(dayIndex, dayDelta, 'skies', 0);
+  const gradientBot = mixDaylightColor(dayIndex, dayDelta, 'skies', 1);
   ctx.drawGradientRect(
-    GRADIENT_TOP,
-    GRADIENT_BOTTOM,
-    0,
-    0,
+    gradientTop,
+    gradientBot,
+    0, 0,
     canvasWidth,
     canvasHeight
   );
 
   // Shades
   for (let s of shades) {
-    ctx.setColor(s.color);
+    let color = hex.mix(
+      gradientTop,
+      gradientBot,
+      clamp(s.y / canvasHeight - 0.06, 0, 1)
+    );
+    ctx.setColor(color);
     ctx.setScale(canvasWidth / 16, s.height / 16);
     ctx.setTranslation(s.x, s.y);
     ctx.drawCircle();
@@ -159,7 +163,8 @@ export function render(ctx, game, world) {
   ctx.setRotation(0, 0, -45);
   for (let s of streaks) {
     let maxOpacity = s.progress / 100;
-    ctx.setColor(s.color);
+    let color = spicyDaylightColor(dayIndex, dayDelta, s.spicy, 'streaks');
+    ctx.setColor(color);
     ctx.setOpacityFloat(Math.min(maxOpacity, s.opacity));
     ctx.setScale(s.length, s.radius);
     ctx.setTranslation(s.x, s.y);
@@ -167,7 +172,8 @@ export function render(ctx, game, world) {
   }
   for (let s of bigStreaks) {
     let maxOpacity = s.progress / 100;
-    ctx.setColor(s.color);
+    let color = spicyDaylightColor(dayIndex, dayDelta, s.spicy, 'streaks');
+    ctx.setColor(color);
     ctx.setOpacityFloat(Math.min(maxOpacity, s.opacity));
     ctx.setScale(s.length, s.radius);
     ctx.setTranslation(s.x, s.y);
@@ -181,7 +187,8 @@ export function render(ctx, game, world) {
   let starOffsetY = (now / 400) % canvasHeight;
   ctx.setTextureImage(0, ASSETS.StarImage.current);
   for (let s of stars) {
-    ctx.setColor(s.color);
+    let color = spicyDaylightColor(dayIndex, dayDelta, s.spicy, 'stars');
+    ctx.setColor(color);
     ctx.setOpacityFloat(s.opacity);
     let f = Math.sin((now / 500) * s.wiggleSpeed + s.wiggleOffset) + 1;
     let x = (s.x + starOffsetX) % canvasWidth;
@@ -197,7 +204,8 @@ export function render(ctx, game, world) {
   ctx.setOpacityFloat(1);
 
   // Moon
-  ctx.setColor(STAR_COLORS[0]);
+  let starColor = mixDaylightColor(dayIndex, dayDelta, 'stars', 0);
+  ctx.setColor(starColor);
   ctx.setTextureImage(3, ASSETS.CircleImage.current);
   ctx.drawTexturedBox(3, canvasWidth * 0.66, 200);
 
@@ -206,14 +214,15 @@ export function render(ctx, game, world) {
   ctx.setTextureImage(4, cloudImage);
   let cloudOffsetY = -cloudImage.height / 2;
   for (let c of clouds) {
+    let [high, low] = cloudyDaylightColor(dayIndex, dayDelta, c.spicy, 'clouds');
     let x = c.x + c.progress;
-    ctx.setColor(c.highlight);
+    ctx.setColor(high);
     ctx.setScale(c.w * 1.2, c.h * 1.2);
     ctx.setTranslation(x, c.y);
     let ratio = x / canvasWidth;
     ctx.drawTexturedBox(4, 10 * (-ratio * 2 + 1), cloudOffsetY);
 
-    ctx.setColor(c.lowlight);
+    ctx.setColor(low);
     ctx.setScale(c.w, c.h);
     ctx.setTranslation(x, c.y);
     ctx.drawTexturedBox(4, 0, cloudOffsetY);
@@ -231,9 +240,9 @@ function createStar(canvasWidth, canvasHeight) {
     y: Random.rangeInt(0, canvasHeight),
     scale: Random.range(0.1, 0.4),
     opacity: Random.range(0.3, 1),
-    color: Random.choose(STAR_COLORS),
     wiggleSpeed: Random.range(0.8, 1.2),
     wiggleOffset: Random.range(0, 2),
+    spicy: Random.next(),
   };
 }
 
@@ -244,17 +253,17 @@ function createStar(canvasWidth, canvasHeight) {
 function createStreak(canvasWidth, canvasHeight) {
   let x = Random.range(-canvasWidth / 2, canvasWidth);
   let y = Random.range(0, canvasHeight);
-  let color;
+  let spicy;
   if (y < canvasWidth * 0.6) {
-    color = STREAK_COLORS[0];
+    spicy = 0;
   } else {
-    color = STREAK_COLORS[1];
+    spicy = 0.99;
   }
   let scale = Random.range(1, 2);
   return {
     x,
     y,
-    color,
+    spicy,
     progress: Random.range(0, canvasHeight),
     speed: Random.range(0.1, 1.5),
     opacity: Random.range(0.1, 0.3),
@@ -270,11 +279,10 @@ function createStreak(canvasWidth, canvasHeight) {
 function createBigStreak(canvasWidth, canvasHeight) {
   let x = Random.range(-canvasWidth / 2, canvasWidth);
   let y = Random.rangeInt(0, canvasHeight);
-  let color = STREAK_COLORS[1];
   return {
     x,
     y,
-    color,
+    spicy: 0.99,
     progress: 0,
     speed: Random.range(0.1, 0.5),
     opacity: Random.range(0.1, 0.5),
@@ -290,17 +298,11 @@ function createBigStreak(canvasWidth, canvasHeight) {
 function createShade(canvasWidth, canvasHeight) {
   let x = Random.range(0, canvasWidth);
   let y = Random.range(0, canvasHeight);
-  let color = hex.mix(
-    GRADIENT_BOTTOM,
-    GRADIENT_TOP,
-    clamp(y / canvasHeight - 0.06, 0, 1)
-  );
   let height = Random.range(50, 80);
   return {
     x,
     y,
     opacity: 1,
-    color,
     height,
   };
 }
@@ -314,15 +316,10 @@ function createCloud(canvasWidth, canvasHeight) {
   let y = Random.range(0, canvasHeight * 0.6);
   let w = Random.range(2, 4);
   let h = Random.range(0.2, 1);
-  let highlight = 0xffffff;
-  let lowlight = 0xe0eeff;
   return {
-    x,
-    y,
-    w,
-    h,
-    highlight,
-    lowlight,
+    x, y,
+    w, h,
+    spicy: Random.next(),
     progress: 0,
     speed: Random.range(0.5, 3),
   };
