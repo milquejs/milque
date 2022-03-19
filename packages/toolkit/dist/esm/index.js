@@ -66,11 +66,15 @@ function crc32c(crc, bytes) {
   return crc ^ 0xffffffff;
 }
 
+function unixPath(string) {
+  return String(string).replace(/\\/g, '/');
+}
+
 /**
  * @typedef ZipManifest
  * @property {number} totalBytes
  * @property {number} checksum
- * @property {Record<string, {bytes: number, checksum: number}>} files
+ * @property {Array<{name: string, bytes: number, crc: number}>} files
  */
 
 function logInfo$2(message) {
@@ -96,7 +100,7 @@ async function createUnzip(inFile, outDir) {
  * @param {Array<string>} files
  * @param {import('stream').Writable} writable
  * @param {import('fflate').DeflateOptions} zipOpts
- * @returns {ZipManifest}
+ * @returns {Promise<ZipManifest>}
  */
 async function zipFiles(files, writable, zipOpts = {}) {
   /** @type {ZipManifest} */
@@ -136,7 +140,7 @@ async function zipFiles(files, writable, zipOpts = {}) {
             readable.on('error', reject);
             readable.on('end', () => {
               manifest.files.push({
-                name: filePath,
+                name: unixPath(filePath),
                 bytes,
                 crc,
               });
@@ -162,7 +166,7 @@ async function zipFiles(files, writable, zipOpts = {}) {
             fileStream.push(chunk);
           }
           manifest.files.push({
-            name: filePath,
+            name: unixPath(filePath),
             bytes,
             crc,
           });
@@ -183,7 +187,7 @@ async function zipFiles(files, writable, zipOpts = {}) {
 
 /**
  * @param {import('stream').Readable} readable
- * @returns {ZipManifest}
+ * @returns {Promise<ZipManifest>}
  */
 async function unzipFiles(outputDir, readable) {
   /** @type {ZipManifest} */
@@ -228,7 +232,7 @@ async function unzipFiles(outputDir, readable) {
                   } else {
                     if (final) {
                       manifest.files.push({
-                        name: fileStream.name,
+                        name: unixPath(fileStream.name),
                         bytes,
                         crc,
                       });
@@ -294,7 +298,7 @@ async function getZipManifest(inFile) {
               bytes += data.byteLength;
               if (final) {
                 manifest.files.push({
-                  name: fileStream.name,
+                  name: unixPath(fileStream.name),
                   bytes,
                   crc,
                 });
@@ -330,10 +334,10 @@ async function getZipManifest(inFile) {
 /**
  * @template T
  * @param {string} dirPath
- * @param {(file: string) => T|Promise<T>} [asyncCallback]
+ * @param {(file: string, stats) => string|Promise<T>} [asyncCallback]
  * @returns {Promise<Array<T>>}
  */
-async function forFiles(dirPath, asyncCallback = async (file) => file) {
+async function forFiles(dirPath, asyncCallback = async (file, stats) => unixPath(file)) {
   let dirs = [];
   let errors = [];
   let results = [];
@@ -613,7 +617,7 @@ class FileManager {
 }
 
 async function loadPackageJson(inputPath = 'package.json') {
-  return JSON.parse(await fs.readFile(inputPath));
+  return JSON.parse(await (await fs.readFile(inputPath)).toString());
 }
 
 /** @typedef {import('esbuild').BuildOptions} BuildOptions */

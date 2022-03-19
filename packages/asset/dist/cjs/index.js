@@ -105,6 +105,7 @@ async function loadAssetPack(url, callback = undefined) {
                 reject(err);
             } else {
                 for(let [path, buf] of Object.entries(data)) {
+                    // Standardize WIN paths
                     path = path.replaceAll('\\', '/');
                     // Remove the zip directory name
                     let i = path.indexOf('/');
