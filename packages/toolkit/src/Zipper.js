@@ -2,14 +2,14 @@ import path from 'path';
 import fs from 'fs/promises';
 import { createReadStream, createWriteStream } from 'fs';
 import { Unzip, Zip, AsyncZipDeflate } from 'fflate';
-import { crc32c } from './FileUtil';
+import { crc32c, unixPath } from './FileUtil';
 import { AsyncUnzipInflate } from 'fflate';
 
 /**
  * @typedef ZipManifest
  * @property {number} totalBytes
  * @property {number} checksum
- * @property {Record<string, {bytes: number, checksum: number}>} files
+ * @property {Array<{name: string, bytes: number, crc: number}>} files
  */
 
 function logInfo(message) {
@@ -35,7 +35,7 @@ export async function createUnzip(inFile, outDir) {
  * @param {Array<string>} files
  * @param {import('stream').Writable} writable
  * @param {import('fflate').DeflateOptions} zipOpts
- * @returns {ZipManifest}
+ * @returns {Promise<ZipManifest>}
  */
 export async function zipFiles(files, writable, zipOpts = {}) {
   /** @type {ZipManifest} */
@@ -75,7 +75,7 @@ export async function zipFiles(files, writable, zipOpts = {}) {
             readable.on('error', reject);
             readable.on('end', () => {
               manifest.files.push({
-                name: filePath,
+                name: unixPath(filePath),
                 bytes,
                 crc,
               });
@@ -101,7 +101,7 @@ export async function zipFiles(files, writable, zipOpts = {}) {
             fileStream.push(chunk);
           }
           manifest.files.push({
-            name: filePath,
+            name: unixPath(filePath),
             bytes,
             crc,
           });
@@ -122,7 +122,7 @@ export async function zipFiles(files, writable, zipOpts = {}) {
 
 /**
  * @param {import('stream').Readable} readable
- * @returns {ZipManifest}
+ * @returns {Promise<ZipManifest>}
  */
 export async function unzipFiles(outputDir, readable) {
   /** @type {ZipManifest} */
@@ -167,7 +167,7 @@ export async function unzipFiles(outputDir, readable) {
                   } else {
                     if (final) {
                       manifest.files.push({
-                        name: fileStream.name,
+                        name: unixPath(fileStream.name),
                         bytes,
                         crc,
                       });
@@ -233,7 +233,7 @@ export async function getZipManifest(inFile) {
               bytes += data.byteLength;
               if (final) {
                 manifest.files.push({
-                  name: fileStream.name,
+                  name: unixPath(fileStream.name),
                   bytes,
                   crc,
                 });
@@ -269,10 +269,10 @@ export async function getZipManifest(inFile) {
 /**
  * @template T
  * @param {string} dirPath
- * @param {(file: string) => T|Promise<T>} [asyncCallback]
+ * @param {(file: string, stats) => string|Promise<T>} [asyncCallback]
  * @returns {Promise<Array<T>>}
  */
-export async function forFiles(dirPath, asyncCallback = async (file) => file) {
+export async function forFiles(dirPath, asyncCallback = async (file, stats) => unixPath(file)) {
   let dirs = [];
   let errors = [];
   let results = [];

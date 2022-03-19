@@ -59,3 +59,7 @@ export function crc32c(crc, bytes) {
   }
   return crc ^ 0xffffffff;
 }
+
+export function unixPath(string) {
+  return String(string).replace(/\\/g, '/');
+}
