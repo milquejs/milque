@@ -1,4 +1,4 @@
-/** @returns {Sound} */
+/** @returns {Promise<Sound>} */
 export async function createSound(arrayBuffer) {
   let ctx = Sound.AUDIO_CONTEXT;
   let audioBuffer = await ctx.decodeAudioData(arrayBuffer);

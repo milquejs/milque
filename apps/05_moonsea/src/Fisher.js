@@ -34,8 +34,6 @@ export const FISHING_STATE = {
 
 /** @param {Game} game */
 export function init(game) {
-  const { display } = game;
-  const canvas = display.canvas;
   const canvasWidth = game.display.width;
   const canvasHeight = game.display.height;
 

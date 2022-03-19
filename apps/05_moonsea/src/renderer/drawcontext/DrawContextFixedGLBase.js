@@ -132,19 +132,21 @@ export class DrawContextFixedGLBase {
   }
 
   resetTransform() {
+    mat4.identity(this.transformMatrix);
     vec3.zero(this.translationVector);
     quat.identity(this.rotationQuat);
     vec3.set(this.scaleVector, 1, 1, 1);
   }
 
   pushTransform() {
-    let matrix = mat4.fromRotationTranslationScale(
-      mat4.create(),
+    mat4.fromRotationTranslationScale(
+      this.transformMatrix,
       this.rotationQuat,
       this.translationVector,
       this.scaleVector
     );
-    this.transformStack.push(matrix);
+    this.transformStack.push(this.transformMatrix);
+    this.transformMatrix = mat4.create();
     this.resetTransform();
   }
 
@@ -153,6 +155,7 @@ export class DrawContextFixedGLBase {
     mat4.getRotation(this.rotationQuat, matrix);
     mat4.getTranslation(this.translationVector, matrix);
     mat4.getScaling(this.scaleVector, matrix);
+    this.transformMatrix = matrix;
   }
 
   applyTransform(out) {

@@ -101,6 +101,7 @@ async function loadAssetPack(url, callback = undefined) {
                 reject(err);
             } else {
                 for(let [path, buf] of Object.entries(data)) {
+                    path = path.replaceAll('\\', '/');
                     // Remove the zip directory name
                     let i = path.indexOf('/');
                     if (i >= 0) {

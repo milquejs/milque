@@ -75,7 +75,7 @@ export function render(ctx, game, world) {
   const canvasWidth = game.display.width;
   const canvasHeight = game.display.height;
   const { columns, rows, sparkles, foams } = world;
-  const MAX_WORLD_TIME = 600_000;
+  const MAX_WORLD_TIME = 60_000;
   const worldTime = now % MAX_WORLD_TIME;
   const dayIndex = getDayIndex(worldTime, MAX_WORLD_TIME);
   const dayDelta = getDayDelta(worldTime, MAX_WORLD_TIME);
