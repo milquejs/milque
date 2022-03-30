@@ -18,15 +18,16 @@ import { DisplayPortSystem, useDisplayPort } from './systems/DisplayPortSystem.j
 import { RenderFixedGLSystem, useFixedGLRenderer } from './systems/RenderFixedGLSystem.js';
 import { RenderPassSystem, useRenderPass } from './systems/RenderPassSystem.js';
 import { UpdateSystem, useUpdate } from './systems/UpdateSystem.js';
-import { FishSystem } from './FishSystem.js';
 
-import * as Sky from './Sky.js';
-import * as Sea from './Sea.js';
-import * as Fisher from './Fisher.js';
-import { drawRippleEffect, RippleSystem } from './Ripple.js';
-import * as Player from './Player.js';
+import { FishSystem } from './game/FishSystem.js';
+import { SkySystem } from './game/SkySystem.js';
+import { drawRippleEffect, RippleSystem } from './game/RippleSystem.js';
+import { SeaSystem } from './game/SeaSystem.js';
+import { FisherSystem } from './game/FisherSystem.js';
+import { PlayerSystem } from './game/PlayerSystem.js';
+
 import { Random } from '@milque/random';
-import { RENDER_PASS_CLEAR, RENDER_PASS_OBJECTS, RENDER_PASS_PIER, RENDER_PASS_RIPPLE } from './RenderPasses.js';
+import { RENDER_PASS_CLEAR, RENDER_PASS_FISHER, RENDER_PASS_OBJECTS, RENDER_PASS_PIER, RENDER_PASS_SEA, RENDER_PASS_SKY } from './RenderPasses.js';
 
 /**
  * @typedef {import('@milque/display').DisplayPort} DisplayPort
@@ -39,15 +40,22 @@ window.addEventListener('DOMContentLoaded', main);
 async function main() {
   await AssetManager.loadAssetPack('res.pack');
   let systemManager = new SystemManager();
+  await systemManager.preloadSystems([
+    LoadSystem,
+    DisplayPortSystem,
+    RenderPassSystem,
+    RenderFixedGLSystem,
+    UpdateSystem,
+  ]);
+
   systemManager
     .addSystem(MainSystem)
-    .addSystem(LoadSystem)
-    .addSystem(DisplayPortSystem, undefined, '#display')
-    .addSystem(RenderPassSystem)
-    .addSystem(RenderFixedGLSystem)
-    .addSystem(UpdateSystem)
     .addSystem(FishSystem)
-    .addSystem(RippleSystem);
+    .addSystem(RippleSystem)
+    .addSystem(SkySystem)
+    .addSystem(SeaSystem)
+    .addSystem(FisherSystem)
+    .addSystem(PlayerSystem);
   await systemManager.initialize();
 }
 
@@ -69,46 +77,30 @@ export async function MainSystem(m) {
   initInputs(g.inputs);
   await initAssets();
 
-  await Sky.load(g);
-  await Sea.load(g);
-  await Fisher.load(g);
-  await Player.load(g);
-  const skyWorld = Sky.init(g);
-  const seaWorld = Sea.init(g);
-  const fisher = Fisher.init(g);
-  const player = Player.init(g);
-
   let musicCtx = {
     progression: 0,
   };
 
-  useUpdate(m, (dt) => {
+  useUpdate(m, () => {
     let now = performance.now();
     g.inputs.poll(now);
     musicLoop(musicCtx);
-
-    const worldSpeed = INPUTS.FastForward.down ? 30 : 1;
-    let deltaTime = dt * worldSpeed;
-
-    // Update
-    Sky.update(deltaTime, g, skyWorld);
-    Sea.update(deltaTime, g, seaWorld);
-    Fisher.update(deltaTime, g, fisher);
-    Player.update(deltaTime, g, player, fisher);
   });
 
   useRenderPass(m, RENDER_PASS_CLEAR, (dt) => {
     ctx.resize();
     ctx.reset();
-    
+  });
+
+  useRenderPass(m, RENDER_PASS_SKY - 0.5, () => {
     ctx.setTranslation(0, 0, -10);
     ctx.pushTransform();
-    {
-      Sky.render(ctx, g, skyWorld);
-      Sea.render(ctx, g, seaWorld);
-    }
-    ctx.popTransform();
+  });
 
+  // RENDER_PASS_SEA AND SKY
+
+  useRenderPass(m, RENDER_PASS_SEA + 0.5, () => {
+    ctx.popTransform();
   });
 
   useRenderPass(m, RENDER_PASS_PIER, (dt) => {
@@ -178,17 +170,14 @@ export async function MainSystem(m) {
 
     // Objects
     ctx.setTranslation(0, 0, 30);
-    {
-      // Bucket
-      ctx.setTextureImage(9, ASSETS.BucketImage.current);
-      ctx.setColor(0xc3d3d8);
-      ctx.drawTexturedBox(9, canvasWidth - 140, canvasHeight - 140, 15);
 
-      // Player stuff
-      Player.render(ctx, g, player);
-      // Fisher stuff
-      Fisher.render(ctx, g, fisher);
-    }
+    // Bucket
+    ctx.setTextureImage(9, ASSETS.BucketImage.current);
+    ctx.setColor(0xc3d3d8);
+    ctx.drawTexturedBox(9, canvasWidth - 140, canvasHeight - 140, 15);
+  });
+
+  useRenderPass(m, RENDER_PASS_FISHER + 0.5, () => {
     ctx.resetTransform();
   });
 

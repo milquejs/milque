@@ -142,6 +142,25 @@ export class SystemManager {
     }
 
     /**
+     * @param {Array<System>} systems
+     */
+    async preloadSystems(systems) {
+        let promises = [];
+        for(let system of systems) {
+            let name = system.name;
+            if (this.systems.has(name)) {
+                continue;
+            }
+            let opts = createSystemOptions(name, this, system, this._userState, []);
+            this.systems.set(name, opts);
+            initializeSystem(system, opts);
+            promises.push(opts.context.__ready__);
+        }
+        await Promise.all(promises);
+        return this;
+    }
+
+    /**
      * @param {System} system 
      * @param {string} [name]
      * @param  {...any} [initArgs] 
