@@ -5,117 +5,106 @@ import './error.js';
 
 import './dialogue/DialogueArea.js';
 
-import { game } from './Game.js';
+import { Random } from '@milque/random';
 
 import { initInputs, INPUTS } from './Inputs.js';
 import { ASSETS, initAssets } from './Assets.js';
 
-import { AssetManager } from '@milque/asset';
-import { SystemManager } from './SystemManager.js';
-import { LoadSystem } from './systems/LoadSystem.js';
-import { whenSystemLoaded } from './BaseHooks.js';
-import { DisplayPortSystem, useDisplayPort } from './systems/DisplayPortSystem.js';
-import { RenderFixedGLSystem, useFixedGLRenderer } from './systems/RenderFixedGLSystem.js';
-import { RenderPassSystem, useRenderPass } from './systems/RenderPassSystem.js';
-import { UpdateSystem, useUpdate } from './systems/UpdateSystem.js';
-import { FishSystem } from './FishSystem.js';
-
+import { DrawContextFixedGLText } from './renderer/drawcontext/DrawContextFixedGLText.js';
 import * as Sky from './Sky.js';
 import * as Sea from './Sea.js';
 import * as Fisher from './Fisher.js';
-import { drawRippleEffect, RippleSystem } from './Ripple.js';
+import * as Fish from './Fish.js';
+import * as Ripple from './Ripple.js';
 import * as Player from './Player.js';
-import { Random } from '@milque/random';
-import { RENDER_PASS_CLEAR, RENDER_PASS_OBJECTS, RENDER_PASS_PIER, RENDER_PASS_RIPPLE } from './RenderPasses.js';
+import { game } from './Game.js';
+import { AssetManager } from '@milque/asset';
+import { SystemManager } from './SystemManager.js';
+import { LoadSystem, UpdateSystem } from './Hooks.js';
 
 /**
+ * @typedef {import('@milque/asset').AssetPack} AssetPack
  * @typedef {import('@milque/display').DisplayPort} DisplayPort
  * @typedef {import('@milque/input').InputContext} InputContext
- * @typedef {import('./SystemManager.js').SystemContext} SystemContext
+ * @typedef {ReturnType<import('./Game.js').game>} Game
  */
 
-window.addEventListener('DOMContentLoaded', main);
 
+window.addEventListener('DOMContentLoaded', main);
 async function main() {
-  await AssetManager.loadAssetPack('res.pack');
   let systemManager = new SystemManager();
-  systemManager
-    .addSystem(MainSystem)
-    .addSystem(LoadSystem)
-    .addSystem(DisplayPortSystem, undefined, '#display')
-    .addSystem(RenderPassSystem)
-    .addSystem(RenderFixedGLSystem)
-    .addSystem(UpdateSystem)
-    .addSystem(FishSystem)
-    .addSystem(RippleSystem);
-  await systemManager.initialize();
+  systemManager.addSystem(LoadSystem).addSystem(UpdateSystem);
+  const g = game();
+  await AssetManager.loadAssetPack('res.pack');
+  await start(g);
 }
 
 /**
- * @template {SystemContext} T
- * @param {T} m
+ * @param {Game} game
  */
-export async function MainSystem(m) {
-  await Promise.all([
-    whenSystemLoaded(m, LoadSystem),
-    whenSystemLoaded(m, RenderFixedGLSystem),
-    whenSystemLoaded(m, DisplayPortSystem),
-  ]);
+async function start(game) {
+  const { display } = game;
+  const canvas = display.canvas;
+  const ctx = new DrawContextFixedGLText(canvas.getContext('webgl'));
+  let canvasWidth = display.width;
+  let canvasHeight = display.height;
 
-  const g = game();
-  const ctx = useFixedGLRenderer(m);
-  const display = useDisplayPort(m);
-
-  initInputs(g.inputs);
+  initInputs(game.inputs);
   await initAssets();
 
-  await Sky.load(g);
-  await Sea.load(g);
-  await Fisher.load(g);
-  await Player.load(g);
-  const skyWorld = Sky.init(g);
-  const seaWorld = Sea.init(g);
-  const fisher = Fisher.init(g);
-  const player = Player.init(g);
+  await Sky.load(game);
+  await Sea.load(game);
+  await Fisher.load(game);
+  await Fish.load(game);
+  await Ripple.load(game);
+  await Player.load(game);
+  const skyWorld = Sky.init(game);
+  const seaWorld = Sea.init(game);
+  const fisher = Fisher.init(game);
+  const rippleWorld = Ripple.init(game);
+  const fishWorld = Fish.init(game);
+  const player = Player.init(game);
 
   let musicCtx = {
     progression: 0,
   };
 
-  useUpdate(m, (dt) => {
-    let now = performance.now();
-    g.inputs.poll(now);
+  display.addEventListener('frame', (/** @type {CustomEvent} */ e) => {
+    let { deltaTime, now } = e.detail;
+    canvasWidth = game.display.width;
+    canvasHeight = game.display.height;
+
+    game.inputs.poll(now);
     musicLoop(musicCtx);
 
     const worldSpeed = INPUTS.FastForward.down ? 30 : 1;
-    let deltaTime = dt * worldSpeed;
+    deltaTime *= worldSpeed;
+    now *= worldSpeed;
+    game.deltaTime = deltaTime;
+    game.now = now;
 
     // Update
-    Sky.update(deltaTime, g, skyWorld);
-    Sea.update(deltaTime, g, seaWorld);
-    Fisher.update(deltaTime, g, fisher);
-    Player.update(deltaTime, g, player, fisher);
-  });
+    Sky.update(deltaTime, game, skyWorld);
+    Sea.update(deltaTime, game, seaWorld);
+    Fisher.update(deltaTime, game, fisher);
+    Ripple.update(deltaTime, game, rippleWorld);
+    Fish.update(deltaTime, game, fishWorld, rippleWorld);
+    Player.update(deltaTime, game, player, fisher);
 
-  useRenderPass(m, RENDER_PASS_CLEAR, (dt) => {
+    // Draw
     ctx.resize();
     ctx.reset();
-    
+
     ctx.setTranslation(0, 0, -10);
     ctx.pushTransform();
     {
-      Sky.render(ctx, g, skyWorld);
-      Sea.render(ctx, g, seaWorld);
+      Sky.render(ctx, game, skyWorld);
+      Sea.render(ctx, game, seaWorld);
     }
     ctx.popTransform();
 
-  });
-
-  useRenderPass(m, RENDER_PASS_PIER, (dt) => {
-    let canvasWidth = display.width;
-    let canvasHeight = display.height;
-    const worldSpeed = INPUTS.FastForward.down ? 30 : 1;
-    let now = performance.now() * worldSpeed;
+    Fish.render(ctx, game, fishWorld);
+    Ripple.render(ctx, game, rippleWorld);
 
     // Pier Shadow
     ctx.setTranslation(canvasWidth - 50, canvasHeight - 110);
@@ -128,7 +117,7 @@ export async function MainSystem(m) {
 
     // Pier Leg Ripples
     ctx.setColor(0xffffff);
-    drawRippleEffect(
+    Ripple.drawRippleEffect(
       ctx,
       canvasWidth - 180,
       canvasHeight - 113,
@@ -136,7 +125,7 @@ export async function MainSystem(m) {
       now,
       true
     );
-    drawRippleEffect(
+    Ripple.drawRippleEffect(
       ctx,
       canvasWidth - 100,
       canvasHeight - 92,
@@ -170,11 +159,6 @@ export async function MainSystem(m) {
       );
     }
     ctx.resetTransform();
-  });
-
-  useRenderPass(m, RENDER_PASS_OBJECTS, (dt) => {
-    let canvasWidth = display.width;
-    let canvasHeight = display.height;
 
     // Objects
     ctx.setTranslation(0, 0, 30);
@@ -185,14 +169,12 @@ export async function MainSystem(m) {
       ctx.drawTexturedBox(9, canvasWidth - 140, canvasHeight - 140, 15);
 
       // Player stuff
-      Player.render(ctx, g, player);
+      Player.render(ctx, game, player);
       // Fisher stuff
-      Fisher.render(ctx, g, fisher);
+      Fisher.render(ctx, game, fisher);
     }
     ctx.resetTransform();
   });
-
-  return m;
 }
 
 function musicLoop(ctx) {

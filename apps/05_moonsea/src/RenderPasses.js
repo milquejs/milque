@@ -1,0 +1,9 @@
+export const RENDER_PASS_CLEAR = 0;
+export const RENDER_PASS_SKY = 1;
+export const RENDER_PASS_SEA = 2;
+export const RENDER_PASS_FISH = 3;
+export const RENDER_PASS_RIPPLE = 4;
+export const RENDER_PASS_PIER = 5;
+export const RENDER_PASS_OBJECTS = 6;
+export const RENDER_PASS_PLAYER = 7;
+export const RENDER_PASS_FISHER = 8;

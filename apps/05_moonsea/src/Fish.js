@@ -20,20 +20,6 @@ const FishComponent = new ComponentClass('fish', () => ({
   speed: 0,
 }));
 
-/*
-const FishTemplate = new EntityTemplate('fish', [
-  FishComponent,
-]);
-
-function SwimSystem(main) {
-  let [ fishes ] = useEntityTemplate(main, FishTemplate);
-  let fishes = useComponents(main, FishComponent);
-  main.dispatchEvent({ type: 'frame' });
-  useEvent(main, 'frame', (ctx) => {
-
-  });
-}*/
-
 /** @param {Game} game */
 export async function load(game) {
   await AssetManager.loadAssetRefs(Object.values(ASSETS));

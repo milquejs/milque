@@ -1,31 +1,36 @@
-import { AssetManager } from '@milque/asset';
+import { ComponentClass } from './ComponentClass.js';
 import { FISHING_STATE } from './Fisher.js';
 import { INPUTS } from './Inputs.js';
+import { useDisplayPort } from './systems/DisplayPortSystem.js';
+import { useInit, useUpdate } from './systems/UpdateSystem.js';
 
 /**
  * @typedef {import('./renderer/drawcontext/DrawContextFixedGLText.js').DrawContextFixedGLText} DrawContextFixedGLText
- * @typedef {import('./main.js').Game} Game
  */
 
-const ASSETS = {};
-
-/** @param {Game} game */
-export async function load(game) {
-  await AssetManager.loadAssetRefs(Object.values(ASSETS));
-}
-
-/** @param {Game} game */
-export function init(game) {
-  const canvasWidth = game.display.width;
-
-  let player = {
-    x: canvasWidth - 100,
-    y: 0,
+const PlayerComponent = new ComponentClass('player', () => {
+  return {
+    x: 0, y: 0,
     motionX: 0,
   };
-  return {
-    player,
-  };
+});
+
+export function PlayerSystem(m, display, fisherSystem) {
+  const display = useDisplayPort(m);
+  let player = null;
+  
+  useInit(m, () => {
+    const canvasWidth = display.width;
+    player = PlayerComponent.create();
+    player.x = canvasWidth - 100;
+    return () => {
+      PlayerComponent.destroy(player);
+    };
+  });
+
+  useUpdate(m, (dt) => {
+
+  });
 }
 
 /**

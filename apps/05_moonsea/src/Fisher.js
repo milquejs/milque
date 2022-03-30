@@ -1,19 +1,11 @@
-import { AssetManager } from '@milque/asset';
 import { clamp } from '@milque/util';
 import { INPUTS } from './Inputs.js';
 import { drawRippleEffect } from './Ripple.js';
 
 /**
  * @typedef {import('./renderer/drawcontext/DrawContextFixedGLText.js').DrawContextFixedGLText} DrawContextFixedGLText
- * @typedef {import('./main.js').Game} Game
+ * @typedef {import('./SystemManager.js').SystemContext} SystemContext
  */
-
-export const ASSETS = {};
-
-/** @param {Game} game */
-export async function load(game) {
-  await AssetManager.loadAssetRefs(Object.values(ASSETS));
-}
 
 const REELING_NEAR_RANGE = 4;
 const CASTING_GRAVITY = 0.6;
@@ -31,6 +23,14 @@ export const FISHING_STATE = {
   REELING: 7,
   CAUGHT: 8,
 };
+
+/**
+ * @template {SystemContext} T
+ * @param {T} m 
+ */
+export function FisherSystem(m) {
+
+}
 
 /** @param {Game} game */
 export function init(game) {

@@ -4,6 +4,7 @@
     "lib": ["ES2021", "DOM"],
     "allowJs": true,
     "checkJs": true,
+    "downlevelIteration": true,
     "baseUrl": ".",
     "paths": {
       "src/*": ["./src/*"]

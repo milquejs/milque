@@ -3,7 +3,8 @@
     "target": "ES5",
     "lib": ["ES2021", "DOM"],
     "allowJs": true,
-    "checkJs": true
+    "checkJs": true,
+    "downlevelIteration": true
   },
   "exclude": ["node_modules", "dist", "out", "public"],
   "include": ["src/**/*.js"]

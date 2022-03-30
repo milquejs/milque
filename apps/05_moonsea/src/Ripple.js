@@ -1,74 +1,76 @@
-import { AssetManager } from '@milque/asset';
+import { ComponentClass } from './ComponentClass.js';
+import { RENDER_PASS_RIPPLE } from './RenderPasses.js';
+import { getSystemContext } from './SystemManager.js';
+import { useFixedGLRenderer } from './systems/RenderFixedGLSystem.js';
+import { useRenderPass } from './systems/RenderPassSystem.js';
+import { useInit, useUpdate } from './systems/UpdateSystem.js';
 
 /**
  * @typedef {import('./renderer/drawcontext/DrawContextFixedGLText.js').DrawContextFixedGLText} DrawContextFixedGLText
- * @typedef {import('./main.js').Game} Game
  */
 
-export const ASSETS = {};
+/** @typedef {import('./SystemManager.js').SystemContext} SystemContext */
 
-/** @param {Game} game */
-export async function load(game) {
-  await AssetManager.loadAssetRefs(Object.values(ASSETS));
-}
-
-/** @param {Game} game */
-export function init(game) {
-  let ripples = [];
-  for (let i = 0; i < 10; ++i) {
-    ripples.push({
-      x: 0,
-      y: 0,
-      startTime: 0,
-      dead: false,
-    });
-  }
+function Ripple() {
   return {
-    ripples,
+    x: 0, y: 0,
+    startTime: 0,
+    dead: false,
   };
 }
+const RippleComponent = new ComponentClass('ripple', Ripple);
 
 /**
- * @param {number} dt
- * @param {Game} game
- * @param {ReturnType<init>} world
+ * @template {SystemContext} T
+ * @param {T} m
  */
-export function update(dt, game, world) {
-  for (let ripple of world.ripples) {
-    if (ripple.dead) {
-      continue;
+export function RippleSystem(m) {
+  /** @type {Array<ReturnType<Ripple>>} */
+  let ripples = [];
+  m.ripples = ripples;
+
+  useInit(m, () => {
+    RippleComponent.createAll(ripples, 10);
+    return () => {
+      RippleComponent.destroyAll(ripples);
+    };
+  });
+
+  useUpdate(m, (dt) => {
+    for(let ripple of ripples) {
+      if (ripple.dead) {
+        continue;
+      }
+      let dr = performance.now() - ripple.startTime;
+      if (dr > MAX_RIPPLE_AGE) {
+        ripple.dead = true;
+      }
     }
-    let dt = game.now - ripple.startTime;
-    if (dt > MAX_RIPPLE_AGE) {
-      ripple.dead = true;
+  });
+
+  const ctx = useFixedGLRenderer(m);
+  useRenderPass(m, RENDER_PASS_RIPPLE, () => {
+    let now = performance.now();
+    for (let ripple of ripples) {
+      if (ripple.dead) {
+        continue;
+      }
+      drawRippleEffect(ctx, ripple.x, ripple.y, ripple.startTime, now, false);
     }
-  }
+  });
+  return /** @type {T&{ ripples: Array<ReturnType<Ripple>> }} */ (m);
 }
 
 /**
- * @param {DrawContextFixedGLText} ctx
- * @param {Game} game
- * @param {ReturnType<init>} world
- */
-export function render(ctx, game, world) {
-  let now = game.now;
-  for (let ripple of world.ripples) {
-    if (ripple.dead) {
-      continue;
-    }
-    drawRippleEffect(ctx, ripple.x, ripple.y, ripple.startTime, now, false);
-  }
-}
-
-/**
- * @param {ReturnType<init>} rippleWorld
+ * @param {SystemContext} m
  * @param {number} x
  * @param {number} y
  * @param {number} now
  */
-export function startRipple(rippleWorld, x, y, now) {
+export function startRipple(m, x, y, now) {
+  let ripples = getSystemContext(m, RippleSystem).ripples;
   let target = null;
-  for (let ripple of rippleWorld.ripples) {
+  for (let ripple of ripples) {
     if (ripple.dead) {
       target = ripple;
       break;
