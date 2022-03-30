@@ -1,4 +1,4 @@
-import { from } from '../keyCode/KeyCodes.js';
+import { from } from '../keycode/KeyCodes.js';
 import { InputBinding } from './InputBinding.js';
 import { stringsToKeyCodes } from '../keycode/KeyCodeHelper.js';
 
