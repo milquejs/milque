@@ -15,7 +15,7 @@ const PlayerComponent = new ComponentClass('player', () => {
   };
 });
 
-export function PlayerSystem(m, display, fisherSystem) {
+export function PlayerSystem(m) {
   const display = useDisplayPort(m);
   let player = null;
   
