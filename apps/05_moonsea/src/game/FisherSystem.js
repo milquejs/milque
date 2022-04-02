@@ -34,64 +34,76 @@ export const FISHING_STATE = {
  * @param {T} m 
  */
 export function FisherSystem(m) {
-
   const display = useDisplayPort(m);
   const canvasWidth = display.width;
   const canvasHeight = display.height;
-  const ctx = useFixedGLRenderer(m);
 
-  let x = canvasWidth - 200;
-  let y = canvasHeight - 200;
-  m.fishingState = FISHING_STATE.IDLE;
-  m.headX = x;
-  m.headY = y;
-  m.bobX = x;
-  m.bobY = y;
-  let castingStartTime = 0;
-  let castingPowerX = -10;
-  let castingPowerY = 10;
-  let nibblingStartTime = 0;
-  let bitingStartTime = 0;
-  let hookedItem = null;
+  const x = canvasWidth - 200;
+  const y = canvasHeight - 200;
+  const state = {
+    fishingState: FISHING_STATE.IDLE,
+    headX: x,
+    headY: y,
+    bobX: x,
+    bobY: y,
+    hookedItem: null,
+    castingStartTime: 0,
+    castingPowerX: -10,
+    castingPowerY: 10,
+    nibblingStartTime: 0,
+    bitingStartTime: 0,
+  };
 
+  useFisherUpdate(m, state);
+  useFisherRenderer(m, state);
+
+  return state;
+}
+
+/**
+ * @param {SystemContext} m 
+ * @param {ReturnType<FisherSystem>} state
+ */
+function useFisherUpdate(m, state) {
+  const display = useDisplayPort(m);
   useUpdate(m, (dt) => {
     const now = performance.now();
     const canvasHeight = display.height;
   
     const fishingY = canvasHeight - 60;
 
-    let headX = m.headX;
-    let headY = m.headY;
-    let bobX = m.bobX;
-    let bobY = m.bobY;
+    let headX = state.headX;
+    let headY = state.headY;
+    let bobX = state.bobX;
+    let bobY = state.bobY;
   
-    switch (m.fishingState) {
+    switch (state.fishingState) {
       case FISHING_STATE.IDLE:
         // Do nothing.
         break;
       case FISHING_STATE.POWERING:
         {
-          m.bobX = headX;
-          m.bobY = headY;
+          state.bobX = headX;
+          state.bobY = headY;
         }
         break;
       case FISHING_STATE.CASTING:
         {
-          castingPowerY -= CASTING_GRAVITY;
-          let powerX = castingPowerX;
-          let powerY = castingPowerY * -1;
-          m.bobX += powerX;
-          m.bobY += powerY;
-          if (m.bobY >= fishingY) {
-            m.bobY = fishingY;
-            m.fishingState = FISHING_STATE.PLOPPING;
+          state.castingPowerY -= CASTING_GRAVITY;
+          let powerX = state.castingPowerX;
+          let powerY = state.castingPowerY * -1;
+          state.bobX += powerX;
+          state.bobY += powerY;
+          if (state.bobY >= fishingY) {
+            state.bobY = fishingY;
+            state.fishingState = FISHING_STATE.PLOPPING;
           }
         }
         break;
       case FISHING_STATE.PLOPPING:
         // Create splash and animate.
         // Then move on.
-        m.fishingState = FISHING_STATE.BOBBING;
+        state.fishingState = FISHING_STATE.BOBBING;
         break;
       case FISHING_STATE.BOBBING:
         // Bob away until bite.
@@ -99,22 +111,22 @@ export function FisherSystem(m) {
       case FISHING_STATE.NIBBLING:
         {
           // Nibble away until reel or bob.
-          let dt = now - nibblingStartTime;
+          let dt = now - state.nibblingStartTime;
           if (dt > MAX_NIBBLING_TIME) {
             // Return to bobbing.
-            m.fishingState = FISHING_STATE.BOBBING;
+            state.fishingState = FISHING_STATE.BOBBING;
           }
         }
         break;
       case FISHING_STATE.BITING:
         {
           // Bite away until reel or bob.
-          let dt = now - bitingStartTime;
-          let maxTime = getMaxBitingTimeForItem(hookedItem);
+          let dt = now - state.bitingStartTime;
+          let maxTime = getMaxBitingTimeForItem(state.hookedItem);
           if (dt > maxTime) {
             // Return to bobbing.
-            hookedItem = null;
-            m.fishingState = FISHING_STATE.BOBBING;
+            state.hookedItem = null;
+            state.fishingState = FISHING_STATE.BOBBING;
           }
         }
         break;
@@ -122,39 +134,39 @@ export function FisherSystem(m) {
         let dx = headX - bobX;
         let dy = headY - bobY;
         if (Math.abs(dx) > REELING_NEAR_RANGE) {
-          m.bobX += dx * 0.2;
-          m.bobY += dy * 0.2;
+          state.bobX += dx * 0.2;
+          state.bobY += dy * 0.2;
         } else {
-          m.fishingState = FISHING_STATE.CAUGHT;
-          m.bobX = headX;
-          m.bobY = headY;
+          state.fishingState = FISHING_STATE.CAUGHT;
+          state.bobX = headX;
+          state.bobY = headY;
         }
         break;
       case FISHING_STATE.CAUGHT:
         // Animate catching the fish.
         // Then move on.
-        m.fishingState = FISHING_STATE.IDLE;
+        state.fishingState = FISHING_STATE.IDLE;
         break;
     }
   
-    switch (m.fishingState) {
+    switch (state.fishingState) {
       case FISHING_STATE.IDLE:
         {
           if (INPUTS.Fish.pressed) {
-            m.fishingState = FISHING_STATE.POWERING;
-            castingStartTime = now;
+            state.fishingState = FISHING_STATE.POWERING;
+            state.castingStartTime = now;
           }
         }
         break;
       case FISHING_STATE.POWERING:
         {
           if (INPUTS.Fish.released) {
-            let dt = now - castingStartTime;
+            let dt = now - state.castingStartTime;
             let power =
               clamp(dt, MIN_CASTING_POWER, MAX_CASTING_POWER) / MAX_CASTING_POWER;
-            castingPowerX = -15 * power;
-            castingPowerY = 15 * power;
-            m.fishingState = FISHING_STATE.CASTING;
+            state.castingPowerX = -15 * power;
+            state.castingPowerY = 15 * power;
+            state.fishingState = FISHING_STATE.CASTING;
           }
         }
         break;
@@ -165,7 +177,7 @@ export function FisherSystem(m) {
       case FISHING_STATE.BITING:
         {
           if (INPUTS.Fish.pressed) {
-            m.fishingState = FISHING_STATE.REELING;
+            state.fishingState = FISHING_STATE.REELING;
           }
         }
         break;
@@ -175,18 +187,25 @@ export function FisherSystem(m) {
         break;
     }
   });
+}
 
+/**
+ * @param {SystemContext} m 
+ * @param {ReturnType<FisherSystem>} state
+ */
+function useFisherRenderer(m, state) {
+  const ctx = useFixedGLRenderer(m);
   useRenderPass(m, RENDER_PASS_PLAYER, () => {
     const now = performance.now();
 
     // All fishing stuff is above background
     ctx.setDepthFloat(50);
 
-    let fishingState = m.fishingState;
-    let bobX = m.bobX;
-    let bobY = m.bobY;
-    let headX = m.headX;
-    let headY = m.headY;
+    let fishingState = state.fishingState;
+    let bobX = state.bobX;
+    let bobY = state.bobY;
+    let headX = state.headX;
+    let headY = state.headY;
 
     if (fishingState === FISHING_STATE.IDLE) {
       // Don't render anything if idle.
@@ -223,7 +242,7 @@ export function FisherSystem(m) {
     // Bobber
     let db = 0;
     if (fishingState === FISHING_STATE.POWERING) {
-      let dt = clamp((now - castingStartTime) / MAX_CASTING_POWER, 0, 1);
+      let dt = clamp((now - state.castingStartTime) / MAX_CASTING_POWER, 0, 1);
       db = dt * 20;
     }
     ctx.setOpacityFloat(bobAlpha);
@@ -243,12 +262,10 @@ export function FisherSystem(m) {
       ctx.resetTransform();
     }
 
-    if (hookedItem) {
+    if (state.hookedItem) {
       // TODO: Draw a hooked fish!
     }
   });
-
-  return m;
 }
 
 function getMaxBitingTimeForItem(item) {

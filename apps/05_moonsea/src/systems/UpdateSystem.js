@@ -1,5 +1,5 @@
 import { assertSystemLoaded } from '../BaseHooks.js';
-import { getSystemContext, getSystemId, nextAvailableHookHandle, useEvent, useSystemUpdate } from '../SystemManager.js';
+import { getSystemId, getSystemState, nextAvailableHookHandle, useEvent, useSystemUpdate } from '../SystemManager.js';
 
 /**
  * @typedef {import('@milque/display').DisplayPort} DisplayPort
@@ -22,7 +22,7 @@ export function useInit(m, callback) {
     assertSystemLoaded(m, UpdateSystem);
     let handle = nextAvailableHookHandle(m);
     let key = `${getSystemId(m, m.current)}.${handle}`;
-    let update = getSystemContext(m, UpdateSystem);
+    let update = getSystemState(m, UpdateSystem);
     if (!(key in update.listeners)) {
         update.listeners[key] = createUpdateListener();
     }
@@ -37,7 +37,7 @@ export function useUpdate(m, callback) {
     assertSystemLoaded(m, UpdateSystem);
     let handle = nextAvailableHookHandle(m);
     let key = `${getSystemId(m, m.current)}.${handle}`;
-    let update = getSystemContext(m, UpdateSystem);
+    let update = getSystemState(m, UpdateSystem);
     if (!(key in update.listeners)) {
         update.listeners[key] = createUpdateListener();
     }
@@ -49,14 +49,16 @@ export function useUpdate(m, callback) {
  * @param {T} m
  */
 export async function UpdateSystem(m) {
-    m.listeners = {};
-    m.loaded = false;
+    const state = {
+        listeners: {},
+        loaded: false,
+    };
     useEvent(m, 'loadEnd', () => {
-        m.loaded = true;
+        state.loaded = true;
     })
     let prev = -1;
     useSystemUpdate(m, () => {
-        if (!m.loaded) {
+        if (!state.loaded) {
             // Do not process until loaded.
             return;
         }
@@ -66,7 +68,7 @@ export async function UpdateSystem(m) {
         }
         let dt = now - prev;
         prev = now;
-        for (let listener of Object.values(m.listeners)) {
+        for (let listener of Object.values(state.listeners)) {
             if (listener.first) {
                 for (let init of listener.init) {
                     init();
@@ -79,5 +81,5 @@ export async function UpdateSystem(m) {
             }
         }
     });
-    return /** @type {T&{ listeners: Record<String, ReturnType<createUpdateListener>> }} */ (m);
+    return state;
 }

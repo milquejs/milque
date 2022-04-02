@@ -1,6 +1,6 @@
 import { ComponentClass } from '../ComponentClass.js';
 import { RENDER_PASS_RIPPLE } from '../RenderPasses.js';
-import { getSystemContext } from '../SystemManager.js';
+import { getSystemState } from '../SystemManager.js';
 import { useFixedGLRenderer } from '../systems/RenderFixedGLSystem.js';
 import { useRenderPass } from '../systems/RenderPassSystem.js';
 import { useInit, useUpdate } from '../systems/UpdateSystem.js';
@@ -29,12 +29,7 @@ export function RippleSystem(m) {
   let ripples = [];
   m.ripples = ripples;
 
-  useInit(m, () => {
-    RippleComponent.createAll(ripples, 10);
-    return () => {
-      RippleComponent.destroyAll(ripples);
-    };
-  });
+  useRippleInit(m, ripples);
 
   useUpdate(m, (dt) => {
     for(let ripple of ripples) {
@@ -58,7 +53,18 @@ export function RippleSystem(m) {
       drawRippleEffect(ctx, ripple.x, ripple.y, ripple.startTime, now, false);
     }
   });
-  return /** @type {T&{ ripples: Array<ReturnType<Ripple>> }} */ (m);
+  return {
+    ripples,
+  };
+}
+
+function useRippleInit(m, ripples) {
+  useInit(m, () => {
+    RippleComponent.createAll(ripples, 10);
+    return () => {
+      RippleComponent.destroyAll(ripples);
+    };
+  });
 }
 
 /**
@@ -68,7 +74,7 @@ export function RippleSystem(m) {
  * @param {number} now
  */
 export function startRipple(m, x, y, now) {
-  let ripples = getSystemContext(m, RippleSystem).ripples;
+  let ripples = getSystemState(m, RippleSystem).ripples;
   let target = null;
   for (let ripple of ripples) {
     if (ripple.dead) {

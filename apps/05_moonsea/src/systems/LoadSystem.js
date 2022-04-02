@@ -1,4 +1,4 @@
-import { dispatchEvent, useEffect, getSystemContext } from '../SystemManager.js';
+import { dispatchEvent, getSystemState, useEffect } from '../SystemManager.js';
 
 /**
  * @typedef {import('../SystemManager.js').SystemContext} SystemContext
@@ -11,8 +11,7 @@ import { dispatchEvent, useEffect, getSystemContext } from '../SystemManager.js'
  */
 export function useLoad(m, asyncLoader) {
     // Always run in parallel.
-    let n = getSystemContext(m, LoadSystem);
-    let state = getSystemLoadState(n, m.current);
+    let state = getSystemLoadState(m, m.current);
     state.loaders.push(asyncLoader);
 }
 
@@ -23,8 +22,8 @@ export function useLoad(m, asyncLoader) {
  */
 export function useLoadAfterSystem(m, system, asyncLoader) {
     // Only run after another system completes loading (if it has any).
-    let n = getSystemContext(m, LoadSystem);
-    let state = getSystemLoadState(n, system);
+    let n = getSystemState(m, LoadSystem);
+    let state = getSystemLoadState(m, system);
     state.postLoaders.push(asyncLoader);
 }
 
@@ -32,12 +31,12 @@ export function useLoadAfterSystem(m, system, asyncLoader) {
  * @param {SystemContext} m
  */
 export function LoadSystem(m) {
-    m.loads = new Map();
+    const loads = new Map();
     useEffect(m, async () => {
         let promises = [];
-        for(let state of m.loads.values()) {
-            let loaders = state.loaders;
-            let postLoaders = state.postLoaders;
+        for(let s of loads.values()) {
+            let loaders = s.loaders;
+            let postLoaders = s.postLoaders;
             let loaderPromises = loaders.map(loader => loader());
             let postPromise = Promise.all(loaderPromises)
                 .then(() => Promise.all(postLoaders.map(loader => loader())));
@@ -47,7 +46,9 @@ export function LoadSystem(m) {
         await Promise.all(promises);
         dispatchEvent(m, { type: 'loadEnd' });
     });
-    return m;
+    return {
+        loads
+    };
 }
 
 function createSystemLoadState() {
@@ -60,11 +61,12 @@ function createSystemLoadState() {
 
 /** @returns {ReturnType<createSystemLoadState>} */
 function getSystemLoadState(m, system) {
-    if (m.loads.has(system)) {
-        return m.loads.get(system);
+    let { loads } = getSystemState(m, LoadSystem);
+    if (loads.has(system)) {
+        return loads.get(system);
     } else {
         let result = createSystemLoadState();
-        m.loads.set(system, result);
+        loads.set(system, result);
         return result;
     }
 }

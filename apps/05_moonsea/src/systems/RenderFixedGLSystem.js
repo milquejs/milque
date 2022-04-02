@@ -2,7 +2,7 @@ import { assertSystemLoaded, whenSystemLoaded } from '../BaseHooks.js';
 import { DisplayPortSystem, useDisplayPort } from './DisplayPortSystem.js';
 import { DrawContextFixedGLText } from '../renderer/drawcontext/DrawContextFixedGLText.js';
 import { RenderPassSystem } from './RenderPassSystem.js';
-import { getSystemContext } from '../SystemManager.js';
+import { getSystemState } from '../SystemManager.js';
 
 /**
  * @typedef {import('@milque/display').DisplayPort} DisplayPort
@@ -11,7 +11,7 @@ import { getSystemContext } from '../SystemManager.js';
 
 export function useFixedGLRenderer(m) {
     assertSystemLoaded(m, RenderFixedGLSystem);
-    return getSystemContext(m, RenderFixedGLSystem).renderer;
+    return getSystemState(m, RenderFixedGLSystem).renderer;
 }
 
 /**
@@ -24,6 +24,7 @@ export async function RenderFixedGLSystem(m) {
     const display = useDisplayPort(m);
     const canvas = display.canvas;
     const renderer = new DrawContextFixedGLText(canvas.getContext('webgl'));
-    m.renderer = renderer;
-    return /** @type {T&{ renderer: DrawContextFixedGLText }} */ (m);
+    return {
+        renderer,
+    };
 }

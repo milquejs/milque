@@ -2,7 +2,7 @@ import { ComponentClass } from '../ComponentClass.js';
 import { FisherSystem, FISHING_STATE } from './FisherSystem.js';
 import { INPUTS } from '../Inputs.js';
 import { RENDER_PASS_PLAYER } from '../RenderPasses.js';
-import { getSystemContext } from '../SystemManager.js';
+import { getSystemState } from '../SystemManager.js';
 import { useDisplayPort } from '../systems/DisplayPortSystem.js';
 import { useFixedGLRenderer } from '../systems/RenderFixedGLSystem.js';
 import { useRenderPass } from '../systems/RenderPassSystem.js';
@@ -16,19 +16,36 @@ const PlayerComponent = new ComponentClass('player', () => {
 });
 
 export function PlayerSystem(m) {
+  const state = usePlayerInit(m);
+  usePlayerUpdate(m, state);
+  usePlayerRender(m, state);
+  return state;
+}
+
+function usePlayerInit(m) {
   const display = useDisplayPort(m);
-  let player = null;
-  
+  const state = {
+    player: null,
+  };
   useInit(m, () => {
     const canvasWidth = display.width;
-    player = PlayerComponent.create();
+    let player = PlayerComponent.create();
+    state.player = player;
     player.x = canvasWidth - 100;
     return () => {
       PlayerComponent.destroy(player);
     };
   });
+  return state;
+}
 
+function usePlayerUpdate(m, state) {
+  const display = useDisplayPort(m);
   useUpdate(m, (dt) => {
+    const player = state.player;
+    if (!player) {
+      return;
+    }
     const canvasWidth = display.width;
     const canvasHeight = display.height;
 
@@ -40,7 +57,7 @@ export function PlayerSystem(m) {
     player.x += player.motionX;
     player.y = canvasHeight - 200;
 
-    let fisher = getSystemContext(m, FisherSystem);
+    let fisher = getSystemState(m, FisherSystem);
     fisher.headX = player.x;
     fisher.headY = player.y;
     if (
@@ -56,9 +73,16 @@ export function PlayerSystem(m) {
       player.x = canvasWidth - 130;
     }
   });
+}
 
+function usePlayerRender(m, state) {
   const ctx = useFixedGLRenderer(m);
   useRenderPass(m, RENDER_PASS_PLAYER, () => {
+    const player = state.player;
+    if (!player) {
+      return;
+    }
+
     // Player
     ctx.setColor(0x00ffaa);
     ctx.drawCircle(player.x, player.y);
@@ -75,6 +99,4 @@ export function PlayerSystem(m) {
     }
     ctx.popTransform();
   });
-
-  return m;
 }

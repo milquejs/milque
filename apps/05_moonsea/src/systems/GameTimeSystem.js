@@ -1,16 +1,16 @@
-import { getSystemContext } from '../SystemManager.js';
+import { getSystemState } from '../SystemManager.js';
 import { useDisplayPortFrame } from './DisplayPortSystem.js';
 
 /** @typedef {import('../SystemManager.js').SystemContext} SystemContext */
 
 export function useGameTime(m) {
-    const { time } = getSystemContext(m, GameTimeSystem);
+    const { time } = getSystemState(m, GameTimeSystem);
     return time;
 }
 
 export function useGameTimeChanger(m) {
     function multiplyGameTime(multiplier) {
-        let n = getSystemContext(m, GameTimeSystem);
+        let n = getSystemState(m, GameTimeSystem);
         n.multiplier = multiplier;
     }
     return [multiplyGameTime];
@@ -21,14 +21,16 @@ export function useGameTimeChanger(m) {
  * @param {T} m
  */
 export function GameTimeSystem(m) {
-    m.time = {
-        now: performance.now(),
-        deltaTime: 0,
+    const state = {
+        time: {
+            now: performance.now(),
+            deltaTime: 0,
+        },
+        multiplier: 1,
     };
-    m.multiplier = 1;
     useDisplayPortFrame(m, (e) => {
-        m.time.now = e.detail.now * m.multiplier;
-        m.time.deltaTime = e.detail.deltaTime * m.multiplier;
+        state.time.now = e.detail.now * state.multiplier;
+        state.time.deltaTime = e.detail.deltaTime * state.multiplier;
     });
-    return /** @type {T&{ time: { now: number, deltaTime: number } }} */ (m);
+    return state;
 }

@@ -218,7 +218,13 @@ export function SkySystem(m) {
 
   });
 
-  return m;
+  return {
+    streaks,
+    bigStreaks,
+    clouds,
+    stars,
+    shades,
+  };
 }
 
 /**

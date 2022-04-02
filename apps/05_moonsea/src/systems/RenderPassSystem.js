@@ -1,6 +1,6 @@
 import { whenSystemLoaded } from '../BaseHooks.js';
 import { DisplayPortSystem, useDisplayPortFrame } from './DisplayPortSystem.js';
-import { getSystemContext, useEffect } from '../SystemManager.js';
+import { getSystemState, useEffect } from '../SystemManager.js';
 
 /**
  * @typedef {import('@milque/display').DisplayPort} DisplayPort
@@ -14,7 +14,7 @@ import { getSystemContext, useEffect } from '../SystemManager.js';
  */
 export function useRenderPass(m, renderPass, callback) {
     useEffect(m, () => {
-        let render = getSystemContext(m, RenderPassSystem);
+        let render = getSystemState(m, RenderPassSystem);
         let listener = createRenderPassListener(renderPass, callback);
         render.listeners.push(listener);
         render.listeners.sort(compareRenderPassListener);
@@ -48,12 +48,14 @@ function compareRenderPassListener(a, b) {
  */
 export async function RenderPassSystem(m) {
     await whenSystemLoaded(m, DisplayPortSystem);
-    m.listeners = [];
+    const listeners = [];
     useDisplayPortFrame(m, (e) => {
         let { deltaTime } = e.detail;
-        for (let { callback } of m.listeners) {
+        for (let { callback } of listeners) {
             callback(deltaTime);
         }
     });
-    return /** @type {T&{ listeners: Array<ReturnType<createRenderPassListener>> }} */ (m);
+    return {
+        listeners,
+    };
 }

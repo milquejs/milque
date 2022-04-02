@@ -1,5 +1,5 @@
 import { whenElementLoaded } from '../BaseHooks.js';
-import { getSystemContext, useEffect, useEvent } from '../SystemManager.js';
+import { getSystemState, useEffect, useEvent } from '../SystemManager.js';
 
 /**
  * @typedef {import('@milque/display').DisplayPort} DisplayPort
@@ -10,7 +10,7 @@ import { getSystemContext, useEffect, useEvent } from '../SystemManager.js';
  * @param {SystemContext} m
  */
 export function useDisplayPort(m) {
-    return getSystemContext(m, DisplayPortSystem).element;
+    return getSystemState(m, DisplayPortSystem).element;
 }
 
 /**
@@ -21,11 +21,15 @@ export function useDisplayPortFrame(m, callback) {
     const display = useDisplayPort(m);
     useEffect(m, () => {
         let wrapper = (e) => {
-            let n = getSystemContext(m, DisplayPortSystem);
-            if (!n.loaded) {
+            let { loaded } = getSystemState(m, DisplayPortSystem);
+            if (!loaded) {
                 return;
             }
-            callback(e);
+            try {
+                callback(e);
+            } catch (e) {
+                console.error(e);
+            }
         };
         display.addEventListener('frame', wrapper);
         return () => {
@@ -39,11 +43,13 @@ export function useDisplayPortFrame(m, callback) {
  * @param {T} m
  */
 export async function DisplayPortSystem(m, selector = 'display-port') {
-    let element = await whenElementLoaded(m, selector);
-    m.element = element;
-    m.loaded = false;
+    const element = /** @type {DisplayPort} */ (await whenElementLoaded(m, selector));
+    const state = {
+        element,
+        loaded: false,
+    };
     useEvent(m, 'loadEnd', () => {
-        m.loaded = true;
+        state.loaded = true;
     });
-    return /** @type {T&{ element: DisplayPort }} */ (m);
+    return state;
 }

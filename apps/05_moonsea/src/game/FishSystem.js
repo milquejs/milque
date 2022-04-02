@@ -37,7 +37,9 @@ export async function FishSystem(m) {
     useFishInit(m, fishes);
     useFishUpdater(m, fishes);
     useFishRenderer(m, fishes);
-    return m;
+    return {
+        fishes
+    };
 }
 
 async function load() {

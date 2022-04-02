@@ -1,6 +1,7 @@
 /**
+ * @typedef {object} SystemState
  * @typedef {ReturnType<createSystemContext>} SystemContext
- * @typedef {(m: SystemContext, ...args) => SystemContext|Promise<SystemContext>} System
+ * @typedef {(m: SystemContext, ...args) => SystemState} System
  * @typedef {(m: object, ...args) => object|Promise<object>} SystemLike
  * @typedef {ReturnType<createSystemOptions>} SystemOptions
  * @typedef {() => Function|void|Promise<Function|void>} SystemHandler
@@ -36,7 +37,7 @@ function createSystemOptions(name, manager, system, sharedState, initArgs) {
  function createSystemContext(name, manager, system, sharedState) {
     return {
         /** Any user-defined game state goes here. */
-        state: {},
+        state: null,
         /** Any global state goes here. */
         global: sharedState,
         /** The current system */
@@ -76,6 +77,8 @@ export class SystemManager {
 
         /** @protected */
         this.update = this.update.bind(this);
+        /** @protected */
+        this.pollEvents = this.pollEvents.bind(this);
         /** @private */
         this.updatesPerSecond = updatesPerSecond;
         /** @private */
@@ -132,7 +135,11 @@ export class SystemManager {
             opts.pendingHandlers = {};
             for(let handle of Object.keys(map)) {
                 let handler = map[handle];
-                applyHandler(this, name, handle, handler);
+                try {
+                    applyHandler(this, name, handle, handler);
+                } catch (e) {
+                    console.error(e);
+                }
             }
         }
         // Dispatch update
@@ -203,9 +210,13 @@ export class SystemManager {
             if (type in this.listeners) {
                 let listeners = this.listeners[type];
                 for(let listener of listeners) {
-                    let result = listener(event);
-                    if (result) {
-                        break;
+                    try {
+                        let result = listener(event);
+                        if (result) {
+                            break;
+                        }
+                    } catch (e) {
+                        console.error(e);
                     }
                 }
             }
@@ -274,14 +285,14 @@ function initializeSystem(system, opts) {
     // ...validate result...
     if (typeof result === 'object' && result instanceof Promise) {
         result.then(value => {
-            validateSystemReturn(m, value);
+            m.state = value;
             ready.resolve(value);
         }).catch(reason => {
             ready.reject(reason);
         });
     } else {
         try {
-            validateSystemReturn(m, result);
+            m.state = result;
         } catch (e) {
             ready.reject(e);
             return;
@@ -312,15 +323,6 @@ function terminateSystem(system, opts) {
     context.__handle__ = 1;
 }
 
-function validateSystemReturn(m, result) {
-    if (!result) {
-        throw new Error('Missing return for system context.');
-    }
-    if (result !== m) {
-        throw new Error('Passed in and returned system contexts do not match.');
-    }
-}
-
 /**
  * @param {SystemContext} m
  */
@@ -334,8 +336,8 @@ export function nextAvailableHookHandle(m) {
  * @param {T} system
  * @param {string} name
  */
-export function getSystemContext(m, system, name = system.name) {
-    return /** @type {Awaited<ReturnType<T>>} */ (m.__manager__.systems.get(name).context);
+export function getSystemState(m, system, name = system.name) {
+    return /** @type {Awaited<ReturnType<T>>} */ (m.__manager__.systems.get(name).context.state);
 }
 
 /**

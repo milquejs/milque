@@ -142,7 +142,12 @@ export function SeaSystem(m) {
     ctx.setOpacityFloat(1);
     ctx.resetTransform();
   })
-  return m;
+  return {
+    sparkles,
+    foams,
+    columns,
+    rows,
+  };
 }
 
 /**
