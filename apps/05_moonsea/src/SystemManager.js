@@ -6,6 +6,7 @@
  * @typedef {ReturnType<createSystemOptions>} SystemOptions
  * @typedef {() => Function|void|Promise<Function|void>} SystemHandler
  * @typedef {{ type: string }} SystemEvent
+ * @typedef {{ current: any }} Ref
  */
 
 import { ControlledPromise } from './util/ControlledPromise.js';
@@ -20,10 +21,12 @@ import { ControlledPromise } from './util/ControlledPromise.js';
 function createSystemOptions(name, manager, system, sharedState, initArgs) {
     return {
         initArgs,
-        /** @type {Record<number, Function>} */
-        handlers: {},
-        /** @type {Record<number, Function>} */
-        pendingHandlers: {},
+        handlers: {
+            /** @type {Record<number, Function>} */
+            pending: {},
+            /** @type {Record<number, Function>} */
+            active: {},
+        },
         context: createSystemContext(name, manager, system, sharedState),
     };
 }
@@ -50,6 +53,8 @@ function createSystemOptions(name, manager, system, sharedState, initArgs) {
         __handle__: 1,
         /** A promise that resolves when the system is ready. */
         __ready__: new ControlledPromise(),
+        /** @type {Record<number, Ref>} */
+        __refs__: {},
     };
 }
 
@@ -131,8 +136,8 @@ export class SystemManager {
             let name = opts.context.name;
 
             // Apply handlers
-            let map = opts.pendingHandlers;
-            opts.pendingHandlers = {};
+            let map = opts.handlers.pending;
+            opts.handlers.pending = {};
             for(let handle of Object.keys(map)) {
                 let handler = map[handle];
                 try {
@@ -308,8 +313,9 @@ function initializeSystem(system, opts) {
 function terminateSystem(system, opts) {
     console.log(`Terminating '${opts.context.name}' system...`);
     // Clean-up handlers
-    let handlers = opts.handlers;
-    opts.handlers = {};
+    let handlers = opts.handlers.active;
+    opts.handlers.active = {};
+    opts.handlers.pending = {};
     for(let handler of Object.values(handlers)) {
         handler();
     }
@@ -331,16 +337,6 @@ export function nextAvailableHookHandle(m) {
 }
 
 /**
- * @template {SystemLike} T
- * @param {SystemContext} m
- * @param {T} system
- * @param {string} name
- */
-export function getSystemState(m, system, name = system.name) {
-    return /** @type {Awaited<ReturnType<T>>} */ (m.__manager__.systems.get(name).context.state);
-}
-
-/**
  * @param {SystemContext} m 
  * @param {System} system 
  * @param {string} name
@@ -358,7 +354,7 @@ export function useSystemUpdate(m, callback) {
 }
 
 function applyHandler(manager, name, handle, handler) {
-    let handlers = manager.systems.get(name).handlers;
+    let handlers = manager.systems.get(name).handlers.active;
     if (handle in handlers) {
         // End the previous handler.
         let prev = handlers[handle];
@@ -384,7 +380,7 @@ function applyHandler(manager, name, handle, handler) {
  */
 export function useEffect(m, handler) {
     let handle = nextAvailableHookHandle(m);
-    m.__manager__.systems.get(m.name).pendingHandlers[handle] = handler;
+    m.__manager__.systems.get(m.name).handlers.pending[handle] = handler;
 }
 
 /**
@@ -409,4 +405,61 @@ export function useEvent(m, eventType, callback) {
 export function dispatchEvent(m, event) {
     let manager = m.__manager__;
     manager.dispatchEvent(event);
+}
+
+/**
+ * @param {SystemContext} m
+ * @returns {{ current: any }}
+ */
+export function useRef(m) {
+    const handle = nextAvailableHookHandle(m);
+    const ref = {
+        __ready: false,
+        __current: null,
+        get current() {
+            if (!this.__ready) {
+                throw new Error('Ref is not yet ready. Try awaiting on owning system before access.');
+            }
+            return this.__current;
+        },
+        set current(value) {
+            this.__ready = true;
+            this.__current = value;
+        },
+    };
+    m.__refs__[handle] = ref;
+    return ref;
+}
+
+/**
+ * @template {SystemLike} T
+ * @param {SystemContext} m
+ * @param {T} system
+ * @param {string} [name]
+ * @returns {{ current: Awaited<ReturnType<T>> }}
+ */
+export function useSystemState(m, system, name = system.name) {
+    const ref = useRef(m);
+    m.__ready__.then(state => {
+        ref.current = state;
+    });
+    return ref;
+}
+
+/**
+ * @template {SystemLike} T
+ * @param {SystemContext} m
+ * @param {T} system
+ * @param {string} [name]
+ * @returns {Awaited<ReturnType<T>>}
+ */
+export function usePreloadedSystemState(m, system, name = system.name) {
+    if (!m || !m.__manager__.systems.has(name)) {
+        throw new Error('System not yet loaded. Try await on system before access.');
+    }
+    return m.__manager__.systems.get(name).context.state;
+}
+
+export function getSystemState(m, system) {
+    return usePreloadedSystemState(m, system);
 }

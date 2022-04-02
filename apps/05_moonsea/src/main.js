@@ -64,12 +64,6 @@ async function main() {
  * @param {T} m
  */
 export async function MainSystem(m) {
-  await Promise.all([
-    whenSystemLoaded(m, LoadSystem),
-    whenSystemLoaded(m, RenderFixedGLSystem),
-    whenSystemLoaded(m, DisplayPortSystem),
-  ]);
-
   const g = game();
   const ctx = useFixedGLRenderer(m);
   const display = useDisplayPort(m);
