@@ -1,6 +1,5 @@
 import { ComponentClass } from '../ComponentClass.js';
 import { RENDER_PASS_RIPPLE } from '../RenderPasses.js';
-import { getSystemState } from '../SystemManager.js';
 import { useFixedGLRenderer } from '../systems/RenderFixedGLSystem.js';
 import { useRenderPass } from '../systems/RenderPassSystem.js';
 import { useInit, useUpdate } from '../systems/UpdateSystem.js';

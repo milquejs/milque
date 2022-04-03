@@ -1,6 +1,6 @@
 import { whenSystemLoaded } from '../BaseHooks.js';
 import { DisplayPortSystem, useDisplayPortFrame } from './DisplayPortSystem.js';
-import { getSystemState, useEffect, useSystemState } from '../SystemManager.js';
+import { useEffect, useSystemState } from '../SystemManager.js';
 
 /**
  * @typedef {import('@milque/display').DisplayPort} DisplayPort
@@ -49,7 +49,6 @@ function compareRenderPassListener(a, b) {
  */
 export async function RenderPassSystem(m) {
     await whenSystemLoaded(m, DisplayPortSystem);
-    console.log("LOADED");
     const listeners = [];
     useDisplayPortFrame(m, (e) => {
         let { deltaTime } = e.detail;

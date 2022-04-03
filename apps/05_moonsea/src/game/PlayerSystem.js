@@ -2,7 +2,7 @@ import { ComponentClass } from '../ComponentClass.js';
 import { FisherSystem, FISHING_STATE } from './FisherSystem.js';
 import { INPUTS } from '../Inputs.js';
 import { RENDER_PASS_PLAYER } from '../RenderPasses.js';
-import { getSystemState, useSystemState } from '../SystemManager.js';
+import { useSystemState } from '../SystemManager.js';
 import { useDisplayPort } from '../systems/DisplayPortSystem.js';
 import { useFixedGLRenderer } from '../systems/RenderFixedGLSystem.js';
 import { useRenderPass } from '../systems/RenderPassSystem.js';
