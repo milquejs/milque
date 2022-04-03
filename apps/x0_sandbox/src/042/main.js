@@ -25,8 +25,7 @@ export async function main(game) {
 
   const mouse = new Mouse(display);
 
-  const { width: cubeWidth, height: cubeHeight } =
-    assets.get('image:cube.png');
+  const { width: cubeWidth, height: cubeHeight } = assets.get('image:cube.png');
   const halfCubeWidth = cubeWidth / 2;
   const halfCubeHeight = cubeHeight / 2;
 

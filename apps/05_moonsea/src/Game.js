@@ -7,16 +7,17 @@ import { AssetManager } from '@milque/asset';
  */
 
 export function game() {
-    /** @type {DisplayPort} */
-    const display = document.querySelector('#display');
-    /** @type {InputContext} */
-    const inputs = /** @type {InputPort} */
-        (document.querySelector('#inputs')).getContext('axisbutton');
-    return {
-        display,
-        inputs,
-        assets: AssetManager,
-        now: 0,
-        deltaTime: 0,
-    };
+  /** @type {DisplayPort} */
+  const display = document.querySelector('#display');
+  /** @type {InputContext} */
+  const inputs =
+    /** @type {InputPort} */
+    (document.querySelector('#inputs')).getContext('axisbutton');
+  return {
+    display,
+    inputs,
+    assets: AssetManager,
+    now: 0,
+    deltaTime: 0,
+  };
 }

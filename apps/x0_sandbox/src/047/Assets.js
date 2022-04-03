@@ -33,5 +33,5 @@ export const BackgroundMusic = new AssetRef(
 );
 
 export async function loadAssetRefs(refs) {
-  await Promise.all(refs.map(ref => ref.load()));
+  await Promise.all(refs.map((ref) => ref.load()));
 }

@@ -5,9 +5,7 @@ export const DAYLIGHTS = [
     stars: [0xfff4df],
     skies: [0xa7f4ff, 0xeaa5ee],
     streaks: [0x85c5ce, 0x6495cf],
-    clouds: [
-      [0xd0f2fb, 0xfbe7d0],
-    ],
+    clouds: [[0xd0f2fb, 0xfbe7d0]],
     columns: [0xcaf4ff, 0xcafff3, 0x5bb8da],
     rows: [0xcaf4ff, 0x5bb8da, 0xcafff3],
     seas: [0x3b8ce6, 0xcafff3],
@@ -30,9 +28,7 @@ export const DAYLIGHTS = [
     stars: [0xfafafa],
     skies: [0x8278b4, 0xb4bee6],
     streaks: [0xb4a0e6, 0xcdbff2],
-    clouds: [
-      [0xffffff, 0xe0eeff],
-    ],
+    clouds: [[0xffffff, 0xe0eeff]],
     columns: [0xa2bee5, 0x5381c1, 0x4c4593],
     rows: [0x4979bc, 0x3865a5, 0x1b4f99, 0x184789],
     seas: [0x4979bc, 0x1b4f99],

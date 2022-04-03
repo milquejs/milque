@@ -2,7 +2,12 @@ import { Random } from '@milque/random';
 import { AssetManager, AssetRef } from '@milque/asset';
 import { clamp } from '@milque/util';
 import { loadImage } from '../loader/ImageLoader.js';
-import { getDayDelta, getDayIndex, mixDaylightColor, spicyDaylightColor } from '../Colors.js';
+import {
+  getDayDelta,
+  getDayIndex,
+  mixDaylightColor,
+  spicyDaylightColor,
+} from '../Colors.js';
 import { useLoad } from '../systems/LoadSystem.js';
 import { useInit } from '../systems/UpdateSystem.js';
 import { useDisplayPort } from '../systems/DisplayPortSystem.js';
@@ -37,19 +42,23 @@ export function SeaSystem(m) {
     createFilledArray(
       sparkles,
       () => createSparkle(canvasWidth, canvasHeight),
-      SEA_SPARKLE_COUNT);
+      SEA_SPARKLE_COUNT
+    );
     createFilledArray(
       foams,
       () => createFoam(canvasWidth, canvasHeight),
-      SEA_FOAM_COUNT);
+      SEA_FOAM_COUNT
+    );
     createFilledArray(
       columns,
       () => createColumn(canvasWidth, canvasHeight),
-      SEA_COLUMN_COUNT);
+      SEA_COLUMN_COUNT
+    );
     createFilledArray(
       rows,
       () => createRow(canvasWidth, canvasHeight),
-      SEA_ROW_COUNT);
+      SEA_ROW_COUNT
+    );
   });
 
   const ctx = useFixedGLRenderer(m);
@@ -120,7 +129,11 @@ export function SeaSystem(m) {
     // Sea Foam
     for (let s of foams) {
       ctx.setColor(0xffffff);
-      let opacity = clamp(((Math.sin(now / 1000 + s.opacity) + 1) / 2) * 2, 0, 1);
+      let opacity = clamp(
+        ((Math.sin(now / 1000 + s.opacity) + 1) / 2) * 2,
+        0,
+        1
+      );
       ctx.setOpacityFloat(opacity);
       let dx = (100 * (Math.sin(now / 5000 + s.opacity) + 1)) / 2;
       ctx.setTranslation(s.x + dx, s.y, SURFACE_DEPTH);
@@ -141,7 +154,7 @@ export function SeaSystem(m) {
     }
     ctx.setOpacityFloat(1);
     ctx.resetTransform();
-  })
+  });
   return {
     sparkles,
     foams,
@@ -153,7 +166,7 @@ export function SeaSystem(m) {
 /**
  * @template T
  * @param {Array<T>} out
- * @param {() => T} factory 
+ * @param {() => T} factory
  * @param {number} count
  */
 function createFilledArray(out, factory, count) {

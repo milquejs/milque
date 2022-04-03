@@ -12,7 +12,8 @@ import { useInit, useUpdate } from '../systems/UpdateSystem.js';
 
 function Ripple() {
   return {
-    x: 0, y: 0,
+    x: 0,
+    y: 0,
     startTime: 0,
     dead: false,
   };
@@ -31,7 +32,7 @@ export function RippleSystem(m) {
   useRippleInit(m, ripples);
 
   useUpdate(m, (dt) => {
-    for(let ripple of ripples) {
+    for (let ripple of ripples) {
       if (ripple.dead) {
         continue;
       }

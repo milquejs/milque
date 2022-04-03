@@ -10,7 +10,7 @@ import { usePreloadedSystemState } from '../SystemManager.js';
  */
 
 export function useFixedGLRenderer(m) {
-    return usePreloadedSystemState(m, RenderFixedGLSystem).renderer;
+  return usePreloadedSystemState(m, RenderFixedGLSystem).renderer;
 }
 
 /**
@@ -18,12 +18,12 @@ export function useFixedGLRenderer(m) {
  * @param {T} m
  */
 export async function RenderFixedGLSystem(m) {
-    await whenSystemLoaded(m, RenderPassSystem);
-    await whenSystemLoaded(m, DisplayPortSystem);
-    const display = useDisplayPort(m);
-    const canvas = display.canvas;
-    const renderer = new DrawContextFixedGLText(canvas.getContext('webgl'));
-    return {
-        renderer,
-    };
+  await whenSystemLoaded(m, RenderPassSystem);
+  await whenSystemLoaded(m, DisplayPortSystem);
+  const display = useDisplayPort(m);
+  const canvas = display.canvas;
+  const renderer = new DrawContextFixedGLText(canvas.getContext('webgl'));
+  return {
+    renderer,
+  };
 }

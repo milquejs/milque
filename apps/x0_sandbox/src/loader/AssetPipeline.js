@@ -28,7 +28,7 @@ export class AssetPipeline {
     stage.addHandler(handler);
 
     // Process old assets with new handler...
-    for(let uri of AssetManager.keys()) {
+    for (let uri of AssetManager.keys()) {
       if (stage.matches(uri)) {
         await handler(AssetManager.getCurrent(uri), uri);
       }
@@ -38,7 +38,7 @@ export class AssetPipeline {
 
 class PipelineStage {
   /**
-   * @param {GlobExp} filter 
+   * @param {GlobExp} filter
    */
   constructor(filter) {
     this.filter = filter;

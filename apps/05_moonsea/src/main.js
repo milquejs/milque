@@ -14,8 +14,14 @@ import { AssetManager } from '@milque/asset';
 import { SystemManager } from './SystemManager.js';
 import { LoadSystem } from './systems/LoadSystem.js';
 import { whenSystemLoaded } from './BaseHooks.js';
-import { DisplayPortSystem, useDisplayPort } from './systems/DisplayPortSystem.js';
-import { RenderFixedGLSystem, useFixedGLRenderer } from './systems/RenderFixedGLSystem.js';
+import {
+  DisplayPortSystem,
+  useDisplayPort,
+} from './systems/DisplayPortSystem.js';
+import {
+  RenderFixedGLSystem,
+  useFixedGLRenderer,
+} from './systems/RenderFixedGLSystem.js';
 import { RenderPassSystem, useRenderPass } from './systems/RenderPassSystem.js';
 import { UpdateSystem, useUpdate } from './systems/UpdateSystem.js';
 
@@ -27,7 +33,14 @@ import { FisherSystem } from './game/FisherSystem.js';
 import { PlayerSystem } from './game/PlayerSystem.js';
 
 import { Random } from '@milque/random';
-import { RENDER_PASS_CLEAR, RENDER_PASS_FISHER, RENDER_PASS_OBJECTS, RENDER_PASS_PIER, RENDER_PASS_SEA, RENDER_PASS_SKY } from './RenderPasses.js';
+import {
+  RENDER_PASS_CLEAR,
+  RENDER_PASS_FISHER,
+  RENDER_PASS_OBJECTS,
+  RENDER_PASS_PIER,
+  RENDER_PASS_SEA,
+  RENDER_PASS_SKY,
+} from './RenderPasses.js';
 
 /**
  * @typedef {import('@milque/display').DisplayPort} DisplayPort

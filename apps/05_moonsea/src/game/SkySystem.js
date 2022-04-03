@@ -3,7 +3,13 @@ import { clamp } from '@milque/util';
 import { AssetManager, AssetRef } from '@milque/asset';
 import { loadImage } from '../loader/ImageLoader.js';
 import { hex } from '../renderer/color.js';
-import { cloudyDaylightColor, getDayDelta, getDayIndex, mixDaylightColor, spicyDaylightColor } from '../Colors.js';
+import {
+  cloudyDaylightColor,
+  getDayDelta,
+  getDayIndex,
+  mixDaylightColor,
+  spicyDaylightColor,
+} from '../Colors.js';
 import { useLoad } from '../systems/LoadSystem.js';
 import { useInit, useUpdate } from '../systems/UpdateSystem.js';
 import { useDisplayPort } from '../systems/DisplayPortSystem.js';
@@ -47,23 +53,28 @@ export function SkySystem(m) {
     createFilledArray(
       stars,
       () => createStar(canvasWidth, canvasHeight),
-      SKY_STAR_COUNT);
+      SKY_STAR_COUNT
+    );
     createFilledArray(
       streaks,
       () => createStreak(canvasWidth, canvasHeight),
-      SKY_STREAK_COUNT);
+      SKY_STREAK_COUNT
+    );
     createFilledArray(
       bigStreaks,
       () => createBigStreak(canvasWidth, canvasHeight),
-      SKY_BIG_STREAK_COUNT);
+      SKY_BIG_STREAK_COUNT
+    );
     createFilledArray(
       shades,
       () => createShade(canvasWidth, canvasHeight),
-      SKY_SHADE_COUNT);
+      SKY_SHADE_COUNT
+    );
     createFilledArray(
       clouds,
       () => createCloud(canvasWidth, canvasHeight),
-      SKY_CLOUD_COUNT);
+      SKY_CLOUD_COUNT
+    );
   });
 
   useUpdate(m, (dt) => {
@@ -126,7 +137,8 @@ export function SkySystem(m) {
     ctx.drawGradientRect(
       gradientTop,
       gradientBot,
-      0, 0,
+      0,
+      0,
       canvasWidth,
       canvasHeight
     );
@@ -201,7 +213,12 @@ export function SkySystem(m) {
     ctx.setTextureImage(4, cloudImage);
     let cloudOffsetY = -cloudImage.height / 2;
     for (let c of clouds) {
-      let [high, low] = cloudyDaylightColor(dayIndex, dayDelta, c.spicy, 'clouds');
+      let [high, low] = cloudyDaylightColor(
+        dayIndex,
+        dayDelta,
+        c.spicy,
+        'clouds'
+      );
       let x = c.x + c.progress;
       ctx.setColor(high);
       ctx.setScale(c.w * 1.2, c.h * 1.2);
@@ -215,7 +232,6 @@ export function SkySystem(m) {
       ctx.drawTexturedBox(4, 0, cloudOffsetY);
     }
     ctx.resetTransform();
-
   });
 
   return {
@@ -230,7 +246,7 @@ export function SkySystem(m) {
 /**
  * @template T
  * @param {Array<T>} out
- * @param {() => T} factory 
+ * @param {() => T} factory
  * @param {number} count
  */
 function createFilledArray(out, factory, count) {
@@ -326,8 +342,10 @@ function createCloud(canvasWidth, canvasHeight) {
   let w = Random.range(2, 4);
   let h = Random.range(0.2, 1);
   return {
-    x, y,
-    w, h,
+    x,
+    y,
+    w,
+    h,
     spicy: Random.next(),
     progress: 0,
     speed: Random.range(0.5, 3),

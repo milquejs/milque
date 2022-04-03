@@ -1,4 +1,10 @@
-import { getSystemId, nextAvailableHookHandle, useEvent, usePreloadedSystemState, useSystemUpdate } from '../SystemManager.js';
+import {
+  getSystemId,
+  nextAvailableHookHandle,
+  useEvent,
+  usePreloadedSystemState,
+  useSystemUpdate,
+} from '../SystemManager.js';
 
 /**
  * @typedef {import('@milque/display').DisplayPort} DisplayPort
@@ -6,11 +12,11 @@ import { getSystemId, nextAvailableHookHandle, useEvent, usePreloadedSystemState
  */
 
 function createUpdateListener() {
-    return {
-        init: [],
-        loop: [],
-        first: true,
-    };
+  return {
+    init: [],
+    loop: [],
+    first: true,
+  };
 }
 
 /**
@@ -18,13 +24,13 @@ function createUpdateListener() {
  * @param {() => void} callback
  */
 export function useInit(m, callback) {
-    let updateSystem = usePreloadedSystemState(m, UpdateSystem);
-    let handle = nextAvailableHookHandle(m);
-    let key = `${getSystemId(m, m.current)}.${handle}`;
-    if (!(key in updateSystem.listeners)) {
-        updateSystem.listeners[key] = createUpdateListener();
-    }
-    updateSystem.listeners[key].init.push(callback);
+  let updateSystem = usePreloadedSystemState(m, UpdateSystem);
+  let handle = nextAvailableHookHandle(m);
+  let key = `${getSystemId(m, m.current)}.${handle}`;
+  if (!(key in updateSystem.listeners)) {
+    updateSystem.listeners[key] = createUpdateListener();
+  }
+  updateSystem.listeners[key].init.push(callback);
 }
 
 /**
@@ -32,13 +38,13 @@ export function useInit(m, callback) {
  * @param {(dt: number) => void} callback
  */
 export function useUpdate(m, callback) {
-    let updateSystem = usePreloadedSystemState(m, UpdateSystem);
-    let handle = nextAvailableHookHandle(m);
-    let key = `${getSystemId(m, m.current)}.${handle}`;
-    if (!(key in updateSystem.listeners)) {
-        updateSystem.listeners[key] = createUpdateListener();
-    }
-    updateSystem.listeners[key].loop.push(callback);
+  let updateSystem = usePreloadedSystemState(m, UpdateSystem);
+  let handle = nextAvailableHookHandle(m);
+  let key = `${getSystemId(m, m.current)}.${handle}`;
+  if (!(key in updateSystem.listeners)) {
+    updateSystem.listeners[key] = createUpdateListener();
+  }
+  updateSystem.listeners[key].loop.push(callback);
 }
 
 /**
@@ -46,37 +52,37 @@ export function useUpdate(m, callback) {
  * @param {T} m
  */
 export async function UpdateSystem(m) {
-    const state = {
-        listeners: {},
-        loaded: false,
-    };
-    useEvent(m, 'loadEnd', () => {
-        state.loaded = true;
-    })
-    let prev = -1;
-    useSystemUpdate(m, () => {
-        if (!state.loaded) {
-            // Do not process until loaded.
-            return;
+  const state = {
+    listeners: {},
+    loaded: false,
+  };
+  useEvent(m, 'loadEnd', () => {
+    state.loaded = true;
+  });
+  let prev = -1;
+  useSystemUpdate(m, () => {
+    if (!state.loaded) {
+      // Do not process until loaded.
+      return;
+    }
+    let now = performance.now();
+    if (prev < 0) {
+      prev = now - 1;
+    }
+    let dt = now - prev;
+    prev = now;
+    for (let listener of Object.values(state.listeners)) {
+      if (listener.first) {
+        for (let init of listener.init) {
+          init();
         }
-        let now = performance.now();
-        if (prev < 0) {
-            prev = now - 1;
+        listener.first = false;
+      } else {
+        for (let loop of listener.loop) {
+          loop(dt);
         }
-        let dt = now - prev;
-        prev = now;
-        for (let listener of Object.values(state.listeners)) {
-            if (listener.first) {
-                for (let init of listener.init) {
-                    init();
-                }
-                listener.first = false;
-            } else {
-                for (let loop of listener.loop) {
-                    loop(dt);
-                }
-            }
-        }
-    });
-    return state;
+      }
+    }
+  });
+  return state;
 }

@@ -44,9 +44,13 @@ async function main() {
   /** @type {DisplayPort} */
   const display = document.querySelector('#display');
   /** @type {InputContext} */
-  const inputs = /** @type {import('@milque/input').InputPort} */ (document.querySelector('#inputs')).getContext('axisbutton');
+  const inputs = /** @type {import('@milque/input').InputPort} */ (
+    document.querySelector('#inputs')
+  ).getContext('axisbutton');
   const pipeline = new AssetPipeline();
-  await AssetManager.loadAssetPack('res.pack', (src, uri, path) => AssetManager.cache('res/' + path, src));
+  await AssetManager.loadAssetPack('res.pack', (src, uri, path) =>
+    AssetManager.cache('res/' + path, src)
+  );
   await pipeline.pipe('res/**/*.md', async (assetData, uri) =>
     AssetManager.cache('txt:' + uri.substring(4), await loadText(assetData))
   );
@@ -56,7 +60,7 @@ async function main() {
   await pipeline.pipe('res/**/*.png', async (assetData, uri) =>
     AssetManager.cache(
       'image:' + uri.substring(4),
-      await loadImage(assetData, 'image/png'),
+      await loadImage(assetData, 'image/png')
     )
   );
   await pipeline.pipe('res/**/*.obj', async (assetData, uri) =>

@@ -31,7 +31,7 @@ export const FISHING_STATE = {
 
 /**
  * @template {SystemContext} T
- * @param {T} m 
+ * @param {T} m
  */
 export function FisherSystem(m) {
   const display = useDisplayPort(m);
@@ -61,7 +61,7 @@ export function FisherSystem(m) {
 }
 
 /**
- * @param {SystemContext} m 
+ * @param {SystemContext} m
  * @param {ReturnType<FisherSystem>} state
  */
 function useFisherUpdate(m, state) {
@@ -69,14 +69,14 @@ function useFisherUpdate(m, state) {
   useUpdate(m, (dt) => {
     const now = performance.now();
     const canvasHeight = display.height;
-  
+
     const fishingY = canvasHeight - 60;
 
     let headX = state.headX;
     let headY = state.headY;
     let bobX = state.bobX;
     let bobY = state.bobY;
-  
+
     switch (state.fishingState) {
       case FISHING_STATE.IDLE:
         // Do nothing.
@@ -148,7 +148,7 @@ function useFisherUpdate(m, state) {
         state.fishingState = FISHING_STATE.IDLE;
         break;
     }
-  
+
     switch (state.fishingState) {
       case FISHING_STATE.IDLE:
         {
@@ -163,7 +163,8 @@ function useFisherUpdate(m, state) {
           if (INPUTS.Fish.released) {
             let dt = now - state.castingStartTime;
             let power =
-              clamp(dt, MIN_CASTING_POWER, MAX_CASTING_POWER) / MAX_CASTING_POWER;
+              clamp(dt, MIN_CASTING_POWER, MAX_CASTING_POWER) /
+              MAX_CASTING_POWER;
             state.castingPowerX = -15 * power;
             state.castingPowerY = 15 * power;
             state.fishingState = FISHING_STATE.CASTING;
@@ -190,7 +191,7 @@ function useFisherUpdate(m, state) {
 }
 
 /**
- * @param {SystemContext} m 
+ * @param {SystemContext} m
  * @param {ReturnType<FisherSystem>} state
  */
 function useFisherRenderer(m, state) {
@@ -229,13 +230,7 @@ function useFisherRenderer(m, state) {
       if (fishingState === FISHING_STATE.REELING) {
         ctx.drawLine(headX, headY, x, y);
       } else {
-        ctx.drawQuadratic(
-          headX,
-          headY,
-          x,
-          y,
-          clamp(40 - dx / 60, 0, 40)
-        );
+        ctx.drawQuadratic(headX, headY, x, y, clamp(40 - dx / 60, 0, 40));
       }
     }
 

@@ -10,7 +10,8 @@ import { useInit, useUpdate } from '../systems/UpdateSystem.js';
 
 const PlayerComponent = new ComponentClass('player', () => {
   return {
-    x: 0, y: 0,
+    x: 0,
+    y: 0,
     motionX: 0,
   };
 });
@@ -87,7 +88,7 @@ function usePlayerRender(m, state) {
     // Player
     ctx.setColor(0x00ffaa);
     ctx.drawCircle(player.x, player.y);
-  
+
     // Player Shadow
     ctx.pushTransform();
     {
