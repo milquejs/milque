@@ -3,7 +3,6 @@
  * @typedef {ReturnType<createSystemContext>} SystemContext
  * @typedef {(m: SystemContext, ...args) => SystemState} System
  * @typedef {(m: object, ...args) => object|Promise<object>} SystemLike
- * @typedef {ReturnType<createSystemOptions>} SystemOptions
  * @typedef {() => Function|void|Promise<Function|void>} SystemHandler
  * @typedef {{ type: string }} SystemEvent
  * @typedef {{ current: any }} Ref
@@ -16,29 +15,10 @@ import { useEvent } from './core/index.js';
  * @param {string} name
  * @param {SystemManager} manager
  * @param {System} system
- * @param {object} sharedState
- * @param {Array<?>} initArgs
- */
-function createSystemOptions(name, manager, system, sharedState, initArgs) {
-  return {
-    initArgs,
-    handlers: {
-      /** @type {Record<number, Function>} */
-      pending: {},
-      /** @type {Record<number, Function>} */
-      active: {},
-    },
-    context: createSystemContext(name, manager, system, sharedState),
-  };
-}
-
-/**
- * @param {string} name
- * @param {SystemManager} manager
- * @param {System} system
+ * @param {Array<any>} args
  * @param {object} sharedState
  */
-function createSystemContext(name, manager, system, sharedState) {
+function createSystemContext(name, manager, system, args, sharedState) {
   return {
     /** Any user-defined game state goes here. */
     state: null,
@@ -48,6 +28,14 @@ function createSystemContext(name, manager, system, sharedState) {
     current: system,
     /** The unique system name */
     name,
+    /** The system function arguments initialized with. */
+    args,
+    handlers: {
+      /** @type {Record<number, Function>} */
+      pending: {},
+      /** @type {Record<number, Function>} */
+      active: {},
+    },
     /** The owning manager */
     __manager__: manager,
     /** The next available handle */
@@ -65,7 +53,7 @@ export class SystemManager {
       throw new Error('System manager must have positive updates per second.');
     }
 
-    /** @type {Map<string, SystemOptions>} */
+    /** @type {Map<string, SystemContext>} */
     this.systems = new Map();
 
     /** @type {Record<string, Array<Function>>} */
@@ -104,9 +92,8 @@ export class SystemManager {
     let systems = this.systems;
     let promises = [];
     for (let opts of systems.values()) {
-      let system = opts.context.current;
-      initializeSystem(system, opts);
-      promises.push(opts.context.__ready__);
+      this.onSystemInitialize(opts);
+      promises.push(opts.__ready__);
     }
     await Promise.all(promises);
     this.initialized = true;
@@ -115,6 +102,96 @@ export class SystemManager {
       1_000 / this.updatesPerSecond
     );
     return this;
+  }
+
+  /**
+   * @param {SystemContext} m
+   */
+  onSystemInitialize(m) {
+    let system = m.current;
+    // Do initialization...
+    console.log(`...initializing ${m.name}...`);
+    let result = system(m, ...m.args);
+    let ready = m.__ready__;
+    // ...validate result...
+    if (typeof result === 'object' && result instanceof Promise) {
+      result
+        .then((value) => {
+          m.state = value;
+          ready.resolve(value);
+        })
+        .catch((reason) => {
+          ready.reject(reason);
+        });
+    } else {
+      try {
+        m.state = result;
+      } catch (e) {
+        ready.reject(e);
+        return;
+      }
+      ready.resolve(result);
+    }
+
+  }
+
+  /**
+   * @param {SystemContext} m
+   */
+  onSystemTerminate(m) {
+    console.log(`...terminating ${m.name}...`);
+    // Clean-up handlers
+    let handlers = m.handlers.active;
+    m.handlers.active = {};
+    m.handlers.pending = {};
+    for (let handler of Object.values(handlers)) {
+      handler();
+    }
+    // Clean-up context
+    let context = m;
+    let ready = context.__ready__;
+    if (ready.pending) {
+      ready.reject('Encountered early termination while initializing system.');
+    }
+    context.__ready__ = new ControlledPromise();
+    context.__handle__ = 1;
+  }
+
+  /**
+   * @param {SystemContext} m
+   */
+  onSystemUpdate(m) {
+    let name = m.name;
+    let map = m.handlers.pending;
+    m.handlers.pending = {};
+    let activeHandlers = this.systems.get(name).handlers.active;
+    for (let handle of Object.keys(map)) {
+      let handler = map[handle];
+      try {
+        let result = handler();
+        if (typeof result === 'function') {
+          activeHandlers[handle] = result;
+        } else if (result && result instanceof Promise) {
+          result.then((result) => {
+            if (typeof result === 'function') {
+              activeHandlers[handle] = result;
+            }
+          }).catch(e => {
+            this.onSystemError(m, e);
+          });
+        }
+      } catch (e) {
+        this.onSystemError(m, e);
+      }
+    }
+  }
+
+  /**
+   * @param {SystemContext} m
+   * @param {Error} e
+   */
+  onSystemError(m, e) {
+    console.error(e);
   }
 
   /**
@@ -127,7 +204,7 @@ export class SystemManager {
     this.initialized = false;
     let systems = this.systems;
     for (let opts of systems.values()) {
-      terminateSystem(opts.context.current, opts);
+      this.onSystemTerminate(opts);
     }
     this.terminated = true;
     return this;
@@ -137,19 +214,7 @@ export class SystemManager {
   update() {
     // Update systems
     for (let opts of this.systems.values()) {
-      let name = opts.context.name;
-
-      // Apply handlers
-      let map = opts.handlers.pending;
-      opts.handlers.pending = {};
-      for (let handle of Object.keys(map)) {
-        let handler = map[handle];
-        try {
-          applyHandler(this, name, handle, handler);
-        } catch (e) {
-          console.error(e);
-        }
-      }
+      this.onSystemUpdate(opts);
     }
     // Dispatch update
     this.dispatchEvent(this.updateEvent);
@@ -167,10 +232,10 @@ export class SystemManager {
       if (this.systems.has(name)) {
         continue;
       }
-      let opts = createSystemOptions(name, this, system, this._userState, []);
-      this.systems.set(name, opts);
-      initializeSystem(system, opts);
-      promises.push(opts.context.__ready__);
+      let context = createSystemContext(name, this, system, [], this._userState);
+      this.systems.set(name, context);
+      this.onSystemInitialize(context);
+      promises.push(context.__ready__);
     }
     await Promise.all(promises);
     return this;
@@ -186,17 +251,17 @@ export class SystemManager {
     if (this.systems.has(name)) {
       return this;
     }
-    let opts = createSystemOptions(
+    let context = createSystemContext(
       name,
       this,
       system,
-      this._userState,
-      initArgs
+      initArgs,
+      this._userState
     );
     if (this.initialized) {
-      initializeSystem(system, opts);
+      this.onSystemInitialize(context);
     }
-    this.systems.set(name, opts);
+    this.systems.set(name, context);
     return this;
   }
 
@@ -211,7 +276,7 @@ export class SystemManager {
     let opts = this.systems.get(name);
     this.systems.delete(name);
     if (this.initialized) {
-      terminateSystem(system, opts);
+      this.onSystemTerminate(opts);
     }
     return this;
   }
@@ -288,60 +353,6 @@ export class SystemManager {
 }
 
 /**
- * @param {System} system
- * @param {SystemOptions} opts
- */
-function initializeSystem(system, opts) {
-  let m = opts.context;
-  // Do initialization...
-  console.log(`Initializing '${m.name}' system...`);
-  let result = system(m, ...opts.initArgs);
-  let ready = m.__ready__;
-  // ...validate result...
-  if (typeof result === 'object' && result instanceof Promise) {
-    result
-      .then((value) => {
-        m.state = value;
-        ready.resolve(value);
-      })
-      .catch((reason) => {
-        ready.reject(reason);
-      });
-  } else {
-    try {
-      m.state = result;
-    } catch (e) {
-      ready.reject(e);
-      return;
-    }
-    ready.resolve(result);
-  }
-}
-
-/**
- * @param {System} system
- * @param {SystemOptions} opts
- */
-function terminateSystem(system, opts) {
-  console.log(`Terminating '${opts.context.name}' system...`);
-  // Clean-up handlers
-  let handlers = opts.handlers.active;
-  opts.handlers.active = {};
-  opts.handlers.pending = {};
-  for (let handler of Object.values(handlers)) {
-    handler();
-  }
-  // Clean-up context
-  let context = opts.context;
-  let ready = context.__ready__;
-  if (ready.pending) {
-    ready.reject('Encountered early termination while initializing system.');
-  }
-  context.__ready__ = new ControlledPromise();
-  context.__handle__ = 1;
-}
-
-/**
  * @param {SystemContext} m
  */
 export function nextAvailableHookHandle(m) {
@@ -363,25 +374,4 @@ export function getSystemId(m, system, name = system.name) {
  */
 export function useSystemUpdate(m, callback) {
   useEvent(m, 'systemUpdate', callback);
-}
-
-function applyHandler(manager, name, handle, handler) {
-  let handlers = manager.systems.get(name).handlers.active;
-  if (handle in handlers) {
-    // End the previous handler.
-    let prev = handlers[handle];
-    prev();
-    delete handlers[handle];
-  }
-  // Start the next handler.
-  let result = handler();
-  if (typeof result === 'function') {
-    handlers[handle] = result;
-  } else if (result && result instanceof Promise) {
-    result.then((result) => {
-      if (typeof result === 'function') {
-        handlers[handle] = result;
-      }
-    });
-  }
 }

@@ -22,7 +22,7 @@ export function assertSystemLoaded(m, system, name = system.name) {
  * @param {string} [name]
  */
 export async function whenSystemLoaded(m, system, name = system.name) {
-  return await m.__manager__.systems.get(name).context.__ready__.then();
+  return await m.__manager__.systems.get(name).__ready__.then();
 }
 
 /**
