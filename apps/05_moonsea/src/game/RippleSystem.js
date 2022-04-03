@@ -68,13 +68,13 @@ function useRippleInit(m, ripples) {
 }
 
 /**
- * @param {SystemContext} m
+ * @param {ReturnType<RippleSystem>} rippleSystem
  * @param {number} x
  * @param {number} y
  * @param {number} now
  */
-export function startRipple(m, x, y, now) {
-  let ripples = getSystemState(m, RippleSystem).ripples;
+export function startRipple(rippleSystem, x, y, now) {
+  let ripples = rippleSystem.ripples;
   let target = null;
   for (let ripple of ripples) {
     if (ripple.dead) {

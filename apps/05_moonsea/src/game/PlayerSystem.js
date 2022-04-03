@@ -2,7 +2,7 @@ import { ComponentClass } from '../ComponentClass.js';
 import { FisherSystem, FISHING_STATE } from './FisherSystem.js';
 import { INPUTS } from '../Inputs.js';
 import { RENDER_PASS_PLAYER } from '../RenderPasses.js';
-import { getSystemState } from '../SystemManager.js';
+import { getSystemState, useSystemState } from '../SystemManager.js';
 import { useDisplayPort } from '../systems/DisplayPortSystem.js';
 import { useFixedGLRenderer } from '../systems/RenderFixedGLSystem.js';
 import { useRenderPass } from '../systems/RenderPassSystem.js';
@@ -41,6 +41,7 @@ function usePlayerInit(m) {
 
 function usePlayerUpdate(m, state) {
   const display = useDisplayPort(m);
+  const fisherSystem = useSystemState(m, FisherSystem);
   useUpdate(m, (dt) => {
     const player = state.player;
     if (!player) {
@@ -57,7 +58,7 @@ function usePlayerUpdate(m, state) {
     player.x += player.motionX;
     player.y = canvasHeight - 200;
 
-    let fisher = getSystemState(m, FisherSystem);
+    let fisher = fisherSystem.current;
     fisher.headX = player.x;
     fisher.headY = player.y;
     if (

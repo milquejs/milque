@@ -5,12 +5,13 @@ import { whenSystemLoaded } from '../BaseHooks.js';
 import { ComponentClass } from '../ComponentClass.js';
 import { loadImage } from '../loader/ImageLoader.js';
 import { RENDER_PASS_FISH } from '../RenderPasses.js';
-import { startRipple } from './RippleSystem.js';
+import { RippleSystem, startRipple } from './RippleSystem.js';
 import { useDisplayPort } from '../systems/DisplayPortSystem.js';
 import { useLoad } from '../systems/LoadSystem.js';
 import { RenderFixedGLSystem, useFixedGLRenderer } from '../systems/RenderFixedGLSystem.js';
 import { useRenderPass } from '../systems/RenderPassSystem.js';
 import { useInit, useUpdate } from '../systems/UpdateSystem.js';
+import { useSystemState } from '../SystemManager.js';
 
 /** @typedef {import('../SystemManager.js').SystemContext} SystemContext */
 
@@ -72,6 +73,7 @@ function useFishInit(m, fishes) {
 
 function useFishUpdater(m, fishes) {
     const DISPLAY = useDisplayPort(m);
+    const rippleSystem = useSystemState(m, RippleSystem);
 
     useUpdate(m, () => {
         const canvasWidth = DISPLAY.width;
@@ -89,7 +91,7 @@ function useFishUpdater(m, fishes) {
                 fish.y = Random.range(canvasHeight - 100, canvasHeight);
             }
             if (Math.floor(now / 10 + fish.y * 10) % 400 === 0 && Math.random() < 0.1) {
-                startRipple(m, fish.x, fish.y - 5, now);
+                startRipple(rippleSystem.current, fish.x, fish.y - 5, now);
             }
         }
     });
