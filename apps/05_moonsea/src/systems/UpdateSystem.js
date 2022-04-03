@@ -1,5 +1,4 @@
-import { assertSystemLoaded } from '../BaseHooks.js';
-import { getSystemId, getSystemState, nextAvailableHookHandle, useEvent, useSystemUpdate } from '../SystemManager.js';
+import { getSystemId, nextAvailableHookHandle, useEvent, usePreloadedSystemState, useSystemUpdate } from '../SystemManager.js';
 
 /**
  * @typedef {import('@milque/display').DisplayPort} DisplayPort
@@ -19,14 +18,13 @@ function createUpdateListener() {
  * @param {() => void} callback
  */
 export function useInit(m, callback) {
-    assertSystemLoaded(m, UpdateSystem);
+    let updateSystem = usePreloadedSystemState(m, UpdateSystem);
     let handle = nextAvailableHookHandle(m);
     let key = `${getSystemId(m, m.current)}.${handle}`;
-    let update = getSystemState(m, UpdateSystem);
-    if (!(key in update.listeners)) {
-        update.listeners[key] = createUpdateListener();
+    if (!(key in updateSystem.listeners)) {
+        updateSystem.listeners[key] = createUpdateListener();
     }
-    update.listeners[key].init.push(callback);
+    updateSystem.listeners[key].init.push(callback);
 }
 
 /**
@@ -34,14 +32,13 @@ export function useInit(m, callback) {
  * @param {(dt: number) => void} callback
  */
 export function useUpdate(m, callback) {
-    assertSystemLoaded(m, UpdateSystem);
+    let updateSystem = usePreloadedSystemState(m, UpdateSystem);
     let handle = nextAvailableHookHandle(m);
     let key = `${getSystemId(m, m.current)}.${handle}`;
-    let update = getSystemState(m, UpdateSystem);
-    if (!(key in update.listeners)) {
-        update.listeners[key] = createUpdateListener();
+    if (!(key in updateSystem.listeners)) {
+        updateSystem.listeners[key] = createUpdateListener();
     }
-    update.listeners[key].loop.push(callback);
+    updateSystem.listeners[key].loop.push(callback);
 }
 
 /**
