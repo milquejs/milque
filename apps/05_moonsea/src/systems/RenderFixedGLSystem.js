@@ -2,7 +2,7 @@ import { assertSystemLoaded, whenSystemLoaded } from '../BaseHooks.js';
 import { DisplayPortSystem, useDisplayPort } from './DisplayPortSystem.js';
 import { DrawContextFixedGLText } from '../renderer/drawcontext/DrawContextFixedGLText.js';
 import { RenderPassSystem } from './RenderPassSystem.js';
-import { getSystemState } from '../SystemManager.js';
+import { getSystemState, usePreloadedSystemState } from '../SystemManager.js';
 
 /**
  * @typedef {import('@milque/display').DisplayPort} DisplayPort
@@ -10,8 +10,7 @@ import { getSystemState } from '../SystemManager.js';
  */
 
 export function useFixedGLRenderer(m) {
-    assertSystemLoaded(m, RenderFixedGLSystem);
-    return getSystemState(m, RenderFixedGLSystem).renderer;
+    return usePreloadedSystemState(m, RenderFixedGLSystem).renderer;
 }
 
 /**

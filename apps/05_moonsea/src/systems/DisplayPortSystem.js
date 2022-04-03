@@ -1,5 +1,5 @@
 import { whenElementLoaded } from '../BaseHooks.js';
-import { getSystemState, useEffect, useEvent } from '../SystemManager.js';
+import { useEffect, useEvent, usePreloadedSystemState } from '../SystemManager.js';
 
 /**
  * @typedef {import('@milque/display').DisplayPort} DisplayPort
@@ -10,7 +10,7 @@ import { getSystemState, useEffect, useEvent } from '../SystemManager.js';
  * @param {SystemContext} m
  */
 export function useDisplayPort(m) {
-    return getSystemState(m, DisplayPortSystem).element;
+    return usePreloadedSystemState(m, DisplayPortSystem).element;
 }
 
 /**
@@ -18,11 +18,10 @@ export function useDisplayPort(m) {
  * @param {(e: CustomEvent) => void} callback
  */
 export function useDisplayPortFrame(m, callback) {
-    const display = useDisplayPort(m);
+    const displayPortSystem = usePreloadedSystemState(m, DisplayPortSystem);
     useEffect(m, () => {
         let wrapper = (e) => {
-            let { loaded } = getSystemState(m, DisplayPortSystem);
-            if (!loaded) {
+            if (!displayPortSystem.loaded) {
                 return;
             }
             try {
@@ -31,6 +30,7 @@ export function useDisplayPortFrame(m, callback) {
                 console.error(e);
             }
         };
+        const display = displayPortSystem.element;
         display.addEventListener('frame', wrapper);
         return () => {
             display.removeEventListener('frame', wrapper);

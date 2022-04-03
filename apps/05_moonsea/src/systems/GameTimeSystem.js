@@ -1,17 +1,17 @@
-import { getSystemState } from '../SystemManager.js';
+import { usePreloadedSystemState, useSystemState } from '../SystemManager.js';
 import { useDisplayPortFrame } from './DisplayPortSystem.js';
 
 /** @typedef {import('../SystemManager.js').SystemContext} SystemContext */
 
 export function useGameTime(m) {
-    const { time } = getSystemState(m, GameTimeSystem);
+    const { time } = usePreloadedSystemState(m, GameTimeSystem);
     return time;
 }
 
 export function useGameTimeChanger(m) {
+    const gameTimeSystem = useSystemState(m, GameTimeSystem);
     function multiplyGameTime(multiplier) {
-        let n = getSystemState(m, GameTimeSystem);
-        n.multiplier = multiplier;
+        gameTimeSystem.current.multiplier = multiplier;
     }
     return [multiplyGameTime];
 }

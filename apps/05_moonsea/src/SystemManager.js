@@ -439,8 +439,11 @@ export function useRef(m) {
  * @returns {{ current: Awaited<ReturnType<T>> }}
  */
 export function useSystemState(m, system, name = system.name) {
+    if (!m || !m.__manager__.systems.has(name)) {
+        throw new Error('System not yet registered. Try preloading the system.');
+    }
     const ref = useRef(m);
-    m.__ready__.then(state => {
+    m.__manager__.systems.get(name).context.__ready__.then(state => {
         ref.current = state;
     });
     return ref;
