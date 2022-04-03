@@ -1,8 +1,8 @@
-import { useEffect } from './SystemManager.js';
+import { useEffect } from './systems/core/index.js';
 
 /**
- * @typedef {import('./SystemManager.js').SystemContext} SystemContext
- * @typedef {import('./SystemManager.js').System} System
+ * @typedef {import('./systems/SystemManager.js').SystemContext} SystemContext
+ * @typedef {import('./systems/SystemManager.js').System} System
  */
 
 /**

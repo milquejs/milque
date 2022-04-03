@@ -1,13 +1,13 @@
 import { whenElementLoaded } from '../BaseHooks.js';
 import {
-  useEffect,
   useEvent,
+  useEffect,
   usePreloadedSystemState,
-} from '../SystemManager.js';
+} from './core/index.js';
 
 /**
  * @typedef {import('@milque/display').DisplayPort} DisplayPort
- * @typedef {import('../SystemManager.js').SystemContext} SystemContext
+ * @typedef {import('./SystemManager.js').SystemContext} SystemContext
  */
 
 /**

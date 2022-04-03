@@ -11,7 +11,7 @@ import { initInputs, INPUTS } from './Inputs.js';
 import { ASSETS, initAssets } from './Assets.js';
 
 import { AssetManager } from '@milque/asset';
-import { SystemManager } from './SystemManager.js';
+import { SystemManager } from './systems/SystemManager.js';
 import { LoadSystem } from './systems/LoadSystem.js';
 import { whenSystemLoaded } from './BaseHooks.js';
 import {
@@ -45,7 +45,7 @@ import {
 /**
  * @typedef {import('@milque/display').DisplayPort} DisplayPort
  * @typedef {import('@milque/input').InputContext} InputContext
- * @typedef {import('./SystemManager.js').SystemContext} SystemContext
+ * @typedef {import('./systems/SystemManager.js').SystemContext} SystemContext
  */
 
 window.addEventListener('DOMContentLoaded', main);

@@ -2,11 +2,11 @@ import { whenSystemLoaded } from '../BaseHooks.js';
 import { DisplayPortSystem, useDisplayPort } from './DisplayPortSystem.js';
 import { DrawContextFixedGLText } from '../renderer/drawcontext/DrawContextFixedGLText.js';
 import { RenderPassSystem } from './RenderPassSystem.js';
-import { usePreloadedSystemState } from '../SystemManager.js';
+import { usePreloadedSystemState } from './core/index.js';
 
 /**
  * @typedef {import('@milque/display').DisplayPort} DisplayPort
- * @typedef {import('../SystemManager.js').SystemContext} SystemContext
+ * @typedef {import('./SystemManager.js').SystemContext} SystemContext
  */
 
 export function useFixedGLRenderer(m) {

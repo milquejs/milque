@@ -1,14 +1,13 @@
+import { useEvent, usePreloadedSystemState } from './core/index.js';
 import {
   getSystemId,
   nextAvailableHookHandle,
-  useEvent,
-  usePreloadedSystemState,
   useSystemUpdate,
-} from '../SystemManager.js';
+} from './SystemManager.js';
 
 /**
  * @typedef {import('@milque/display').DisplayPort} DisplayPort
- * @typedef {import('../SystemManager.js').SystemContext} SystemContext
+ * @typedef {import('./SystemManager.js').SystemContext} SystemContext
  */
 
 function createUpdateListener() {

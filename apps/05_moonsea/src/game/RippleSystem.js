@@ -8,7 +8,7 @@ import { useInit, useUpdate } from '../systems/UpdateSystem.js';
  * @typedef {import('../renderer/drawcontext/DrawContextFixedGLText.js').DrawContextFixedGLText} DrawContextFixedGLText
  */
 
-/** @typedef {import('../SystemManager.js').SystemContext} SystemContext */
+/** @typedef {import('../systems/SystemManager.js').SystemContext} SystemContext */
 
 function Ripple() {
   return {

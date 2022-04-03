@@ -14,9 +14,9 @@ import {
 } from '../systems/RenderFixedGLSystem.js';
 import { useRenderPass } from '../systems/RenderPassSystem.js';
 import { useInit, useUpdate } from '../systems/UpdateSystem.js';
-import { useSystemState } from '../SystemManager.js';
+import { useSystemState } from '../systems/core/index.js';
 
-/** @typedef {import('../SystemManager.js').SystemContext} SystemContext */
+/** @typedef {import('../systems/SystemManager.js').SystemContext} SystemContext */
 
 const FishImage = new AssetRef(
   'fishShadow',

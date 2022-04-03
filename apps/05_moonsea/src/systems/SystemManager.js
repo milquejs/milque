@@ -9,7 +9,8 @@
  * @typedef {{ current: any }} Ref
  */
 
-import { ControlledPromise } from './util/ControlledPromise.js';
+import { ControlledPromise } from '../util/ControlledPromise.js';
+import { useEvent } from './core/index.js';
 
 /**
  * @param {string} name
@@ -383,97 +384,4 @@ function applyHandler(manager, name, handle, handler) {
       }
     });
   }
-}
-
-/**
- * @param {SystemContext} m
- * @param {SystemHandler} handler
- */
-export function useEffect(m, handler) {
-  let handle = nextAvailableHookHandle(m);
-  m.__manager__.systems.get(m.name).handlers.pending[handle] = handler;
-}
-
-/**
- * @param {SystemContext} m
- * @param {string} eventType
- * @param {Function} callback
- */
-export function useEvent(m, eventType, callback) {
-  useEffect(m, () => {
-    let manager = m.__manager__;
-    manager.addEventListener(eventType, callback);
-    return () => {
-      manager.removeEventListener(eventType, callback);
-    };
-  });
-}
-
-/**
- * @param {SystemContext} m
- * @param {SystemEvent} event
- */
-export function dispatchEvent(m, event) {
-  let manager = m.__manager__;
-  manager.dispatchEvent(event);
-}
-
-/**
- * @param {SystemContext} m
- * @returns {{ current: any }}
- */
-export function useRef(m) {
-  const handle = nextAvailableHookHandle(m);
-  const ref = {
-    __ready: false,
-    __current: null,
-    get current() {
-      if (!this.__ready) {
-        throw new Error(
-          'Ref is not yet ready. Try awaiting on owning system before access.'
-        );
-      }
-      return this.__current;
-    },
-    set current(value) {
-      this.__ready = true;
-      this.__current = value;
-    },
-  };
-  m.__refs__[handle] = ref;
-  return ref;
-}
-
-/**
- * @template {SystemLike} T
- * @param {SystemContext} m
- * @param {T} system
- * @param {string} [name]
- * @returns {{ current: Awaited<ReturnType<T>> }}
- */
-export function useSystemState(m, system, name = system.name) {
-  if (!m || !m.__manager__.systems.has(name)) {
-    throw new Error('System not yet registered. Try preloading the system.');
-  }
-  const ref = useRef(m);
-  m.__manager__.systems.get(name).context.__ready__.then((state) => {
-    ref.current = state;
-  });
-  return ref;
-}
-
-/**
- * @template {SystemLike} T
- * @param {SystemContext} m
- * @param {T} system
- * @param {string} [name]
- * @returns {Awaited<ReturnType<T>>}
- */
-export function usePreloadedSystemState(m, system, name = system.name) {
-  if (!m || !m.__manager__.systems.has(name)) {
-    throw new Error(
-      'System not yet loaded. Try await on system before access.'
-    );
-  }
-  return m.__manager__.systems.get(name).context.state;
 }

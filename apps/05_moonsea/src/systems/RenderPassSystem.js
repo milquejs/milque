@@ -1,10 +1,10 @@
 import { whenSystemLoaded } from '../BaseHooks.js';
 import { DisplayPortSystem, useDisplayPortFrame } from './DisplayPortSystem.js';
-import { useEffect, useSystemState } from '../SystemManager.js';
+import { useEffect, useSystemState } from './core/index.js';
 
 /**
  * @typedef {import('@milque/display').DisplayPort} DisplayPort
- * @typedef {import('../SystemManager.js').SystemContext} SystemContext
+ * @typedef {import('./SystemManager.js').SystemContext} SystemContext
  */
 
 /**

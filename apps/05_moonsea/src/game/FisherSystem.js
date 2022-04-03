@@ -9,7 +9,7 @@ import { RENDER_PASS_PLAYER } from '../RenderPasses.js';
 
 /**
  * @typedef {import('../renderer/drawcontext/DrawContextFixedGLText.js').DrawContextFixedGLText} DrawContextFixedGLText
- * @typedef {import('../SystemManager.js').SystemContext} SystemContext
+ * @typedef {import('../systems/SystemManager.js').SystemContext} SystemContext
  */
 
 const REELING_NEAR_RANGE = 4;

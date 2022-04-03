@@ -1,12 +1,12 @@
 import {
-  dispatchEvent,
   useEffect,
+  dispatchEvent,
   usePreloadedSystemState,
-} from '../SystemManager.js';
+} from './core/index.js';
 
 /**
- * @typedef {import('../SystemManager.js').SystemContext} SystemContext
- * @typedef {import('../SystemManager.js').System} System
+ * @typedef {import('./SystemManager.js').SystemContext} SystemContext
+ * @typedef {import('./SystemManager.js').System} System
  */
 
 /**

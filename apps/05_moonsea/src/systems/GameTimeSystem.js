@@ -1,7 +1,7 @@
-import { usePreloadedSystemState, useSystemState } from '../SystemManager.js';
+import { usePreloadedSystemState, useSystemState } from './core/index.js';
 import { useDisplayPortFrame } from './DisplayPortSystem.js';
 
-/** @typedef {import('../SystemManager.js').SystemContext} SystemContext */
+/** @typedef {import('./SystemManager.js').SystemContext} SystemContext */
 
 export function useGameTime(m) {
   const { time } = usePreloadedSystemState(m, GameTimeSystem);
