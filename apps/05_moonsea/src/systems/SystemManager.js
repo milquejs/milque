@@ -9,6 +9,7 @@
  */
 
 import { ControlledPromise } from '../util/ControlledPromise.js';
+import { EffectManager } from './core/EffectManager.js';
 import { useEvent } from './core/index.js';
 
 /**
@@ -30,12 +31,6 @@ function createSystemContext(name, manager, system, args, sharedState) {
     name,
     /** The system function arguments initialized with. */
     args,
-    handlers: {
-      /** @type {Record<number, Function>} */
-      pending: {},
-      /** @type {Record<number, Function>} */
-      active: {},
-    },
     /** The owning manager */
     __manager__: manager,
     /** The next available handle */
@@ -52,6 +47,10 @@ export class SystemManager {
     if (updatesPerSecond <= 0) {
       throw new Error('System manager must have positive updates per second.');
     }
+
+    this.managers = {
+      effects: new EffectManager(this),
+    };
 
     /** @type {Map<string, SystemContext>} */
     this.systems = new Map();
@@ -108,12 +107,12 @@ export class SystemManager {
    * @param {SystemContext} m
    */
   onSystemInitialize(m) {
-    let system = m.current;
-    // Do initialization...
     console.log(`...initializing ${m.name}...`);
-    let result = system(m, ...m.args);
+    for(let manager of Object.values(this.managers)) {
+      manager.onSystemInitialize(m);
+    }
+    let result = m.current(m, ...m.args);
     let ready = m.__ready__;
-    // ...validate result...
     if (typeof result === 'object' && result instanceof Promise) {
       result
         .then((value) => {
@@ -140,12 +139,8 @@ export class SystemManager {
    */
   onSystemTerminate(m) {
     console.log(`...terminating ${m.name}...`);
-    // Clean-up handlers
-    let handlers = m.handlers.active;
-    m.handlers.active = {};
-    m.handlers.pending = {};
-    for (let handler of Object.values(handlers)) {
-      handler();
+    for(let manager of Object.values(this.managers)) {
+      manager.onSystemTerminate(m);
     }
     // Clean-up context
     let context = m;
@@ -161,28 +156,14 @@ export class SystemManager {
    * @param {SystemContext} m
    */
   onSystemUpdate(m) {
-    let name = m.name;
-    let map = m.handlers.pending;
-    m.handlers.pending = {};
-    let activeHandlers = this.systems.get(name).handlers.active;
-    for (let handle of Object.keys(map)) {
-      let handler = map[handle];
-      try {
-        let result = handler();
-        if (typeof result === 'function') {
-          activeHandlers[handle] = result;
-        } else if (result && result instanceof Promise) {
-          result.then((result) => {
-            if (typeof result === 'function') {
-              activeHandlers[handle] = result;
-            }
-          }).catch(e => {
-            this.onSystemError(m, e);
-          });
-        }
-      } catch (e) {
-        this.onSystemError(m, e);
-      }
+    for(let manager of Object.values(this.managers)) {
+      manager.onSystemUpdate(m);
+    }
+  }
+
+  onSystemContextCreate(m) {
+    for(let manager of Object.values(this.managers)) {
+      manager.onSystemContextCreate(m);
     }
   }
 
@@ -233,6 +214,7 @@ export class SystemManager {
         continue;
       }
       let context = createSystemContext(name, this, system, [], this._userState);
+      this.onSystemContextCreate(context);
       this.systems.set(name, context);
       this.onSystemInitialize(context);
       promises.push(context.__ready__);
@@ -258,6 +240,7 @@ export class SystemManager {
       initArgs,
       this._userState
     );
+    this.onSystemContextCreate(context);
     if (this.initialized) {
       this.onSystemInitialize(context);
     }

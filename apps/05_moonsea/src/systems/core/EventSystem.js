@@ -1,4 +1,4 @@
-import { useEffect } from './EffectSystem.js';
+import { useEffect } from './EffectManager.js';
 
 /**
  * @typedef {import('../SystemManager.js').SystemContext} SystemContext
