@@ -1,9 +1,14 @@
+import { MANAGER_POST_UPDATE } from '../SystemEvents.js';
 import { useEffect } from './index.js';
 import { ManagerBase } from './ManagerBase.js';
 
 /**
  * @typedef {import('../SystemManager.js').SystemContext} SystemContext
- * @typedef {import('../SystemManager.js').SystemEvent} SystemEvent
+ * @typedef {import('../SystemManager.js').SystemManager} SystemManager
+ */
+
+/**
+ * @typedef {{ type: string }} SystemEvent
  */
 
 /**
@@ -13,7 +18,7 @@ import { ManagerBase } from './ManagerBase.js';
  */
 export function useEvent(m, eventType, callback) {
     useEffect(m, () => {
-        let eventManager = m.__manager__.managers.events;
+        let eventManager = m.__manager__.events;
         eventManager.addEventListener(eventType, callback);
         return () => {
             eventManager.removeEventListener(eventType, callback);
@@ -26,7 +31,7 @@ export function useEvent(m, eventType, callback) {
  * @param {SystemEvent} event
  */
 export function dispatchEvent(m, event) {
-    let eventManager = m.__manager__.managers.events;
+    let eventManager = m.__manager__.events;
     eventManager.dispatchEvent(event);
 }
 
@@ -37,13 +42,19 @@ const SYSTEM_UPDATE_EVENT = {
 
 export class EventManager extends ManagerBase {
 
-    constructor() {
-        super();
+    /** @param {SystemManager} systems */
+    constructor(systems) {
+        super(systems);
 
         /** @type {Record<string, Array<Function>>} */
         this.listeners = {};
         /** @type {Array<SystemEvent>} */
         this.eventQueue = [];
+
+        /** @protected */
+        this.onPostUpdate = this.onPostUpdate.bind(this);
+        
+        systems.addSystemEventListener(MANAGER_POST_UPDATE, this.onPostUpdate);
     }
 
     /**
@@ -92,12 +103,15 @@ export class EventManager extends ManagerBase {
       this.listeners[eventType] = [];
     }
 
-    /**
-     * @override
-     */
+    /** @protected */
     onPostUpdate() {
         this.dispatchEvent(SYSTEM_UPDATE_EVENT);
         this.pollEvents();
+    }
+
+    /** @protected */
+    onError(e) {
+        console.error(e);
     }
 
     /** @private */
@@ -123,10 +137,5 @@ export class EventManager extends ManagerBase {
                 }
             }
         }
-    }
-
-    /** @protected */
-    onError(e) {
-        console.error(e);
     }
 }

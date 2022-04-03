@@ -1,0 +1,9 @@
+export const CONTEXT_CREATE = 'systemContextCreate';
+export const INITIALIZE = 'systemInitialize';
+export const READY = 'systemReady';
+export const UPDATE = 'systemUpdate';
+export const TERMINATE = 'systemTerminate';
+export const ERROR = 'systemError';
+export const MANAGER_POST_INITIALIZE = 'systemManagerPostInitialize';
+export const MANAGER_POST_UPDATE = 'systemManagerPostUpdate';
+export const MANAGER_POST_TERMINATE = 'systemManagerPostTerminate';

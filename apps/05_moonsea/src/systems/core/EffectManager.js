@@ -1,13 +1,18 @@
 import { nextAvailableHookHandle } from '../SystemManager.js';
 import { ManagerBase } from './ManagerBase.js';
+import { CONTEXT_CREATE, TERMINATE, UPDATE } from '../SystemEvents.js';
 
 /**
  * @typedef {import('../SystemManager.js').SystemContext} SystemContext
+ * @typedef {import('../SystemManager.js').SystemManager} SystemManager
  */
 
 /**
  * @typedef {() => Function|void|Promise<Function|void>} EffectHandler
  */
+
+export const BEFORE_EFFECTS = Symbol('beforeEffects');
+export const AFTER_EFFECTS = Symbol('afterEffects');
 
 /**
  * @param {SystemContext} m
@@ -15,43 +20,59 @@ import { ManagerBase } from './ManagerBase.js';
  */
 export function useEffect(m, handler) {
     let handle = nextAvailableHookHandle(m);
-    m.beforeEffects[handle] = handler;
+    m[BEFORE_EFFECTS][handle] = handler;
 }
 
 export class EffectManager extends ManagerBase {
 
+    /** @param {SystemManager} systems */
+    constructor(systems) {
+        super(systems);
+
+        /** @protected */
+        this.onSystemContextCreate = this.onSystemContextCreate.bind(this);
+        /** @protected */
+        this.onSystemTerminate = this.onSystemTerminate.bind(this);
+        /** @protected */
+        this.onSystemUpdate = this.onSystemUpdate.bind(this);
+
+        systems.addSystemEventListener(CONTEXT_CREATE, this.onSystemContextCreate);
+        systems.addSystemEventListener(TERMINATE, this.onSystemTerminate);
+        systems.addSystemEventListener(UPDATE, this.onSystemUpdate);
+    }
+
     /**
-     * @override
+     * @protected
      * @param {SystemContext} m 
      */
     onSystemContextCreate(m) {
         /** @type {Record<number, EffectHandler>} */
-        m.beforeEffects = {};
+        m[BEFORE_EFFECTS] = {};
         /** @type {Record<number, Function>} */
-        m.afterEffects = {};
+        m[AFTER_EFFECTS] = {};
     }
 
     /**
-     * @override
+     * @protected
      * @param {SystemContext} m 
      */
     onSystemTerminate(m) {
-        let prevAfterEffects = m.afterEffects;
-        m.afterEffects = {};
-        m.beforeEffects = {};
+        let prevAfterEffects = m[AFTER_EFFECTS];
+        m[AFTER_EFFECTS] = {};
+        m[BEFORE_EFFECTS] = {};
         for (let afterEffect of Object.values(prevAfterEffects)) {
             afterEffect();
         }
     }
 
     /**
-     * @override
+     * @protected
      * @param {SystemContext} m 
      */
     onSystemUpdate(m) {
-        let prevBeforeEffects = m.beforeEffects;
-        let nextAfterEffects = m.afterEffects;
-        m.beforeEffects = {};
+        let prevBeforeEffects = m[BEFORE_EFFECTS];
+        let nextAfterEffects = m[AFTER_EFFECTS];
+        m[BEFORE_EFFECTS] = {};
 
         for (let key of Object.keys(prevBeforeEffects)) {
             let beforeEffect = prevBeforeEffects[key];

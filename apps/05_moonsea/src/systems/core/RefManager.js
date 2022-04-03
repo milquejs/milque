@@ -1,13 +1,17 @@
+import { CONTEXT_CREATE, TERMINATE } from '../SystemEvents.js';
 import { nextAvailableHookHandle } from '../SystemManager.js';
 import { ManagerBase } from './ManagerBase.js';
 
 /**
  * @typedef {import('../SystemManager.js').SystemContext} SystemContext
+ * @typedef {import('../SystemManager.js').SystemManager} SystemManager
  */
 
 /**
  * @typedef {{ current: any }} Ref
  */
+
+export const REFS = Symbol('refs');
 
 /**
  * @param {SystemContext} m
@@ -31,23 +35,33 @@ export function useRef(m) {
             this.__current = value;
         },
     };
-    m.refs[handle] = ref;
+    m[REFS][handle] = ref;
     return ref;
 }
 
 export class RefManager extends ManagerBase {
-    constructor() {
-        super();
+
+    /** @param {SystemManager} systems */
+    constructor(systems) {
+        super(systems);
+
+        /** @protected */
+        this.onSystemContextCreate = this.onSystemContextCreate.bind(this);
+        /** @protected */
+        this.onSystemTerminate = this.onSystemTerminate.bind(this);
+
+        systems.addSystemEventListener(CONTEXT_CREATE, this.onSystemContextCreate);
+        systems.addSystemEventListener(TERMINATE, this.onSystemTerminate);
     }
 
-    /** @override */
+    /** @protected */
     onSystemContextCreate(m) {
         /** @type {Record<number, Ref>} */
-        m.refs = {};
+        m[REFS] = {};
     }
 
-    /** @override */
+    /** @protected */
     onSystemTerminate(m) {
-        m.refs = {};
+        m[REFS] = {};
     }
 }
