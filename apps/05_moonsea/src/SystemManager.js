@@ -462,7 +462,3 @@ export function usePreloadedSystemState(m, system, name = system.name) {
     }
     return m.__manager__.systems.get(name).context.state;
 }
-
-export function getSystemState(m, system) {
-    return usePreloadedSystemState(m, system);
-}
