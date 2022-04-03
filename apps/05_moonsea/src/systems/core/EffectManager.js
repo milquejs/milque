@@ -1,47 +1,38 @@
 import { nextAvailableHookHandle } from '../SystemManager.js';
+import { ManagerBase } from './ManagerBase.js';
 
 /**
  * @typedef {import('../SystemManager.js').SystemContext} SystemContext
- * @typedef {import('../SystemManager.js').SystemHandler} SystemHandler
+ */
+
+/**
+ * @typedef {() => Function|void|Promise<Function|void>} EffectHandler
  */
 
 /**
  * @param {SystemContext} m
- * @param {SystemHandler} handler
+ * @param {EffectHandler} handler
  */
 export function useEffect(m, handler) {
     let handle = nextAvailableHookHandle(m);
-    m.__manager__.systems.get(m.name).beforeEffects[handle] = handler;
+    m.beforeEffects[handle] = handler;
 }
 
-export class EffectManager {
-    constructor(systems) {
-        this.systems = systems;
-
-        this.onSystemContextCreate = this.onSystemContextCreate.bind(this);
-        this.onSystemInitialize = this.onSystemInitialize.bind(this);
-        this.onSystemTerminate = this.onSystemTerminate.bind(this);
-        this.onSystemUpdate = this.onSystemUpdate.bind(this);
-        this.onError = this.onError.bind(this);
-    }
+export class EffectManager extends ManagerBase {
 
     /**
+     * @override
      * @param {SystemContext} m 
      */
     onSystemContextCreate(m) {
-        /** @type {Record<number, Function>} */
+        /** @type {Record<number, EffectHandler>} */
         m.beforeEffects = {};
         /** @type {Record<number, Function>} */
         m.afterEffects = {};
     }
 
     /**
-     * @param {SystemContext} m 
-     */
-    onSystemInitialize(m) {
-    }
-
-    /**
+     * @override
      * @param {SystemContext} m 
      */
     onSystemTerminate(m) {
@@ -54,6 +45,7 @@ export class EffectManager {
     }
 
     /**
+     * @override
      * @param {SystemContext} m 
      */
     onSystemUpdate(m) {
@@ -87,26 +79,11 @@ export class EffectManager {
     }
 
     /**
+     * @protected
      * @param {SystemContext} m 
      * @param {Error} e
      */
      onError(m, e) {
         console.error(e);
     }
-}
-
-/**
- * @param {SystemContext} m
- * @returns {Record<number, Function>}
- */
-function getAfterEffects(m) {
-    return m.afterEffects;
-}
-
-/**
- * @param {SystemContext} m
- * @returns {Record<number, Function>}
- */
-function getBeforeEffects(m) {
-    return m.beforeEffects;
 }

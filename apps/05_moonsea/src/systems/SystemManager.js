@@ -3,14 +3,15 @@
  * @typedef {ReturnType<createSystemContext>} SystemContext
  * @typedef {(m: SystemContext, ...args) => SystemState} System
  * @typedef {(m: object, ...args) => object|Promise<object>} SystemLike
- * @typedef {() => Function|void|Promise<Function|void>} SystemHandler
  * @typedef {{ type: string }} SystemEvent
- * @typedef {{ current: any }} Ref
  */
 
 import { ControlledPromise } from '../util/ControlledPromise.js';
 import { EffectManager } from './core/EffectManager.js';
+import { EventManager } from './core/EventManager.js';
+import { UpdateManager } from './core/UpdateManager.js';
 import { useEvent } from './core/index.js';
+import { RefManager } from './core/RefManager.js';
 
 /**
  * @param {string} name
@@ -37,28 +38,23 @@ function createSystemContext(name, manager, system, args, sharedState) {
     __handle__: 1,
     /** A promise that resolves when the system is ready. */
     __ready__: new ControlledPromise(),
-    /** @type {Record<number, Ref>} */
-    __refs__: {},
   };
 }
 
 export class SystemManager {
   constructor(updatesPerSecond = 60) {
-    if (updatesPerSecond <= 0) {
-      throw new Error('System manager must have positive updates per second.');
-    }
+
+    this.onUpdate = this.onUpdate.bind(this);
 
     this.managers = {
-      effects: new EffectManager(this),
+      effects: new EffectManager(),
+      events: new EventManager(),
+      update: new UpdateManager(updatesPerSecond, this.onUpdate),
+      refs: new RefManager(),
     };
 
     /** @type {Map<string, SystemContext>} */
     this.systems = new Map();
-
-    /** @type {Record<string, Array<Function>>} */
-    this.listeners = {};
-    /** @type {Array<SystemEvent>} */
-    this.eventQueue = [];
 
     /** @private */
     this._userState = {};
@@ -67,17 +63,6 @@ export class SystemManager {
     this.initialized = false;
     /** @private */
     this.terminated = true;
-
-    /** @protected */
-    this.update = this.update.bind(this);
-    /** @protected */
-    this.pollEvents = this.pollEvents.bind(this);
-    /** @private */
-    this.updatesPerSecond = updatesPerSecond;
-    /** @private */
-    this.updateEvent = { type: 'systemUpdate' };
-    /** @private */
-    this.intervalHandle = null;
   }
 
   /**
@@ -96,10 +81,7 @@ export class SystemManager {
     }
     await Promise.all(promises);
     this.initialized = true;
-    this.intervalHandle = setInterval(
-      this.update,
-      1_000 / this.updatesPerSecond
-    );
+    this.onPostInitialize();
     return this;
   }
 
@@ -117,21 +99,33 @@ export class SystemManager {
       result
         .then((value) => {
           m.state = value;
+          this.onSystemReady(m);
           ready.resolve(value);
         })
         .catch((reason) => {
+          this.onSystemError(m, reason);
           ready.reject(reason);
         });
     } else {
       try {
         m.state = result;
       } catch (e) {
+        this.onSystemError(m, e);
         ready.reject(e);
         return;
       }
+      this.onSystemReady(m);
       ready.resolve(result);
     }
+  }
 
+  /**
+   * @param {SystemContext} m
+   */
+  onSystemReady(m) {
+    for(let manager of Object.values(this.managers)) {
+      manager.onSystemReady(m);
+    }
   }
 
   /**
@@ -142,14 +136,14 @@ export class SystemManager {
     for(let manager of Object.values(this.managers)) {
       manager.onSystemTerminate(m);
     }
-    // Clean-up context
-    let context = m;
-    let ready = context.__ready__;
+    let ready = m.__ready__;
     if (ready.pending) {
-      ready.reject('Encountered early termination while initializing system.');
+      let error = new Error('Encountered early termination while initializing system.');
+      this.onSystemError(m, error);
+      ready.reject(error);
     }
-    context.__ready__ = new ControlledPromise();
-    context.__handle__ = 1;
+    m.__ready__ = new ControlledPromise();
+    m.__handle__ = 1;
   }
 
   /**
@@ -161,6 +155,9 @@ export class SystemManager {
     }
   }
 
+  /**
+   * @param {SystemContext} m
+   */
   onSystemContextCreate(m) {
     for(let manager of Object.values(this.managers)) {
       manager.onSystemContextCreate(m);
@@ -172,7 +169,35 @@ export class SystemManager {
    * @param {Error} e
    */
   onSystemError(m, e) {
+    for(let manager of Object.values(this.managers)) {
+      manager.onSystemError(m, e);
+    }
     console.error(e);
+  }
+
+  onPostInitialize() {
+    for(let manager of Object.values(this.managers)) {
+      manager.onPostInitialize();
+    }
+  }
+
+  onPostUpdate() {
+    for(let manager of Object.values(this.managers)) {
+      manager.onPostUpdate();
+    }
+  }
+
+  onPostTerminate() {
+    for(let manager of Object.values(this.managers)) {
+      manager.onPostTerminate();
+    }
+  }
+
+  onUpdate() {
+    for (let opts of this.systems.values()) {
+      this.onSystemUpdate(opts);
+    }
+    this.onPostUpdate();
   }
 
   /**
@@ -188,19 +213,8 @@ export class SystemManager {
       this.onSystemTerminate(opts);
     }
     this.terminated = true;
+    this.onPostTerminate();
     return this;
-  }
-
-  /** @protected */
-  update() {
-    // Update systems
-    for (let opts of this.systems.values()) {
-      this.onSystemUpdate(opts);
-    }
-    // Dispatch update
-    this.dispatchEvent(this.updateEvent);
-    // Handle events
-    this.pollEvents();
   }
 
   /**
@@ -256,82 +270,20 @@ export class SystemManager {
     if (!this.systems.has(name)) {
       return this;
     }
-    let opts = this.systems.get(name);
+    let m = this.systems.get(name);
     this.systems.delete(name);
     if (this.initialized) {
-      this.onSystemTerminate(opts);
+      this.onSystemTerminate(m);
     }
     return this;
   }
 
-  pollEvents() {
-    let max = 1_000;
-    while (this.eventQueue.length > 0 && max > 0) {
-      max--;
-      let event = this.eventQueue.shift();
-      let type = event.type;
-      if (type in this.listeners) {
-        let listeners = this.listeners[type];
-        for (let listener of listeners) {
-          try {
-            let result = listener(event);
-            if (result) {
-              break;
-            }
-          } catch (e) {
-            console.error(e);
-          }
-        }
-      }
-    }
-  }
-
   /**
-   * @param {string} eventType
-   * @param {Function} callback
-   * @returns {SystemManager}
+   * @param {System} system 
+   * @param {string} [name] 
    */
-  addEventListener(eventType, callback) {
-    let list;
-    if (!(eventType in this.listeners)) {
-      list = [];
-      this.listeners[eventType] = list;
-    } else {
-      list = this.listeners[eventType];
-    }
-    list.push(callback);
-    return this;
-  }
-
-  /**
-   * @param {string} eventType
-   * @param {Function} callback
-   * @returns {SystemManager}
-   */
-  removeEventListener(eventType, callback) {
-    if (!(eventType in this.listeners)) {
-      return;
-    }
-    let list = this.listeners[eventType];
-    let i = list.indexOf(callback);
-    list.splice(i, 1);
-    return this;
-  }
-
-  /**
-   * @param {string} eventType
-   */
-  clearEventListeners(eventType) {
-    this.listeners[eventType] = [];
-  }
-
-  /**
-   * @param {SystemEvent} event
-   * @returns {SystemManager}
-   */
-  dispatchEvent(event) {
-    this.eventQueue.push(event);
-    return this;
+  getSystemContext(system, name = system.name) {
+    return this.systems.get(name);
   }
 }
 

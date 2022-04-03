@@ -1,12 +1,17 @@
 import { nextAvailableHookHandle } from '../SystemManager.js';
+import { ManagerBase } from './ManagerBase.js';
 
 /**
  * @typedef {import('../SystemManager.js').SystemContext} SystemContext
  */
 
 /**
+ * @typedef {{ current: any }} Ref
+ */
+
+/**
  * @param {SystemContext} m
- * @returns {{ current: any }}
+ * @returns {Ref}
  */
 export function useRef(m) {
     const handle = nextAvailableHookHandle(m);
@@ -26,6 +31,23 @@ export function useRef(m) {
             this.__current = value;
         },
     };
-    m.__refs__[handle] = ref;
+    m.refs[handle] = ref;
     return ref;
+}
+
+export class RefManager extends ManagerBase {
+    constructor() {
+        super();
+    }
+
+    /** @override */
+    onSystemContextCreate(m) {
+        /** @type {Record<number, Ref>} */
+        m.refs = {};
+    }
+
+    /** @override */
+    onSystemTerminate(m) {
+        m.refs = {};
+    }
 }

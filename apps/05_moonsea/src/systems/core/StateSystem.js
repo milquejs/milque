@@ -1,4 +1,4 @@
-import { useRef } from './RefSystem.js';
+import { useRef } from './index.js';
 
 /**
  * @typedef {import('../SystemManager.js').SystemContext} SystemContext
@@ -17,7 +17,7 @@ export function useSystemState(m, system, name = system.name) {
         throw new Error('System not yet registered. Try preloading the system.');
     }
     const ref = useRef(m);
-    m.__manager__.systems.get(name).__ready__.then((state) => {
+    m.__manager__.getSystemContext(system, name).__ready__.then((state) => {
         ref.current = state;
     });
     return ref;
@@ -36,5 +36,5 @@ export function usePreloadedSystemState(m, system, name = system.name) {
             'System not yet loaded. Try await on system before access.'
         );
     }
-    return m.__manager__.systems.get(name).state;
+    return m.__manager__.getSystemContext(system, name).state;
 }

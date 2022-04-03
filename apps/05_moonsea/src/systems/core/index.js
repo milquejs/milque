@@ -1,4 +1,5 @@
 export { useEffect } from './EffectManager.js';
-export { useEvent, dispatchEvent } from './EventSystem.js';
-export { useRef } from './RefSystem.js';
+export { useEvent, dispatchEvent } from './EventManager.js';
+export { useRef } from './RefManager.js';
+
 export { useSystemState, usePreloadedSystemState } from './StateSystem.js';
