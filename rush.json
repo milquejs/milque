@@ -385,6 +385,10 @@
       "projectFolder": "apps/05_moonsea"
     },
     {
+      "packageName": "cosmo",
+      "projectFolder": "apps/06_cosmo"
+    },
+    {
       "packageName": "sandbox",
       "projectFolder": "apps/x0_sandbox"
     },

@@ -46,6 +46,17 @@ export function useUpdate(m, callback) {
   updateSystem.listeners[key].loop.push(callback);
 }
 
+export function whenUpdateReady(m, callback) {
+  let state = usePreloadedSystemState(m, UpdateSystem);
+  if (state.loaded) {
+    callback();
+  } else {
+    useEvent(m, 'loadEnd', () => {
+      callback();
+    });
+  }
+}
+
 /**
  * @template {SystemContext} T
  * @param {T} m

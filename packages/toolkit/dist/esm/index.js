@@ -337,7 +337,10 @@ async function getZipManifest(inFile) {
  * @param {(file: string, stats) => string|Promise<T>} [asyncCallback]
  * @returns {Promise<Array<T>>}
  */
-async function forFiles(dirPath, asyncCallback = async (file, stats) => unixPath(file)) {
+async function forFiles(
+  dirPath,
+  asyncCallback = async (file, stats) => unixPath(file)
+) {
   let dirs = [];
   let errors = [];
   let results = [];

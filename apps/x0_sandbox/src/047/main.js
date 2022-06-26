@@ -4,7 +4,11 @@ import { Random } from '@milque/random';
 
 import * as Starfield from './Starfield.js';
 import * as Inputs from './Inputs.js';
-import * as Assets from './Assets.js';
+import { ASSETS as Assets } from './Assets.js';
+import { AssetManager } from '@milque/asset';
+
+import { AsteroidSystem, getAsteroidList, resetAsteroidSpawnTimer, drawAsteroids, drawAsteroidSpawnTimer, updateAsteroidCollision, updateAsteroidMotion, updateAsteroids, hasAsteroids, clearAsteroids, initSpawnAsteroids, getAsteroidSpawnRanges, explodeAsteroidOnBulletHit } from './Asteroids.js';
+import { createParticle, explode, PLAYER_RADIUS } from './Util.js';
 
 document.title = 'Starfield';
 
@@ -15,56 +19,16 @@ export async function main(game) {
   const { display, assets, inputs } = game;
   const canvas = display.canvas;
   const ctx = canvas.getContext('2d');
-  const mainScene = { load, start, update, render };
+  const mainScene = { load, start, update, render, canvas };
 
-  const PLAYER_RADIUS = 5;
-  const SMALL_ASTEROID_RADIUS = 4;
-  const ASTEROID_RADIUS = 8;
-  const ASTEROID_SPAWN_RANGES = [
-    [
-      -ASTEROID_RADIUS,
-      -ASTEROID_RADIUS,
-      ASTEROID_RADIUS * 2 + canvas.width,
-      ASTEROID_RADIUS,
-    ],
-    [-ASTEROID_RADIUS, 0, ASTEROID_RADIUS, canvas.height],
-    [
-      -ASTEROID_RADIUS,
-      canvas.height,
-      ASTEROID_RADIUS * 2 + canvas.width,
-      ASTEROID_RADIUS,
-    ],
-    [canvas.width, 0, ASTEROID_RADIUS, canvas.height],
-  ];
-  const ASTEROID_SPAWN_RATE = [3000, 10000];
-  const ASTEROID_SPAWN_INIT_COUNT = 1;
-  const MAX_ASTEROID_COUNT = 100;
-  const ASTEROID_SPEED = 1;
+  const POWER_UP_SPEED = 1;
   const BULLET_RADIUS = 2;
   const BULLET_SPEED = 4;
   const MAX_BULLET_AGE = 2000;
   const MAX_BULLET_COUNT = 100;
   const PLAYER_SHOOT_COOLDOWN = 10;
   const PARTICLE_RADIUS = 4;
-  const PARTICLE_SPEED = 2;
   const MAX_PARTICLE_AGE = 600;
-  const ASTEROID_BREAK_DAMP_FACTOR = 0.1;
-  const PLAYER_EXPLODE_PARTICLE_COLORS = [
-    'red',
-    'red',
-    'red',
-    'yellow',
-    'orange',
-  ];
-  const ASTEROID_EXPLODE_PARTICLE_COLORS = [
-    'blue',
-    'blue',
-    'blue',
-    'dodgerblue',
-    'gray',
-    'darkgray',
-    'yellow',
-  ];
   const PLAYER_MOVE_PARTICLE_COLORS = ['gray', 'darkgray', 'lightgray'];
   const INSTRUCTION_HINT_TEXT = '[ wasd_ ]';
   const PLAYER_MOVE_PARTICLE_OFFSET_RANGE = [-2, 2];
@@ -90,16 +54,16 @@ export async function main(game) {
 
   await mainScene.load();
   mainScene.start();
-  display.addEventListener('frame', (e) => {
-    let { deltaTime } = e.detail;
-    mainScene.update(deltaTime);
+  display.addEventListener('frame', (/** @type {CustomEvent} */ e) => {
+    let dt = e.detail.deltaTime;
+    mainScene.update(dt);
     mainScene.render(ctx);
   });
 
   async function load() {
     console.log('Loading...');
     inputs.bindBindings(Object.values(Inputs));
-    Assets.loadAssetRefs(Object.values(Assets));
+    await AssetManager.loadAssetRefs(Object.values(Assets));
     console.log('...loading complete!');
   }
 
@@ -167,38 +131,7 @@ export async function main(game) {
       },
     };
 
-    this.asteroids = [];
-    this.asteroidSpawner = {
-      scene: this,
-      spawnTicks: ASTEROID_SPAWN_RATE[1],
-      reset() {
-        this.spawnTicks = ASTEROID_SPAWN_RATE[1];
-      },
-      spawn() {
-        if (this.scene.asteroids.length > MAX_ASTEROID_COUNT) return;
-        let spawnRange = Random.choose(ASTEROID_SPAWN_RANGES);
-        let asteroid = createAsteroid(
-          this.scene,
-          // X range
-          Random.range(spawnRange[0], spawnRange[0] + spawnRange[2]),
-          // Y range
-          Random.range(spawnRange[1], spawnRange[1] + spawnRange[3]),
-          Random.range(-ASTEROID_SPEED, ASTEROID_SPEED),
-          Random.range(-ASTEROID_SPEED, ASTEROID_SPEED),
-          ASTEROID_RADIUS
-        );
-        this.scene.asteroids.push(asteroid);
-      },
-      update(dt) {
-        if (!this.scene.gamePause) {
-          this.spawnTicks -= dt;
-          if (this.spawnTicks <= 0) {
-            this.spawn();
-            this.spawnTicks = Random.range(...ASTEROID_SPAWN_RATE);
-          }
-        }
-      },
-    };
+    AsteroidSystem(this);
 
     this.bullets = [];
     this.particles = [];
@@ -210,15 +143,15 @@ export async function main(game) {
         // Do nothing.
       },
       spawn() {
-        let spawnRange = Random.choose(ASTEROID_SPAWN_RANGES);
+        let spawnRange = Random.choose(getAsteroidSpawnRanges(this.scene));
         let powerUp = createPowerUp(
           this.scene,
           // X range
           Random.range(spawnRange[0], spawnRange[0] + spawnRange[2]),
           // Y range
           Random.range(spawnRange[1], spawnRange[1] + spawnRange[3]),
-          Random.range(-ASTEROID_SPEED, ASTEROID_SPEED),
-          Random.range(-ASTEROID_SPEED, ASTEROID_SPEED)
+          Random.range(-POWER_UP_SPEED, POWER_UP_SPEED),
+          Random.range(-POWER_UP_SPEED, POWER_UP_SPEED)
         );
         this.scene.powerUps.push(powerUp);
       },
@@ -253,7 +186,7 @@ export async function main(game) {
         this.gameStart = false;
         this.player.powerMode = 0;
         this.powerUps.length = 0;
-        this.asteroidSpawner.reset();
+        resetAsteroidSpawnTimer(this);
         this.powerUpSpawner.reset();
       }
       this.gameWait = false;
@@ -317,11 +250,11 @@ export async function main(game) {
         this.player.x,
         this.player.y,
         -moveControl *
-          Math.cos(this.player.rotation) *
-          PLAYER_MOVE_PARTICLE_DAMP_FACTOR,
+        Math.cos(this.player.rotation) *
+        PLAYER_MOVE_PARTICLE_DAMP_FACTOR,
         -moveControl *
-          Math.sin(this.player.rotation) *
-          PLAYER_MOVE_PARTICLE_DAMP_FACTOR,
+        Math.sin(this.player.rotation) *
+        PLAYER_MOVE_PARTICLE_DAMP_FACTOR,
         Random.choose.bind(null, PLAYER_MOVE_PARTICLE_COLORS)
       );
     }
@@ -341,8 +274,9 @@ export async function main(game) {
     }
 
     // Update bullet collision
+    let asteroids = getAsteroidList(this);
     for (let bullet of this.bullets) {
-      for (let asteroid of this.asteroids) {
+      for (let asteroid of asteroids) {
         if (withinRadius(bullet, asteroid, asteroid.size)) {
           this.flashScore = 1;
           this.score++;
@@ -351,19 +285,9 @@ export async function main(game) {
             this.highScore = this.score;
             localStorage.setItem('highscore', this.highScore);
           }
-          explode(
-            this,
-            asteroid.x,
-            asteroid.y,
-            10,
-            Random.choose.bind(null, ASTEROID_EXPLODE_PARTICLE_COLORS)
-          );
           Assets.SoundPop.current.play();
           bullet.destroy();
-          asteroid.breakUp(
-            bullet.dx * ASTEROID_BREAK_DAMP_FACTOR,
-            bullet.dy * ASTEROID_BREAK_DAMP_FACTOR
-          );
+          explodeAsteroidOnBulletHit(this, asteroid, bullet);
           break;
         }
       }
@@ -384,29 +308,10 @@ export async function main(game) {
     }
 
     // Update asteroid motion
-    for (let asteroid of this.asteroids) {
-      asteroid.x += asteroid.dx;
-      asteroid.y += asteroid.dy;
-
-      // Wrap around
-      wrapAround(asteroid, asteroid.size * 2, asteroid.size * 2);
-    }
+    updateAsteroidMotion(this);
 
     // Update asteroid collision
-    for (let asteroid of this.asteroids) {
-      if (withinRadius(asteroid, this.player, asteroid.size + PLAYER_RADIUS)) {
-        explode(
-          this,
-          asteroid.x,
-          asteroid.y,
-          10,
-          Random.choose.bind(null, ASTEROID_EXPLODE_PARTICLE_COLORS)
-        );
-        asteroid.destroy();
-        killPlayer(this);
-        break;
-      }
-    }
+    updateAsteroidCollision(this);
 
     // Update power-up motion
     for (let powerUp of this.powerUps) {
@@ -437,28 +342,15 @@ export async function main(game) {
     Starfield.updateStarfield(this.starfield);
 
     // Update spawner
-    this.asteroidSpawner.update(dt);
+    updateAsteroids(this, dt);
     this.powerUpSpawner.update(dt);
 
-    if (!this.gamePause && this.asteroids.length <= 0) {
+    if (!this.gamePause && !hasAsteroids(this)) {
       this.gamePause = true;
       this.showPlayer = true;
       Assets.SoundStart.current.play();
       setTimeout(() => (this.gameWait = true), 1000);
     }
-  }
-
-  function drawAsteroid(ctx, asteroid) {
-    ctx.translate(asteroid.x, asteroid.y);
-    ctx.rotate(asteroid.rotation);
-    ctx.fillStyle = 'slategray';
-    ctx.fillRect(
-      -asteroid.size,
-      -asteroid.size,
-      asteroid.size * 2,
-      asteroid.size * 2
-    );
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
   }
 
   function drawPowerUp(ctx, powerUp) {
@@ -539,20 +431,10 @@ export async function main(game) {
     );
 
     // Draw timer
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
-    ctx.font = '24px sans-serif';
-    ctx.textAlign = 'right';
-    ctx.fillText(
-      Math.ceil(this.asteroidSpawner.spawnTicks / 1000),
-      canvas.width,
-      canvas.height - 12
-    );
+    drawAsteroidSpawnTimer(ctx, this);
 
     // Draw asteroid
-    for (let asteroid of this.asteroids) {
-      drawAsteroid(ctx, asteroid);
-      drawCollisionCircle(ctx, asteroid.x, asteroid.y, asteroid.size);
-    }
+    drawAsteroids(ctx, this);
 
     // Draw power-up
     for (let powerUp of this.powerUps) {
@@ -582,10 +464,9 @@ export async function main(game) {
       let yOffset = 0;
       let sizeOffset = 0;
       if (this.flashShootDelta > 0) {
-        ctx.fillStyle = `rgb(${
-          200 * this.flashShootDelta +
+        ctx.fillStyle = `rgb(${200 * this.flashShootDelta +
           55 * Math.sin(performance.now() / (PLAYER_SHOOT_COOLDOWN * 2))
-        }, 0, 0)`;
+          }, 0, 0)`;
         this.flashShootDelta -= FLASH_TIME_STEP;
         sizeOffset = this.flashShootDelta * 2;
         xOffset = this.flashShootDelta;
@@ -641,68 +522,6 @@ export async function main(game) {
     };
   }
 
-  function createAsteroid(scene, x, y, dx, dy, size) {
-    return {
-      scene,
-      x,
-      y,
-      dx,
-      dy,
-      size,
-      rotation: Math.atan2(dy, dx),
-      breakUp(dx = 0, dy = 0) {
-        this.destroy();
-        if (this.size > SMALL_ASTEROID_RADIUS) {
-          let children = [];
-          children.push(
-            createAsteroid(
-              this.scene,
-              this.x + Random.range(-ASTEROID_RADIUS, ASTEROID_RADIUS),
-              this.y + Random.range(-ASTEROID_RADIUS, ASTEROID_RADIUS),
-              Random.range(-ASTEROID_SPEED, ASTEROID_SPEED) + dx,
-              Random.range(-ASTEROID_SPEED, ASTEROID_SPEED) + dy,
-              SMALL_ASTEROID_RADIUS
-            )
-          );
-          children.push(
-            createAsteroid(
-              this.scene,
-              this.x + Random.range(-ASTEROID_RADIUS, ASTEROID_RADIUS),
-              this.y + Random.range(-ASTEROID_RADIUS, ASTEROID_RADIUS),
-              Random.range(-ASTEROID_SPEED, ASTEROID_SPEED) + dx,
-              Random.range(-ASTEROID_SPEED, ASTEROID_SPEED) + dy,
-              SMALL_ASTEROID_RADIUS
-            )
-          );
-          children.push(
-            createAsteroid(
-              this.scene,
-              this.x + Random.range(-ASTEROID_RADIUS, ASTEROID_RADIUS),
-              this.y + Random.range(-ASTEROID_RADIUS, ASTEROID_RADIUS),
-              Random.range(-ASTEROID_SPEED, ASTEROID_SPEED) + dx,
-              Random.range(-ASTEROID_SPEED, ASTEROID_SPEED) + dy,
-              SMALL_ASTEROID_RADIUS
-            )
-          );
-          children.push(
-            createAsteroid(
-              this.scene,
-              this.x + Random.range(-ASTEROID_RADIUS, ASTEROID_RADIUS),
-              this.y + Random.range(-ASTEROID_RADIUS, ASTEROID_RADIUS),
-              Random.range(-ASTEROID_SPEED, ASTEROID_SPEED) + dx,
-              Random.range(-ASTEROID_SPEED, ASTEROID_SPEED) + dy,
-              SMALL_ASTEROID_RADIUS
-            )
-          );
-          this.scene.asteroids.push(...children);
-        }
-      },
-      destroy() {
-        this.scene.asteroids.splice(this.scene.asteroids.indexOf(this), 1);
-      },
-    };
-  }
-
   function createBullet(scene, x, y, dx, dy) {
     return {
       scene,
@@ -718,26 +537,9 @@ export async function main(game) {
     };
   }
 
-  function createParticle(scene, x, y, dx, dy, color) {
-    if (typeof color === 'function') color = color.call(null);
-    return {
-      scene,
-      x,
-      y,
-      dx,
-      dy,
-      rotation: Math.atan2(dy, dx),
-      age: 0,
-      color,
-      destroy() {
-        this.scene.particles.splice(this.scene.particles.indexOf(this), 1);
-      },
-    };
-  }
-
   function nextLevel(scene) {
     scene.bullets.length = 0;
-    scene.asteroids.length = 0;
+    clearAsteroids(scene);
     scene.particles.length = 0;
     scene.player.x = canvas.width / 2;
     scene.player.y = canvas.height / 2;
@@ -747,9 +549,7 @@ export async function main(game) {
     scene.gamePause = false;
     scene.showPlayer = true;
 
-    for (let i = 0; i < ASTEROID_SPAWN_INIT_COUNT * scene.level; ++i) {
-      scene.asteroidSpawner.spawn();
-    }
+    initSpawnAsteroids(scene);
 
     if (Random.next() > POWER_UP_SPAWN_CHANCE) {
       scene.powerUpSpawner.spawn();
@@ -761,27 +561,12 @@ export async function main(game) {
     }
   }
 
-  function killPlayer(scene) {
-    scene.gamePause = true;
-    scene.showPlayer = false;
-    explode(
-      scene,
-      scene.player.x,
-      scene.player.y,
-      100,
-      Random.choose.bind(null, PLAYER_EXPLODE_PARTICLE_COLORS)
-    );
-    Assets.SoundDead.current.play();
-    Assets.SoundBoom.current.play();
-    setTimeout(() => (scene.gameStart = scene.gameWait = true), 1000);
-  }
-
   function thrust(scene, x, y, dx, dy, color) {
     if (Random.next() > 0.3) {
       let particle = createParticle(
         scene,
-        x + Random.range(...PLAYER_MOVE_PARTICLE_OFFSET_RANGE),
-        y + Random.range(...PLAYER_MOVE_PARTICLE_OFFSET_RANGE),
+        x + Random.range(PLAYER_MOVE_PARTICLE_OFFSET_RANGE[0], PLAYER_MOVE_PARTICLE_OFFSET_RANGE[1]),
+        y + Random.range(PLAYER_MOVE_PARTICLE_OFFSET_RANGE[0], PLAYER_MOVE_PARTICLE_OFFSET_RANGE[1]),
         dx,
         dy,
         color
@@ -791,21 +576,6 @@ export async function main(game) {
         MAX_PARTICLE_AGE * MAX_PLAYER_MOVE_PARTICLE_LIFE_RATIO
       );
       scene.particles.push(particle);
-    }
-  }
-
-  function explode(scene, x, y, amount = 10, color) {
-    for (let i = 0; i < amount; ++i) {
-      scene.particles.push(
-        createParticle(
-          scene,
-          x,
-          y,
-          Random.range(-1, 1) * PARTICLE_SPEED,
-          Random.range(-1, 1) * PARTICLE_SPEED,
-          color
-        )
-      );
     }
   }
 }

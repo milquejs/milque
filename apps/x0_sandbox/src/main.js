@@ -32,9 +32,10 @@ import { main as Miners } from './045/main.js';
 import { main as Moonset } from './046/main.js';
 // eslint-disable-next-line no-unused-vars
 import { main as Starfield } from './047/main.js';
+// eslint-disable-next-line no-unused-vars
+import { main as Roomie } from './049/main.js';
 
 /**
- * @typedef {import('@milque/asset').AssetPack} AssetPack
  * @typedef {import('@milque/display').DisplayPort} DisplayPort
  * @typedef {import('@milque/input').InputContext} InputContext
  */
@@ -96,6 +97,7 @@ async function main() {
   // await BreadBox(game);
   // await GerryMan(game);
   // await Miners(game);
-  await Moonset(game);
-  // await Starfield(game);
+  // await Moonset(game);
+  await Starfield(game);
+  // await Roomie(game);
 }

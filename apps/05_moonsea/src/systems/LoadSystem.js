@@ -10,28 +10,29 @@ import {
  */
 
 /**
+ * Load in parallel.
+ * 
  * @param {SystemContext} m
  * @param {() => Promise<?>} asyncLoader
  */
 export function useLoad(m, asyncLoader) {
-  // Always run in parallel.
-  let loadSystem = usePreloadedSystemState(m, LoadSystem);
+  const loadSystem = usePreloadedSystemState(m, LoadSystem);
   const system = m.current;
-  let load;
   if (loadSystem.loads.has(system)) {
-    load = loadSystem.loads.get(system);
+    let loadState = loadSystem.loads.get(system);
+    loadState.loaders.push(asyncLoader);
   } else {
-    load = createSystemLoadState();
-    loadSystem.loads.set(system, load);
+    let loadState = createLoadState();
+    loadState.loaders.push(asyncLoader);
+    loadSystem.loads.set(system, loadState);
   }
-  load.loaders.push(asyncLoader);
 }
 
 /**
  * @param {SystemContext} m
  */
 export function LoadSystem(m) {
-  /** @type {Map<System, ReturnType<createSystemLoadState>>} */
+  /** @type {Map<System, ReturnType<createLoadState>>} */
   const loads = new Map();
   useEffect(m, async () => {
     let promises = [];
@@ -48,7 +49,7 @@ export function LoadSystem(m) {
   };
 }
 
-function createSystemLoadState() {
+function createLoadState() {
   let result = {
     loaders: [],
   };

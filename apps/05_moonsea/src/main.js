@@ -41,6 +41,7 @@ import {
   RENDER_PASS_SEA,
   RENDER_PASS_SKY,
 } from './RenderPasses.js';
+import { Toaster } from './toaster/main.js';
 
 /**
  * @typedef {import('@milque/display').DisplayPort} DisplayPort
@@ -51,6 +52,8 @@ import {
 window.addEventListener('DOMContentLoaded', main);
 
 async function main() {
+  await Toaster();
+  /*
   await AssetManager.loadAssetPack('res.pack');
   let systemManager = new SystemManager();
   await systemManager.preloadSystems([
@@ -70,6 +73,7 @@ async function main() {
     .addSystem(FisherSystem)
     .addSystem(PlayerSystem);
   await systemManager.initialize();
+  */
 }
 
 /**
