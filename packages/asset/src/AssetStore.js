@@ -1,31 +1,4 @@
-import { makeRe } from 'picomatch';
-import { unzip } from 'fflate';
-
-class GlobExp {
-    /**
-     * @param {string|GlobExp} pattern 
-     */
-    constructor(pattern) {
-        let source;
-        if (typeof pattern === 'object' && pattern instanceof GlobExp) {
-            source = pattern.source;
-        } else {
-            source = String(pattern);
-        }
-        this.source = source;
-
-        /** @private */
-        this._re = makeRe(source);
-    }
-
-    /**
-     * @param {string} string 
-     * @returns {boolean}
-     */
-    test(string) {
-        return this._re.test(string);
-    }
-}
+import { GlobExp } from './GlobExp.js';
 
 /**
  * @typedef AssetStore
@@ -35,7 +8,7 @@ class GlobExp {
  */
 
 const FILE_URI_PREFIX_PATTERN = /^([_\w\d]+)\:\/\//;
-const DEFAULT_TIMEOUT$1 = 5_000;
+const DEFAULT_TIMEOUT = 5_000;
 
 /**
  * Load asset using a loader with the given src.
@@ -51,7 +24,7 @@ const DEFAULT_TIMEOUT$1 = 5_000;
  * @param {number} [timeout]
  * @returns {Promise<T>}
  */
- async function loadInStore(store, uri, src, loader, timeout = DEFAULT_TIMEOUT$1) {
+ export async function loadInStore(store, uri, src, loader, timeout = DEFAULT_TIMEOUT) {
     const { cache: globalCache, loadings } = store;
     if (uri in globalCache) {
         return globalCache[uri];
@@ -92,7 +65,7 @@ const DEFAULT_TIMEOUT$1 = 5_000;
  * @param {T} asset
  * @returns {T}
  */
-function cacheInStore(store, uri, asset) {
+export function cacheInStore(store, uri, asset) {
     const { cache, loadings } = store;
     cache[uri] = asset;
     // Send asset to awaiting loaders...
@@ -104,10 +77,28 @@ function cacheInStore(store, uri, asset) {
 }
 
 /**
+ * @template T
+ * @param {AssetStore} store
+ * @param {string|GlobExp} glob
+ * @param {T} asset
+ * @returns {T}
+ */
+export function cacheDefaultInStore(store, glob, asset) {
+    const { defaults } = store;
+    if (typeof glob === 'string') {
+        glob = new GlobExp(glob);
+    }
+    const uri = `__default://[${defaults.length}]`;
+    cacheInStore(store, uri, asset);
+    defaults.push(new Fallback(glob, uri));
+    return asset;
+}
+
+/**
  * @param {AssetStore} store
  * @param {string} uri
  */
-function unloadInStore(store, uri) {
+export function unloadInStore(store, uri) {
     const { cache, loadings } = store;
     if (uri in loadings) {
         loadings[uri].reject(new Error('Stop loading to delete asset.'));
@@ -120,11 +111,42 @@ function unloadInStore(store, uri) {
 
 /**
  * @param {AssetStore} store
+ * @param {string|GlobExp} [glob]
+ * @param {object} [opts] 
+ * @param {boolean} [opts.preserveDefault]
+ */
+export function clearInStore(store, glob = undefined, opts = { preserveDefault: false }) {
+    const { preserveDefault } = opts;
+    if (typeof glob === 'string') {
+        glob = new GlobExp(glob);
+    }
+    const { cache, loadings, defaults } = store;
+    // Clear loadings
+    for (let [uri, loading] of Object.entries(loadings)) {
+        if (!glob || glob.test(uri)) {
+            loading.reject(new Error('Stop loading to clear all assets.'));
+            delete loadings[uri];
+        }
+    }
+    // Clear cache
+    for (let uri of Object.keys(cache)) {
+        if (!glob || glob.test(uri)) {
+            delete cache[uri];
+        }
+    }
+    // Clear defaults
+    if (!preserveDefault) {
+        defaults.length = 0;
+    }
+}
+
+/**
+ * @param {AssetStore} store
  * @param {string} uri
  * @param {number} [timeout]
  * @returns {Promise<object>}
  */
-async function getLoadedInStore(store, uri, timeout = DEFAULT_TIMEOUT$1) {
+export async function getLoadedInStore(store, uri, timeout = DEFAULT_TIMEOUT) {
     const { cache, loadings } = store;
     if (uri in cache) {
         return cache[uri];
@@ -142,7 +164,7 @@ async function getLoadedInStore(store, uri, timeout = DEFAULT_TIMEOUT$1) {
  * @param {string} uri 
  * @returns {object}
  */
-function getDefaultInStore(store, uri) {
+export function getDefaultInStore(store, uri) {
     const { defaults } = store;
     for (let def of defaults) {
         if (def.glob.test(uri)) {
@@ -157,16 +179,54 @@ function getDefaultInStore(store, uri) {
  * @param {string} uri
  * @returns {object}
  */
-function getCurrentInStore(store, uri) {
+export function getCurrentInStore(store, uri) {
     return store.cache[uri];
+}
+
+/**
+ * @param {AssetStore} store
+ * @param {string} uri 
+ * @returns {boolean}
+ */
+export function hasInStore(store, uri) {
+    return Boolean(store.cache[uri]);
 }
 
 /**
  * @param {AssetStore} store
  * @returns {Array<string>}
  */
-function keysInStore(store) {
+export function keysInStore(store) {
     return Object.keys(store.cache);
+}
+
+/**
+ * @param {AssetStore} store
+ * @param {string} uri 
+ * @returns {boolean}
+ */
+export function isAssetCachedInStore(store, uri) {
+    return uri in store.cache;
+}
+
+/**
+ * @param {AssetStore} store
+ * @param {string} uri 
+ * @returns {boolean}
+ */
+export function isAssetLoadingInStore(store, uri) {
+    return uri in store.loadings;
+}
+
+class Fallback {
+    /**
+     * @param {GlobExp} glob 
+     * @param {string} uri 
+     */
+    constructor(glob, uri) {
+        this.glob = glob;
+        this.uri = uri;
+    }
 }
 
 class Loading {
@@ -231,159 +291,3 @@ class Loading {
         }
     }
 }
-
-/** @typedef {import('./AssetStore.js').AssetStore} AssetStore */
-
-/**
- * @template T
- */
-class AssetRef {
-    /**
-     * @param {string} uri 
-     * @param {string} src 
-     * @param {(src: Uint8Array) => Promise<T>} loader 
-     */
-    constructor(uri, src, loader) {
-        this.uri = uri;
-        /** @protected */
-        this.source = src;
-        /** @protected */
-        this.loader = loader;
-        /** @protected */
-        this.store = null;
-    }
-
-    /** @returns {T} */
-    get current() {
-        return getCurrentInStore(this.store, this.uri);
-    }
-
-    /** @returns {T} */
-    get default() {
-        return getDefaultInStore(this.store, this.uri);
-    }
-
-    /** @returns {Promise<T>} */
-    get loaded() {
-        return getLoadedInStore(this.store, this.uri);
-    }
-
-    /**
-     * @param {AssetStore} store
-     * @param {number} [timeout]
-     */
-    async load(store, timeout = undefined) {
-        this.store = store;
-        
-        await loadInStore(this.store, this.uri, this.source, this.loader, timeout);
-        return this;
-    }
-
-    unload() {
-        unloadInStore(this.store, this.uri);
-        this.store = null;
-        return this;
-    }
-
-    /**
-     * @param {T} asset
-     */
-    cache(asset) {
-        cacheInStore(this.store, this.uri, asset);
-        return this;
-    }
-}
-
-const DEFAULT_TIMEOUT = 5_000;
-/** @type {import('./AssetStore.js').AssetStore} */
-const GLOBAL = {
-    cache: {},
-    loadings: {},
-    defaults: [],
-};
-
-/**
- * Fetch asset pack from url and cache raw file content under `raw://`.
- * 
- * @param {string} url
- * @param {(src: Uint8Array, uri: string, path: string) => void} [callback]
- */
-async function loadAssetPack(url, callback = undefined) {
-    let rootPath = 'raw://';
-    let response = await fetch(url);
-    let arrayBuffer = await response.arrayBuffer();
-    await new Promise((resolve, reject) => {
-        unzip(new Uint8Array(arrayBuffer), (err, data) => {
-            if (err) {
-                reject(err);
-            } else {
-                for (let [path, buf] of Object.entries(data)) {
-                    // Standardize WIN paths
-                    path = path.replaceAll('\\', '/');
-                    // Remove the zip directory name
-                    let i = path.indexOf('/');
-                    if (i >= 0) {
-                        path = path.substring(i + 1);
-                    }
-                    // Put the raw file in cache
-                    let uri = rootPath + path;
-                    cacheInStore(GLOBAL, uri, buf);
-                    if (callback) {
-                        callback(buf, uri, path);
-                    }
-                }
-                resolve();
-            }
-        });
-    });
-}
-
-/**
- * This is the same as calling `await AssetRef.load()` for each ref.
- * 
- * @param {Array<AssetRef>} refs 
- * @param {number} [timeout] 
- */
-async function loadAssetRefs(refs, timeout = DEFAULT_TIMEOUT) {
-    let promises = [];
-    for (let ref of refs) {
-        promises.push(ref.load(GLOBAL, timeout));
-    }
-    await Promise.allSettled(promises);
-}
-
-/**
- * @template T
- * @param {string} uri
- * @param {T} asset
- * @returns {T}
- */
-function cache(uri, asset) {
-    return cacheInStore(GLOBAL, uri, asset);
-}
-
-/**
- * @returns {Array<string>}
- */
-function keys() {
-    return keysInStore(GLOBAL);
-}
-
-/**
- * @param {string} uri
- * @returns {object}
- */
-function current(uri) {
-    return getCurrentInStore(GLOBAL, uri);
-}
-
-var AssetManager = /*#__PURE__*/Object.freeze({
-    __proto__: null,
-    loadAssetPack: loadAssetPack,
-    loadAssetRefs: loadAssetRefs,
-    cache: cache,
-    keys: keys,
-    current: current
-});
-
-export { AssetManager, AssetRef, GlobExp };

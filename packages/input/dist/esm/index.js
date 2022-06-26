@@ -512,103 +512,6 @@ class Button extends InputBase {
   }
 }
 
-class KeyCode$1 {
-  /**
-   * @param {string} string
-   * @returns {KeyCode}
-   */
-  static parse(string) {
-    string = string.trim();
-    let i = string.indexOf('.');
-    if (i < 0) {
-      throw new Error('Missing device separator for key code.');
-    }
-    let device = string.substring(0, i);
-    if (device.length < 0) {
-      throw new Error('Missing device for key code.');
-    }
-    let key = string.substring(i + 1);
-    if (key.length < 0) {
-      throw new Error('Missing code for key code.');
-    }
-    return new KeyCode$1(device, key);
-  }
-
-  /**
-   * @param {string} device
-   * @param {string} code
-   */
-  constructor(device, code) {
-    this.device = device;
-    this.code = code;
-  }
-
-  /** @override */
-  toString() {
-    return `${this.device}.${this.code}`;
-  }
-}
-
-function from$1(device, code) {
-  return new KeyCode$1(device, code);
-}
-
-class InputBinding {
-  /** @returns {boolean} */
-  get polling() {
-    if (!this.ref) {
-      return false;
-    }
-    return this.ref.polling;
-  }
-
-  /** @returns {number} */
-  get value() {
-    if (!this.ref || this.disabled) {
-      return 0;
-    }
-    return this.ref.value;
-  }
-
-  /**
-   * @param {string} name
-   */
-  constructor(name) {
-    /** @protected */
-    this.name = name;
-
-    /** @protected */
-    this.ref = null;
-
-    /** @protected */
-    this.disabled = false;
-  }
-
-  /**
-   * @abstract
-   * @param {import('../InputContext.js').InputContext} inputContext
-   */
-  register(inputContext) {
-    throw new Error('Unsupported operation.');
-  }
-
-  disable(force = true) {
-    this.disabled = force;
-    return this;
-  }
-
-  /**
-   * @param {number} code
-   * @returns {number}
-   */
-  getState(code) {
-    if (!this.ref || this.disabled) {
-      return 0;
-    }
-    return this.ref.getState(code);
-  }
-}
-
 class KeyCode {
   /**
    * @param {string} string
@@ -809,6 +712,62 @@ var KeyCodes = /*#__PURE__*/Object.freeze({
   MOUSE_WHEEL_Z: MOUSE_WHEEL_Z
 });
 
+class InputBinding {
+  /** @returns {boolean} */
+  get polling() {
+    if (!this.ref) {
+      return false;
+    }
+    return this.ref.polling;
+  }
+
+  /** @returns {number} */
+  get value() {
+    if (!this.ref || this.disabled) {
+      return 0;
+    }
+    return this.ref.value;
+  }
+
+  /**
+   * @param {string} name
+   */
+  constructor(name) {
+    /** @protected */
+    this.name = name;
+
+    /** @protected */
+    this.ref = null;
+
+    /** @protected */
+    this.disabled = false;
+  }
+
+  /**
+   * @abstract
+   * @param {import('../InputContext.js').InputContext} inputContext
+   */
+  register(inputContext) {
+    throw new Error('Unsupported operation.');
+  }
+
+  disable(force = true) {
+    this.disabled = force;
+    return this;
+  }
+
+  /**
+   * @param {number} code
+   * @returns {number}
+   */
+  getState(code) {
+    if (!this.ref || this.disabled) {
+      return 0;
+    }
+    return this.ref.getState(code);
+  }
+}
+
 /**
  * @param {string|Array<string>} strings
  * @returns {Array<KeyCode>}
@@ -857,7 +816,7 @@ class AxisBinding extends InputBinding {
    * @returns {AxisBinding}
    */
   static fromBind(name, device, code, opts = undefined) {
-    return new AxisBinding(name, from$1(device, code), opts);
+    return new AxisBinding(name, from(device, code), opts);
   }
 
   /**

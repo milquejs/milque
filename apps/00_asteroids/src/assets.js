@@ -1,25 +1,40 @@
-import { AssetManager } from '@milque/asset';
-import { createSound } from './audio.js';
+import { AssetManager, AssetRef } from '@milque/asset';
+import { loadSound } from './SoundLoader.js';
 
-const SOUNDS = {};
+export const Assets = {
+  SoundStart: new AssetRef(
+    'start',
+    'raw://start.wav',
+    loadSound
+  ),
+  SoundDead: new AssetRef(
+    'dead',
+    'raw://dead.wav',
+    loadSound
+  ),
+  SoundPop: new AssetRef(
+    'pop',
+    'raw://boop.wav',
+    loadSound
+  ),
+  SoundShoot: new AssetRef(
+    'shoot',
+    'raw://click.wav',
+    loadSound
+  ),
+  SoundBoom: new AssetRef(
+    'boom',
+    'raw://boom.wav',
+    loadSound
+  ),
+  BackgroundMusic: new AssetRef(
+    'music',
+    'raw://music.wav',
+    loadSound
+  ),
+};
 
-export function sounds() {
-  return SOUNDS;
-}
-
-export async function loadSounds() {
-  await Promise.all([
-    registerSound('start', AssetManager.get('raw://start.wav')),
-    registerSound('dead', AssetManager.get('raw://dead.wav')),
-    registerSound('pop', AssetManager.get('raw://boop.wav')),
-    registerSound('music', AssetManager.get('raw://music.wav')),
-    registerSound('shoot', AssetManager.get('raw://click.wav')),
-    registerSound('boom', AssetManager.get('raw://boom.wav')),
-  ]);
-}
-
-async function registerSound(name, fileData) {
-  let arrayBuffer = new ArrayBuffer(fileData.byteLength);
-  new Uint8Array(arrayBuffer).set(fileData);
-  SOUNDS[name] = await createSound(arrayBuffer);
+export async function loadAssets() {
+  await AssetManager.loadAssetPack('res.pack');
+  AssetManager.loadAssetRefs(Object.values(Assets));
 }

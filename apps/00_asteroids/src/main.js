@@ -2,9 +2,8 @@ import '@milque/display';
 import { Random } from '@milque/random';
 import './error.js';
 
-import { loadSounds, sounds } from './assets.js';
+import { Assets, loadAssets } from './assets.js';
 import * as Starfield from './Starfield.js';
-import { AssetManager } from '@milque/asset';
 
 /**
  * @typedef {import('@milque/display').DisplayPort} DisplayPort
@@ -108,8 +107,7 @@ let SHOW_COLLISION = false;
 
 async function load() {
   console.log('Loading...');
-  await AssetManager.loadAssetPack('res.pack');
-  await loadSounds();
+  await loadAssets();
   console.log('...loading complete!');
 }
 
@@ -162,7 +160,7 @@ function start() {
         this.scene.bullets.push(bullet);
       }
       this.cooldown = PLAYER_SHOOT_COOLDOWN;
-      sounds().shoot.play();
+      Assets.SoundShoot.current.play();
     },
   };
 
@@ -193,7 +191,7 @@ function start() {
         this.spawnTicks -= dt;
         if (this.spawnTicks <= 0) {
           this.spawn();
-          this.spawnTicks = Random.range(...ASTEROID_SPAWN_RATE);
+          this.spawnTicks = Random.range(ASTEROID_SPAWN_RATE[0], ASTEROID_SPAWN_RATE[1]);
         }
       }
     },
@@ -342,7 +340,7 @@ function update(dt) {
           10,
           Random.choose.bind(null, ASTEROID_EXPLODE_PARTICLE_COLORS)
         );
-        sounds().pop.play();
+        Assets.SoundPop.current.play();
         bullet.destroy();
         asteroid.breakUp(
           bullet.dx * ASTEROID_BREAK_DAMP_FACTOR,
@@ -427,7 +425,7 @@ function update(dt) {
   if (!this.gamePause && this.asteroids.length <= 0) {
     this.gamePause = true;
     this.showPlayer = true;
-    sounds().start.play();
+    Assets.SoundStart.current.play();
     setTimeout(() => (this.gameWait = true), 1000);
   }
 }
@@ -726,7 +724,9 @@ function nextLevel(scene) {
     scene.powerUpSpawner.spawn();
   }
 
-  if (!sounds().music.isPlaying()) sounds().music.play({ loop: true });
+  if (!Assets.BackgroundMusic.current.isPlaying()) {
+    Assets.BackgroundMusic.current.play({ loop: true });
+  }
 }
 
 function killPlayer(scene) {
@@ -739,8 +739,8 @@ function killPlayer(scene) {
     100,
     Random.choose.bind(null, PLAYER_EXPLODE_PARTICLE_COLORS)
   );
-  sounds().dead.play();
-  sounds().boom.play();
+  Assets.SoundDead.current.play();
+  Assets.SoundBoom.current.play();
   setTimeout(() => (scene.gameStart = scene.gameWait = true), 1000);
 }
 
@@ -748,8 +748,8 @@ function thrust(scene, x, y, dx, dy, color) {
   if (Random.next() > 0.3) {
     let particle = createParticle(
       scene,
-      x + Random.range(...PLAYER_MOVE_PARTICLE_OFFSET_RANGE),
-      y + Random.range(...PLAYER_MOVE_PARTICLE_OFFSET_RANGE),
+      x + Random.range(PLAYER_MOVE_PARTICLE_OFFSET_RANGE[0], PLAYER_MOVE_PARTICLE_OFFSET_RANGE[1]),
+      y + Random.range(PLAYER_MOVE_PARTICLE_OFFSET_RANGE[0], PLAYER_MOVE_PARTICLE_OFFSET_RANGE[1]),
       dx,
       dy,
       color
@@ -781,7 +781,7 @@ function explode(scene, x, y, amount = 10, color) {
 function onKeyDown(key) {
   if (this.gameWait) {
     if (this.gameStart) {
-      sounds().music.play();
+      Assets.BackgroundMusic.current.play();
       this.score = 0;
       this.flashScore = true;
       this.level = 0;

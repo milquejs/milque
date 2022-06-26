@@ -30,7 +30,7 @@ export class AssetPipeline {
     // Process old assets with new handler...
     for(let uri of AssetManager.keys()) {
       if (stage.matches(uri)) {
-        await handler(AssetManager.getCurrent(uri), uri);
+        await handler(AssetManager.current(uri), uri);
       }
     }
   }

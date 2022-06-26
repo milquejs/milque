@@ -1,19 +1,16 @@
-/** @returns {Promise<Sound>} */
-export async function createSound(arrayBuffer) {
-  let ctx = Sound.AUDIO_CONTEXT;
-  let audioBuffer = await ctx.decodeAudioData(arrayBuffer);
-  return new Sound(ctx, audioBuffer);
-}
+const AUDIO_CONTEXT_SYMBOL = Symbol('audioContext');
 
-class Sound {
+export class Sound {
   /** @returns {AudioContext} */
-  static get AUDIO_CONTEXT() {
-    let result = new AudioContext();
-    autoUnlock(result);
-    Object.defineProperty(this, 'AUDIO_CONTEXT', {
-      value: result,
-    });
-    return result;
+  static getAudioContext() {
+    if (AUDIO_CONTEXT_SYMBOL in this) {
+      return this[AUDIO_CONTEXT_SYMBOL];
+    } else {
+      let result = new AudioContext();
+      autoUnlock(result);
+      this[AUDIO_CONTEXT_SYMBOL] = result;
+      return result;
+    }
   }
 
   /**
@@ -38,17 +35,39 @@ class Sound {
     this.onAudioSourceEnded = this.onAudioSourceEnded.bind(this);
   }
 
+  destroy() {
+    if (this._source) {
+      this._source.disconnect();
+    }
+    this._source = null;
+    this._started = false;
+    this._playing = false;
+  }
+
+  /** @private */
   onAudioSourceEnded() {
     this._playing = false;
   }
 
+  /**
+   * @param {object} [opts]
+   * @param {number} [opts.pitch]
+   * @param {number} [opts.gain]
+   * @param {number} [opts.pan]
+   * @param {boolean} [opts.loop]
+   */
   play(opts = {}) {
     let audioBuffer = this.audioBuffer;
     if (!audioBuffer) return;
     // HACK: This just restarts when played again.
     if (this._source) this.destroy();
 
-    const { pitch = 0, gain = 0, pan = 0, loop = false } = opts;
+    const {
+      pitch = undefined,
+      gain = undefined,
+      pan = undefined,
+      loop = false,
+    } = opts;
 
     /** @type {AudioContext} */
     let audioContext = this.audioContext;
@@ -85,15 +104,6 @@ class Sound {
 
   pause() {
     this._source.stop();
-    this._playing = false;
-  }
-
-  destroy() {
-    if (this._source) {
-      this._source.disconnect();
-    }
-    this._source = null;
-    this._started = false;
     this._playing = false;
   }
 
