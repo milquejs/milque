@@ -6,6 +6,7 @@ dependencies:
   '@rush-temp/asset': file:projects/asset.tgz
   '@rush-temp/asteroids': file:projects/asteroids.tgz
   '@rush-temp/build-tools': file:projects/build-tools.tgz
+  '@rush-temp/cosmo': file:projects/cosmo.tgz
   '@rush-temp/display': file:projects/display.tgz
   '@rush-temp/input': file:projects/input.tgz
   '@rush-temp/laneworld': file:projects/laneworld.tgz
@@ -4203,6 +4204,20 @@ packages:
       integrity: sha512-Y+Xu8H+yIzqr37iLOtDk63ajYlqgkegfJyAPevIuL42DVlwbu4goufJye+sNs0ViOQpQHtJ83O0XFouqIKtT6Q==
       tarball: file:projects/build-tools.tgz
     version: 0.0.0
+  file:projects/cosmo.tgz:
+    dependencies:
+      eslint: 7.25.0
+      eslint-config-prettier: 8.3.0_eslint@7.25.0
+      gl-matrix: 3.3.0
+      prettier: 2.4.1
+      stylelint: 13.13.1
+      stylelint-config-standard: 22.0.0_stylelint@13.13.1
+    dev: false
+    name: '@rush-temp/cosmo'
+    resolution:
+      integrity: sha512-KgJ/lbBYDc3jbUEp2tbsYz/cHNqxkAk7y4IkxNgRe3w5ttX04+NTF1vI1qiTF8arfc5a2fml+VNYuxgwSZh+2g==
+      tarball: file:projects/cosmo.tgz
+    version: 0.0.0
   file:projects/display.tgz:
     dependencies:
       esbuild: 0.11.18
@@ -4408,6 +4423,7 @@ specifiers:
   '@rush-temp/asset': file:./projects/asset.tgz
   '@rush-temp/asteroids': file:./projects/asteroids.tgz
   '@rush-temp/build-tools': file:./projects/build-tools.tgz
+  '@rush-temp/cosmo': file:./projects/cosmo.tgz
   '@rush-temp/display': file:./projects/display.tgz
   '@rush-temp/input': file:./projects/input.tgz
   '@rush-temp/laneworld': file:./projects/laneworld.tgz

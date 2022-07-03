@@ -46,7 +46,7 @@ async function main() {
   /** @type {InputContext} */
   const inputs = /** @type {import('@milque/input').InputPort} */ (document.querySelector('#inputs')).getContext('axisbutton');
   const pipeline = new AssetPipeline();
-  await AssetManager.loadAssetPack('res.pack', (src, uri, path) => AssetManager.cache('res/' + path, src));
+  await AssetManager.loadAssetPackAsRaw('res.pack', (src, uri, path) => AssetManager.cache('res/' + path, src));
   await pipeline.pipe('res/**/*.md', async (assetData, uri) =>
     AssetManager.cache('txt:' + uri.substring(4), await loadText(assetData))
   );

@@ -77,7 +77,7 @@ async function main() {
   inputs.bindButton('Save', 'Keyboard', 'KeyS');
   inputs.bindButton('Load', 'Keyboard', 'KeyL');
 
-  await AssetManager.loadAssetPack('res.pack');
+  await AssetManager.loadAssetPackAsRaw('res.pack');
   await load(AssetManager);
 
   // Initialize world

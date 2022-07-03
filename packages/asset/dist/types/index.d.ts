@@ -91,7 +91,14 @@ type AssetStore = AssetStore$1;
  * @param {string} url
  * @param {(src: Uint8Array, uri: string, path: string) => void} [callback]
  */
-declare function loadAssetPack(url: string, callback?: (src: Uint8Array, uri: string, path: string) => void): Promise<void>;
+declare function loadAssetPackAsRaw(url: string, callback?: (src: Uint8Array, uri: string, path: string) => void): Promise<void>;
+/**
+ * Fetch asset pack from url and cache raw file content under `raw://`.
+ *
+ * @param {string} url
+ * @param {(src: Uint8Array, path: string) => void} callback
+ */
+declare function loadAssetPack(url: string, callback: (src: Uint8Array, path: string) => void): Promise<void>;
 /**
  * This is the same as calling `await AssetRef.load()` for each ref.
  *
@@ -116,6 +123,7 @@ declare function keys(): Array<string>;
  */
 declare function current(uri: string): object;
 
+declare const AssetManager_loadAssetPackAsRaw: typeof loadAssetPackAsRaw;
 declare const AssetManager_loadAssetPack: typeof loadAssetPack;
 declare const AssetManager_loadAssetRefs: typeof loadAssetRefs;
 declare const AssetManager_cache: typeof cache;
@@ -123,6 +131,7 @@ declare const AssetManager_keys: typeof keys;
 declare const AssetManager_current: typeof current;
 declare namespace AssetManager {
   export {
+    AssetManager_loadAssetPackAsRaw as loadAssetPackAsRaw,
     AssetManager_loadAssetPack as loadAssetPack,
     AssetManager_loadAssetRefs as loadAssetRefs,
     AssetManager_cache as cache,

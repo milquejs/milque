@@ -31,7 +31,7 @@ import { AssetManager } from '@milque/asset';
 window.addEventListener('DOMContentLoaded', main);
 async function main() {
   const g = game();
-  await AssetManager.loadAssetPack('res.pack');
+  await AssetManager.loadAssetPackAsRaw('res.pack');
   await start(g);
 }
 

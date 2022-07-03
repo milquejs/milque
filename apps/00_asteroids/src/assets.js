@@ -35,6 +35,6 @@ export const Assets = {
 };
 
 export async function loadAssets() {
-  await AssetManager.loadAssetPack('res.pack');
+  await AssetManager.loadAssetPackAsRaw('res.pack');
   AssetManager.loadAssetRefs(Object.values(Assets));
 }

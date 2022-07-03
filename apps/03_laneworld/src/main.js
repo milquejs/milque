@@ -17,7 +17,7 @@ async function main() {
   /** @type {InputContext} */
   const inputs = document.querySelector('#inputs').getContext('axisbutton');
   const assets = AssetManager;
-  await assets.loadAssetPack('res.pack');
+  await assets.loadAssetPackAsRaw('res.pack');
 
   await AcreWorld.main(display, inputs, assets);
 }

@@ -50,7 +50,7 @@ async function main() {
   attach(inputs);
 
   const assets = AssetManager;
-  await AssetManager.loadAssetPack('res.pack');
+  await AssetManager.loadAssetPackAsRaw('res.pack');
 
   const world = { display };
   await MainRender.load.call(world, assets);

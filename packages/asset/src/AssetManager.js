@@ -16,7 +16,7 @@ const GLOBAL = {
  * @param {string} url
  * @param {(src: Uint8Array, uri: string, path: string) => void} [callback]
  */
-export async function loadAssetPack(url, callback = undefined) {
+export async function loadAssetPackAsRaw(url, callback = undefined) {
     let rootPath = 'raw://';
     let response = await fetch(url);
     let arrayBuffer = await response.arrayBuffer();
@@ -39,6 +39,31 @@ export async function loadAssetPack(url, callback = undefined) {
                     if (callback) {
                         callback(buf, uri, path);
                     }
+                }
+                resolve();
+            }
+        });
+    });
+}
+
+/**
+ * Fetch asset pack from url and cache raw file content under `raw://`.
+ * 
+ * @param {string} url
+ * @param {(src: Uint8Array, path: string) => void} callback
+ */
+ export async function loadAssetPack(url, callback) {
+    let response = await fetch(url);
+    let arrayBuffer = await response.arrayBuffer();
+    await new Promise((resolve, reject) => {
+        unzip(new Uint8Array(arrayBuffer), (err, data) => {
+            if (err) {
+                reject(err);
+            } else {
+                for (let [path, buf] of Object.entries(data)) {
+                    // Standardize WIN paths
+                    path = path.replaceAll('\\', '/');
+                    callback(buf, path);
                 }
                 resolve();
             }
