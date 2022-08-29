@@ -120,30 +120,66 @@ class Random {
     return this.generator.next();
   }
 
+  /**
+   * @template T
+   * @param {Array<T>} list
+   * @returns {T}
+   */
   static choose(list) {
     return this.RAND.choose(list);
   }
+  /**
+   * @template T
+   * @param {Array<T>} list
+   * @returns {T}
+   */
   choose(list) {
     return list[Math.floor(this.generator.next() * list.length)];
   }
 
+  /**
+   * @param {number} min Min range (inclusive)
+   * @param {number} max Max range (exclusive)
+   * @returns {number}
+   */
   static range(min, max) {
     return this.RAND.range(min, max);
   }
+  /**
+   * @param {number} min Min range (inclusive)
+   * @param {number} max Max range (exclusive)
+   * @returns {number}
+   */
   range(min, max) {
     return (max - min) * this.generator.next() + min;
   }
 
+  /**
+   * @param {number} min Min integer range (inclusive)
+   * @param {number} max Max integer range (exclusive)
+   * @returns {number}
+   */
   static rangeInt(min, max) {
     return this.RAND.rangeInt(min, max);
   }
+  /**
+   * @param {number} min Min integer range (inclusive)
+   * @param {number} max Max integer range (exclusive)
+   * @returns {number}
+   */
   rangeInt(min, max) {
     return Math.trunc(this.range(min, max));
   }
 
+  /**
+   * @returns {-1|1}
+   */
   static sign() {
     return this.RAND.sign();
   }
+  /**
+   * @returns {-1|1}
+   */
   sign() {
     return this.generator.next() < 0.5 ? -1 : 1;
   }

@@ -26,6 +26,11 @@ export class AssetRef {
         return getCurrentInStore(this.store, this.uri);
     }
 
+    /** @param {T} value */
+    set current(value) {
+        cacheInStore(this.store, this.uri, value);
+    }
+
     /** @returns {T} */
     get default() {
         return getDefaultInStore(this.store, this.uri);
@@ -39,25 +44,20 @@ export class AssetRef {
     /**
      * @param {AssetStore} store
      * @param {number} [timeout]
+     * @returns {Promise<AssetRef<T>>}
      */
-    async load(store, timeout = undefined) {
+    async preload(store, timeout = undefined) {
         this.store = store;
-        
         await loadInStore(this.store, this.uri, this.source, this.loader, timeout);
         return this;
     }
 
-    unload() {
+    /**
+     * @returns {Promise<AssetRef<T>>}
+     */
+    async unload() {
         unloadInStore(this.store, this.uri);
         this.store = null;
-        return this;
-    }
-
-    /**
-     * @param {T} asset
-     */
-    cache(asset) {
-        cacheInStore(this.store, this.uri, asset);
         return this;
     }
 }

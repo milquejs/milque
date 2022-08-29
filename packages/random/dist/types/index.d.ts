@@ -45,10 +45,28 @@ declare class Random {
      */
     protected static get RAND(): Random;
     static next(): number;
-    static choose(list: any): any;
-    static range(min: any, max: any): any;
-    static rangeInt(min: any, max: any): number;
-    static sign(): 1 | -1;
+    /**
+     * @template T
+     * @param {Array<T>} list
+     * @returns {T}
+     */
+    static choose<T_1>(list: T_1[]): T_1;
+    /**
+     * @param {number} min Min range (inclusive)
+     * @param {number} max Max range (exclusive)
+     * @returns {number}
+     */
+    static range(min: number, max: number): number;
+    /**
+     * @param {number} min Min integer range (inclusive)
+     * @param {number} max Max integer range (exclusive)
+     * @returns {number}
+     */
+    static rangeInt(min: number, max: number): number;
+    /**
+     * @returns {-1|1}
+     */
+    static sign(): -1 | 1;
     /**
      * @param {RandomGeneratorLike|RandomBase|number} [randomGenerator]
      * If number type, the param will be used as a seed for a Mulberry32 PRNG.
@@ -59,10 +77,28 @@ declare class Random {
     constructor(randomGenerator?: RandomGeneratorLike | RandomBase | number);
     generator: RandomBase$1;
     next(): number;
-    choose(list: any): any;
-    range(min: any, max: any): any;
-    rangeInt(min: any, max: any): number;
-    sign(): 1 | -1;
+    /**
+     * @template T
+     * @param {Array<T>} list
+     * @returns {T}
+     */
+    choose<T>(list: T[]): T;
+    /**
+     * @param {number} min Min range (inclusive)
+     * @param {number} max Max range (exclusive)
+     * @returns {number}
+     */
+    range(min: number, max: number): number;
+    /**
+     * @param {number} min Min integer range (inclusive)
+     * @param {number} max Max integer range (exclusive)
+     * @returns {number}
+     */
+    rangeInt(min: number, max: number): number;
+    /**
+     * @returns {-1|1}
+     */
+    sign(): -1 | 1;
 }
 type RandomGeneratorLike = RandomGeneratorLike$1;
 type RandomBase = RandomBase$1;

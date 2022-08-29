@@ -66,6 +66,8 @@ declare class AssetRef<T> {
     protected loader: (src: Uint8Array) => Promise<T>;
     /** @protected */
     protected store: AssetStore$1;
+    /** @param {T} value */
+    set current(arg: T);
     /** @returns {T} */
     get current(): T;
     /** @returns {T} */
@@ -75,13 +77,13 @@ declare class AssetRef<T> {
     /**
      * @param {AssetStore} store
      * @param {number} [timeout]
+     * @returns {Promise<AssetRef<T>>}
      */
-    load(store: AssetStore, timeout?: number): Promise<AssetRef<T>>;
-    unload(): AssetRef<T>;
+    preload(store: AssetStore, timeout?: number): Promise<AssetRef<T>>;
     /**
-     * @param {T} asset
+     * @returns {Promise<AssetRef<T>>}
      */
-    cache(asset: T): AssetRef<T>;
+    unload(): Promise<AssetRef<T>>;
 }
 type AssetStore = AssetStore$1;
 

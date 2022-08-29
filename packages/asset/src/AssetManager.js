@@ -80,7 +80,7 @@ export async function loadAssetPackAsRaw(url, callback = undefined) {
 export async function loadAssetRefs(refs, timeout = DEFAULT_TIMEOUT) {
     let promises = [];
     for (let ref of refs) {
-        promises.push(ref.load(GLOBAL, timeout));
+        promises.push(ref.preload(GLOBAL, timeout));
     }
     await Promise.allSettled(promises);
 }

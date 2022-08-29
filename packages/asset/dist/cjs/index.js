@@ -242,6 +242,7 @@ class Loading {
  * @template T
  */
 class AssetRef {
+
     /**
      * @param {string} uri 
      * @param {string} src 
@@ -262,6 +263,11 @@ class AssetRef {
         return getCurrentInStore(this.store, this.uri);
     }
 
+    /** @param {T} value */
+    set current(value) {
+        cacheInStore(this.store, this.uri, value);
+    }
+
     /** @returns {T} */
     get default() {
         return getDefaultInStore(this.store, this.uri);
@@ -275,25 +281,20 @@ class AssetRef {
     /**
      * @param {AssetStore} store
      * @param {number} [timeout]
+     * @returns {Promise<AssetRef<T>>}
      */
-    async load(store, timeout = undefined) {
+    async preload(store, timeout = undefined) {
         this.store = store;
-        
         await loadInStore(this.store, this.uri, this.source, this.loader, timeout);
         return this;
     }
 
-    unload() {
+    /**
+     * @returns {Promise<AssetRef<T>>}
+     */
+    async unload() {
         unloadInStore(this.store, this.uri);
         this.store = null;
-        return this;
-    }
-
-    /**
-     * @param {T} asset
-     */
-    cache(asset) {
-        cacheInStore(this.store, this.uri, asset);
         return this;
     }
 }
@@ -376,7 +377,7 @@ async function loadAssetPackAsRaw(url, callback = undefined) {
 async function loadAssetRefs(refs, timeout = DEFAULT_TIMEOUT) {
     let promises = [];
     for (let ref of refs) {
-        promises.push(ref.load(GLOBAL, timeout));
+        promises.push(ref.preload(GLOBAL, timeout));
     }
     await Promise.allSettled(promises);
 }
