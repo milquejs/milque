@@ -18,6 +18,7 @@ dependencies:
   '@rush-temp/random': file:projects/random.tgz
   '@rush-temp/sandbox': file:projects/sandbox.tgz
   '@rush-temp/scene': file:projects/scene.tgz
+  '@rush-temp/standalone': file:projects/standalone.tgz
   '@rush-temp/toolkit': file:projects/toolkit.tgz
   '@rush-temp/util': file:projects/util.tgz
   chokidar: 3.5.1
@@ -4382,6 +4383,20 @@ packages:
       integrity: sha512-wgDjowJ3CgiSmAaApWIZnjPHIAx7rRu5jmyOdbGoL7ZNMJEhXQk/+frtyHQ9y4gcP0nKUoWYQ2gBhSOvVyEdrQ==
       tarball: file:projects/scene.tgz
     version: 0.0.0
+  file:projects/standalone.tgz:
+    dependencies:
+      eslint: 7.25.0
+      eslint-config-prettier: 8.3.0_eslint@7.25.0
+      gl-matrix: 3.3.0
+      prettier: 2.4.1
+      stylelint: 13.13.1
+      stylelint-config-standard: 22.0.0_stylelint@13.13.1
+    dev: false
+    name: '@rush-temp/standalone'
+    resolution:
+      integrity: sha512-G2N1KBUi1kRN3oixnJ3GFhapWmTL9IsjqjPg1+Ot8289mv6y1uMvCL1/lSn+KsvJok92InY96b/Mn86td8vB4A==
+      tarball: file:projects/standalone.tgz
+    version: 0.0.0
   file:projects/toolkit.tgz:
     dependencies:
       '@esbuild-plugins/node-modules-polyfill': 0.1.1_esbuild@0.11.18
@@ -4435,6 +4450,7 @@ specifiers:
   '@rush-temp/random': file:./projects/random.tgz
   '@rush-temp/sandbox': file:./projects/sandbox.tgz
   '@rush-temp/scene': file:./projects/scene.tgz
+  '@rush-temp/standalone': file:./projects/standalone.tgz
   '@rush-temp/toolkit': file:./projects/toolkit.tgz
   '@rush-temp/util': file:./projects/util.tgz
   chokidar: ~3.5.1

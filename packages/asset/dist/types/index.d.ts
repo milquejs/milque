@@ -76,10 +76,11 @@ declare class AssetRef<T> {
     get loaded(): Promise<T>;
     /**
      * @param {AssetStore} store
-     * @param {number} [timeout]
+     * @param {number} [timeout] The time to wait until error for loader.
+     * @param {T} [cached] If defined, will cache this value instead of fetch and loading from source.
      * @returns {Promise<AssetRef<T>>}
      */
-    preload(store: AssetStore, timeout?: number): Promise<AssetRef<T>>;
+    preload(store: AssetStore, timeout?: number, cached?: T): Promise<AssetRef<T>>;
     /**
      * @returns {Promise<AssetRef<T>>}
      */

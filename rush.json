@@ -393,6 +393,10 @@
       "projectFolder": "apps/x0_sandbox"
     },
     {
+      "packageName": "standalone",
+      "projectFolder": "apps/x1_standalone"
+    },
+    {
       "packageName": "milque",
       "projectFolder": "bundles/milque"
     },

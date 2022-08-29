@@ -238,7 +238,6 @@ class Loading {
  * @template T
  */
 class AssetRef {
-
     /**
      * @param {string} uri 
      * @param {string} src 
@@ -276,12 +275,17 @@ class AssetRef {
 
     /**
      * @param {AssetStore} store
-     * @param {number} [timeout]
+     * @param {number} [timeout] The time to wait until error for loader.
+     * @param {T} [cached] If defined, will cache this value instead of fetch and loading from source.
      * @returns {Promise<AssetRef<T>>}
      */
-    async preload(store, timeout = undefined) {
+    async preload(store, timeout = undefined, cached = undefined) {
         this.store = store;
-        await loadInStore(this.store, this.uri, this.source, this.loader, timeout);
+        if (typeof cached !== 'undefined') {
+            cacheInStore(store, this.uri, cached);
+        } else {
+            await loadInStore(this.store, this.uri, this.source, this.loader, timeout);
+        }
         return this;
     }
 
