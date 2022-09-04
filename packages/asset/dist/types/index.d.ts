@@ -125,6 +125,11 @@ declare function keys(): Array<string>;
  * @returns {object}
  */
 declare function current(uri: string): object;
+/**
+ * @param {string} uri
+ * @returns {object}
+ */
+declare function get(uri: string): object;
 
 declare const AssetManager_loadAssetPackAsRaw: typeof loadAssetPackAsRaw;
 declare const AssetManager_loadAssetPack: typeof loadAssetPack;
@@ -132,6 +137,7 @@ declare const AssetManager_loadAssetRefs: typeof loadAssetRefs;
 declare const AssetManager_cache: typeof cache;
 declare const AssetManager_keys: typeof keys;
 declare const AssetManager_current: typeof current;
+declare const AssetManager_get: typeof get;
 declare namespace AssetManager {
   export {
     AssetManager_loadAssetPackAsRaw as loadAssetPackAsRaw,
@@ -140,6 +146,7 @@ declare namespace AssetManager {
     AssetManager_cache as cache,
     AssetManager_keys as keys,
     AssetManager_current as current,
+    AssetManager_get as get,
   };
 }
 

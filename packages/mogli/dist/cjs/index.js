@@ -190,254 +190,6 @@ const BufferEnums = {
 };
 
 /**
- * Creates a buffer source given the type and data.
- *
- * @param {WebGLRenderingContextBase} gl The gl context.
- * @param {GLenum} type The data type of the elements in the buffer. Usually,
- * this is `gl.FLOAT` for array buffers or `gl.UNSIGNED_SHORT` for element
- * array buffers. It must be either `gl.BYTE`, `gl.UNSIGNED_BYTE`, `gl.SHORT`,
- * `gl.UNSIGNED_SHORT`, `gl.FLOAT`, or `gl.HALF_FLOAT` for WebGL2.
- * @param {Array<number>} data The buffer source data array.
- * @returns {BufferSource} The typed array buffer containing the given data.
- */
-function createBufferSource(gl, type, data) {
-  const TypedArray = getTypedArrayForBufferType(gl, type);
-  return new TypedArray(data);
-}
-
-/**
- * Create a buffer with the given source.
- *
- * @param {WebGLRenderingContext|WebGL2RenderingContext} gl The gl context.
- * @param {GLenum} target The buffer bind target. Usually, this is `gl.ARRAY_BUFFER` or
- * `gl.ELEMENT_ARRAY_BUFFER`.
- * @param {BufferSource} bufferSource The buffer source array.
- * @param {GLenum} [usage] The buffer usage hint. By default, this is `gl.STATIC_DRAW`.
- * @returns {WebGLBuffer} The created and bound data buffer.
- */
-function createBuffer(gl, target, bufferSource, usage = gl.STATIC_DRAW) {
-  if (!ArrayBuffer.isView(bufferSource))
-    throw new Error('Source data must be a typed array.');
-  let handle = gl.createBuffer();
-  gl.bindBuffer(target, handle);
-  gl.bufferData(target, bufferSource, usage);
-  return handle;
-}
-
-/**
- * @param {WebGLRenderingContextBase} gl 
- * @param {GLenum} bufferType
- */
-function getTypedArrayForBufferType(gl, bufferType) {
-  // NOTE: For WebGL2, gl.HALF_FLOAT (float16) does not have an associated TypedArray.
-  switch (bufferType) {
-    case gl.BYTE:
-      return Int8Array;
-    case gl.UNSIGNED_BYTE:
-      return Uint8Array;
-    case gl.SHORT:
-      return Int16Array;
-    case gl.UNSIGNED_SHORT:
-      return Uint16Array;
-    case gl.INT:
-      return Int32Array;
-    case gl.UNSIGNED_INT:
-      return Uint32Array;
-    case gl.FLOAT:
-      return Float32Array;
-    default:
-      throw new Error(`Cannot find valid typed array for buffer type '${bufferType}'.`);
-  }
-}
-
-/**
- * @param {WebGLRenderingContextBase} gl 
- * @param {BufferSource} bufferSource 
- * @returns {GLenum}
- */
-function getBufferTypeForBufferSource(gl, bufferSource) {
-  if (bufferSource instanceof Int8Array) {
-    return gl.BYTE;
-  } else if (bufferSource instanceof Uint8Array) {
-    return gl.UNSIGNED_BYTE;
-  } else if (bufferSource instanceof Int16Array) {
-    return gl.SHORT;
-  } else if (bufferSource instanceof Uint16Array) {
-    return gl.UNSIGNED_SHORT;
-  } else if (bufferSource instanceof Int32Array) {
-    return gl.INT;
-  } else if (bufferSource instanceof Uint32Array) {
-    return gl.UNSIGNED_INT;
-  } else if (bufferSource instanceof Float32Array) {
-    return gl.FLOAT;
-  } else {
-    throw new Error('Cannot find valid data type for buffer source.');
-  }
-}
-
-const BUFFER_TYPE_BYTE_COUNT = {
-  [BufferEnums.BYTE]: 1,
-  [BufferEnums.UNSIGNED_BYTE]: 1,
-  [BufferEnums.SHORT]: 2,
-  [BufferEnums.UNSIGNED_SHORT]: 2,
-  [BufferEnums.INT]: 4,
-  [BufferEnums.UNSIGNED_INT]: 4,
-  [BufferEnums.FLOAT]: 4,
-  [BufferEnums.HALF_FLOAT]: 2,
-};
-function getByteCountForBufferType(gl, bufferType) {
-  return BUFFER_TYPE_BYTE_COUNT[bufferType];
-}
-
-/**
- * @param {WebGLRenderingContextBase} gl 
- * @param {Int8ArrayConstructor
- * |Uint8ArrayConstructor
- * |Int16ArrayConstructor
- * |Uint16ArrayConstructor
- * |Int32ArrayConstructor
- * |Uint32ArrayConstructor
- * |Float32ArrayConstructor} typedArray 
- * @returns {GLenum}
- */
-function getBufferTypeForTypedArray(gl, typedArray) {
-  // NOTE: For WebGL2, gl.HALF_FLOAT (float16) does not have an associated TypedArray.
-  switch (typedArray) {
-    case Int8Array:
-      return gl.BYTE;
-    case Uint8Array:
-      return gl.UNSIGNED_BYTE;
-    case Int16Array:
-      return gl.SHORT;
-    case Uint16Array:
-      return gl.UNSIGNED_SHORT;
-    case Int32Array:
-      return gl.INT;
-    case Uint32Array:
-      return gl.UNSIGNED_INT;
-    case Float32Array:
-      return gl.FLOAT;
-    default:
-      throw new Error('Cannot find valid buffer type for typed array.');
-  }
-}
-
-/**
- * @param {WebGLRenderingContextBase} gl 
- * @param {GLenum} target 
- * @param {WebGLBuffer} buffer 
- * @returns {GLenum}
- */
-function getBufferUsage(gl, target, buffer) {
-  gl.bindBuffer(target, buffer);
-  return gl.getBufferParameter(target, gl.BUFFER_USAGE);
-}
-
-/**
- * @param {WebGLRenderingContextBase} gl 
- * @param {GLenum} target 
- * @param {WebGLBuffer} buffer 
- * @returns {GLenum}
- */
-function getBufferByteCount(gl, target, buffer) {
-  gl.bindBuffer(target, buffer);
-  return gl.getBufferParameter(target, gl.BUFFER_SIZE);
-}
-
-/**
- * @param {WebGLRenderingContextBase} gl 
- * @param {GLenum} target 
- * @param {WebGLBuffer} buffer 
- * @returns {GLenum}
- */
-function getBufferLength(gl, target, buffer, type) {
-  return Math.trunc(getBufferByteCount(gl, target, buffer) / getByteCountForBufferType(gl, type));
-}
-
-var BufferHelper = /*#__PURE__*/Object.freeze({
-  __proto__: null,
-  createBufferSource: createBufferSource,
-  createBuffer: createBuffer,
-  getTypedArrayForBufferType: getTypedArrayForBufferType,
-  getBufferTypeForBufferSource: getBufferTypeForBufferSource,
-  getByteCountForBufferType: getByteCountForBufferType,
-  getBufferTypeForTypedArray: getBufferTypeForTypedArray,
-  getBufferUsage: getBufferUsage,
-  getBufferByteCount: getBufferByteCount,
-  getBufferLength: getBufferLength
-});
-
-class BufferInfoBuilder {
-  /**
-   * @param {WebGLRenderingContext|WebGL2RenderingContext} gl The gl context.
-   * @param {GLenum} target The buffer bind target. Usually, this is
-   * `gl.ARRAY_BUFFER` or `gl.ELEMENT_ARRAY_BUFFER`.
-   * @param {WebGLBuffer} [buffer] The buffer handle. If undefined, a
-   * new buffer will be created.
-   */
-  constructor(gl, target, buffer = undefined) {
-    /** @private */
-    this.bufferBuilder = new BufferBuilder(gl, target, buffer);
-    /** @private */
-    this.bufferType = gl.FLOAT;
-  }
-
-  get gl() {
-    return this.bufferBuilder.gl;
-  }
-
-  get handle() {
-    return this.bufferBuilder.handle;
-  }
-
-  get target() {
-    return this.bufferBuilder.target;
-  }
-
-  /**
-   * @param {BufferSource|number} srcDataOrSize The buffer data source or the buffer size in bytes.
-   * @param {GLenum} [usage] The buffer data usage. By default, this is `gl.STATIC_DRAW`.
-   * @returns {BufferInfoBuilder}
-   */
-  data(srcDataOrSize, usage = undefined) {
-    this.bufferBuilder.data(srcDataOrSize, usage);
-    if (typeof srcDataOrSize !== 'number') {
-      this.bufferType = getBufferTypeForBufferSource(this.gl, srcDataOrSize);
-    }
-    return this;
-  }
-
-  /**
-   * @param {BufferSource} srcData The buffer data source.
-   * @param {number} [dstOffset] The destination byte offset to put the data.
-   * @param {number} [srcOffset] The source array index offset to copy the data from.
-   * @param {number} [srcLength] The source array count to copy the data until.
-   * @returns {BufferInfoBuilder}
-   */
-  subData(
-    srcData,
-    dstOffset = undefined,
-    srcOffset = undefined,
-    srcLength = undefined
-  ) {
-    this.bufferBuilder.subData(srcData, dstOffset, srcOffset, srcLength);
-    this.bufferType = getBufferTypeForBufferSource(this.gl, srcData);
-    return this;
-  }
-
-  /**
-   * @returns {BufferInfo}
-   */
-  build() {
-    const handle = this.bufferBuilder.build();
-    const gl = this.gl;
-    const target = this.target;
-    const type = this.bufferType;
-    return new BufferInfo(gl, target, type, handle);
-  }
-}
-
-/**
  * Get list of parameter infos for all active uniforms in the shader program.
  *
  * @param {WebGLRenderingContextBase} gl The webgl context.
@@ -744,9 +496,10 @@ function attributeFloatMatrixBufferImpl(matrixLength, matrixSize, index, buffer,
 /**
  * @typedef ActiveAttributeInfo
  * @property {GLenum} type
- * @property {number} length
+ * @property {number} size
  * @property {number} location
- * @property {AttributeFunction} set
+ * @property {AttributeFunction} applier
+ * @property {number|Float32List|Int32List|Uint32List} value
  */
 
 /**
@@ -765,12 +518,15 @@ function getActiveAttribsInfo(gl, program) {
     const attributeSize = activeInfo.size;
     const attributeType = activeInfo.type;
     const attributeLocation = gl.getAttribLocation(program, attributeName);
-    const attributeSet = getAttributeFunction(gl, attributeType);
+    const attributeApplier = getAttributeFunction(gl, attributeType);
     result[attributeName] = {
       type: attributeType,
-      length: attributeSize,
+      size: attributeSize,
       location: attributeLocation,
-      set: attributeSet,
+      applier: attributeApplier,
+      set value([buffer, vertexSize, bufferType, normalize, stride, offset, divisor]) {
+        this.applier(this.location, buffer, vertexSize, bufferType, normalize, stride, offset, divisor);
+      }
     };
   }
   return result;
@@ -886,7 +642,11 @@ var ProgramHelper = /*#__PURE__*/Object.freeze({
   draw: draw,
   getProgramStatus: getProgramStatus,
   getActiveUniforms: getActiveUniforms,
-  getActiveAttribs: getActiveAttribs
+  getActiveAttribs: getActiveAttribs,
+  createProgramInfo: createProgramInfo,
+  linkProgramShaders: linkProgramShaders,
+  bindProgramAttributes: bindProgramAttributes,
+  bindProgramUniforms: bindProgramUniforms
 });
 
 /**
@@ -1397,9 +1157,10 @@ var ProgramUniformFunctions = /*#__PURE__*/Object.freeze({
 /**
  * @typedef ActiveUniformInfo
  * @property {number} type
- * @property {number} length
+ * @property {number} size
  * @property {WebGLUniformLocation} location
- * @property {UniformFunction} set
+ * @property {UniformFunction} applier
+ * @property {number|Float32List|Int32List|Uint32List} value
  */
 
 /**
@@ -1418,12 +1179,15 @@ function getActiveUniformsInfo(gl, program) {
     const uniformSize = activeInfo.size;
     const uniformType = activeInfo.type;
     const uniformLocation = gl.getUniformLocation(program, uniformName);
-    const uniformSet = getUniformFunction(gl, uniformType);
+    const uniformApplier = getUniformFunction(gl, uniformType);
     result[uniformName] = {
       type: uniformType,
-      length: uniformSize,
+      size: uniformSize,
       location: uniformLocation,
-      set: uniformSet,
+      applier: uniformApplier,
+      set value(value) {
+        this.applier.call(gl, this.location, value);
+      }
     };
   }
   return result;
@@ -1448,7 +1212,7 @@ function getActiveUniformsInfo(gl, program) {
  * @param {WebGLProgram} program
  * @returns {ProgramInfo}
  */
-function getProgramInfo(gl, program) {
+function createProgramInfo(gl, program) {
     return {
         handle: program,
         attributes: getActiveAttribsInfo(gl, program),
@@ -1480,7 +1244,7 @@ async function linkProgramShaders(gl, program, shaderSources, shaderTypes = [gl.
 
 /**
  * @param {WebGLRenderingContextBase} gl 
- * @param {ReturnType<getProgramInfo>} programInfo 
+ * @param {ReturnType<createProgramInfo>} programInfo 
  * @param {BufferInfo|VertexArrayObjectInfo} bufferOrVertexArrayObjectInfo 
  */
 function bindProgramAttributes(gl, programInfo, bufferOrVertexArrayObjectInfo) {
@@ -1499,8 +1263,8 @@ function bindProgramAttributes(gl, programInfo, bufferOrVertexArrayObjectInfo) {
                 throw new Error(`Missing buffer for attribute '${name}'.`);
             }
             let attrib = bufferInfo.attributes[name];
-            let { location, set } = attributeInfos[attrib.name];
-            set.call(gl, location, attrib.buffer, attrib.size, attrib.type, attrib.normalize, attrib.stride, attrib.offset, attrib.divisor);
+            let { location, applier } = attributeInfos[attrib.name];
+            applier.call(gl, location, attrib.buffer, attrib.size, attrib.type, attrib.normalize, attrib.stride, attrib.offset, attrib.divisor);
         }
         if (bufferInfo.element) {
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, bufferInfo.element.buffer);
@@ -1510,25 +1274,17 @@ function bindProgramAttributes(gl, programInfo, bufferOrVertexArrayObjectInfo) {
 
 /**
  * @param {WebGLRenderingContextBase} gl 
- * @param {ReturnType<getProgramInfo>} programInfo 
- * @param {Record<string, ?>} uniforms
+ * @param {ReturnType<createProgramInfo>} programInfo 
+ * @param {Record<string, number|Float32List|Int32List|Uint32List>} uniforms
  */
 function bindProgramUniforms(gl, programInfo, uniforms) {
     let uniformInfos = programInfo.uniforms;
     for(let name in uniforms) {
         let value = uniforms[name];
-        let { location, set } = uniformInfos[name];
-        set.call(gl, location, value);
+        let { location, applier } = uniformInfos[name];
+        applier.call(gl, location, value);
     }
 }
-
-var ProgramInfoHelper = /*#__PURE__*/Object.freeze({
-  __proto__: null,
-  getProgramInfo: getProgramInfo,
-  linkProgramShaders: linkProgramShaders,
-  bindProgramAttributes: bindProgramAttributes,
-  bindProgramUniforms: bindProgramUniforms
-});
 
 /**
  * @typedef {WebGLBuffer|BufferSource|Array<number>} AttribBufferLike
@@ -1619,10 +1375,10 @@ function createVertexArrayInfo(gl, bufferInfo, programInfos) {
 
 /**
  * @param {WebGLRenderingContextBase} gl 
- * @param {BufferInfo} bufferInfo 
+ * @param {BufferInfo|VertexArrayObjectInfo} bufferOrVertexArrayObjectInfo 
  */
-function drawBufferInfo(gl, bufferInfo, mode = gl.TRIANGLES, offset = 0, vertexCount = bufferInfo.vertexCount, instanceCount = undefined) {
-    let element = bufferInfo.element;
+function drawBufferInfo(gl, bufferOrVertexArrayObjectInfo, mode = gl.TRIANGLES, offset = 0, vertexCount = bufferOrVertexArrayObjectInfo.vertexCount, instanceCount = undefined) {
+    let element = bufferOrVertexArrayObjectInfo.element;
     if (element) {
         let elementType = element.type;
         if (instanceCount !== undefined) {
@@ -1867,12 +1623,256 @@ function createArrayAttrib(name, buffer, length, size, type, normalize, stride, 
     };
 }
 
-var BufferInfoHelper = /*#__PURE__*/Object.freeze({
+/**
+ * Creates a buffer source given the type and data.
+ *
+ * @param {WebGLRenderingContextBase} gl The gl context.
+ * @param {GLenum} type The data type of the elements in the buffer. Usually,
+ * this is `gl.FLOAT` for array buffers or `gl.UNSIGNED_SHORT` for element
+ * array buffers. It must be either `gl.BYTE`, `gl.UNSIGNED_BYTE`, `gl.SHORT`,
+ * `gl.UNSIGNED_SHORT`, `gl.FLOAT`, or `gl.HALF_FLOAT` for WebGL2.
+ * @param {Array<number>} data The buffer source data array.
+ * @returns {BufferSource} The typed array buffer containing the given data.
+ */
+function createBufferSource(gl, type, data) {
+  const TypedArray = getTypedArrayForBufferType(gl, type);
+  return new TypedArray(data);
+}
+
+/**
+ * Create a buffer with the given source.
+ *
+ * @param {WebGLRenderingContext|WebGL2RenderingContext} gl The gl context.
+ * @param {GLenum} target The buffer bind target. Usually, this is `gl.ARRAY_BUFFER` or
+ * `gl.ELEMENT_ARRAY_BUFFER`.
+ * @param {BufferSource} bufferSource The buffer source array.
+ * @param {GLenum} [usage] The buffer usage hint. By default, this is `gl.STATIC_DRAW`.
+ * @returns {WebGLBuffer} The created and bound data buffer.
+ */
+function createBuffer(gl, target, bufferSource, usage = gl.STATIC_DRAW) {
+  if (!ArrayBuffer.isView(bufferSource))
+    throw new Error('Source data must be a typed array.');
+  let handle = gl.createBuffer();
+  gl.bindBuffer(target, handle);
+  gl.bufferData(target, bufferSource, usage);
+  return handle;
+}
+
+/**
+ * @param {WebGLRenderingContextBase} gl 
+ * @param {GLenum} bufferType
+ */
+function getTypedArrayForBufferType(gl, bufferType) {
+  // NOTE: For WebGL2, gl.HALF_FLOAT (float16) does not have an associated TypedArray.
+  switch (bufferType) {
+    case gl.BYTE:
+      return Int8Array;
+    case gl.UNSIGNED_BYTE:
+      return Uint8Array;
+    case gl.SHORT:
+      return Int16Array;
+    case gl.UNSIGNED_SHORT:
+      return Uint16Array;
+    case gl.INT:
+      return Int32Array;
+    case gl.UNSIGNED_INT:
+      return Uint32Array;
+    case gl.FLOAT:
+      return Float32Array;
+    default:
+      throw new Error(`Cannot find valid typed array for buffer type '${bufferType}'.`);
+  }
+}
+
+/**
+ * @param {WebGLRenderingContextBase} gl 
+ * @param {BufferSource} bufferSource 
+ * @returns {GLenum}
+ */
+function getBufferTypeForBufferSource(gl, bufferSource) {
+  if (bufferSource instanceof Int8Array) {
+    return gl.BYTE;
+  } else if (bufferSource instanceof Uint8Array) {
+    return gl.UNSIGNED_BYTE;
+  } else if (bufferSource instanceof Int16Array) {
+    return gl.SHORT;
+  } else if (bufferSource instanceof Uint16Array) {
+    return gl.UNSIGNED_SHORT;
+  } else if (bufferSource instanceof Int32Array) {
+    return gl.INT;
+  } else if (bufferSource instanceof Uint32Array) {
+    return gl.UNSIGNED_INT;
+  } else if (bufferSource instanceof Float32Array) {
+    return gl.FLOAT;
+  } else {
+    throw new Error('Cannot find valid data type for buffer source.');
+  }
+}
+
+const BUFFER_TYPE_BYTE_COUNT = {
+  [BufferEnums.BYTE]: 1,
+  [BufferEnums.UNSIGNED_BYTE]: 1,
+  [BufferEnums.SHORT]: 2,
+  [BufferEnums.UNSIGNED_SHORT]: 2,
+  [BufferEnums.INT]: 4,
+  [BufferEnums.UNSIGNED_INT]: 4,
+  [BufferEnums.FLOAT]: 4,
+  [BufferEnums.HALF_FLOAT]: 2,
+};
+function getByteCountForBufferType(gl, bufferType) {
+  return BUFFER_TYPE_BYTE_COUNT[bufferType];
+}
+
+/**
+ * @param {WebGLRenderingContextBase} gl 
+ * @param {Int8ArrayConstructor
+ * |Uint8ArrayConstructor
+ * |Int16ArrayConstructor
+ * |Uint16ArrayConstructor
+ * |Int32ArrayConstructor
+ * |Uint32ArrayConstructor
+ * |Float32ArrayConstructor} typedArray 
+ * @returns {GLenum}
+ */
+function getBufferTypeForTypedArray(gl, typedArray) {
+  // NOTE: For WebGL2, gl.HALF_FLOAT (float16) does not have an associated TypedArray.
+  switch (typedArray) {
+    case Int8Array:
+      return gl.BYTE;
+    case Uint8Array:
+      return gl.UNSIGNED_BYTE;
+    case Int16Array:
+      return gl.SHORT;
+    case Uint16Array:
+      return gl.UNSIGNED_SHORT;
+    case Int32Array:
+      return gl.INT;
+    case Uint32Array:
+      return gl.UNSIGNED_INT;
+    case Float32Array:
+      return gl.FLOAT;
+    default:
+      throw new Error('Cannot find valid buffer type for typed array.');
+  }
+}
+
+/**
+ * @param {WebGLRenderingContextBase} gl 
+ * @param {GLenum} target 
+ * @param {WebGLBuffer} buffer 
+ * @returns {GLenum}
+ */
+function getBufferUsage(gl, target, buffer) {
+  gl.bindBuffer(target, buffer);
+  return gl.getBufferParameter(target, gl.BUFFER_USAGE);
+}
+
+/**
+ * @param {WebGLRenderingContextBase} gl 
+ * @param {GLenum} target 
+ * @param {WebGLBuffer} buffer 
+ * @returns {GLenum}
+ */
+function getBufferByteCount(gl, target, buffer) {
+  gl.bindBuffer(target, buffer);
+  return gl.getBufferParameter(target, gl.BUFFER_SIZE);
+}
+
+/**
+ * @param {WebGLRenderingContextBase} gl 
+ * @param {GLenum} target 
+ * @param {WebGLBuffer} buffer 
+ * @returns {GLenum}
+ */
+function getBufferLength(gl, target, buffer, type) {
+  return Math.trunc(getBufferByteCount(gl, target, buffer) / getByteCountForBufferType(gl, type));
+}
+
+var BufferHelper = /*#__PURE__*/Object.freeze({
   __proto__: null,
+  createBufferSource: createBufferSource,
+  createBuffer: createBuffer,
+  getTypedArrayForBufferType: getTypedArrayForBufferType,
+  getBufferTypeForBufferSource: getBufferTypeForBufferSource,
+  getByteCountForBufferType: getByteCountForBufferType,
+  getBufferTypeForTypedArray: getBufferTypeForTypedArray,
+  getBufferUsage: getBufferUsage,
+  getBufferByteCount: getBufferByteCount,
+  getBufferLength: getBufferLength,
   createBufferInfo: createBufferInfo,
   createVertexArrayInfo: createVertexArrayInfo,
   drawBufferInfo: drawBufferInfo
 });
+
+class BufferInfoBuilder {
+  /**
+   * @param {WebGLRenderingContext|WebGL2RenderingContext} gl The gl context.
+   * @param {GLenum} target The buffer bind target. Usually, this is
+   * `gl.ARRAY_BUFFER` or `gl.ELEMENT_ARRAY_BUFFER`.
+   * @param {WebGLBuffer} [buffer] The buffer handle. If undefined, a
+   * new buffer will be created.
+   */
+  constructor(gl, target, buffer = undefined) {
+    /** @private */
+    this.bufferBuilder = new BufferBuilder(gl, target, buffer);
+    /** @private */
+    this.bufferType = gl.FLOAT;
+  }
+
+  get gl() {
+    return this.bufferBuilder.gl;
+  }
+
+  get handle() {
+    return this.bufferBuilder.handle;
+  }
+
+  get target() {
+    return this.bufferBuilder.target;
+  }
+
+  /**
+   * @param {BufferSource|number} srcDataOrSize The buffer data source or the buffer size in bytes.
+   * @param {GLenum} [usage] The buffer data usage. By default, this is `gl.STATIC_DRAW`.
+   * @returns {BufferInfoBuilder}
+   */
+  data(srcDataOrSize, usage = undefined) {
+    this.bufferBuilder.data(srcDataOrSize, usage);
+    if (typeof srcDataOrSize !== 'number') {
+      this.bufferType = getBufferTypeForBufferSource(this.gl, srcDataOrSize);
+    }
+    return this;
+  }
+
+  /**
+   * @param {BufferSource} srcData The buffer data source.
+   * @param {number} [dstOffset] The destination byte offset to put the data.
+   * @param {number} [srcOffset] The source array index offset to copy the data from.
+   * @param {number} [srcLength] The source array count to copy the data until.
+   * @returns {BufferInfoBuilder}
+   */
+  subData(
+    srcData,
+    dstOffset = undefined,
+    srcOffset = undefined,
+    srcLength = undefined
+  ) {
+    this.bufferBuilder.subData(srcData, dstOffset, srcOffset, srcLength);
+    this.bufferType = getBufferTypeForBufferSource(this.gl, srcData);
+    return this;
+  }
+
+  /**
+   * @returns {BufferInfo}
+   */
+  build() {
+    const handle = this.bufferBuilder.build();
+    const gl = this.gl;
+    const target = this.target;
+    const type = this.bufferType;
+    return new BufferInfo(gl, target, type, handle);
+  }
+}
 
 class ProgramInfo {
   /**
@@ -1915,7 +1915,7 @@ class ProgramInfoDrawContext {
     if (uniformName in activeUniforms) {
       let uniform = activeUniforms[uniformName];
       let location = uniform.location;
-      uniform.set.call(this.gl, location, value);
+      uniform.applier.call(this.gl, location, value);
     }
     return this;
   }
@@ -2117,7 +2117,6 @@ exports.BufferEnums = BufferEnums;
 exports.BufferHelper = BufferHelper;
 exports.BufferInfo = BufferInfo;
 exports.BufferInfoBuilder = BufferInfoBuilder;
-exports.BufferInfoHelper = BufferInfoHelper;
 exports.GLHelper = GLHelper;
 exports.ProgramAttributeEnums = ProgramAttributeEnums;
 exports.ProgramBuilder = ProgramBuilder;
@@ -2125,6 +2124,5 @@ exports.ProgramHelper = ProgramHelper;
 exports.ProgramInfo = ProgramInfo;
 exports.ProgramInfoBuilder = ProgramInfoBuilder;
 exports.ProgramInfoDrawContext = ProgramInfoDrawContext;
-exports.ProgramInfoHelper = ProgramInfoHelper;
 exports.ProgramUniformEnums = ProgramUniformEnums;
 exports.ProgramUniformFunctions = ProgramUniformFunctions;

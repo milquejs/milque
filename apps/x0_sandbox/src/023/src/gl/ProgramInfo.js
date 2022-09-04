@@ -38,7 +38,7 @@ export class ProgramInfoDrawContext {
     if (uniformName in activeUniforms) {
       let uniform = activeUniforms[uniformName];
       let location = uniform.location;
-      uniform.set.call(this.gl, location, value);
+      uniform.applier.call(this.gl, location, value);
     }
     return this;
   }

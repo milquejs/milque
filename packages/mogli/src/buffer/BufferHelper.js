@@ -1,4 +1,5 @@
 import { BufferEnums } from './BufferEnums.js';
+export * from './BufferInfoHelper.js';
 
 /**
  * Creates a buffer source given the type and data.

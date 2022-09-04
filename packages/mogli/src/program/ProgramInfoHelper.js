@@ -22,7 +22,7 @@ import { getActiveUniformsInfo } from './ProgramUniformInfo.js';
  * @param {WebGLProgram} program
  * @returns {ProgramInfo}
  */
-export function getProgramInfo(gl, program) {
+export function createProgramInfo(gl, program) {
     return {
         handle: program,
         attributes: getActiveAttribsInfo(gl, program),
@@ -54,7 +54,7 @@ export async function linkProgramShaders(gl, program, shaderSources, shaderTypes
 
 /**
  * @param {WebGLRenderingContextBase} gl 
- * @param {ReturnType<getProgramInfo>} programInfo 
+ * @param {ReturnType<createProgramInfo>} programInfo 
  * @param {BufferInfo|VertexArrayObjectInfo} bufferOrVertexArrayObjectInfo 
  */
 export function bindProgramAttributes(gl, programInfo, bufferOrVertexArrayObjectInfo) {
@@ -73,8 +73,8 @@ export function bindProgramAttributes(gl, programInfo, bufferOrVertexArrayObject
                 throw new Error(`Missing buffer for attribute '${name}'.`);
             }
             let attrib = bufferInfo.attributes[name];
-            let { location, set } = attributeInfos[attrib.name];
-            set.call(gl, location, attrib.buffer, attrib.size, attrib.type, attrib.normalize, attrib.stride, attrib.offset, attrib.divisor);
+            let { location, applier } = attributeInfos[attrib.name];
+            applier.call(gl, location, attrib.buffer, attrib.size, attrib.type, attrib.normalize, attrib.stride, attrib.offset, attrib.divisor);
         }
         if (bufferInfo.element) {
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, bufferInfo.element.buffer);
@@ -84,14 +84,14 @@ export function bindProgramAttributes(gl, programInfo, bufferOrVertexArrayObject
 
 /**
  * @param {WebGLRenderingContextBase} gl 
- * @param {ReturnType<getProgramInfo>} programInfo 
- * @param {Record<string, ?>} uniforms
+ * @param {ReturnType<createProgramInfo>} programInfo 
+ * @param {Record<string, number|Float32List|Int32List|Uint32List>} uniforms
  */
 export function bindProgramUniforms(gl, programInfo, uniforms) {
     let uniformInfos = programInfo.uniforms;
     for(let name in uniforms) {
         let value = uniforms[name];
-        let { location, set } = uniformInfos[name];
-        set.call(gl, location, value);
+        let { location, applier } = uniformInfos[name];
+        applier.call(gl, location, value);
     }
 }

@@ -1,4 +1,3 @@
-import { createGeometry } from './Geometry.js';
 import { vec3 } from 'gl-matrix';
 
 /** @typedef {import('./Geometry.js').Geometry} Geometry */
@@ -6,13 +5,18 @@ import { vec3 } from 'gl-matrix';
 /**
  * SOURCE: https://github.com/mrdoob/three.js/blob/master/src/geometries/SphereGeometry.js
  * 
- * @param {number} width 
- * @param {number} height 
+ * @param {Geometry} out
+ * @param {number} radius
  * @param {number} widthSegments 
  * @param {number} heightSegments 
+ * @param {number} phiStart
+ * @param {number} phiLength
+ * @param {number} thetaStart
+ * @param {number} thetaLength
  * @returns {Geometry}
  */
 export function createGeometrySphere(
+    out,
     radius = 1, widthSegments = 32, heightSegments = 16,
     phiStart = 0, phiLength = Math.PI * 2,
     thetaStart = 0, thetaLength = Math.PI) {
@@ -25,7 +29,6 @@ export function createGeometrySphere(
     let grid = [];
 
     let vec = vec3.create();
-    const geometry = createGeometry();
     for(let i = 0; i <= heightSegments; ++i) {
         let row = [];
 
@@ -44,13 +47,13 @@ export function createGeometrySphere(
             vec[0] = -radius * Math.cos(phiStart + u * phiLength) * Math.sin(thetaStart + v * thetaLength);
             vec[1] = radius * Math.cos(thetaStart + v * thetaLength);
             vec[2] = radius * Math.sin(phiStart + u * phiLength) * Math.sin(thetaStart + v * thetaLength);
-            geometry.position.push(vec[0], vec[1], vec[2]);
+            out.position.push(vec[0], vec[1], vec[2]);
 
             vec3.normalize(vec, vec);
-            geometry.normal.push(vec[0], vec[1], vec[2]);
+            out.normal.push(vec[0], vec[1], vec[2]);
 
-            geometry.texcoord.push(u + du, 1 - v);
-            row.push(geometry.vertexCount++);
+            out.texcoord.push(u + du, 1 - v);
+            row.push(out.vertexCount++);
         }
         grid.push(row);
     }
@@ -63,12 +66,12 @@ export function createGeometrySphere(
             let d = grid[i + 1][j + 1];
 
             if (i !== 0 || thetaStart > 0) {
-                geometry.indices.push(a, b, d);
+                out.indices.push(a, b, d);
             }
             if (i !== heightSegments - 1 || thetaEnd < Math.PI) {
-                geometry.indices.push(b, c, d);
+                out.indices.push(b, c, d);
             }
         }
     }
-    return geometry;
+    return out;
 }

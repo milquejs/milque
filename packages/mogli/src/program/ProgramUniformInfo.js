@@ -8,9 +8,10 @@ import { getActiveUniforms } from './ProgramActives.js';
 /**
  * @typedef ActiveUniformInfo
  * @property {number} type
- * @property {number} length
+ * @property {number} size
  * @property {WebGLUniformLocation} location
- * @property {UniformFunction} set
+ * @property {UniformFunction} applier
+ * @property {number|Float32List|Int32List|Uint32List} value
  */
 
 /**
@@ -29,12 +30,15 @@ export function getActiveUniformsInfo(gl, program) {
     const uniformSize = activeInfo.size;
     const uniformType = activeInfo.type;
     const uniformLocation = gl.getUniformLocation(program, uniformName);
-    const uniformSet = getUniformFunction(gl, uniformType);
+    const uniformApplier = getUniformFunction(gl, uniformType);
     result[uniformName] = {
       type: uniformType,
-      length: uniformSize,
+      size: uniformSize,
       location: uniformLocation,
-      set: uniformSet,
+      applier: uniformApplier,
+      set value(value) {
+        this.applier.call(gl, this.location, value);
+      }
     };
   }
   return result;

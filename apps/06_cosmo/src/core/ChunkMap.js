@@ -174,6 +174,14 @@ export function hasChunkDataById(map, chunkId) {
 
 /**
  * @param {ChunkMap} map 
+ * @returns {Array<number>}
+ */
+export function getChunkIds(map) {
+    return Object.keys(map.chunks).map(Number);
+}
+
+/**
+ * @param {ChunkMap} map 
  * @param {number} x
  * @param {number} y 
  * @param {number} z 

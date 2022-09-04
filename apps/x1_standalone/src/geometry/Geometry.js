@@ -1,16 +1,11 @@
-/**
- * @typedef {ReturnType<createGeometry>} Geometry
- * @typedef {ReturnType<bakeGeometry>} BakedGeometry
- */
-
-export function createGeometry(vertexCount = 0, indices = [], position = [], texcoord = [], normal = []) {
-    return {
-        vertexCount,
-        indices,
-        position,
-        texcoord,
-        normal,
-    };
+export class Geometry {
+    constructor(vertexCount = 0, indices = [], position = [], texcoord = [], normal = []) {
+        this.vertexCount = vertexCount;
+        this.indices = indices;
+        this.position = position;
+        this.texcoord = texcoord;
+        this.normal = normal;
+    }
 }
 
 /**
@@ -37,17 +32,4 @@ export function joinGeometries(out, ...geometries) {
     out.indices.push(...indices);
     out.vertexCount += indexOffset;
     return out;
-}
-
-/**
- * @param {Geometry} geometry
- */
-export function bakeGeometry(geometry) {
-    return {
-        vertexCount: geometry.vertexCount,
-        indices: new Uint16Array(geometry.indices),
-        position: new Float32Array(geometry.position),
-        texcoord: new Float32Array(geometry.texcoord),
-        normal: new Float32Array(geometry.normal),
-    };
 }

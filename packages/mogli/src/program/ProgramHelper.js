@@ -1,4 +1,5 @@
 export * from './ProgramActives.js';
+export * from './ProgramInfoHelper.js';
 
 /**
  * Create and compile shader from source text.

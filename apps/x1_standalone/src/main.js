@@ -9,14 +9,14 @@ import { ASSETS } from './Assets.js';
 import { Toaster } from './toaster/index.js';
 import { FirstPersonCameraController, PerspectiveCamera } from '@milque/scene';
 
-import { BufferInfoHelper, ProgramInfoHelper } from '@milque/mogli';
-import { bakeGeometry } from './geometry/Geometry.js';
-import { mat4, quat, vec3 } from 'gl-matrix';
+import { BufferInfo, ProgramInfo } from '@milque/mogli';
+import { mat4, vec3 } from 'gl-matrix';
 
 import { VERTEX_SHADER_SOURCE, FRAGMENT_SHADER_SOURCE } from './ShaderBasic.js';
-import { createGeometryBox } from './geometry/GeometryBox.js';
 import { createGeometryCylinder } from './geometry/GeometryCylinder.js';
-import { SceneNode } from './scene/SceneNode.js';
+import { SystemManager } from './ecs/SystemManager.js';
+import { ComponentClass, EntityManager } from './ecs/EntityManager.js';
+import { Geometry } from './geometry/Geometry.js';
 
 window.addEventListener('DOMContentLoaded', main);
 
@@ -25,95 +25,196 @@ async function main() {
     await Toaster.preloadAssetPack();
     await Toaster.preloadAssets(ASSETS);
 
-    let m = {};
+    let m = {
+        deltaTime: 0,
+        now: 0,
+        systemManager: new SystemManager(),
+        entityManager: new EntityManager(),
+    };
     await Game(m);
 }
 
-/** Scene graphs */
-// For easy management of objects
-// Scene (load, unload, etc) -> System (modular logic)
-
 async function Game(m) {
     const display = Toaster.getDisplayPort();
-    if (!display) return;
     const input = Toaster.getInputPort();
-    if (!input) return;
+
+    /** @type {EntityManager} */
+    const ent = m.entityManager;
+    /** @type {SystemManager} */
+    const sys = m.systemManager;
 
     const ab = input.getContext('axisbutton');
     const gl = display.canvas.getContext('webgl2');
     const camera = new PerspectiveCamera();
     const controller = new FirstPersonCameraController();
-    const scene = new SceneTransform();
-    mat4.translate(camera.viewMatrix, camera.viewMatrix, vec3.fromValues(0, 0, -10));
 
     display.canvas.addEventListener('click', () => {
         display.focus();
         display.canvas.requestPointerLock();
     });
 
-    const shaders = [VERTEX_SHADER_SOURCE, FRAGMENT_SHADER_SOURCE];
-    const program = gl.createProgram();
-    await ProgramInfoHelper.linkProgramShaders(gl, program, shaders);
-    const programInfo = ProgramInfoHelper.getProgramInfo(gl, program);
-    let geom = bakeGeometry(createGeometryCylinder(0.5, 1, 10));
-    const bufferInfo = BufferInfoHelper.createBufferInfo(gl, {
-        a_position: {
-            buffer: geom.position,
-            size: 3,
-        },
-        a_texcoord: {
-            buffer: geom.texcoord,
-            size: 2,
-        },
-        a_normal: {
-            buffer: geom.normal,
-            size: 3,
-        },
-    }, { buffer: geom.indices });
-    const vaoInfo = BufferInfoHelper.createVertexArrayInfo(gl, bufferInfo, [programInfo]);
-    const transform = mat4.create();
+    const BasicCylinder = createMesh(
+        createGeometryCylinder(new Geometry(), 0.5, 1, 10),
+        createMaterial([VERTEX_SHADER_SOURCE, FRAGMENT_SHADER_SOURCE], {
+            u_color: [1, 0., 0.5, 1],
+            u_model: mat4.create(),
+            u_view: camera.viewMatrix,
+            u_projection: camera.projectionMatrix,
+        })
+    );
 
+    let ctx = {};
     display.addEventListener('frame', (/** @type {CustomEvent} */ e) => {
         const { deltaTime, now } = e.detail;
         const dt = deltaTime / 60;
 
         ab.poll(now);
-        gl.viewport(0, 0, display.width, display.height);
-        gl.clearColor(0, 0, 0, 0);
-        gl.clear(gl.COLOR_BUFFER_BIT);
-
-        // renderer.render(sceneGraph, camera);
-
         camera.resize(display.width, display.height);
-
-        let forward = INPUTS.MoveForward.value - INPUTS.MoveBackward.value;
-        let right = INPUTS.MoveRight.value - INPUTS.MoveLeft.value;
-        let up = INPUTS.MoveDown.value - INPUTS.MoveUp.value;
-        controller.move(forward, right, up, dt);
-        let dx = INPUTS.CursorX.delta;
-        let dy = -INPUTS.CursorY.delta;
-        controller.look(dx, dy, dt);
-
+        updatePlayerInputs(dt, controller);
         controller.apply(camera.viewMatrix);
+
+        let transform = BasicCylinder.uniforms.u_model;
         mat4.rotateX(transform, transform, 0.01);
 
-        gl.useProgram(programInfo.handle);
-        ProgramInfoHelper.bindProgramAttributes(gl, programInfo, vaoInfo);
-        ProgramInfoHelper.bindProgramUniforms(gl, programInfo, {
-            u_color: [1, 0, 0.5, 1],
-            u_model: transform,
-            u_view: camera.viewMatrix,
-            u_projection: camera.projectionMatrix,
-        });
-        BufferInfoHelper.drawBufferInfo(gl, bufferInfo);
+        drawGame(ctx, gl, display, [BasicCylinder]);
     });
 }
 
-export class SceneTransform extends SceneNode {
-    constructor() {
-        super();
-        this.offset = vec3.create();
-        this.scale = vec3.create();
-        this.rotation = quat.create();
+function updatePlayerInputs(dt, controller) {
+    let forward = INPUTS.MoveForward.value - INPUTS.MoveBackward.value;
+    let right = INPUTS.MoveRight.value - INPUTS.MoveLeft.value;
+    let up = INPUTS.MoveDown.value - INPUTS.MoveUp.value;
+    controller.move(forward, right, up, dt);
+    let dx = INPUTS.CursorX.delta;
+    let dy = -INPUTS.CursorY.delta;
+    controller.look(dx, dy, dt);
+}
+
+
+function createMaterial(shaders, uniforms) {
+    return {
+        shaders,
+        uniforms,
+    };
+}
+
+function createMesh(geometry, material) {
+    return {
+        geometry,
+        material,
+    };
+}
+
+async function bakeMesh(gl, mesh) {
+    const { geometry, material } = mesh;
+    const program = gl.createProgram();
+    await ProgramInfo.linkProgramShaders(gl, program, material.shaders);
+    const programInfo = ProgramInfo.createProgramInfo(gl, program);
+    const uniforms = material.uniforms;
+    const bufferInfo = BufferInfo.createVertexArrayInfo(gl, BufferInfo.createBufferInfo(gl, {
+        a_position: { buffer: geometry.position },
+        a_texcoord: { buffer: geometry.texcoord, size: 2 },
+        a_normal: { buffer: geometry.normal },
+    }, { buffer: geometry.indices }), [programInfo]);
+    return {
+        bufferInfo,
+        programInfo,
+        uniforms,
+    };
+}
+
+/**
+ * @template T
+ * @param {object} target 
+ * @param {string} name 
+ * @param {() => T} initCallback 
+ * @returns {T}
+ */
+function resolve(target, name, initCallback = () => null) {
+    if (name in target) {
+        return target[name];
+    } else {
+        let result = initCallback();
+        target[name] = result;
+        return result;
+    }
+}
+
+/**
+ * @param {object} ctx 
+ * @param {WebGLRenderingContextBase} gl 
+ * @param {Geometry} geometry 
+ * @returns {BufferInfo.BufferInfo}
+ */
+function resolveBufferInfo(ctx, gl, geometry) {
+    let bufferInfos = resolve(ctx, 'bufferInfos', () => new Map());
+    if (bufferInfos.has(geometry)) {
+        return bufferInfos.get(geometry);
+    } else {
+        const bufferInfo = BufferInfo.createBufferInfo(gl, {
+            a_position: { buffer: geometry.position },
+            a_texcoord: { buffer: geometry.texcoord, size: 2 },
+            a_normal: { buffer: geometry.normal },
+        }, { buffer: geometry.indices });
+        bufferInfos.set(geometry, bufferInfo);
+        return bufferInfo;
+    }
+}
+
+/**
+ * @param {object} ctx 
+ * @param {WebGLRenderingContextBase} gl 
+ * @param {Material} material 
+ * @returns {ProgramInfo.ProgramInfo}
+ */
+function resolveProgramInfo(ctx, gl, material) {
+    let programInfos = resolve(ctx, 'bufferInfos', () => new Map());
+    if (programInfos.has(material)) {
+        return programInfos.get(material);
+    } else {
+        const program = gl.createProgram();
+        ProgramInfo.linkProgramShaders(gl, program, material.shaders);
+        const programInfo = ProgramInfo.createProgramInfo(gl, program);
+        programInfos.set(material, programInfo);
+        return programInfo;
+    }
+}
+
+function resolveMeshDrawInfo(ctx, gl, geometry, material) {
+    let bufferInfo = resolveBufferInfo(ctx, gl, geometry);
+    let programInfo = resolveProgramInfo(ctx, gl, material);
+    return {
+        bufferInfo,
+        programInfo,
+        uniforms: {
+            ...material.uniforms,
+        },
+    };
+}
+
+function getDrawInfo(ctx, gl, target) {
+    if (!target) {
+        return null;
+    }
+    if (target.geometry && target.material) {
+        return resolveMeshDrawInfo(ctx, target.geometry, target.material);
+    }
+    return null;
+}
+
+function drawGame(ctx, gl, display, targets = []) {
+    gl.viewport(0, 0, display.width, display.height);
+    gl.clearColor(0, 0, 0, 0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    for(let drawInfo of targets.map(target => getDrawInfo(ctx, gl, target))) {
+        if (!drawInfo) {
+            continue;
+        }
+        const { programInfo, bufferInfo, uniforms } = drawInfo;
+        gl.useProgram(programInfo.handle);
+        ProgramInfo.bindProgramAttributes(gl, programInfo, bufferInfo);
+        ProgramInfo.bindProgramUniforms(gl, programInfo, uniforms);
+        BufferInfo.drawBufferInfo(gl, bufferInfo);
     }
 }

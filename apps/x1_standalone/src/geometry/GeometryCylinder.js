@@ -1,4 +1,3 @@
-import { createGeometry } from './Geometry.js';
 import { vec3 } from 'gl-matrix';
 
 /** @typedef {import('./Geometry.js').Geometry} Geometry */
@@ -6,6 +5,7 @@ import { vec3 } from 'gl-matrix';
 /**
  * SOURCE: https://github.com/mrdoob/three.js/blob/master/src/geometries/CylinderGeometry.js
  * 
+ * @param {Geometry} out
  * @param {number} radiusTop 
  * @param {number} radiusBottom 
  * @param {number} height 
@@ -16,18 +16,17 @@ import { vec3 } from 'gl-matrix';
  * @param {number} thetaLength 
  * @returns {Geometry}
  */
-export function createGeometryCylinder(radiusTop = 1, radiusBottom = 1, height = 1, radialSegments = 8, heightSegments = 1, openEnded = false, thetaStart = 0, thetaLength = Math.PI * 2) {
-    let geometry = createGeometry();
-    addGeometryCylinderBody(geometry, radiusTop, radiusBottom, height, radialSegments, heightSegments, thetaStart, thetaLength);
+export function createGeometryCylinder(out, radiusTop = 1, radiusBottom = 1, height = 1, radialSegments = 8, heightSegments = 1, openEnded = false, thetaStart = 0, thetaLength = Math.PI * 2) {
+    addGeometryCylinderBody(out, radiusTop, radiusBottom, height, radialSegments, heightSegments, thetaStart, thetaLength);
     if (!openEnded) {
         if (radiusTop > 0) {
-            addGeometryCylinderCap(geometry, true, radiusTop, radiusBottom, height, radialSegments, thetaStart, thetaLength);
+            addGeometryCylinderCap(out, true, radiusTop, radiusBottom, height, radialSegments, thetaStart, thetaLength);
         }
         if (radiusBottom > 0) {
-            addGeometryCylinderCap(geometry, false, radiusTop, radiusBottom, height, radialSegments, thetaStart, thetaLength);
+            addGeometryCylinderCap(out, false, radiusTop, radiusBottom, height, radialSegments, thetaStart, thetaLength);
         }
     }
-    return geometry;
+    return out;
 }
 
 /**

@@ -109,3 +109,11 @@ export function keys() {
 export function current(uri) {
     return getCurrentInStore(GLOBAL, uri);
 }
+
+/**
+ * @param {string} uri
+ * @returns {object}
+ */
+export function get(uri) {
+    return current(uri);
+}

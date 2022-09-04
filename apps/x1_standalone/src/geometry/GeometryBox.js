@@ -1,4 +1,3 @@
-import { createGeometry } from './Geometry.js';
 import { vec3 } from 'gl-matrix';
 
 /** @typedef {import('./Geometry.js').Geometry} Geometry */
@@ -6,6 +5,7 @@ import { vec3 } from 'gl-matrix';
 /**
  * SOURCE: https://github.com/mrdoob/three.js/blob/master/src/geometries/BoxGeometry.js
  * 
+ * @param {Geometry} out
  * @param {number} width 
  * @param {number} height 
  * @param {number} depth 
@@ -14,15 +14,14 @@ import { vec3 } from 'gl-matrix';
  * @param {number} depthSegments 
  * @returns {Geometry}
  */
-export function createGeometryBox(width = 1, height = 1, depth = 1, widthSegments = 1, heightSegments = 1, depthSegments = 1) {
-    let geometry = createGeometry();
-    addGeometryBoxFace(geometry, 2, 1, 0, -1, -1, depth, height, width, depthSegments, heightSegments);
-    addGeometryBoxFace(geometry, 2, 1, 0, 1, -1, depth, height, -width, depthSegments, heightSegments);
-    addGeometryBoxFace(geometry, 0, 2, 1, 1, 1, width, depth, height, widthSegments, depthSegments);
-    addGeometryBoxFace(geometry, 0, 2, 1, 1, -1, width, depth, -height, widthSegments, depthSegments);
-    addGeometryBoxFace(geometry, 0, 1, 2, 1, -1, width, height, width, widthSegments, heightSegments);
-    addGeometryBoxFace(geometry, 0, 1, 2, -1, -1, width, height, width, widthSegments, heightSegments);
-    return geometry;
+export function createGeometryBox(out, width = 1, height = 1, depth = 1, widthSegments = 1, heightSegments = 1, depthSegments = 1) {
+    addGeometryBoxFace(out, 2, 1, 0, -1, -1, depth, height, width, depthSegments, heightSegments);
+    addGeometryBoxFace(out, 2, 1, 0, 1, -1, depth, height, -width, depthSegments, heightSegments);
+    addGeometryBoxFace(out, 0, 2, 1, 1, 1, width, depth, height, widthSegments, depthSegments);
+    addGeometryBoxFace(out, 0, 2, 1, 1, -1, width, depth, -height, widthSegments, depthSegments);
+    addGeometryBoxFace(out, 0, 1, 2, 1, -1, width, height, width, widthSegments, heightSegments);
+    addGeometryBoxFace(out, 0, 1, 2, -1, -1, width, height, width, widthSegments, heightSegments);
+    return out;
 }
 
 /**

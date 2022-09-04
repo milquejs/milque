@@ -1,17 +1,16 @@
-import { createGeometry } from './Geometry.js';
-
 /** @typedef {import('./Geometry.js').Geometry} Geometry */
 
 /**
  * SOURCE: https://github.com/mrdoob/three.js/blob/master/src/geometries/PlaneGeometry.js
  * 
+ * @param {Geometry} out
  * @param {number} width 
  * @param {number} height 
  * @param {number} widthSegments 
  * @param {number} heightSegments 
  * @returns {Geometry}
  */
-export function createGeometryPlane(width = 1, height = 1, widthSegments = 1, heightSegments = 1) {
+export function createGeometryPlane(out, width = 1, height = 1, widthSegments = 1, heightSegments = 1) {
     const halfWidth = width / 2;
     const halfHeight = height / 2;
 
@@ -23,29 +22,29 @@ export function createGeometryPlane(width = 1, height = 1, widthSegments = 1, he
     const segmentWidth = width / gridX;
     const segmentHeight = height / gridY;
 
-    const geometry = createGeometry();
+    const vertexIndex = out.vertexCount;
     for(let i = 0; i < gridYY; ++i) {
         let y = i * segmentHeight - halfHeight;
         for(let j = 0; j < gridXX; ++j) {
             let x = j * segmentWidth - halfWidth;
-            geometry.position.push(x, -y, 0);
-            geometry.normal.push(0, 0, 1);
-            geometry.texcoord.push(j / gridX, 1 - (i / gridY));
-            ++geometry.vertexCount;
+            out.position.push(x, -y, 0);
+            out.normal.push(0, 0, 1);
+            out.texcoord.push(j / gridX, 1 - (i / gridY));
+            ++out.vertexCount;
         }
     }
 
     for(let i = 0; i < gridY; ++i) {
         for(let j = 0; j < gridX; ++j) {
-            let a = j + gridXX * i;
-            let b = j + gridXX * (i + 1);
-            let c = (j + 1) + gridXX * (i + 1);
-            let d = (j + 1) + gridXX * i;
+            let a = vertexIndex + j + gridXX * i;
+            let b = vertexIndex + j + gridXX * (i + 1);
+            let c = vertexIndex + (j + 1) + gridXX * (i + 1);
+            let d = vertexIndex + (j + 1) + gridXX * i;
 
-            geometry.indices.push(a, b, d);
-            geometry.indices.push(b, c, d);
+            out.indices.push(a, b, d);
+            out.indices.push(b, c, d);
         }
     }
 
-    return geometry;
+    return out;
 }

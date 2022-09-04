@@ -1,4 +1,4 @@
-import { ButtonBinding, KeyCodes } from '@milque/input';
+import { AxisBinding, ButtonBinding, KeyCodes } from '@milque/input';
 
 /**
  * @typedef {import('@milque/input').InputContext} InputContext
@@ -6,6 +6,10 @@ import { ButtonBinding, KeyCodes } from '@milque/input';
  */
 
 export const INPUTS = {
+    CursorX: new AxisBinding('cursorX', [KeyCodes.MOUSE_POS_X]),
+    CursorY: new AxisBinding('cursorY', [KeyCodes.MOUSE_POS_Y]),
+    CursorMain: new ButtonBinding('cursorMain', KeyCodes.MOUSE_BUTTON_0),
+    CursorAlt: new ButtonBinding('cursorAlt', KeyCodes.MOUSE_BUTTON_2),
     MoveLeft: new ButtonBinding('moveLeft', [
         KeyCodes.KEY_A,
         KeyCodes.ARROW_LEFT,

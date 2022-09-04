@@ -91,10 +91,10 @@ export function createVertexArrayInfo(gl, bufferInfo, programInfos) {
 
 /**
  * @param {WebGLRenderingContextBase} gl 
- * @param {BufferInfo} bufferInfo 
+ * @param {BufferInfo|VertexArrayObjectInfo} bufferOrVertexArrayObjectInfo 
  */
-export function drawBufferInfo(gl, bufferInfo, mode = gl.TRIANGLES, offset = 0, vertexCount = bufferInfo.vertexCount, instanceCount = undefined) {
-    let element = bufferInfo.element;
+export function drawBufferInfo(gl, bufferOrVertexArrayObjectInfo, mode = gl.TRIANGLES, offset = 0, vertexCount = bufferOrVertexArrayObjectInfo.vertexCount, instanceCount = undefined) {
+    let element = bufferOrVertexArrayObjectInfo.element;
     if (element) {
         let elementType = element.type;
         if (instanceCount !== undefined) {

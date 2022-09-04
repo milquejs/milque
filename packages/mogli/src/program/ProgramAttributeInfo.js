@@ -8,9 +8,10 @@ import { getAttributeFunction } from './ProgramAttributeFunctions.js';
 /**
  * @typedef ActiveAttributeInfo
  * @property {GLenum} type
- * @property {number} length
+ * @property {number} size
  * @property {number} location
- * @property {AttributeFunction} set
+ * @property {AttributeFunction} applier
+ * @property {number|Float32List|Int32List|Uint32List} value
  */
 
 /**
@@ -29,12 +30,15 @@ export function getActiveAttribsInfo(gl, program) {
     const attributeSize = activeInfo.size;
     const attributeType = activeInfo.type;
     const attributeLocation = gl.getAttribLocation(program, attributeName);
-    const attributeSet = getAttributeFunction(gl, attributeType);
+    const attributeApplier = getAttributeFunction(gl, attributeType);
     result[attributeName] = {
       type: attributeType,
-      length: attributeSize,
+      size: attributeSize,
       location: attributeLocation,
-      set: attributeSet,
+      applier: attributeApplier,
+      set value([buffer, vertexSize, bufferType, normalize, stride, offset, divisor]) {
+        this.applier(this.location, buffer, vertexSize, bufferType, normalize, stride, offset, divisor);
+      }
     };
   }
   return result;

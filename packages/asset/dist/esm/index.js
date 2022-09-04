@@ -407,6 +407,14 @@ function current(uri) {
     return getCurrentInStore(GLOBAL, uri);
 }
 
+/**
+ * @param {string} uri
+ * @returns {object}
+ */
+function get(uri) {
+    return current(uri);
+}
+
 var AssetManager = /*#__PURE__*/Object.freeze({
     __proto__: null,
     loadAssetPackAsRaw: loadAssetPackAsRaw,
@@ -414,7 +422,8 @@ var AssetManager = /*#__PURE__*/Object.freeze({
     loadAssetRefs: loadAssetRefs,
     cache: cache,
     keys: keys,
-    current: current
+    current: current,
+    get: get
 });
 
 export { AssetManager, AssetRef, GlobExp };

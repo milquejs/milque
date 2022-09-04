@@ -1,13 +1,14 @@
 import '@milque/display';
 import './error.js';
-import './Blocks.js';
+import './asteroids/Blocks.js';
 
 import { loadAssets } from './assets.js';
 import { loadInputs } from './inputs.js';
 import { useRenderManager } from './renderer/RenderManager.js';
-import { ChunkSystem } from './systems/ChunkSystem.js';
-import { CursorSystem } from './systems/CursorSystem.js';
+import { AsteroidSystem } from './asteroids/AsteroidSystem.js';
+import { LaneSystem } from './lanes/LaneSystem.js';
 import { callListeners } from './core/Listenable.js';
+import { mat4 } from 'gl-matrix';
 
 
 /**
@@ -26,8 +27,8 @@ async function main() {
   const inputs = await loadInputs();
   const { display, ctx } = useRenderManager(m);
   
-  ChunkSystem(m);
-  CursorSystem(m);
+  //AsteroidSystem(m);
+  LaneSystem(m);
 
   // Init
   callListeners(m, 'init');
@@ -46,7 +47,8 @@ async function main() {
     ctx.resize();
     ctx.reset();
 
-    ctx.setTranslation(display.width / 2, display.height / 2);
+    // ctx.setTranslation(display.width / 2, display.height / 2);
+    // mat4.fromTranslation(ctx.getViewMatrix(), [display.width / 2, display.height / 2, 0]);
 
     // World
     ctx.pushTransform();

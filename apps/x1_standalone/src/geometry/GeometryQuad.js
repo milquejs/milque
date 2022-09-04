@@ -1,16 +1,12 @@
-import { createGeometry } from './Geometry.js';
-import { vec3 } from 'gl-matrix';
-
-/** @typedef {import('./Geometry.js').Geometry} Geometry */
+import { Geometry, joinGeometries } from './Geometry.js';
 
 /**
- * 
  * @param {number} width 
  * @param {number} height 
- * @returns 
+ * @returns {Geometry}
  */
-export function createGeometryQuad(width = 1, height = 1) {
-    return createGeometry(
+export function createGeometryQuad(out, width = 1, height = 1) {
+    return joinGeometries(out, new Geometry(
         6,
         [0, 1, 2, 3, 4, 5],
         [0, 0, 0,
@@ -20,5 +16,5 @@ export function createGeometryQuad(width = 1, height = 1) {
         width, 0, 0,
         width, height, 0],
         [0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 0],
-        [0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1]);
+        [0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1]));
 }

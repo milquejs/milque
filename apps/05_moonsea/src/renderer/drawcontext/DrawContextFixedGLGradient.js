@@ -63,13 +63,6 @@ export class DrawContextFixedGLGradient extends DrawContextFixedGLTexture {
   }
 
   /** @override */
-  setColorVector(redf, greenf, bluef) {
-    super.setColorVector(redf, greenf, bluef);
-    this.gradientProgram.bind(this.gl).uniform('u_color', this.colorVector);
-    return this;
-  }
-
-  /** @override */
   setOpacityFloat(opacity) {
     super.setOpacityFloat(opacity);
     this.gradientProgram

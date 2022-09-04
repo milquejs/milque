@@ -21,7 +21,6 @@ import { game } from './Game.js';
 import { AssetManager } from '@milque/asset';
 
 /**
- * @typedef {import('@milque/asset').AssetPack} AssetPack
  * @typedef {import('@milque/display').DisplayPort} DisplayPort
  * @typedef {import('@milque/input').InputContext} InputContext
  * @typedef {ReturnType<import('./Game.js').game>} Game
