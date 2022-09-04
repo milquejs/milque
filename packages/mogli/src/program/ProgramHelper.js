@@ -1,13 +1,10 @@
-import { getActiveAttribsInfo } from './ProgramAttributeInfo.js';
-import { getActiveUniformsInfo } from './ProgramUniformInfo.js';
-
 export * from './ProgramActives.js';
 
 /**
  * Create and compile shader from source text.
  *
  * @param {WebGLRenderingContextBase} gl The webgl context.
- * @param {GLenum} type The type of the shader. This is usually `gl.VERTEX_SHADER`
+ * @param {GLenum} shaderType The type of the shader. This is usually `gl.VERTEX_SHADER`
  * or `gl.FRAGMENT_SHADER`.
  * @param {string} shaderSource The shader source text.
  * @returns {WebGLShader} The compiled shader.
@@ -19,11 +16,10 @@ export function createShader(gl, shaderType, shaderSource) {
 
   let status = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
   if (!status) {
-    console.error(
-      gl.getShaderInfoLog(shader) +
-        `\nFailed to compile shader:\n${shaderSource}`
-    );
+    let log = gl.getShaderInfoLog(shader) +
+      `\nFailed to compile shader:\n${shaderSource}`;
     gl.deleteShader(shader);
+    throw new Error(log);
   }
   return shader;
 }
@@ -32,13 +28,12 @@ export function createShader(gl, shaderType, shaderSource) {
  * Link the given shader program from list of compiled shaders.
  *
  * @param {WebGLRenderingContextBase} gl The webgl context.
- * @param {WebGLProgram} program The type of the shader.
- * This is usually `gl.VERTEX_SHADER` or `gl.FRAGMENT_SHADER`.
+ * @param {WebGLProgram} program The shader program handle.
  * @param {Array<WebGLShader>} shaders The list of compiled shaders
  * to link in the program.
- * @returns {WebGLProgram} The linked shader program.
+ * @returns {Promise<WebGLProgram>} The linked shader program.
  */
-export function createShaderProgram(gl, program, shaders) {
+export async function createShaderProgram(gl, program, shaders) {
   // Attach to the program.
   for (let shader of shaders) {
     gl.attachShader(program, shader);
@@ -46,6 +41,17 @@ export function createShaderProgram(gl, program, shaders) {
 
   // Link'em!
   gl.linkProgram(program);
+
+  // Might be async...
+  const ext = gl.getExtension('KHR_parallel_shader_compile');
+  if (ext) {
+    const statusInterval = 1000 / 60;
+    let result;
+    do {
+      await new Promise((resolve, _) => setTimeout(resolve, statusInterval));
+      result = gl.getProgramParameter(program, ext.COMPLETION_STATUS_KHR);
+    } while (!result);
+  }
 
   // Don't forget to clean up the shaders! It's no longer needed.
   for (let shader of shaders) {
@@ -55,8 +61,9 @@ export function createShaderProgram(gl, program, shaders) {
 
   let status = gl.getProgramParameter(program, gl.LINK_STATUS);
   if (!status) {
-    console.error(gl.getProgramInfoLog(program));
+    let log = gl.getProgramInfoLog(program);
     gl.deleteProgram(program);
+    throw new Error(log);
   }
   return program;
 }
@@ -65,9 +72,9 @@ export function createShaderProgram(gl, program, shaders) {
  * Draw the currently bound render context.
  *
  * @param {WebGLRenderingContextBase} gl
- * @param {Number} mode
- * @param {Number} offset
- * @param {Number} count
+ * @param {number} mode
+ * @param {number} offset
+ * @param {number} count
  * @param {WebGLBuffer} [elementBuffer]
  */
 export function draw(gl, mode, offset, count, elementBuffer = undefined) {
@@ -80,10 +87,10 @@ export function draw(gl, mode, offset, count, elementBuffer = undefined) {
 }
 
 /**
- * @param {WebGLRenderingContextBase} gl
+ * @param {WebGLRenderingContext|WebGL2RenderingContext} gl
  * @param {WebGLProgram} program
  */
-export function getProgramInfo(gl, program) {
+export function getProgramStatus(gl, program) {
   return {
     /** @type {GLboolean} */
     linkStatus: gl.getProgramParameter(program, gl.LINK_STATUS),
@@ -92,8 +99,6 @@ export function getProgramInfo(gl, program) {
     /** @type {GLboolean} */
     validateStatus: gl.getProgramParameter(program, gl.VALIDATE_STATUS),
     /** @type {string} */
-    validationLog: gl.getProgramInfoLog(program),
-    activeUniforms: getActiveUniformsInfo(gl, program),
-    activeAttributes: getActiveAttribsInfo(gl, program),
+    infoLog: gl.getProgramInfoLog(program),
   };
 }

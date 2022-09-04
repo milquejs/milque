@@ -20,11 +20,13 @@ export class BufferDataContext {
     const gl = this.gl;
     const target = this.target;
     if (typeof srcDataOrSize === 'number') {
-      gl.bufferData(target, srcDataOrSize, usage || gl.STATIC_DRAW);
+      /** @type {WebGLRenderingContext|WebGL2RenderingContext} */
+      (gl).bufferData(target, srcDataOrSize, usage || gl.STATIC_DRAW);
     } else {
       if (!ArrayBuffer.isView(srcDataOrSize))
         throw new Error('Source data must be a typed array.');
-      gl.bufferData(target, srcDataOrSize, usage || gl.STATIC_DRAW);
+      /** @type {WebGLRenderingContext|WebGL2RenderingContext} */
+      (gl).bufferData(target, srcDataOrSize, usage || gl.STATIC_DRAW);
     }
     return this;
   }
@@ -44,19 +46,25 @@ export class BufferDataContext {
   ) {
     const gl = this.gl;
     const target = this.target;
-    if (!ArrayBuffer.isView(srcData))
+    if (!ArrayBuffer.isView(srcData)) {
       throw new Error('Source data must be a typed array.');
-    if (srcOffset) {
+    } else if (typeof srcOffset !== 'undefined') {
       if (isWebGL2Supported(gl)) {
-        gl.bufferSubData(target, dstOffset, srcData, srcOffset, srcLength);
+        /** @type {WebGL2RenderingContext} */
+        (gl).bufferSubData(target, dstOffset, srcData, srcOffset, srcLength);
       } else {
+        // HACK: `subarray()` is in ALL TypedArrays, but not in BufferSource
         const srcSubData = srcLength
+          // @ts-ignore
           ? srcData.subarray(srcOffset, srcOffset + srcLength)
+          // @ts-ignore
           : srcData.subarray(srcOffset);
-        gl.bufferSubData(target, dstOffset, srcSubData);
+        /** @type {WebGLRenderingContext|WebGL2RenderingContext} */
+        (gl).bufferSubData(target, dstOffset, srcSubData);
       }
     } else {
-      gl.bufferSubData(target, dstOffset, srcData);
+      /** @type {WebGLRenderingContext|WebGL2RenderingContext} */
+      (gl).bufferSubData(target, dstOffset, srcData);
     }
     return this;
   }
@@ -64,7 +72,7 @@ export class BufferDataContext {
 
 export class BufferBuilder {
   /**
-   * @param {WebGLRenderingContextBase} gl The webgl context.
+   * @param {WebGLRenderingContext} gl The webgl context.
    * @param {GLenum} target The buffer bind target. Usually, this is
    * `gl.ARRAY_BUFFER` or `gl.ELEMENT_ARRAY_BUFFER`.
    * @param {WebGLBuffer} [buffer] The buffer handle. If undefined, a

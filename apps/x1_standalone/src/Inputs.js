@@ -14,10 +14,16 @@ export const INPUTS = {
         KeyCodes.ARROW_RIGHT,
     ]),
     MoveUp: new ButtonBinding('moveUp', [
+        KeyCodes.KEY_Q,
+    ]),
+    MoveDown: new ButtonBinding('moveDown', [
+        KeyCodes.KEY_E
+    ]),
+    MoveForward: new ButtonBinding('moveForward', [
         KeyCodes.KEY_W,
         KeyCodes.ARROW_UP,
     ]),
-    MoveDown: new ButtonBinding('moveDown', [
+    MoveBackward: new ButtonBinding('moveBackward', [
         KeyCodes.KEY_S,
         KeyCodes.ARROW_DOWN,
     ]),

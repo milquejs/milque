@@ -1,10 +1,10 @@
 import { BufferInfo } from './BufferInfo.js';
 import { BufferBuilder } from './BufferBuilder.js';
-import { getTypedArrayBufferType } from './BufferHelper.js';
+import { getBufferTypeForBufferSource, getBufferTypeForTypedArray } from './BufferHelper.js';
 
 export class BufferInfoBuilder {
   /**
-   * @param {WebGLRenderingContextBase} gl The gl context.
+   * @param {WebGLRenderingContext|WebGL2RenderingContext} gl The gl context.
    * @param {GLenum} target The buffer bind target. Usually, this is
    * `gl.ARRAY_BUFFER` or `gl.ELEMENT_ARRAY_BUFFER`.
    * @param {WebGLBuffer} [buffer] The buffer handle. If undefined, a
@@ -37,8 +37,7 @@ export class BufferInfoBuilder {
   data(srcDataOrSize, usage = undefined) {
     this.bufferBuilder.data(srcDataOrSize, usage);
     if (typeof srcDataOrSize !== 'number') {
-      const typedArray = srcDataOrSize.constructor;
-      this.bufferType = getTypedArrayBufferType(this.gl, typedArray);
+      this.bufferType = getBufferTypeForBufferSource(this.gl, srcDataOrSize);
     }
     return this;
   }
@@ -57,8 +56,7 @@ export class BufferInfoBuilder {
     srcLength = undefined
   ) {
     this.bufferBuilder.subData(srcData, dstOffset, srcOffset, srcLength);
-    const typedArray = srcData.constructor;
-    this.bufferType = getTypedArrayBufferType(this.gl, typedArray);
+    this.bufferType = getBufferTypeForBufferSource(this.gl, srcData);
     return this;
   }
 

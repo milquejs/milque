@@ -39,13 +39,13 @@ declare class BufferDataContext {
 }
 declare class BufferBuilder {
     /**
-     * @param {WebGLRenderingContextBase} gl The webgl context.
+     * @param {WebGLRenderingContext} gl The webgl context.
      * @param {GLenum} target The buffer bind target. Usually, this is
      * `gl.ARRAY_BUFFER` or `gl.ELEMENT_ARRAY_BUFFER`.
      * @param {WebGLBuffer} [buffer] The buffer handle. If undefined, a
      * new buffer will be created.
      */
-    constructor(gl: WebGLRenderingContextBase, target: GLenum, buffer?: WebGLBuffer);
+    constructor(gl: WebGLRenderingContext, target: GLenum, buffer?: WebGLBuffer);
     /** @private */
     private dataContext;
     handle: WebGLBuffer;
@@ -69,7 +69,7 @@ declare class BufferBuilder {
     build(): WebGLBuffer;
 }
 
-declare class BufferInfo {
+declare class BufferInfo$2 {
     /**
      * @param {WebGLRenderingContextBase} gl The gl context.
      * @param {GLenum} target The buffer bind target. Usually, this is
@@ -93,13 +93,13 @@ declare class BufferInfo {
 
 declare class BufferInfoBuilder {
     /**
-     * @param {WebGLRenderingContextBase} gl The gl context.
+     * @param {WebGLRenderingContext|WebGL2RenderingContext} gl The gl context.
      * @param {GLenum} target The buffer bind target. Usually, this is
      * `gl.ARRAY_BUFFER` or `gl.ELEMENT_ARRAY_BUFFER`.
      * @param {WebGLBuffer} [buffer] The buffer handle. If undefined, a
      * new buffer will be created.
      */
-    constructor(gl: WebGLRenderingContextBase, target: GLenum, buffer?: WebGLBuffer);
+    constructor(gl: WebGLRenderingContext | WebGL2RenderingContext, target: GLenum, buffer?: WebGLBuffer);
     /** @private */
     private bufferBuilder;
     /** @private */
@@ -124,7 +124,7 @@ declare class BufferInfoBuilder {
     /**
      * @returns {BufferInfo}
      */
-    build(): BufferInfo;
+    build(): BufferInfo$2;
 }
 
 /**
@@ -135,39 +135,368 @@ declare class BufferInfoBuilder {
  * this is `gl.FLOAT` for array buffers or `gl.UNSIGNED_SHORT` for element
  * array buffers. It must be either `gl.BYTE`, `gl.UNSIGNED_BYTE`, `gl.SHORT`,
  * `gl.UNSIGNED_SHORT`, `gl.FLOAT`, or `gl.HALF_FLOAT` for WebGL2.
- * @param {Array} data The buffer source data array.
+ * @param {Array<number>} data The buffer source data array.
  * @returns {BufferSource} The typed array buffer containing the given data.
  */
-declare function createBufferSource(gl: WebGLRenderingContextBase, type: GLenum, data: any[]): BufferSource;
+declare function createBufferSource(gl: WebGLRenderingContextBase, type: GLenum, data: Array<number>): BufferSource;
 /**
  * Create a buffer with the given source.
  *
- * @param {WebGLRenderingContextBase} gl The gl context.
+ * @param {WebGLRenderingContext|WebGL2RenderingContext} gl The gl context.
  * @param {GLenum} target The buffer bind target. Usually, this is `gl.ARRAY_BUFFER` or
  * `gl.ELEMENT_ARRAY_BUFFER`.
- * @param {BufferSource} bufferSource The typed array buffer containing the given data.
- * For convenience, you can use `BufferHelper.createBufferSource()` to convert a data array
- * to the appropriate typed array.
- * @param {GLenum} usage The buffer usage hint. By default, this is `gl.STATIC_DRAW`.
+ * @param {BufferSource} bufferSource The buffer source array.
+ * @param {GLenum} [usage] The buffer usage hint. By default, this is `gl.STATIC_DRAW`.
  * @returns {WebGLBuffer} The created and bound data buffer.
  */
-declare function createBuffer(gl: WebGLRenderingContextBase, target: GLenum, bufferSource: BufferSource, usage?: GLenum): WebGLBuffer;
-declare function getBufferTypedArray(gl: any, bufferType: any): Int8ArrayConstructor | Uint8ArrayConstructor | Int16ArrayConstructor | Uint16ArrayConstructor | Int32ArrayConstructor | Uint32ArrayConstructor | Float32ArrayConstructor;
-declare function getTypedArrayBufferType(gl: any, typedArray: any): any;
-declare function getBufferUsage(gl: any, target: any, buffer: any): any;
+declare function createBuffer(gl: WebGLRenderingContext | WebGL2RenderingContext, target: GLenum, bufferSource: BufferSource, usage?: GLenum): WebGLBuffer;
+/**
+ * @param {WebGLRenderingContextBase} gl
+ * @param {GLenum} bufferType
+ */
+declare function getTypedArrayForBufferType(gl: WebGLRenderingContextBase, bufferType: GLenum): Int8ArrayConstructor | Uint8ArrayConstructor | Int16ArrayConstructor | Uint16ArrayConstructor | Int32ArrayConstructor | Uint32ArrayConstructor | Float32ArrayConstructor;
+/**
+ * @param {WebGLRenderingContextBase} gl
+ * @param {BufferSource} bufferSource
+ * @returns {GLenum}
+ */
+declare function getBufferTypeForBufferSource(gl: WebGLRenderingContextBase, bufferSource: BufferSource): GLenum;
+declare function getByteCountForBufferType(gl: any, bufferType: any): number;
+/**
+ * @param {WebGLRenderingContextBase} gl
+ * @param {Int8ArrayConstructor
+ * |Uint8ArrayConstructor
+ * |Int16ArrayConstructor
+ * |Uint16ArrayConstructor
+ * |Int32ArrayConstructor
+ * |Uint32ArrayConstructor
+ * |Float32ArrayConstructor} typedArray
+ * @returns {GLenum}
+ */
+declare function getBufferTypeForTypedArray(gl: WebGLRenderingContextBase, typedArray: Int8ArrayConstructor | Uint8ArrayConstructor | Int16ArrayConstructor | Uint16ArrayConstructor | Int32ArrayConstructor | Uint32ArrayConstructor | Float32ArrayConstructor): GLenum;
+/**
+ * @param {WebGLRenderingContextBase} gl
+ * @param {GLenum} target
+ * @param {WebGLBuffer} buffer
+ * @returns {GLenum}
+ */
+declare function getBufferUsage(gl: WebGLRenderingContextBase, target: GLenum, buffer: WebGLBuffer): GLenum;
+/**
+ * @param {WebGLRenderingContextBase} gl
+ * @param {GLenum} target
+ * @param {WebGLBuffer} buffer
+ * @returns {GLenum}
+ */
+declare function getBufferByteCount(gl: WebGLRenderingContextBase, target: GLenum, buffer: WebGLBuffer): GLenum;
+/**
+ * @param {WebGLRenderingContextBase} gl
+ * @param {GLenum} target
+ * @param {WebGLBuffer} buffer
+ * @returns {GLenum}
+ */
+declare function getBufferLength(gl: WebGLRenderingContextBase, target: GLenum, buffer: WebGLBuffer, type: any): GLenum;
 
 declare const BufferHelper_createBufferSource: typeof createBufferSource;
 declare const BufferHelper_createBuffer: typeof createBuffer;
-declare const BufferHelper_getBufferTypedArray: typeof getBufferTypedArray;
-declare const BufferHelper_getTypedArrayBufferType: typeof getTypedArrayBufferType;
+declare const BufferHelper_getTypedArrayForBufferType: typeof getTypedArrayForBufferType;
+declare const BufferHelper_getBufferTypeForBufferSource: typeof getBufferTypeForBufferSource;
+declare const BufferHelper_getByteCountForBufferType: typeof getByteCountForBufferType;
+declare const BufferHelper_getBufferTypeForTypedArray: typeof getBufferTypeForTypedArray;
 declare const BufferHelper_getBufferUsage: typeof getBufferUsage;
+declare const BufferHelper_getBufferByteCount: typeof getBufferByteCount;
+declare const BufferHelper_getBufferLength: typeof getBufferLength;
 declare namespace BufferHelper {
   export {
     BufferHelper_createBufferSource as createBufferSource,
     BufferHelper_createBuffer as createBuffer,
-    BufferHelper_getBufferTypedArray as getBufferTypedArray,
-    BufferHelper_getTypedArrayBufferType as getTypedArrayBufferType,
+    BufferHelper_getTypedArrayForBufferType as getTypedArrayForBufferType,
+    BufferHelper_getBufferTypeForBufferSource as getBufferTypeForBufferSource,
+    BufferHelper_getByteCountForBufferType as getByteCountForBufferType,
+    BufferHelper_getBufferTypeForTypedArray as getBufferTypeForTypedArray,
     BufferHelper_getBufferUsage as getBufferUsage,
+    BufferHelper_getBufferByteCount as getBufferByteCount,
+    BufferHelper_getBufferLength as getBufferLength,
+  };
+}
+
+type AttributeFunction$1 = (index: number, buffer: WebGLBuffer, vertexSize: number, bufferType: GLenum, normalize: boolean, stride: number, offset: number, divisor: number) => any;
+
+type AttributeFunction = AttributeFunction$1;
+type ActiveAttributeInfo = {
+    type: GLenum;
+    length: number;
+    location: number;
+    set: AttributeFunction;
+};
+
+/**
+ * @callback UniformArrayFunction
+ * @param {WebGLUniformLocation} location The uniform location.
+ * @param {Float32List|Int32List|Uint32List} value The vector array.
+ * @this {WebGLRenderingContext|WebGL2RenderingContext}
+ *
+ * @callback UniformComponentFunction
+ * @param {WebGLUniformLocation} location The uniform location.
+ * @param {...number} values The components of the vector.
+ * @this {WebGLRenderingContext|WebGL2RenderingContext}
+ *
+ * @typedef {UniformArrayFunction|UniformComponentFunction} UniformFunction
+ */
+/**
+ * Gets the uniform modifier function by uniform type. For uniform vectors
+ * of size 1, it accepts a single number value. For vectors of greater
+ * size, it takes an array of numbers.
+ *
+ * @param {WebGLRenderingContextBase} gl The webgl context.
+ * @param {GLenum} uniformType The uniform data type.
+ * @returns {UniformFunction} The uniform modifier function.
+ */
+declare function getUniformFunction(gl: WebGLRenderingContextBase, uniformType: GLenum): UniformFunction$1;
+/**
+ * Get the per component uniform modifier function by uniform type.
+ *
+ * @param {WebGLRenderingContext|WebGL2RenderingContext} gl The webgl context.
+ * @param {GLenum} uniformType The uniform data type.
+ * @returns {UniformComponentFunction} The per component uniform modifier function.
+ */
+declare function getUniformComponentFunction(gl: WebGLRenderingContext | WebGL2RenderingContext, uniformType: GLenum): UniformComponentFunction;
+/**
+ * Get the array uniform modifier function by uniform type.
+ *
+ * @param {WebGLRenderingContext|WebGL2RenderingContext} gl The webgl context.
+ * @param {GLenum} uniformType The uniform data type.
+ * @returns {UniformArrayFunction} The array uniform modifier function.
+ */
+declare function getUniformArrayFunction(gl: WebGLRenderingContext | WebGL2RenderingContext, uniformType: GLenum): UniformArrayFunction;
+type UniformArrayFunction = (location: WebGLUniformLocation, value: Float32List | Int32List | Uint32List) => any;
+type UniformComponentFunction = (location: WebGLUniformLocation, ...values: number[]) => any;
+type UniformFunction$1 = UniformArrayFunction | UniformComponentFunction;
+
+declare const ProgramUniformFunctions_getUniformFunction: typeof getUniformFunction;
+declare const ProgramUniformFunctions_getUniformComponentFunction: typeof getUniformComponentFunction;
+declare const ProgramUniformFunctions_getUniformArrayFunction: typeof getUniformArrayFunction;
+type ProgramUniformFunctions_UniformArrayFunction = UniformArrayFunction;
+type ProgramUniformFunctions_UniformComponentFunction = UniformComponentFunction;
+declare namespace ProgramUniformFunctions {
+  export {
+    ProgramUniformFunctions_getUniformFunction as getUniformFunction,
+    ProgramUniformFunctions_getUniformComponentFunction as getUniformComponentFunction,
+    ProgramUniformFunctions_getUniformArrayFunction as getUniformArrayFunction,
+    ProgramUniformFunctions_UniformArrayFunction as UniformArrayFunction,
+    ProgramUniformFunctions_UniformComponentFunction as UniformComponentFunction,
+    UniformFunction$1 as UniformFunction,
+  };
+}
+
+type UniformFunction = UniformFunction$1;
+type ActiveUniformInfo = {
+    type: number;
+    length: number;
+    location: WebGLUniformLocation;
+    set: UniformFunction;
+};
+
+/**
+ * @typedef {import('../buffer/BufferInfoHelper.js').BufferInfo} BufferInfo
+ * @typedef {import('../buffer/BufferInfoHelper.js').VertexArrayObjectInfo} VertexArrayObjectInfo
+ */
+/**
+ * @typedef ProgramInfo
+ * @property {WebGLProgram} handle
+ * @property {Record<string, import('./ProgramUniformInfo.js').ActiveUniformInfo>} uniforms
+ * @property {Record<string, import('./ProgramAttributeInfo.js').ActiveAttributeInfo>} attributes
+ */
+/**
+ * Assumes all shaders already compiled and linked successfully.
+ *
+ * @param {WebGLRenderingContextBase} gl
+ * @param {WebGLProgram} program
+ * @returns {ProgramInfo}
+ */
+declare function getProgramInfo(gl: WebGLRenderingContextBase, program: WebGLProgram): ProgramInfo$1;
+/**
+ * @param {WebGLRenderingContextBase} gl
+ * @param {WebGLProgram} program
+ * @param {Array<string>} shaderSources
+ * @param {Array<GLenum>} [shaderTypes]
+ * @returns {Promise<WebGLProgram>}
+ */
+declare function linkProgramShaders(gl: WebGLRenderingContextBase, program: WebGLProgram, shaderSources: Array<string>, shaderTypes?: Array<GLenum>): Promise<WebGLProgram>;
+/**
+ * @param {WebGLRenderingContextBase} gl
+ * @param {ReturnType<getProgramInfo>} programInfo
+ * @param {BufferInfo|VertexArrayObjectInfo} bufferOrVertexArrayObjectInfo
+ */
+declare function bindProgramAttributes(gl: WebGLRenderingContextBase, programInfo: ReturnType<typeof getProgramInfo>, bufferOrVertexArrayObjectInfo: BufferInfo$1 | VertexArrayObjectInfo$1): void;
+/**
+ * @param {WebGLRenderingContextBase} gl
+ * @param {ReturnType<getProgramInfo>} programInfo
+ * @param {Record<string, ?>} uniforms
+ */
+declare function bindProgramUniforms(gl: WebGLRenderingContextBase, programInfo: ReturnType<typeof getProgramInfo>, uniforms: Record<string, unknown>): void;
+type BufferInfo$1 = BufferInfo;
+type VertexArrayObjectInfo$1 = VertexArrayObjectInfo;
+type ProgramInfo$1 = {
+    handle: WebGLProgram;
+    uniforms: Record<string, ActiveUniformInfo>;
+    attributes: Record<string, ActiveAttributeInfo>;
+};
+
+declare const ProgramInfoHelper_getProgramInfo: typeof getProgramInfo;
+declare const ProgramInfoHelper_linkProgramShaders: typeof linkProgramShaders;
+declare const ProgramInfoHelper_bindProgramAttributes: typeof bindProgramAttributes;
+declare const ProgramInfoHelper_bindProgramUniforms: typeof bindProgramUniforms;
+declare namespace ProgramInfoHelper {
+  export {
+    ProgramInfoHelper_getProgramInfo as getProgramInfo,
+    ProgramInfoHelper_linkProgramShaders as linkProgramShaders,
+    ProgramInfoHelper_bindProgramAttributes as bindProgramAttributes,
+    ProgramInfoHelper_bindProgramUniforms as bindProgramUniforms,
+    BufferInfo$1 as BufferInfo,
+    VertexArrayObjectInfo$1 as VertexArrayObjectInfo,
+    ProgramInfo$1 as ProgramInfo,
+  };
+}
+
+/**
+ * @typedef {WebGLBuffer|BufferSource|Array<number>} AttribBufferLike
+ *
+ * @typedef ArrayAttribOption
+ * @property {AttribBufferLike} buffer
+ * @property {string} [name]
+ * @property {number} [size]
+ * @property {GLenum} [type]
+ * @property {boolean} [normalize]
+ * @property {number} [stride]
+ * @property {number} [offset]
+ * @property {number} [divisor]
+ * @property {GLenum} [usage]
+ * @property {number} [length]
+ *
+ * @typedef ElementAttribOption
+ * @property {AttribBufferLike} buffer
+ * @property {GLenum} [type]
+ * @property {GLenum} [usage]
+ * @property {number} [length]
+ *
+ * @typedef {ReturnType<createArrayAttrib>} ArrayAttrib
+ * @typedef {ReturnType<createElementAttrib>} ElementAttrib
+ *
+ * @typedef BufferInfo
+ * @property {Record<string, ArrayAttrib>} attributes
+ * @property {number} vertexCount
+ * @property {ElementAttrib} element
+ *
+ * @typedef VertexArrayObjectInfo
+ * @property {WebGLVertexArrayObject} handle
+ * @property {number} vertexCount
+ * @property {ElementAttrib} element
+ */
+/**
+ * @param {WebGLRenderingContextBase} gl
+ * @param {Record<string, ArrayAttribOption>} arrays
+ * @param {ElementAttribOption} [elementArray]
+ * @returns {BufferInfo}
+ */
+declare function createBufferInfo(gl: WebGLRenderingContextBase, arrays: Record<string, ArrayAttribOption>, elementArray?: ElementAttribOption): BufferInfo;
+/**
+ * @param {WebGLRenderingContextBase} gl
+ * @param {BufferInfo} bufferInfo
+ * @param {Array<import('../program/ProgramInfoHelper.js').ProgramInfo>} programInfos
+ * @returns {VertexArrayObjectInfo}
+ */
+declare function createVertexArrayInfo(gl: WebGLRenderingContextBase, bufferInfo: BufferInfo, programInfos: Array<ProgramInfo$1>): VertexArrayObjectInfo;
+/**
+ * @param {WebGLRenderingContextBase} gl
+ * @param {BufferInfo} bufferInfo
+ */
+declare function drawBufferInfo(gl: WebGLRenderingContextBase, bufferInfo: BufferInfo, mode?: number, offset?: number, vertexCount?: number, instanceCount?: any): void;
+type AttribBufferLike = WebGLBuffer | BufferSource | Array<number>;
+type ArrayAttribOption = {
+    buffer: AttribBufferLike;
+    name?: string;
+    size?: number;
+    type?: GLenum;
+    normalize?: boolean;
+    stride?: number;
+    offset?: number;
+    divisor?: number;
+    usage?: GLenum;
+    length?: number;
+};
+type ElementAttribOption = {
+    buffer: AttribBufferLike;
+    type?: GLenum;
+    usage?: GLenum;
+    length?: number;
+};
+type ArrayAttrib = ReturnType<typeof createArrayAttrib>;
+type ElementAttrib = ReturnType<typeof createElementAttrib>;
+type BufferInfo = {
+    attributes: Record<string, ArrayAttrib>;
+    vertexCount: number;
+    element: ElementAttrib;
+};
+type VertexArrayObjectInfo = {
+    handle: WebGLVertexArrayObject;
+    vertexCount: number;
+    element: ElementAttrib;
+};
+/**
+ * @param {string} name
+ * @param {WebGLBuffer} buffer
+ * @param {number} length
+ * @param {number} size
+ * @param {GLenum} type
+ * @param {boolean} normalize
+ * @param {number} stride
+ * @param {number} offset
+ * @param {number} divisor
+ */
+declare function createArrayAttrib(name: string, buffer: WebGLBuffer, length: number, size: number, type: GLenum, normalize: boolean, stride: number, offset: number, divisor: number): {
+    name: string;
+    buffer: WebGLBuffer;
+    length: number;
+    size: number;
+    type: number;
+    normalize: boolean;
+    stride: number;
+    offset: number;
+    divisor: number;
+};
+/**
+ * @param {WebGLBuffer} buffer
+ * @param {GLenum} type
+ * @param {number} length
+ */
+declare function createElementAttrib(buffer: WebGLBuffer, type: GLenum, length: number): {
+    buffer: WebGLBuffer;
+    type: number;
+    length: number;
+};
+
+declare const BufferInfoHelper_createBufferInfo: typeof createBufferInfo;
+declare const BufferInfoHelper_createVertexArrayInfo: typeof createVertexArrayInfo;
+declare const BufferInfoHelper_drawBufferInfo: typeof drawBufferInfo;
+type BufferInfoHelper_AttribBufferLike = AttribBufferLike;
+type BufferInfoHelper_ArrayAttribOption = ArrayAttribOption;
+type BufferInfoHelper_ElementAttribOption = ElementAttribOption;
+type BufferInfoHelper_ArrayAttrib = ArrayAttrib;
+type BufferInfoHelper_ElementAttrib = ElementAttrib;
+type BufferInfoHelper_BufferInfo = BufferInfo;
+type BufferInfoHelper_VertexArrayObjectInfo = VertexArrayObjectInfo;
+declare namespace BufferInfoHelper {
+  export {
+    BufferInfoHelper_createBufferInfo as createBufferInfo,
+    BufferInfoHelper_createVertexArrayInfo as createVertexArrayInfo,
+    BufferInfoHelper_drawBufferInfo as drawBufferInfo,
+    BufferInfoHelper_AttribBufferLike as AttribBufferLike,
+    BufferInfoHelper_ArrayAttribOption as ArrayAttribOption,
+    BufferInfoHelper_ElementAttribOption as ElementAttribOption,
+    BufferInfoHelper_ArrayAttrib as ArrayAttrib,
+    BufferInfoHelper_ElementAttrib as ElementAttrib,
+    BufferInfoHelper_BufferInfo as BufferInfo,
+    BufferInfoHelper_VertexArrayObjectInfo as VertexArrayObjectInfo,
   };
 }
 
@@ -181,19 +510,6 @@ declare namespace BufferEnums {
     const FLOAT: number;
     const HALF_FLOAT: number;
 }
-
-type ActiveAttributeInfo = {
-    type: GLenum;
-    length: number;
-    location: number;
-};
-
-type ActiveUniformInfo = {
-    type: string;
-    length: number;
-    location: number;
-    set: any;
-};
 
 declare class ProgramInfo {
     /**
@@ -309,38 +625,37 @@ declare function getActiveAttribs(gl: WebGLRenderingContextBase, program: WebGLP
  * Create and compile shader from source text.
  *
  * @param {WebGLRenderingContextBase} gl The webgl context.
- * @param {GLenum} type The type of the shader. This is usually `gl.VERTEX_SHADER`
+ * @param {GLenum} shaderType The type of the shader. This is usually `gl.VERTEX_SHADER`
  * or `gl.FRAGMENT_SHADER`.
  * @param {string} shaderSource The shader source text.
  * @returns {WebGLShader} The compiled shader.
  */
-declare function createShader(gl: WebGLRenderingContextBase, shaderType: any, shaderSource: string): WebGLShader;
+declare function createShader(gl: WebGLRenderingContextBase, shaderType: GLenum, shaderSource: string): WebGLShader;
 /**
  * Link the given shader program from list of compiled shaders.
  *
  * @param {WebGLRenderingContextBase} gl The webgl context.
- * @param {WebGLProgram} program The type of the shader.
- * This is usually `gl.VERTEX_SHADER` or `gl.FRAGMENT_SHADER`.
+ * @param {WebGLProgram} program The shader program handle.
  * @param {Array<WebGLShader>} shaders The list of compiled shaders
  * to link in the program.
- * @returns {WebGLProgram} The linked shader program.
+ * @returns {Promise<WebGLProgram>} The linked shader program.
  */
-declare function createShaderProgram(gl: WebGLRenderingContextBase, program: WebGLProgram, shaders: Array<WebGLShader>): WebGLProgram;
+declare function createShaderProgram(gl: WebGLRenderingContextBase, program: WebGLProgram, shaders: Array<WebGLShader>): Promise<WebGLProgram>;
 /**
  * Draw the currently bound render context.
  *
  * @param {WebGLRenderingContextBase} gl
- * @param {Number} mode
- * @param {Number} offset
- * @param {Number} count
+ * @param {number} mode
+ * @param {number} offset
+ * @param {number} count
  * @param {WebGLBuffer} [elementBuffer]
  */
 declare function draw(gl: WebGLRenderingContextBase, mode: number, offset: number, count: number, elementBuffer?: WebGLBuffer): void;
 /**
- * @param {WebGLRenderingContextBase} gl
+ * @param {WebGLRenderingContext|WebGL2RenderingContext} gl
  * @param {WebGLProgram} program
  */
-declare function getProgramInfo(gl: WebGLRenderingContextBase, program: WebGLProgram): {
+declare function getProgramStatus(gl: WebGLRenderingContext | WebGL2RenderingContext, program: WebGLProgram): {
     /** @type {GLboolean} */
     linkStatus: GLboolean;
     /** @type {GLboolean} */
@@ -348,15 +663,13 @@ declare function getProgramInfo(gl: WebGLRenderingContextBase, program: WebGLPro
     /** @type {GLboolean} */
     validateStatus: GLboolean;
     /** @type {string} */
-    validationLog: string;
-    activeUniforms: Record<string, ActiveUniformInfo>;
-    activeAttributes: Record<string, ActiveAttributeInfo>;
+    infoLog: string;
 };
 
 declare const ProgramHelper_createShader: typeof createShader;
 declare const ProgramHelper_createShaderProgram: typeof createShaderProgram;
 declare const ProgramHelper_draw: typeof draw;
-declare const ProgramHelper_getProgramInfo: typeof getProgramInfo;
+declare const ProgramHelper_getProgramStatus: typeof getProgramStatus;
 declare const ProgramHelper_getActiveUniforms: typeof getActiveUniforms;
 declare const ProgramHelper_getActiveAttribs: typeof getActiveAttribs;
 declare namespace ProgramHelper {
@@ -364,7 +677,7 @@ declare namespace ProgramHelper {
     ProgramHelper_createShader as createShader,
     ProgramHelper_createShaderProgram as createShaderProgram,
     ProgramHelper_draw as draw,
-    ProgramHelper_getProgramInfo as getProgramInfo,
+    ProgramHelper_getProgramStatus as getProgramStatus,
     ProgramHelper_getActiveUniforms as getActiveUniforms,
     ProgramHelper_getActiveAttribs as getActiveAttribs,
   };
@@ -422,64 +735,4 @@ declare namespace ProgramAttributeEnums {
     const HALF_FLOAT: number;
 }
 
-/**
- * @callback UniformArrayFunction
- * @param {WebGLUniformLocation} location The uniform location.
- * @param {Float32List|Int32List} value The vector array.
- * @this {WebGLRenderingContext|WebGL2RenderingContext}
- *
- * @callback UniformComponentFunction
- * @param {WebGLUniformLocation} location The uniform location.
- * @param {...Number} values The components of the vector.
- * @this {WebGLRenderingContext|WebGL2RenderingContext}
- *
- * @typedef {UniformArrayFunction|UniformComponentFunction} UniformFunction
- */
-/**
- * Gets the uniform modifier function by uniform type. For uniform vectors
- * of size 1, it accepts a single number value. For vectors of greater
- * size, it takes an array of numbers.
- *
- * @param {WebGLRenderingContext|WebGL2RenderingContext} gl The webgl context.
- * @param {GLenum} uniformType The uniform data type.
- * @returns {UniformFunction} The uniform modifier function.
- */
-declare function getUniformFunction(gl: WebGLRenderingContext | WebGL2RenderingContext, uniformType: GLenum): UniformFunction;
-/**
- * Get the per component uniform modifier function by uniform type.
- *
- * @param {WebGLRenderingContext|WebGL2RenderingContext} gl The webgl context.
- * @param {GLenum} uniformType The uniform data type.
- * @returns {UniformComponentFunction} The per component uniform modifier function.
- */
-declare function getUniformFunctionForComponent(gl: WebGLRenderingContext | WebGL2RenderingContext, uniformType: GLenum): UniformComponentFunction;
-/**
- * Get the array uniform modifier function by uniform type.
- *
- * @param {WebGLRenderingContext|WebGL2RenderingContext} gl The webgl context.
- * @param {GLenum} uniformType The uniform data type.
- * @returns {UniformArrayFunction} The array uniform modifier function.
- */
-declare function getUniformFunctionForArray(gl: WebGLRenderingContext | WebGL2RenderingContext, uniformType: GLenum): UniformArrayFunction;
-type UniformArrayFunction = (location: WebGLUniformLocation, value: Float32List | Int32List) => any;
-type UniformComponentFunction = (location: WebGLUniformLocation, ...values: number[]) => any;
-type UniformFunction = UniformArrayFunction | UniformComponentFunction;
-
-declare const ProgramUniformFunctions_getUniformFunction: typeof getUniformFunction;
-declare const ProgramUniformFunctions_getUniformFunctionForComponent: typeof getUniformFunctionForComponent;
-declare const ProgramUniformFunctions_getUniformFunctionForArray: typeof getUniformFunctionForArray;
-type ProgramUniformFunctions_UniformArrayFunction = UniformArrayFunction;
-type ProgramUniformFunctions_UniformComponentFunction = UniformComponentFunction;
-type ProgramUniformFunctions_UniformFunction = UniformFunction;
-declare namespace ProgramUniformFunctions {
-  export {
-    ProgramUniformFunctions_getUniformFunction as getUniformFunction,
-    ProgramUniformFunctions_getUniformFunctionForComponent as getUniformFunctionForComponent,
-    ProgramUniformFunctions_getUniformFunctionForArray as getUniformFunctionForArray,
-    ProgramUniformFunctions_UniformArrayFunction as UniformArrayFunction,
-    ProgramUniformFunctions_UniformComponentFunction as UniformComponentFunction,
-    ProgramUniformFunctions_UniformFunction as UniformFunction,
-  };
-}
-
-export { BufferBuilder, BufferDataContext, BufferEnums, BufferHelper, BufferInfo, BufferInfoBuilder, GLHelper, ProgramAttributeEnums, ProgramBuilder, ProgramHelper, ProgramInfo, ProgramInfoBuilder, ProgramInfoDrawContext, ProgramUniformEnums, ProgramUniformFunctions };
+export { BufferBuilder, BufferDataContext, BufferEnums, BufferHelper, BufferInfo$2 as BufferInfo, BufferInfoBuilder, BufferInfoHelper, GLHelper, ProgramAttributeEnums, ProgramBuilder, ProgramHelper, ProgramInfo, ProgramInfoBuilder, ProgramInfoDrawContext, ProgramInfoHelper, ProgramUniformEnums, ProgramUniformFunctions };

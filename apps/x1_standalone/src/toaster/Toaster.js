@@ -25,3 +25,21 @@ export async function preloadAssetPack() {
 export async function preloadAssets(assets, assetPortQuerySelector = 'asset-port') {
     await AssetManager.loadAssetRefs(Object.values(assets));
 }
+
+/**
+ * @param {ParentNode} root
+ * @param {string} selector
+ * @returns {import('@milque/display').DisplayPort}
+ */
+export function getDisplayPort(root = document, selector = 'display-port') {
+  return root.querySelector(selector);
+}
+
+/**
+ * @param {ParentNode} root
+ * @param {string} selector
+ * @returns {import('@milque/input').InputPort}
+ */
+export function getInputPort(root = document, selector = 'input-port') {
+  return root.querySelector(selector);
+}

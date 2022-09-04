@@ -274,6 +274,8 @@ class FirstPersonCameraController {
   }
 
   look(dx, dy, dt = 1) {
+    // NOTE: Increase sensitivity to relatively match movement.
+    dt *= 1000;
     this.pitch = Math.min(89.9, Math.max(-89.9, this.pitch + dy * dt));
     this.yaw = (this.yaw + dx * dt) % 360;
     return this;
