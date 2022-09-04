@@ -492,8 +492,9 @@ function attributeFloatMatrixBufferImpl(matrixLength, matrixSize, index, buffer,
 /**
  * @typedef ActiveAttributeInfo
  * @property {GLenum} type
- * @property {number} size
+ * @property {number} length
  * @property {number} location
+ * @property {number} size
  * @property {AttributeFunction} applier
  * @property {number|Float32List|Int32List|Uint32List} value
  */
@@ -511,14 +512,16 @@ function getActiveAttribsInfo(gl, program) {
   const activeAttributes = getActiveAttribs(gl, program);
   for (let activeInfo of activeAttributes) {
     const attributeName = activeInfo.name;
-    const attributeSize = activeInfo.size;
+    const attributeLength = activeInfo.size;
     const attributeType = activeInfo.type;
     const attributeLocation = gl.getAttribLocation(program, attributeName);
     const attributeApplier = getAttributeFunction(gl, attributeType);
+    const attributeSize = getAttribVertexSize(gl, attributeType);
     result[attributeName] = {
       type: attributeType,
-      size: attributeSize,
+      length: attributeLength,
       location: attributeLocation,
+      size: attributeSize,
       applier: attributeApplier,
       set value([buffer, vertexSize, bufferType, normalize, stride, offset, divisor]) {
         this.applier(this.location, buffer, vertexSize, bufferType, normalize, stride, offset, divisor);
@@ -1153,7 +1156,7 @@ var ProgramUniformFunctions = /*#__PURE__*/Object.freeze({
 /**
  * @typedef ActiveUniformInfo
  * @property {number} type
- * @property {number} size
+ * @property {number} length
  * @property {WebGLUniformLocation} location
  * @property {UniformFunction} applier
  * @property {number|Float32List|Int32List|Uint32List} value
@@ -1178,7 +1181,7 @@ function getActiveUniformsInfo(gl, program) {
     const uniformApplier = getUniformFunction(gl, uniformType);
     result[uniformName] = {
       type: uniformType,
-      size: uniformSize,
+      length: uniformSize,
       location: uniformLocation,
       applier: uniformApplier,
       set value(value) {

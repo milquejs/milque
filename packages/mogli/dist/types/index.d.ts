@@ -132,8 +132,9 @@ type AttributeFunction$1 = (index: number, buffer: WebGLBuffer, vertexSize: numb
 type AttributeFunction = AttributeFunction$1;
 type ActiveAttributeInfo = {
     type: GLenum;
-    size: number;
+    length: number;
     location: number;
+    size: number;
     applier: AttributeFunction;
     value: number | Float32List | Int32List | Uint32List;
 };
@@ -200,7 +201,7 @@ declare namespace ProgramUniformFunctions {
 type UniformFunction = UniformFunction$1;
 type ActiveUniformInfo = {
     type: number;
-    size: number;
+    length: number;
     location: WebGLUniformLocation;
     applier: UniformFunction;
     value: number | Float32List | Int32List | Uint32List;
