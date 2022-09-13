@@ -70,8 +70,6 @@ class Mulberry32 extends RandomBase {
 class Random {
   /**
    * The lazily-initiated, static instance of this random class.
-   *
-   * @protected
    */
   static get RAND() {
     let instance = new this();

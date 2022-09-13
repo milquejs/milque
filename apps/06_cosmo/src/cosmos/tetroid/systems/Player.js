@@ -1,6 +1,6 @@
 import { ComponentClass, ComponentQuery, EntityTemplate } from '../../core/EntityManager.js';
 import { addListener } from '../../core/Listenable.js';
-import { INPUTS } from '../../inputs.js';
+import { INPUTS } from '../../cosmos/inputs.js';
 import { useRenderManager } from '../../renderer/RenderManager.js';
 
 /** @typedef {import('../../renderer/drawcontext/DrawContextFixedGLText.js').DrawContextFixedGLText} DrawContextFixedGLText */

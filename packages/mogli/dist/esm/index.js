@@ -1541,7 +1541,7 @@ function createVertexAttributesInfo(gl, arrays) {
                 length = size;
             }
         } else {
-            throw new Error('Invalid buffer for array attribute options.');
+            throw new Error(`Invalid buffer '${buffer}' for array attribute options.`);
         }
 
         // Resolve type.

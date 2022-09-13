@@ -9,8 +9,6 @@ import { Mulberry32 } from './generators/Mulberry32.js';
 export class Random {
   /**
    * The lazily-initiated, static instance of this random class.
-   *
-   * @protected
    */
   static get RAND() {
     let instance = new this();

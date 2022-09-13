@@ -40,10 +40,8 @@ type NumberFunction = () => number;
 declare class Random {
     /**
      * The lazily-initiated, static instance of this random class.
-     *
-     * @protected
      */
-    protected static get RAND(): Random;
+    static get RAND(): Random;
     static next(): number;
     /**
      * @template T

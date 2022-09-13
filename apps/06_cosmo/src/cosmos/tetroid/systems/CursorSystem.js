@@ -1,5 +1,5 @@
 import { Random } from '@milque/random';
-import { INPUTS } from '../../inputs.js';
+import { INPUTS } from '../../cosmos/inputs.js';
 import { ComponentClass, ComponentQuery, EntityTemplate } from '../../core/EntityManager.js';
 import { getTile, setTile } from '../../core/ChunkMap.js';
 import { addListener } from '../../core/Listenable.js';
