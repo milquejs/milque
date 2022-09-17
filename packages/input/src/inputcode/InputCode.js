@@ -22,7 +22,6 @@ export class InputCode extends HTMLElement {
     customElements.define('input-code', this);
   }
 
-  /** @override */
   static get observedAttributes() {
     return ['name', 'value', 'disabled'];
   }
@@ -56,13 +55,10 @@ export class InputCode extends HTMLElement {
 
   constructor() {
     super();
-    this.attachShadow({ mode: 'open' });
-    this.shadowRoot.appendChild(
-      this.constructor[Symbol.for('templateNode')].content.cloneNode(true)
-    );
-    this.shadowRoot.appendChild(
-      this.constructor[Symbol.for('styleNode')].cloneNode(true)
-    );
+    const c = this.constructor;
+    const shadowRoot = this.attachShadow({ mode: 'open' });
+    shadowRoot.appendChild(c[Symbol.for('templateNode')].content.cloneNode(true));
+    shadowRoot.appendChild(c[Symbol.for('styleNode')].cloneNode(true));
 
     /** @private */
     this._name = '';
@@ -72,14 +68,13 @@ export class InputCode extends HTMLElement {
     this._disabled = false;
 
     /** @private */
-    this._kbdElement = this.shadowRoot.querySelector('kbd');
+    this._kbdElement = shadowRoot.querySelector('kbd');
     /** @private */
-    this._nameElement = this.shadowRoot.querySelector('#name');
+    this._nameElement = shadowRoot.querySelector('#name');
     /** @private */
-    this._valueElement = this.shadowRoot.querySelector('#value');
+    this._valueElement = shadowRoot.querySelector('#value');
   }
 
-  /** @override */
   attributeChangedCallback(attribute, prev, value) {
     switch (attribute) {
       case 'name':
@@ -91,9 +86,8 @@ export class InputCode extends HTMLElement {
         if (value !== null) {
           this._valueElement.classList.toggle('hidden', false);
           this._valueElement.textContent = value;
-          this._kbdElement.style.paddingRight = `${
-            this._valueElement.clientWidth + 4
-          }px`;
+          this._kbdElement.style.paddingRight = `${this._valueElement.clientWidth + 4
+            }px`;
         } else {
           this._valueElement.classList.toggle('hidden', true);
         }
@@ -105,7 +99,6 @@ export class InputCode extends HTMLElement {
     }
   }
 
-  /** @override */
   connectedCallback() {
     if (Object.prototype.hasOwnProperty.call(this, 'name')) {
       let value = this.name;

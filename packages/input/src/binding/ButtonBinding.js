@@ -2,7 +2,10 @@ import { from } from '../keycode/KeyCodes.js';
 import { InputBinding } from './InputBinding.js';
 import { stringsToKeyCodes } from '../keycode/KeyCodeHelper.js';
 
-/** @typedef {import('../keycode/KeyCode.js').KeyCode} KeyCode */
+/**
+ * @typedef {import('../keycode/KeyCode.js').KeyCode} KeyCode
+ * @typedef {import('../InputContext.js').InputContext} InputContext
+ */
 
 export class ButtonBinding extends InputBinding {
   /**
@@ -74,7 +77,7 @@ export class ButtonBinding extends InputBinding {
 
   /**
    * @override
-   * @param {import('../InputContext.js').InputContext} inputContext
+   * @param {InputContext} inputContext
    */
   register(inputContext) {
     let name = this.name;

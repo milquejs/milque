@@ -7,7 +7,6 @@ import { InputContext } from '../InputContext';
 /**
  * @typedef {import('../device/InputDevice.js').InputDevice} InputDevice
  * @typedef {import('../device/InputDevice.js').InputDeviceEvent} InputDeviceEvent
- * @typedef {import('../axisbutton/InputBase.js').InputBase} InputBase
  * @typedef {import('../InputBindings.js').DeviceName} DeviceName
  * @typedef {import('../InputBindings.js').KeyCode} KeyCode
  * @typedef {import('../InputBindings.js').BindingOptions} BindingOptions
@@ -36,7 +35,6 @@ export class InputPort extends HTMLElement {
     customElements.define('input-port', this);
   }
 
-  /** @override */
   static get observedAttributes() {
     return ['autopoll', 'for'];
   }
@@ -88,7 +86,10 @@ export class InputPort extends HTMLElement {
     const eventTarget = this;
     /** @private */
     this._for = '';
-    /** @private */
+    /**
+     * @private
+     * @type {HTMLElement}
+     */
     this._eventTarget = eventTarget;
     /** @private */
     this._autopoll = false;
@@ -106,7 +107,6 @@ export class InputPort extends HTMLElement {
     this.onInputContextBlur = this.onInputContextBlur.bind(this);
   }
 
-  /** @override */
   connectedCallback() {
     if (Object.prototype.hasOwnProperty.call(this, 'for')) {
       let value = this.for;
@@ -126,7 +126,6 @@ export class InputPort extends HTMLElement {
     this.animationFrameHandle = requestAnimationFrame(this.onAnimationFrame);
   }
 
-  /** @override */
   disconnectedCallback() {
     let ctx = this._context;
     if (ctx) {
@@ -138,29 +137,27 @@ export class InputPort extends HTMLElement {
       this._context = null;
     }
   }
-
-  /** @override */
+  
   attributeChangedCallback(attribute, prev, value) {
     switch (attribute) {
-      case 'for':
-        {
-          this._for = value;
-          let target;
-          let name;
-          if (value) {
-            target = document.getElementById(value);
-            name = `${target.tagName.toLowerCase()}#${value}`;
-          } else {
-            target = this;
-            name = 'input-port';
-          }
-          this._eventTarget = target;
-          if (this._context) {
-            this._context.setEventTarget(this._eventTarget);
-          }
-          // For debug info
-          this._titleElement.innerHTML = `for ${name}`;
+      case 'for': {
+        this._for = value;
+        let target;
+        let name;
+        if (value) {
+          target = document.getElementById(value);
+          name = `${target.tagName.toLowerCase()}#${value}`;
+        } else {
+          target = this;
+          name = 'input-port';
         }
+        this._eventTarget = target;
+        if (this._context) {
+          this._context.setEventTarget(this._eventTarget);
+        }
+        // For debug info
+        this._titleElement.innerHTML = `for ${name}`;
+      }
         break;
       case 'autopoll':
         this._autopoll = value !== null;

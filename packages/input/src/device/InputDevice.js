@@ -21,13 +21,13 @@
 export class InputDevice {
   /** @abstract */
   // eslint-disable-next-line no-unused-vars
-  static isAxis(code) {
+  static isAxis(keyCode) {
     return false;
   }
 
   /** @abstract */
   // eslint-disable-next-line no-unused-vars
-  static isButton(code) {
+  static isButton(keyCode) {
     return false;
   }
 

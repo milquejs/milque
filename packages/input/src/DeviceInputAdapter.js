@@ -21,14 +21,15 @@ export class DeviceInputAdapter {
     this.bindings = bindings;
   }
 
-  /** @private */
+  /**
+   * @param {number} now 
+   */
   onPoll(now) {
     for (let input of this.bindings.getInputs()) {
       input.onPoll(now);
     }
   }
-
-  /** @private */
+  
   onInput(e) {
     const {
       device,

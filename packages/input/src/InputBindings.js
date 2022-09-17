@@ -1,6 +1,6 @@
 /**
- * @typedef {import('./axisbutton/InputBase.js').InputBase} InputBase
- * @typedef {import('./axisbutton/InputBase.js').BindingOptions} BindingOptions
+ * @typedef {import('./axisbutton/InputState.js').InputState} InputState
+ * @typedef {import('./axisbutton/InputState.js').BindingOptions} BindingOptions
  *
  * @typedef {string} DeviceName
  * @typedef {string} KeyCode
@@ -10,7 +10,7 @@ class Binding {
   /**
    * @param {DeviceName} device The name of the device
    * @param {KeyCode} code The key code for the device
-   * @param {InputBase} input The parent input
+   * @param {InputState} input The parent input
    * @param {number} index The binding index for the input
    */
   constructor(device, code, input, index) {
@@ -28,7 +28,7 @@ class Binding {
 /**
  * A class that maps inputs to their respective key bindings.
  *
- * This does not handle input state (refer to InputBase.js) nor
+ * This does not handle input state (refer to InputState.js) nor
  * input events (refer to InputDevice.js). It is only responsible
  * for the redirection of key codes to their bound input. Usually
  * this is used together with the interfaces referenced above.
@@ -37,12 +37,12 @@ export class InputBindings {
   constructor() {
     /**
      * @private
-     * @type {Record<DeviceName, Record<KeyCode, Array<Binding>>}
+     * @type {Record<DeviceName, Record<KeyCode, Array<Binding>>>}
      */
     this.bindingMap = {};
     /**
      * @private
-     * @type {Map<InputBase, Array<Binding>>}
+     * @type {Map<InputState, Array<Binding>>}
      */
     this.inputMap = new Map();
   }
@@ -56,7 +56,7 @@ export class InputBindings {
   }
 
   /**
-   * @param {InputBase} input
+   * @param {InputState} input
    * @param {DeviceName} device
    * @param {KeyCode} code
    * @param {BindingOptions} [opts]
@@ -93,7 +93,7 @@ export class InputBindings {
   }
 
   /**
-   * @param {InputBase} input
+   * @param {InputState} input
    */
   unbind(input) {
     let inputMap = this.inputMap;
@@ -113,19 +113,19 @@ export class InputBindings {
   }
 
   /**
-   * @param {InputBase} input
+   * @param {InputState} input
    * @returns {boolean}
    */
   isBound(input) {
     return this.inputMap.has(input);
   }
 
-  /** @returns {IterableIterator<InputBase>} */
+  /** @returns {Iterable<InputState>} */
   getInputs() {
     return this.inputMap.keys();
   }
 
-  /** @returns {IterableIterator<Binding>} */
+  /** @returns {Iterable<Binding>} */
   getBindingsByInput(input) {
     return this.inputMap.get(input);
   }
@@ -133,7 +133,7 @@ export class InputBindings {
   /**
    * @param {DeviceName} device
    * @param {KeyCode} code
-   * @returns {IterableIterator<Binding>}
+   * @returns {Array<Binding>}
    */
   getBindings(device, code) {
     let deviceCodeBindings = this.bindingMap;

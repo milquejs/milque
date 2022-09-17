@@ -1,8 +1,8 @@
-import { InputBase } from './InputBase.js';
+import { InputState } from './InputState.js';
 
 /**
- * @typedef {import('./InputBase.js').BindingIndex} BindingIndex The binding index
- * @typedef {import('./InputBase.js').BindingOptions} BindingOptions The binding options
+ * @typedef {import('./InputState.js').BindingIndex} BindingIndex The binding index
+ * @typedef {import('./InputState.js').BindingOptions} BindingOptions The binding options
  *
  * @typedef AxisBindingState
  * @property {number} value
@@ -15,7 +15,7 @@ import { InputBase } from './InputBase.js';
  * @property {boolean} polling
  */
 
-export class Axis extends InputBase {
+export class AxisState extends InputState {
   /** @returns {AxisBindingState} */
   static createAxisBindingState() {
     return {
@@ -44,8 +44,9 @@ export class Axis extends InputBase {
   constructor(size = 0) {
     super(size);
     let state = new Array();
+    let c = /** @type {typeof AxisState} */ (this.constructor);
     for (let i = 0; i < size; ++i) {
-      state.push(this.constructor.createAxisBindingState());
+      state.push(c.createAxisBindingState());
     }
     /**
      * @private
@@ -71,8 +72,9 @@ export class Axis extends InputBase {
     } else {
       newState = oldState;
       // Fill with new states
+      let c = /** @type {typeof AxisState} */ (this.constructor);
       for (let i = oldSize; i < newSize; ++i) {
-        newState.push(this.constructor.createAxisBindingState());
+        newState.push(c.createAxisBindingState());
       }
     }
     this._state = newState;
@@ -136,9 +138,9 @@ export class Axis extends InputBase {
    * @param {BindingIndex} code
    * @param {BindingOptions} [opts]
    */
-  onBind(code, opts = {}) {
+  onBind(code, opts = undefined) {
     super.onBind(code, opts);
-    const { inverted = false } = opts;
+    const { inverted = false } = opts || {};
     let state = this._state;
     state[code].inverted = inverted;
   }

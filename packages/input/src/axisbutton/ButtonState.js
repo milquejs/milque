@@ -1,8 +1,8 @@
-import { InputBase } from './InputBase.js';
+import { InputState } from './InputState.js';
 
 /**
- * @typedef {import('./InputBase.js').BindingIndex} BindingIndex
- * @typedef {import('./InputBase.js').BindingOptions} BindingOptions
+ * @typedef {import('./InputState.js').BindingIndex} BindingIndex
+ * @typedef {import('./InputState.js').BindingOptions} BindingOptions
  *
  * @typedef ButtonReadOnly
  * @property {number} value
@@ -23,7 +23,7 @@ export const REPEATED_STATE_BIT = 0b0000_0100;
 export const RELEASED_STATE_BIT = 0b0000_1000;
 export const INVERTED_MODIFIER_BIT = 0b0001_0000;
 
-export class Button extends InputBase {
+export class ButtonState extends InputState {
   /** @returns {boolean} */
   get pressed() {
     return this._pressed;
@@ -160,7 +160,7 @@ export class Button extends InputBase {
    * @param {BindingIndex} code
    * @param {BindingOptions} [opts]
    */
-  onBind(code, opts = {}) {
+  onBind(code, opts = { inverted: false }) {
     super.onBind(code, opts);
     const { inverted = false } = opts;
     let state = this._state;

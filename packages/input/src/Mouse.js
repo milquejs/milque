@@ -1,5 +1,5 @@
-import { Axis } from './axisbutton/Axis.js';
-import { Button } from './axisbutton/Button.js';
+import { AxisState } from './axisbutton/AxisState.js';
+import { ButtonState } from './axisbutton/ButtonState.js';
 import { MouseDevice } from './device/MouseDevice.js';
 import { InputBindings } from './InputBindings.js';
 import { DeviceInputAdapter } from './DeviceInputAdapter.js';
@@ -7,35 +7,35 @@ import { AutoPoller } from './AutoPoller.js';
 import { MOUSE } from './keycode/KeyCodes.js';
 
 /**
- * @typedef {import('./axisbutton/Axis.js').AxisReadOnly} AxisReadOnly
- * @typedef {import('./axisbutton/Button.js').ButtonReadOnly} ButtonReadOnly
+ * @typedef {import('./axisbutton/AxisState.js').AxisReadOnly} AxisReadOnly
+ * @typedef {import('./axisbutton/ButtonState.js').ButtonReadOnly} ButtonReadOnly
  */
 
 const MOUSE_SOURCE = Symbol('mouseSource');
 export class Mouse {
   constructor(eventTarget, opts) {
     /** @type {AxisReadOnly} */
-    this.PosX = new Axis();
+    this.PosX = new AxisState();
     /** @type {AxisReadOnly} */
-    this.PosY = new Axis();
+    this.PosY = new AxisState();
 
     /** @type {AxisReadOnly} */
-    this.WheelX = new Axis();
+    this.WheelX = new AxisState();
     /** @type {AxisReadOnly} */
-    this.WheelY = new Axis();
+    this.WheelY = new AxisState();
     /** @type {AxisReadOnly} */
-    this.WheelZ = new Axis();
+    this.WheelZ = new AxisState();
 
     /** @type {ButtonReadOnly} */
-    this.Button0 = new Button();
+    this.Button0 = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.Button1 = new Button();
+    this.Button1 = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.Button2 = new Button();
+    this.Button2 = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.Button3 = new Button();
+    this.Button3 = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.Button4 = new Button();
+    this.Button4 = new ButtonState();
 
     const deviceName = MOUSE;
     const device = new MouseDevice(deviceName, eventTarget, opts);

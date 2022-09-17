@@ -1,4 +1,4 @@
-import { Button } from './axisbutton/Button.js';
+import { ButtonState } from './axisbutton/ButtonState.js';
 import { KeyboardDevice } from './device/KeyboardDevice.js';
 import { InputBindings } from './InputBindings.js';
 import { AutoPoller } from './AutoPoller.js';
@@ -6,132 +6,132 @@ import { DeviceInputAdapter } from './DeviceInputAdapter.js';
 import { KEYBOARD } from './keycode/KeyCodes.js';
 
 /**
- * @typedef {import('./axisbutton/Button.js').ButtonReadOnly} ButtonReadOnly
+ * @typedef {import('./axisbutton/ButtonState.js').ButtonReadOnly} ButtonReadOnly
  */
 
 const KEYBOARD_SOURCE = Symbol('keyboardSource');
 export class Keyboard {
   constructor(eventTarget, opts) {
     /** @type {ButtonReadOnly} */
-    this.KeyA = new Button();
+    this.KeyA = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.KeyB = new Button();
+    this.KeyB = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.KeyC = new Button();
+    this.KeyC = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.KeyD = new Button();
+    this.KeyD = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.KeyE = new Button();
+    this.KeyE = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.KeyF = new Button();
+    this.KeyF = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.KeyG = new Button();
+    this.KeyG = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.KeyH = new Button();
+    this.KeyH = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.KeyI = new Button();
+    this.KeyI = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.KeyJ = new Button();
+    this.KeyJ = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.KeyK = new Button();
+    this.KeyK = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.KeyL = new Button();
+    this.KeyL = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.KeyM = new Button();
+    this.KeyM = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.KeyN = new Button();
+    this.KeyN = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.KeyO = new Button();
+    this.KeyO = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.KeyP = new Button();
+    this.KeyP = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.KeyQ = new Button();
+    this.KeyQ = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.KeyR = new Button();
+    this.KeyR = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.KeyS = new Button();
+    this.KeyS = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.KeyT = new Button();
+    this.KeyT = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.KeyU = new Button();
+    this.KeyU = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.KeyV = new Button();
+    this.KeyV = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.KeyW = new Button();
+    this.KeyW = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.KeyX = new Button();
+    this.KeyX = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.KeyY = new Button();
+    this.KeyY = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.KeyZ = new Button();
+    this.KeyZ = new ButtonState();
 
     /** @type {ButtonReadOnly} */
-    this.Digit0 = new Button();
+    this.Digit0 = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.Digit1 = new Button();
+    this.Digit1 = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.Digit2 = new Button();
+    this.Digit2 = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.Digit3 = new Button();
+    this.Digit3 = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.Digit4 = new Button();
+    this.Digit4 = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.Digit5 = new Button();
+    this.Digit5 = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.Digit6 = new Button();
+    this.Digit6 = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.Digit7 = new Button();
+    this.Digit7 = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.Digit8 = new Button();
+    this.Digit8 = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.Digit9 = new Button();
+    this.Digit9 = new ButtonState();
 
     /** @type {ButtonReadOnly} */
-    this.Minus = new Button();
+    this.Minus = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.Equal = new Button();
+    this.Equal = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.BracketLeft = new Button();
+    this.BracketLeft = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.BracketRight = new Button();
+    this.BracketRight = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.Semicolon = new Button();
+    this.Semicolon = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.Quote = new Button();
+    this.Quote = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.Backquote = new Button();
+    this.Backquote = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.Backslash = new Button();
+    this.Backslash = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.Comma = new Button();
+    this.Comma = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.Period = new Button();
+    this.Period = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.Slash = new Button();
+    this.Slash = new ButtonState();
 
     /** @type {ButtonReadOnly} */
-    this.Escape = new Button();
+    this.Escape = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.Space = new Button();
+    this.Space = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.CapsLock = new Button();
+    this.CapsLock = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.Backspace = new Button();
+    this.Backspace = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.Delete = new Button();
+    this.Delete = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.Tab = new Button();
+    this.Tab = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.Enter = new Button();
+    this.Enter = new ButtonState();
 
     /** @type {ButtonReadOnly} */
-    this.ArrowUp = new Button();
+    this.ArrowUp = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.ArrowDown = new Button();
+    this.ArrowDown = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.ArrowLeft = new Button();
+    this.ArrowLeft = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.ArrowRight = new Button();
+    this.ArrowRight = new ButtonState();
 
     const deviceName = KEYBOARD;
     const device = new KeyboardDevice(deviceName, eventTarget, opts);
@@ -143,7 +143,9 @@ export class Keyboard {
       }
     }
     const adapter = new DeviceInputAdapter(bindings);
+    // @ts-ignore
     device.addEventListener('input', adapter.onInput);
+    // @ts-ignore
     const autopoller = new AutoPoller(adapter);
     autopoller.start();
     this[KEYBOARD_SOURCE] = {
@@ -157,6 +159,7 @@ export class Keyboard {
   destroy() {
     const source = this[KEYBOARD_SOURCE];
     source.autopoller.stop();
+    // @ts-ignore
     source.device.removeEventListener('input', source.adapter.onInput);
     source.device.destroy();
     source.bindings.clear();

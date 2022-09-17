@@ -9,7 +9,7 @@
  * @property {boolean} polling
  */
 
-export class InputBase {
+export class InputState {
   get polling() {
     let dt = performance.now() - this._lastPollingTime;
     return dt < 1_000;
@@ -19,8 +19,7 @@ export class InputBase {
   get value() {
     return 0;
   }
-
-  /** @protected */
+  
   get size() {
     return this._size;
   }
@@ -94,7 +93,7 @@ export class InputBase {
    * @param {BindingOptions} [opts]
    */
   // eslint-disable-next-line no-unused-vars
-  onBind(code, opts = {}) {
+  onBind(code, opts = undefined) {
     if (code >= this._size) {
       this.resize(code + 1);
     }

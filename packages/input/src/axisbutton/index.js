@@ -1,3 +1,3 @@
-export * from './Axis.js';
-export * from './Button.js';
-export * from './InputBase.js';
+export * from './AxisState.js';
+export * from './ButtonState.js';
+export * from './InputState.js';

@@ -1,6 +1,6 @@
 import { AutoPoller } from './AutoPoller.js';
-import { Axis } from './axisbutton/Axis.js';
-import { Button } from './axisbutton/Button.js';
+import { AxisState } from './axisbutton/AxisState.js';
+import { ButtonState } from './axisbutton/ButtonState.js';
 import { KeyboardDevice } from './device/KeyboardDevice.js';
 import { MouseDevice } from './device/MouseDevice.js';
 import { DeviceInputAdapter } from './DeviceInputAdapter.js';
@@ -9,7 +9,7 @@ import { InputBindings } from './InputBindings.js';
 /**
  * @typedef {import('./device/InputDevice.js').InputDevice} InputDevice
  * @typedef {import('./device/InputDevice.js').InputDeviceEvent} InputDeviceEvent
- * @typedef {import('./axisbutton/InputBase.js').InputBase} InputBase
+ * @typedef {import('./axisbutton/InputState.js').InputState} InputState
  * @typedef {import('./InputBindings.js').DeviceName} DeviceName
  * @typedef {import('./InputBindings.js').KeyCode} KeyCode
  * @typedef {import('./InputBindings.js').BindingOptions} BindingOptions
@@ -31,9 +31,9 @@ export class InputContext {
    * @param {EventTarget} eventTarget
    * @param {object} [opts]
    */
-  constructor(eventTarget, opts = {}) {
+  constructor(eventTarget, opts = undefined) {
     /**
-     * @type {Record<string, Axis|Button>}
+     * @type {Record<string, AxisState|ButtonState>}
      */
     this.inputs = {};
     /**
@@ -50,13 +50,13 @@ export class InputContext {
     /** @protected */
     this.eventTarget = eventTarget;
     /** @protected */
-    this.anyButton = new Button(1);
+    this.anyButton = new ButtonState(1);
     /** @protected */
     this.anyButtonDevice = '';
     /** @protected */
     this.anyButtonCode = '';
     /** @protected */
-    this.anyAxis = new Axis(1);
+    this.anyAxis = new AxisState(1);
     /** @protected */
     this.anyAxisDevice = '';
     /** @protected */
@@ -280,7 +280,7 @@ export class InputContext {
     if (this.hasButton(name)) {
       input = this.getButton(name);
     } else {
-      input = new Button(1);
+      input = new ButtonState(1);
       this.inputs[name] = input;
     }
     this.bindings.bind(input, device, code, opts);
@@ -298,7 +298,7 @@ export class InputContext {
     if (this.hasAxis(name)) {
       input = this.getAxis(name);
     } else {
-      input = new Axis(1);
+      input = new AxisState(1);
       this.inputs[name] = input;
     }
     this.bindings.bind(input, device, code, opts);
@@ -316,7 +316,7 @@ export class InputContext {
     if (this.hasAxis(name)) {
       input = this.getAxis(name);
     } else {
-      input = new Axis(2);
+      input = new AxisState(2);
       this.inputs[name] = input;
     }
     this.bindings.bind(input, device, positiveCode);
@@ -351,7 +351,7 @@ export class InputContext {
   /**
    * Get the input for the given name. Assumes the input already exists for the name.
    * @param {InputName} name
-   * @returns {InputBase}
+   * @returns {InputState}
    */
   getInput(name) {
     return this.inputs[name];
@@ -360,19 +360,19 @@ export class InputContext {
   /**
    * Get the button for the given name. Assumes a button already exists for the name.
    * @param {InputName} name
-   * @returns {Button}
+   * @returns {ButtonState}
    */
   getButton(name) {
-    return /** @type {Button} */ (this.inputs[name]);
+    return /** @type {ButtonState} */ (this.inputs[name]);
   }
 
   /**
    * Get the axis for the given name. Assumes an axis already exists for the name.
    * @param {InputName} name
-   * @returns {Axis}
+   * @returns {AxisState}
    */
   getAxis(name) {
-    return /** @type {Axis} */ (this.inputs[name]);
+    return /** @type {AxisState} */ (this.inputs[name]);
   }
 
   /**
@@ -380,7 +380,7 @@ export class InputContext {
    * @returns {boolean}
    */
   hasButton(name) {
-    return name in this.inputs && this.inputs[name] instanceof Button;
+    return name in this.inputs && this.inputs[name] instanceof ButtonState;
   }
 
   /**
@@ -388,7 +388,7 @@ export class InputContext {
    * @returns {boolean}
    */
   hasAxis(name) {
-    return name in this.inputs && this.inputs[name] instanceof Axis;
+    return name in this.inputs && this.inputs[name] instanceof AxisState;
   }
 
   /**
@@ -397,7 +397,7 @@ export class InputContext {
    * @returns {boolean}
    */
   isButtonDown(name) {
-    return /** @type {Button} */ (this.inputs[name]).down;
+    return /** @type {ButtonState} */ (this.inputs[name]).down;
   }
 
   /**
@@ -406,7 +406,7 @@ export class InputContext {
    * @returns {boolean}
    */
   isButtonPressed(name) {
-    return /** @type {Button} */ (this.inputs[name]).pressed;
+    return /** @type {ButtonState} */ (this.inputs[name]).pressed;
   }
 
   /**
@@ -415,7 +415,7 @@ export class InputContext {
    * @returns {boolean}
    */
   isButtonReleased(name) {
-    return /** @type {Button} */ (this.inputs[name]).released;
+    return /** @type {ButtonState} */ (this.inputs[name]).released;
   }
 
   /**
@@ -447,7 +447,7 @@ export class InputContext {
    * @returns {number}
    */
   getAxisDelta(name) {
-    return /** @type {Axis} */ (this.inputs[name]).delta;
+    return /** @type {AxisState} */ (this.inputs[name]).delta;
   }
 
   /** @returns {boolean} */
@@ -457,7 +457,7 @@ export class InputContext {
     } else {
       let buttons = this.inputs;
       for (let name of include) {
-        let button = /** @type {Button} */ (buttons[name]);
+        let button = /** @type {ButtonState} */ (buttons[name]);
         if (button.down) {
           return true;
         }
@@ -473,7 +473,7 @@ export class InputContext {
     } else {
       let buttons = this.inputs;
       for (let name of include) {
-        let button = /** @type {Button} */ (buttons[name]);
+        let button = /** @type {ButtonState} */ (buttons[name]);
         if (button.pressed) {
           return true;
         }
@@ -489,7 +489,7 @@ export class InputContext {
     } else {
       let buttons = this.inputs;
       for (let name of include) {
-        let button = /** @type {Button} */ (buttons[name]);
+        let button = /** @type {ButtonState} */ (buttons[name]);
         if (button.released) {
           return true;
         }
@@ -521,7 +521,7 @@ export class InputContext {
     } else {
       let axes = this.inputs;
       for (let name of include) {
-        let axis = /** @type {Axis} */ (axes[name]);
+        let axis = /** @type {AxisState} */ (axes[name]);
         if (axis.delta) {
           return axis.delta;
         }
