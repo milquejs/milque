@@ -1,5 +1,5 @@
-import { AxisState } from './axisbutton/AxisState.js';
-import { ButtonState } from './axisbutton/ButtonState.js';
+import { AxisState } from './state/AxisState.js';
+import { ButtonState } from './state/ButtonState.js';
 import { MouseDevice } from './device/MouseDevice.js';
 import { InputBindings } from './InputBindings.js';
 import { DeviceInputAdapter } from './DeviceInputAdapter.js';
@@ -7,8 +7,8 @@ import { AutoPoller } from './AutoPoller.js';
 import { MOUSE } from './keycode/KeyCodes.js';
 
 /**
- * @typedef {import('./axisbutton/AxisState.js').AxisReadOnly} AxisReadOnly
- * @typedef {import('./axisbutton/ButtonState.js').ButtonReadOnly} ButtonReadOnly
+ * @typedef {import('./state/AxisState.js').AxisReadOnly} AxisReadOnly
+ * @typedef {import('./state/ButtonState.js').ButtonReadOnly} ButtonReadOnly
  */
 
 const MOUSE_SOURCE = Symbol('mouseSource');
@@ -42,7 +42,7 @@ export class Mouse {
     const bindings = new InputBindings();
     for (let key in this) {
       if (Object.prototype.hasOwnProperty.call(this, key)) {
-        let input = this[key];
+        let input = /** @type {AxisState|ButtonState} */ (this[key]);
         bindings.bind(input, deviceName, key);
       }
     }

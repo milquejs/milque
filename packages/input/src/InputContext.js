@@ -1,6 +1,6 @@
 import { AutoPoller } from './AutoPoller.js';
-import { AxisState } from './axisbutton/AxisState.js';
-import { ButtonState } from './axisbutton/ButtonState.js';
+import { AxisState } from './state/AxisState.js';
+import { ButtonState } from './state/ButtonState.js';
 import { KeyboardDevice } from './device/KeyboardDevice.js';
 import { MouseDevice } from './device/MouseDevice.js';
 import { DeviceInputAdapter } from './DeviceInputAdapter.js';
@@ -9,7 +9,7 @@ import { InputBindings } from './InputBindings.js';
 /**
  * @typedef {import('./device/InputDevice.js').InputDevice} InputDevice
  * @typedef {import('./device/InputDevice.js').InputDeviceEvent} InputDeviceEvent
- * @typedef {import('./axisbutton/InputState.js').InputState} InputState
+ * @typedef {import('./state/InputState.js').InputState} InputState
  * @typedef {import('./InputBindings.js').DeviceName} DeviceName
  * @typedef {import('./InputBindings.js').KeyCode} KeyCode
  * @typedef {import('./InputBindings.js').BindingOptions} BindingOptions

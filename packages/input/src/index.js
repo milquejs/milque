@@ -1,4 +1,4 @@
-export * from './axisbutton/index.js';
+export * from './state/index.js';
 export * from './binding/index.js';
 export * from './device/index.js';
 export * from './keycode/index.js';

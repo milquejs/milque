@@ -1,6 +1,6 @@
 /**
- * @typedef {import('./axisbutton/InputState.js').InputState} InputState
- * @typedef {import('./axisbutton/InputState.js').BindingOptions} BindingOptions
+ * @typedef {import('./state/InputState.js').InputState} InputState
+ * @typedef {import('./state/InputState.js').BindingOptions} BindingOptions
  *
  * @typedef {string} DeviceName
  * @typedef {string} KeyCode

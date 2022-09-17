@@ -1,4 +1,4 @@
-import { ButtonState } from './axisbutton/ButtonState.js';
+import { ButtonState } from './state/ButtonState.js';
 import { KeyboardDevice } from './device/KeyboardDevice.js';
 import { InputBindings } from './InputBindings.js';
 import { AutoPoller } from './AutoPoller.js';
@@ -6,7 +6,7 @@ import { DeviceInputAdapter } from './DeviceInputAdapter.js';
 import { KEYBOARD } from './keycode/KeyCodes.js';
 
 /**
- * @typedef {import('./axisbutton/ButtonState.js').ButtonReadOnly} ButtonReadOnly
+ * @typedef {import('./state/ButtonState.js').ButtonReadOnly} ButtonReadOnly
  */
 
 const KEYBOARD_SOURCE = Symbol('keyboardSource');
@@ -138,7 +138,7 @@ export class Keyboard {
     const bindings = new InputBindings();
     for (let key in this) {
       if (Object.prototype.hasOwnProperty.call(this, key)) {
-        let input = this[key];
+        let input = /** @type {ButtonState} */ (this[key]);
         bindings.bind(input, deviceName, key);
       }
     }
