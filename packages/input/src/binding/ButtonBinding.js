@@ -79,7 +79,7 @@ export class ButtonBinding extends InputBinding {
    * @override
    * @param {InputContext} inputContext
    */
-  register(inputContext) {
+  bindTo(inputContext) {
     let name = this.name;
     let opts = this.opts;
     for (let keyCode of this.keyCodes) {

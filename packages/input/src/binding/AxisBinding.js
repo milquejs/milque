@@ -52,7 +52,7 @@ export class AxisBinding extends InputBinding {
    * @override
    * @param {import('../InputContext.js').InputContext} inputContext
    */
-  register(inputContext) {
+  bindTo(inputContext) {
     let name = this.name;
     let opts = this.opts;
     for (let keyCode of this.keyCodes) {

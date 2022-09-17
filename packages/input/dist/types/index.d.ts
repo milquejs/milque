@@ -8,7 +8,7 @@
  * @property {number} value
  * @property {boolean} polling
  */
-declare class InputBase$2 {
+declare class InputState$2 {
     /**
      * @abstract
      * @param {number} size The initial binding state size.
@@ -17,8 +17,7 @@ declare class InputBase$2 {
     get polling(): boolean;
     /** @abstract */
     get value(): number;
-    /** @protected */
-    protected get size(): number;
+    get size(): number;
     /** @private */
     private _size;
     /** @private */
@@ -78,8 +77,8 @@ type InputReadOnly = {
 };
 
 /**
- * @typedef {import('./InputBase.js').BindingIndex} BindingIndex The binding index
- * @typedef {import('./InputBase.js').BindingOptions} BindingOptions The binding options
+ * @typedef {import('./InputState.js').BindingIndex} BindingIndex The binding index
+ * @typedef {import('./InputState.js').BindingOptions} BindingOptions The binding options
  *
  * @typedef AxisBindingState
  * @property {number} value
@@ -91,7 +90,7 @@ type InputReadOnly = {
  * @property {number} delta
  * @property {boolean} polling
  */
-declare class Axis extends InputBase$2 {
+declare class AxisState extends InputState$2 {
     /** @returns {AxisBindingState} */
     static createAxisBindingState(): AxisBindingState;
     /**
@@ -145,8 +144,8 @@ type AxisReadOnly$1 = {
 };
 
 /**
- * @typedef {import('./InputBase.js').BindingIndex} BindingIndex
- * @typedef {import('./InputBase.js').BindingOptions} BindingOptions
+ * @typedef {import('./InputState.js').BindingIndex} BindingIndex
+ * @typedef {import('./InputState.js').BindingOptions} BindingOptions
  *
  * @typedef ButtonReadOnly
  * @property {number} value
@@ -164,7 +163,7 @@ declare const PRESSED_STATE_BIT: 2;
 declare const REPEATED_STATE_BIT: 4;
 declare const RELEASED_STATE_BIT: 8;
 declare const INVERTED_MODIFIER_BIT: 16;
-declare class Button extends InputBase$2 {
+declare class ButtonState extends InputState$2 {
     /**
      * @param {number} [size]
      */
@@ -236,7 +235,7 @@ declare class KeyCode$5 {
 /**
  * A class that maps inputs to their respective key bindings.
  *
- * This does not handle input state (refer to InputBase.js) nor
+ * This does not handle input state (refer to InputState.js) nor
  * input events (refer to InputDevice.js). It is only responsible
  * for the redirection of key codes to their bound input. Usually
  * this is used together with the interfaces referenced above.
@@ -244,49 +243,49 @@ declare class KeyCode$5 {
 declare class InputBindings$1 {
     /**
      * @private
-     * @type {Record<DeviceName, Record<KeyCode, Array<Binding>>}
+     * @type {Record<DeviceName, Record<KeyCode, Array<Binding>>>}
      */
     private bindingMap;
     /**
      * @private
-     * @type {Map<InputBase, Array<Binding>>}
+     * @type {Map<InputState, Array<Binding>>}
      */
     private inputMap;
     clear(): void;
     /**
-     * @param {InputBase} input
+     * @param {InputState} input
      * @param {DeviceName} device
      * @param {KeyCode} code
      * @param {BindingOptions} [opts]
      */
-    bind(input: InputBase$1, device: DeviceName$1, code: KeyCode$4, opts?: BindingOptions$1): void;
+    bind(input: InputState$1, device: DeviceName$1, code: KeyCode$4, opts?: BindingOptions$1): void;
     /**
-     * @param {InputBase} input
+     * @param {InputState} input
      */
-    unbind(input: InputBase$1): void;
+    unbind(input: InputState$1): void;
     /**
-     * @param {InputBase} input
+     * @param {InputState} input
      * @returns {boolean}
      */
-    isBound(input: InputBase$1): boolean;
-    /** @returns {IterableIterator<InputBase>} */
-    getInputs(): IterableIterator<InputBase$1>;
-    /** @returns {IterableIterator<Binding>} */
-    getBindingsByInput(input: any): IterableIterator<Binding>;
+    isBound(input: InputState$1): boolean;
+    /** @returns {Iterable<InputState>} */
+    getInputs(): Iterable<InputState$1>;
+    /** @returns {Iterable<Binding>} */
+    getBindingsByInput(input: any): Iterable<Binding>;
     /**
      * @param {DeviceName} device
      * @param {KeyCode} code
-     * @returns {IterableIterator<Binding>}
+     * @returns {Array<Binding>}
      */
-    getBindings(device: DeviceName$1, code: KeyCode$4): IterableIterator<Binding>;
+    getBindings(device: DeviceName$1, code: KeyCode$4): Array<Binding>;
 }
-type InputBase$1 = InputBase$2;
+type InputState$1 = InputState$2;
 type BindingOptions$1 = BindingOptions$2;
 type DeviceName$1 = string;
 type KeyCode$4 = string;
 /**
- * @typedef {import('./axisbutton/InputBase.js').InputBase} InputBase
- * @typedef {import('./axisbutton/InputBase.js').BindingOptions} BindingOptions
+ * @typedef {import('./state/InputState.js').InputState} InputState
+ * @typedef {import('./state/InputState.js').BindingOptions} BindingOptions
  *
  * @typedef {string} DeviceName
  * @typedef {string} KeyCode
@@ -295,16 +294,16 @@ declare class Binding {
     /**
      * @param {DeviceName} device The name of the device
      * @param {KeyCode} code The key code for the device
-     * @param {InputBase} input The parent input
+     * @param {InputState} input The parent input
      * @param {number} index The binding index for the input
      */
-    constructor(device: DeviceName$1, code: KeyCode$4, input: InputBase$1, index: number);
+    constructor(device: DeviceName$1, code: KeyCode$4, input: InputState$1, index: number);
     /** Name of the device */
     device: string;
     /** The key code for the device */
     code: string;
     /** The parent input */
-    input: InputBase$2;
+    input: InputState$2;
     /** The binding index for the input */
     index: number;
 }
@@ -330,9 +329,9 @@ declare class Binding {
  */
 declare class InputDevice$1 {
     /** @abstract */
-    static isAxis(code: any): boolean;
+    static isAxis(keyCode: any): boolean;
     /** @abstract */
-    static isButton(code: any): boolean;
+    static isButton(keyCode: any): boolean;
     /**
      * @param {string} deviceName
      * @param {EventTarget} eventTarget
@@ -408,10 +407,11 @@ declare class DeviceInputAdapter {
      * @param {InputBindings} bindings
      */
     constructor(bindings: InputBindings);
-    /** @private */
-    private onInput;
-    /** @private */
-    private onPoll;
+    onInput(e: any): boolean;
+    /**
+     * @param {number} now
+     */
+    onPoll(now: number): void;
     bindings: InputBindings$1;
 }
 type InputBindings = InputBindings$1;
@@ -567,7 +567,7 @@ declare class KeyboardDevice extends InputDevice$1 {
 /**
  * @typedef {import('./device/InputDevice.js').InputDevice} InputDevice
  * @typedef {import('./device/InputDevice.js').InputDeviceEvent} InputDeviceEvent
- * @typedef {import('./axisbutton/InputBase.js').InputBase} InputBase
+ * @typedef {import('./state/InputState.js').InputState} InputState
  * @typedef {import('./InputBindings.js').DeviceName} DeviceName
  * @typedef {import('./InputBindings.js').KeyCode} KeyCode
  * @typedef {import('./InputBindings.js').BindingOptions} BindingOptions
@@ -589,9 +589,9 @@ declare class InputContext {
      */
     constructor(eventTarget: EventTarget, opts?: object);
     /**
-     * @type {Record<string, Axis|Button>}
+     * @type {Record<string, AxisState|ButtonState>}
      */
-    inputs: Record<string, Axis | Button>;
+    inputs: Record<string, AxisState | ButtonState>;
     /**
      * @type {Array<InputDevice>}
      */
@@ -602,13 +602,13 @@ declare class InputContext {
     /** @protected */
     protected eventTarget: EventTarget;
     /** @protected */
-    protected anyButton: Button;
+    protected anyButton: ButtonState;
     /** @protected */
     protected anyButtonDevice: string;
     /** @protected */
     protected anyButtonCode: string;
     /** @protected */
-    protected anyAxis: Axis;
+    protected anyAxis: AxisState;
     /** @protected */
     protected anyAxisDevice: string;
     /** @protected */
@@ -661,9 +661,13 @@ declare class InputContext {
     /** @private */
     private onUnbind;
     /**
-     * @param {Array<InputBinding>} bindings
+     * @param {Array<InputBinding>|Record<string, InputBinding>} bindings
      */
-    bindBindings(bindings: Array<InputBinding$1>): void;
+    bindBindings(bindings: Array<InputBinding$1> | Record<string, InputBinding$1>): void;
+    /**
+     * @param {InputBinding} binding
+     */
+    bindBinding(binding: InputBinding$1): void;
     /**
      * @param {InputName} name
      * @param {DeviceName} device
@@ -696,21 +700,21 @@ declare class InputContext {
     /**
      * Get the input for the given name. Assumes the input already exists for the name.
      * @param {InputName} name
-     * @returns {InputBase}
+     * @returns {InputState}
      */
-    getInput(name: InputName): InputBase;
+    getInput(name: InputName): InputState;
     /**
      * Get the button for the given name. Assumes a button already exists for the name.
      * @param {InputName} name
-     * @returns {Button}
+     * @returns {ButtonState}
      */
-    getButton(name: InputName): Button;
+    getButton(name: InputName): ButtonState;
     /**
      * Get the axis for the given name. Assumes an axis already exists for the name.
      * @param {InputName} name
-     * @returns {Axis}
+     * @returns {AxisState}
      */
-    getAxis(name: InputName): Axis;
+    getAxis(name: InputName): AxisState;
     /**
      * Whether a button exists for the name and that it is of type {@link Button}.
      * @returns {boolean}
@@ -777,7 +781,7 @@ declare class InputContext {
     getKeyboard(): KeyboardDevice;
 }
 type InputDevice = InputDevice$1;
-type InputBase = InputBase$2;
+type InputState = InputState$2;
 type DeviceName = DeviceName$1;
 type KeyCode$3 = KeyCode$4;
 type BindingOptions = BindingOptions$1;
@@ -808,7 +812,7 @@ declare class InputBinding {
      * @abstract
      * @param {import('../InputContext.js').InputContext} inputContext
      */
-    register(inputContext: InputContext): void;
+    bindTo(inputContext: InputContext): void;
     disable(force?: boolean): InputBinding;
     /**
      * @param {number} code
@@ -848,7 +852,10 @@ declare class AxisBinding extends InputBinding {
 }
 type KeyCode$2 = KeyCode$5;
 
-/** @typedef {import('../keycode/KeyCode.js').KeyCode} KeyCode */
+/**
+ * @typedef {import('../keycode/KeyCode.js').KeyCode} KeyCode
+ * @typedef {import('../InputContext.js').InputContext} InputContext
+ */
 declare class ButtonBinding extends InputBinding {
     /**
      * @param {string} name
@@ -1138,7 +1145,6 @@ declare function stringsToKeyCodes(strings: string | Array<string>): Array<KeyCo
 
 declare class InputCode extends HTMLElement {
     static define(customElements?: CustomElementRegistry): void;
-    /** @override */
     static get observedAttributes(): string[];
     set disabled(arg: boolean);
     /** @returns {boolean} */
@@ -1161,16 +1167,13 @@ declare class InputCode extends HTMLElement {
     private _nameElement;
     /** @private */
     private _valueElement;
-    /** @override */
     attributeChangedCallback(attribute: any, prev: any, value: any): void;
-    /** @override */
     connectedCallback(): void;
 }
 
 /**
  * @typedef {import('../device/InputDevice.js').InputDevice} InputDevice
  * @typedef {import('../device/InputDevice.js').InputDeviceEvent} InputDeviceEvent
- * @typedef {import('../axisbutton/InputBase.js').InputBase} InputBase
  * @typedef {import('../InputBindings.js').DeviceName} DeviceName
  * @typedef {import('../InputBindings.js').KeyCode} KeyCode
  * @typedef {import('../InputBindings.js').BindingOptions} BindingOptions
@@ -1179,7 +1182,6 @@ declare class InputCode extends HTMLElement {
  */
 declare class InputPort extends HTMLElement {
     static define(customElements?: CustomElementRegistry): void;
-    /** @override */
     static get observedAttributes(): string[];
     set autopoll(arg: boolean);
     /** @returns {boolean} */
@@ -1203,7 +1205,10 @@ declare class InputPort extends HTMLElement {
     private animationFrameHandle;
     /** @private */
     private _for;
-    /** @private */
+    /**
+     * @private
+     * @type {HTMLElement}
+     */
     private _eventTarget;
     /** @private */
     private _autopoll;
@@ -1217,11 +1222,8 @@ declare class InputPort extends HTMLElement {
     private onInputContextFocus;
     /** @private */
     private onInputContextBlur;
-    /** @override */
     connectedCallback(): void;
-    /** @override */
     disconnectedCallback(): void;
-    /** @override */
     attributeChangedCallback(attribute: any, prev: any, value: any): void;
     /**
      * @param {'axisbutton'} [contextId]
@@ -1365,7 +1367,7 @@ declare class Keyboard {
 }
 type ButtonReadOnly$1 = ButtonReadOnly$2;
 /**
- * @typedef {import('./axisbutton/Button.js').ButtonReadOnly} ButtonReadOnly
+ * @typedef {import('./state/ButtonState.js').ButtonReadOnly} ButtonReadOnly
  */
 declare const KEYBOARD_SOURCE: unique symbol;
 
@@ -1402,9 +1404,9 @@ declare class Mouse {
 type AxisReadOnly = AxisReadOnly$1;
 type ButtonReadOnly = ButtonReadOnly$2;
 /**
- * @typedef {import('./axisbutton/Axis.js').AxisReadOnly} AxisReadOnly
- * @typedef {import('./axisbutton/Button.js').ButtonReadOnly} ButtonReadOnly
+ * @typedef {import('./state/AxisState.js').AxisReadOnly} AxisReadOnly
+ * @typedef {import('./state/ButtonState.js').ButtonReadOnly} ButtonReadOnly
  */
 declare const MOUSE_SOURCE: unique symbol;
 
-export { AutoPoller, Axis, AxisBinding, AxisBindingState, AxisButtonBinding, Button, ButtonBinding, CLEAR_DOWN_STATE_BITS, CLEAR_INVERTED_MODIFIER_BITS, CLEAR_POLL_BITS, DOWN_STATE_BIT, DeviceInputAdapter, INVERTED_MODIFIER_BIT, InputBinding$1 as InputBinding, InputCode, InputContext, InputContextEvent, InputContextEventListener, InputContextEventType, InputDeviceEventListener, InputPort, InputReadOnly, KeyCodes, Keyboard, KeyboardDevice, Mouse, MouseDevice, OnPollCallback, PRESSED_STATE_BIT, Pollable, RELEASED_STATE_BIT, REPEATED_STATE_BIT, stringsToKeyCodes };
+export { AutoPoller, AxisBinding, AxisBindingState, AxisButtonBinding, AxisState, ButtonBinding, ButtonState, CLEAR_DOWN_STATE_BITS, CLEAR_INVERTED_MODIFIER_BITS, CLEAR_POLL_BITS, DOWN_STATE_BIT, DeviceInputAdapter, INVERTED_MODIFIER_BIT, InputBinding$1 as InputBinding, InputCode, InputContext, InputContextEvent, InputContextEventListener, InputContextEventType, InputDeviceEventListener, InputPort, InputReadOnly, KeyCodes, Keyboard, KeyboardDevice, Mouse, MouseDevice, OnPollCallback, PRESSED_STATE_BIT, Pollable, RELEASED_STATE_BIT, REPEATED_STATE_BIT, stringsToKeyCodes };

@@ -261,12 +261,22 @@ export class InputContext {
   }
 
   /**
-   * @param {Array<InputBinding>} bindings
+   * @param {Array<InputBinding>|Record<string, InputBinding>} bindings
    */
   bindBindings(bindings) {
-    for (let binding of bindings) {
-      binding.register(this);
+    if (!Array.isArray(bindings)) {
+      bindings = Object.values(bindings);
     }
+    for (let binding of bindings) {
+      binding.bindTo(this);
+    }
+  }
+
+  /**
+   * @param {InputBinding} binding
+   */
+  bindBinding(binding) {
+    binding.bindTo(this);
   }
 
   /**

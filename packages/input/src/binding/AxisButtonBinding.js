@@ -40,7 +40,7 @@ export class AxisButtonBinding extends AxisBinding {
   /**
    * @param {import('../InputContext.js').InputContext} inputContext
    */
-  register(inputContext) {
+  bindTo(inputContext) {
     let name = this.name;
     let negativeKeyCode = this.negativeKeyCode;
     let positiveKeyCode = this.positiveKeyCode;

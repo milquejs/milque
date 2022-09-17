@@ -33,7 +33,7 @@ export class InputBinding {
    * @abstract
    * @param {import('../InputContext.js').InputContext} inputContext
    */
-  register(inputContext) {
+  bindTo(inputContext) {
     throw new Error('Unsupported operation.');
   }
 

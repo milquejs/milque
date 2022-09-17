@@ -9,7 +9,7 @@
  * @property {boolean} polling
  */
 
-class InputBase {
+class InputState {
   get polling() {
     let dt = performance.now() - this._lastPollingTime;
     return dt < 1_000;
@@ -19,8 +19,7 @@ class InputBase {
   get value() {
     return 0;
   }
-
-  /** @protected */
+  
   get size() {
     return this._size;
   }
@@ -94,7 +93,7 @@ class InputBase {
    * @param {BindingOptions} [opts]
    */
   // eslint-disable-next-line no-unused-vars
-  onBind(code, opts = {}) {
+  onBind(code, opts = undefined) {
     if (code >= this._size) {
       this.resize(code + 1);
     }
@@ -109,8 +108,8 @@ class InputBase {
 }
 
 /**
- * @typedef {import('./InputBase.js').BindingIndex} BindingIndex The binding index
- * @typedef {import('./InputBase.js').BindingOptions} BindingOptions The binding options
+ * @typedef {import('./InputState.js').BindingIndex} BindingIndex The binding index
+ * @typedef {import('./InputState.js').BindingOptions} BindingOptions The binding options
  *
  * @typedef AxisBindingState
  * @property {number} value
@@ -123,7 +122,7 @@ class InputBase {
  * @property {boolean} polling
  */
 
-class Axis extends InputBase {
+class AxisState extends InputState {
   /** @returns {AxisBindingState} */
   static createAxisBindingState() {
     return {
@@ -152,8 +151,9 @@ class Axis extends InputBase {
   constructor(size = 0) {
     super(size);
     let state = new Array();
+    let c = /** @type {typeof AxisState} */ (this.constructor);
     for (let i = 0; i < size; ++i) {
-      state.push(this.constructor.createAxisBindingState());
+      state.push(c.createAxisBindingState());
     }
     /**
      * @private
@@ -179,8 +179,9 @@ class Axis extends InputBase {
     } else {
       newState = oldState;
       // Fill with new states
+      let c = /** @type {typeof AxisState} */ (this.constructor);
       for (let i = oldSize; i < newSize; ++i) {
-        newState.push(this.constructor.createAxisBindingState());
+        newState.push(c.createAxisBindingState());
       }
     }
     this._state = newState;
@@ -244,9 +245,9 @@ class Axis extends InputBase {
    * @param {BindingIndex} code
    * @param {BindingOptions} [opts]
    */
-  onBind(code, opts = {}) {
+  onBind(code, opts = undefined) {
     super.onBind(code, opts);
-    const { inverted = false } = opts;
+    const { inverted = false } = opts || {};
     let state = this._state;
     state[code].inverted = inverted;
   }
@@ -288,8 +289,8 @@ class Axis extends InputBase {
 }
 
 /**
- * @typedef {import('./InputBase.js').BindingIndex} BindingIndex
- * @typedef {import('./InputBase.js').BindingOptions} BindingOptions
+ * @typedef {import('./InputState.js').BindingIndex} BindingIndex
+ * @typedef {import('./InputState.js').BindingOptions} BindingOptions
  *
  * @typedef ButtonReadOnly
  * @property {number} value
@@ -310,7 +311,7 @@ const REPEATED_STATE_BIT = 0b0000_0100;
 const RELEASED_STATE_BIT = 0b0000_1000;
 const INVERTED_MODIFIER_BIT = 0b0001_0000;
 
-class Button extends InputBase {
+class ButtonState extends InputState {
   /** @returns {boolean} */
   get pressed() {
     return this._pressed;
@@ -447,7 +448,7 @@ class Button extends InputBase {
    * @param {BindingIndex} code
    * @param {BindingOptions} [opts]
    */
-  onBind(code, opts = {}) {
+  onBind(code, opts = { inverted: false }) {
     super.onBind(code, opts);
     const { inverted = false } = opts;
     let state = this._state;
@@ -747,7 +748,7 @@ class InputBinding {
    * @abstract
    * @param {import('../InputContext.js').InputContext} inputContext
    */
-  register(inputContext) {
+  bindTo(inputContext) {
     throw new Error('Unsupported operation.');
   }
 
@@ -855,7 +856,7 @@ class AxisBinding extends InputBinding {
    * @override
    * @param {import('../InputContext.js').InputContext} inputContext
    */
-  register(inputContext) {
+  bindTo(inputContext) {
     let name = this.name;
     let opts = this.opts;
     for (let keyCode of this.keyCodes) {
@@ -866,7 +867,10 @@ class AxisBinding extends InputBinding {
   }
 }
 
-/** @typedef {import('../keycode/KeyCode.js').KeyCode} KeyCode */
+/**
+ * @typedef {import('../keycode/KeyCode.js').KeyCode} KeyCode
+ * @typedef {import('../InputContext.js').InputContext} InputContext
+ */
 
 class ButtonBinding extends InputBinding {
   /**
@@ -938,9 +942,9 @@ class ButtonBinding extends InputBinding {
 
   /**
    * @override
-   * @param {import('../InputContext.js').InputContext} inputContext
+   * @param {InputContext} inputContext
    */
-  register(inputContext) {
+  bindTo(inputContext) {
     let name = this.name;
     let opts = this.opts;
     for (let keyCode of this.keyCodes) {
@@ -990,7 +994,7 @@ class AxisButtonBinding extends AxisBinding {
   /**
    * @param {import('../InputContext.js').InputContext} inputContext
    */
-  register(inputContext) {
+  bindTo(inputContext) {
     let name = this.name;
     let negativeKeyCode = this.negativeKeyCode;
     let positiveKeyCode = this.positiveKeyCode;
@@ -1028,13 +1032,13 @@ class AxisButtonBinding extends AxisBinding {
 class InputDevice {
   /** @abstract */
   // eslint-disable-next-line no-unused-vars
-  static isAxis(code) {
+  static isAxis(keyCode) {
     return false;
   }
 
   /** @abstract */
   // eslint-disable-next-line no-unused-vars
-  static isButton(code) {
+  static isButton(keyCode) {
     return false;
   }
 
@@ -1575,7 +1579,6 @@ class InputCode extends HTMLElement {
     customElements.define('input-code', this);
   }
 
-  /** @override */
   static get observedAttributes() {
     return ['name', 'value', 'disabled'];
   }
@@ -1609,13 +1612,10 @@ class InputCode extends HTMLElement {
 
   constructor() {
     super();
-    this.attachShadow({ mode: 'open' });
-    this.shadowRoot.appendChild(
-      this.constructor[Symbol.for('templateNode')].content.cloneNode(true)
-    );
-    this.shadowRoot.appendChild(
-      this.constructor[Symbol.for('styleNode')].cloneNode(true)
-    );
+    const c = this.constructor;
+    const shadowRoot = this.attachShadow({ mode: 'open' });
+    shadowRoot.appendChild(c[Symbol.for('templateNode')].content.cloneNode(true));
+    shadowRoot.appendChild(c[Symbol.for('styleNode')].cloneNode(true));
 
     /** @private */
     this._name = '';
@@ -1625,14 +1625,13 @@ class InputCode extends HTMLElement {
     this._disabled = false;
 
     /** @private */
-    this._kbdElement = this.shadowRoot.querySelector('kbd');
+    this._kbdElement = shadowRoot.querySelector('kbd');
     /** @private */
-    this._nameElement = this.shadowRoot.querySelector('#name');
+    this._nameElement = shadowRoot.querySelector('#name');
     /** @private */
-    this._valueElement = this.shadowRoot.querySelector('#value');
+    this._valueElement = shadowRoot.querySelector('#value');
   }
 
-  /** @override */
   attributeChangedCallback(attribute, prev, value) {
     switch (attribute) {
       case 'name':
@@ -1644,9 +1643,8 @@ class InputCode extends HTMLElement {
         if (value !== null) {
           this._valueElement.classList.toggle('hidden', false);
           this._valueElement.textContent = value;
-          this._kbdElement.style.paddingRight = `${
-            this._valueElement.clientWidth + 4
-          }px`;
+          this._kbdElement.style.paddingRight = `${this._valueElement.clientWidth + 4
+            }px`;
         } else {
           this._valueElement.classList.toggle('hidden', true);
         }
@@ -1658,7 +1656,6 @@ class InputCode extends HTMLElement {
     }
   }
 
-  /** @override */
   connectedCallback() {
     if (Object.prototype.hasOwnProperty.call(this, 'name')) {
       let value = this.name;
@@ -1755,14 +1752,15 @@ class DeviceInputAdapter {
     this.bindings = bindings;
   }
 
-  /** @private */
+  /**
+   * @param {number} now 
+   */
   onPoll(now) {
     for (let input of this.bindings.getInputs()) {
       input.onPoll(now);
     }
   }
-
-  /** @private */
+  
   onInput(e) {
     const {
       device,
@@ -1803,8 +1801,8 @@ class DeviceInputAdapter {
 }
 
 /**
- * @typedef {import('./axisbutton/InputBase.js').InputBase} InputBase
- * @typedef {import('./axisbutton/InputBase.js').BindingOptions} BindingOptions
+ * @typedef {import('./state/InputState.js').InputState} InputState
+ * @typedef {import('./state/InputState.js').BindingOptions} BindingOptions
  *
  * @typedef {string} DeviceName
  * @typedef {string} KeyCode
@@ -1814,7 +1812,7 @@ class Binding {
   /**
    * @param {DeviceName} device The name of the device
    * @param {KeyCode} code The key code for the device
-   * @param {InputBase} input The parent input
+   * @param {InputState} input The parent input
    * @param {number} index The binding index for the input
    */
   constructor(device, code, input, index) {
@@ -1832,7 +1830,7 @@ class Binding {
 /**
  * A class that maps inputs to their respective key bindings.
  *
- * This does not handle input state (refer to InputBase.js) nor
+ * This does not handle input state (refer to InputState.js) nor
  * input events (refer to InputDevice.js). It is only responsible
  * for the redirection of key codes to their bound input. Usually
  * this is used together with the interfaces referenced above.
@@ -1841,12 +1839,12 @@ class InputBindings {
   constructor() {
     /**
      * @private
-     * @type {Record<DeviceName, Record<KeyCode, Array<Binding>>}
+     * @type {Record<DeviceName, Record<KeyCode, Array<Binding>>>}
      */
     this.bindingMap = {};
     /**
      * @private
-     * @type {Map<InputBase, Array<Binding>>}
+     * @type {Map<InputState, Array<Binding>>}
      */
     this.inputMap = new Map();
   }
@@ -1860,7 +1858,7 @@ class InputBindings {
   }
 
   /**
-   * @param {InputBase} input
+   * @param {InputState} input
    * @param {DeviceName} device
    * @param {KeyCode} code
    * @param {BindingOptions} [opts]
@@ -1897,7 +1895,7 @@ class InputBindings {
   }
 
   /**
-   * @param {InputBase} input
+   * @param {InputState} input
    */
   unbind(input) {
     let inputMap = this.inputMap;
@@ -1917,19 +1915,19 @@ class InputBindings {
   }
 
   /**
-   * @param {InputBase} input
+   * @param {InputState} input
    * @returns {boolean}
    */
   isBound(input) {
     return this.inputMap.has(input);
   }
 
-  /** @returns {IterableIterator<InputBase>} */
+  /** @returns {Iterable<InputState>} */
   getInputs() {
     return this.inputMap.keys();
   }
 
-  /** @returns {IterableIterator<Binding>} */
+  /** @returns {Iterable<Binding>} */
   getBindingsByInput(input) {
     return this.inputMap.get(input);
   }
@@ -1937,7 +1935,7 @@ class InputBindings {
   /**
    * @param {DeviceName} device
    * @param {KeyCode} code
-   * @returns {IterableIterator<Binding>}
+   * @returns {Array<Binding>}
    */
   getBindings(device, code) {
     let deviceCodeBindings = this.bindingMap;
@@ -1954,7 +1952,7 @@ class InputBindings {
 /**
  * @typedef {import('./device/InputDevice.js').InputDevice} InputDevice
  * @typedef {import('./device/InputDevice.js').InputDeviceEvent} InputDeviceEvent
- * @typedef {import('./axisbutton/InputBase.js').InputBase} InputBase
+ * @typedef {import('./state/InputState.js').InputState} InputState
  * @typedef {import('./InputBindings.js').DeviceName} DeviceName
  * @typedef {import('./InputBindings.js').KeyCode} KeyCode
  * @typedef {import('./InputBindings.js').BindingOptions} BindingOptions
@@ -1976,9 +1974,9 @@ class InputContext {
    * @param {EventTarget} eventTarget
    * @param {object} [opts]
    */
-  constructor(eventTarget, opts = {}) {
+  constructor(eventTarget, opts = undefined) {
     /**
-     * @type {Record<string, Axis|Button>}
+     * @type {Record<string, AxisState|ButtonState>}
      */
     this.inputs = {};
     /**
@@ -1995,13 +1993,13 @@ class InputContext {
     /** @protected */
     this.eventTarget = eventTarget;
     /** @protected */
-    this.anyButton = new Button(1);
+    this.anyButton = new ButtonState(1);
     /** @protected */
     this.anyButtonDevice = '';
     /** @protected */
     this.anyButtonCode = '';
     /** @protected */
-    this.anyAxis = new Axis(1);
+    this.anyAxis = new AxisState(1);
     /** @protected */
     this.anyAxisDevice = '';
     /** @protected */
@@ -2206,12 +2204,22 @@ class InputContext {
   }
 
   /**
-   * @param {Array<InputBinding>} bindings
+   * @param {Array<InputBinding>|Record<string, InputBinding>} bindings
    */
   bindBindings(bindings) {
-    for (let binding of bindings) {
-      binding.register(this);
+    if (!Array.isArray(bindings)) {
+      bindings = Object.values(bindings);
     }
+    for (let binding of bindings) {
+      binding.bindTo(this);
+    }
+  }
+
+  /**
+   * @param {InputBinding} binding
+   */
+  bindBinding(binding) {
+    binding.bindTo(this);
   }
 
   /**
@@ -2225,7 +2233,7 @@ class InputContext {
     if (this.hasButton(name)) {
       input = this.getButton(name);
     } else {
-      input = new Button(1);
+      input = new ButtonState(1);
       this.inputs[name] = input;
     }
     this.bindings.bind(input, device, code, opts);
@@ -2243,7 +2251,7 @@ class InputContext {
     if (this.hasAxis(name)) {
       input = this.getAxis(name);
     } else {
-      input = new Axis(1);
+      input = new AxisState(1);
       this.inputs[name] = input;
     }
     this.bindings.bind(input, device, code, opts);
@@ -2261,7 +2269,7 @@ class InputContext {
     if (this.hasAxis(name)) {
       input = this.getAxis(name);
     } else {
-      input = new Axis(2);
+      input = new AxisState(2);
       this.inputs[name] = input;
     }
     this.bindings.bind(input, device, positiveCode);
@@ -2296,7 +2304,7 @@ class InputContext {
   /**
    * Get the input for the given name. Assumes the input already exists for the name.
    * @param {InputName} name
-   * @returns {InputBase}
+   * @returns {InputState}
    */
   getInput(name) {
     return this.inputs[name];
@@ -2305,19 +2313,19 @@ class InputContext {
   /**
    * Get the button for the given name. Assumes a button already exists for the name.
    * @param {InputName} name
-   * @returns {Button}
+   * @returns {ButtonState}
    */
   getButton(name) {
-    return /** @type {Button} */ (this.inputs[name]);
+    return /** @type {ButtonState} */ (this.inputs[name]);
   }
 
   /**
    * Get the axis for the given name. Assumes an axis already exists for the name.
    * @param {InputName} name
-   * @returns {Axis}
+   * @returns {AxisState}
    */
   getAxis(name) {
-    return /** @type {Axis} */ (this.inputs[name]);
+    return /** @type {AxisState} */ (this.inputs[name]);
   }
 
   /**
@@ -2325,7 +2333,7 @@ class InputContext {
    * @returns {boolean}
    */
   hasButton(name) {
-    return name in this.inputs && this.inputs[name] instanceof Button;
+    return name in this.inputs && this.inputs[name] instanceof ButtonState;
   }
 
   /**
@@ -2333,7 +2341,7 @@ class InputContext {
    * @returns {boolean}
    */
   hasAxis(name) {
-    return name in this.inputs && this.inputs[name] instanceof Axis;
+    return name in this.inputs && this.inputs[name] instanceof AxisState;
   }
 
   /**
@@ -2342,7 +2350,7 @@ class InputContext {
    * @returns {boolean}
    */
   isButtonDown(name) {
-    return /** @type {Button} */ (this.inputs[name]).down;
+    return /** @type {ButtonState} */ (this.inputs[name]).down;
   }
 
   /**
@@ -2351,7 +2359,7 @@ class InputContext {
    * @returns {boolean}
    */
   isButtonPressed(name) {
-    return /** @type {Button} */ (this.inputs[name]).pressed;
+    return /** @type {ButtonState} */ (this.inputs[name]).pressed;
   }
 
   /**
@@ -2360,7 +2368,7 @@ class InputContext {
    * @returns {boolean}
    */
   isButtonReleased(name) {
-    return /** @type {Button} */ (this.inputs[name]).released;
+    return /** @type {ButtonState} */ (this.inputs[name]).released;
   }
 
   /**
@@ -2392,7 +2400,7 @@ class InputContext {
    * @returns {number}
    */
   getAxisDelta(name) {
-    return /** @type {Axis} */ (this.inputs[name]).delta;
+    return /** @type {AxisState} */ (this.inputs[name]).delta;
   }
 
   /** @returns {boolean} */
@@ -2402,7 +2410,7 @@ class InputContext {
     } else {
       let buttons = this.inputs;
       for (let name of include) {
-        let button = /** @type {Button} */ (buttons[name]);
+        let button = /** @type {ButtonState} */ (buttons[name]);
         if (button.down) {
           return true;
         }
@@ -2418,7 +2426,7 @@ class InputContext {
     } else {
       let buttons = this.inputs;
       for (let name of include) {
-        let button = /** @type {Button} */ (buttons[name]);
+        let button = /** @type {ButtonState} */ (buttons[name]);
         if (button.pressed) {
           return true;
         }
@@ -2434,7 +2442,7 @@ class InputContext {
     } else {
       let buttons = this.inputs;
       for (let name of include) {
-        let button = /** @type {Button} */ (buttons[name]);
+        let button = /** @type {ButtonState} */ (buttons[name]);
         if (button.released) {
           return true;
         }
@@ -2466,7 +2474,7 @@ class InputContext {
     } else {
       let axes = this.inputs;
       for (let name of include) {
-        let axis = /** @type {Axis} */ (axes[name]);
+        let axis = /** @type {AxisState} */ (axes[name]);
         if (axis.delta) {
           return axis.delta;
         }
@@ -2503,7 +2511,6 @@ class InputContext {
 /**
  * @typedef {import('../device/InputDevice.js').InputDevice} InputDevice
  * @typedef {import('../device/InputDevice.js').InputDeviceEvent} InputDeviceEvent
- * @typedef {import('../axisbutton/InputBase.js').InputBase} InputBase
  * @typedef {import('../InputBindings.js').DeviceName} DeviceName
  * @typedef {import('../InputBindings.js').KeyCode} KeyCode
  * @typedef {import('../InputBindings.js').BindingOptions} BindingOptions
@@ -2532,7 +2539,6 @@ class InputPort extends HTMLElement {
     customElements.define('input-port', this);
   }
 
-  /** @override */
   static get observedAttributes() {
     return ['autopoll', 'for'];
   }
@@ -2584,7 +2590,10 @@ class InputPort extends HTMLElement {
     const eventTarget = this;
     /** @private */
     this._for = '';
-    /** @private */
+    /**
+     * @private
+     * @type {HTMLElement}
+     */
     this._eventTarget = eventTarget;
     /** @private */
     this._autopoll = false;
@@ -2602,7 +2611,6 @@ class InputPort extends HTMLElement {
     this.onInputContextBlur = this.onInputContextBlur.bind(this);
   }
 
-  /** @override */
   connectedCallback() {
     if (Object.prototype.hasOwnProperty.call(this, 'for')) {
       let value = this.for;
@@ -2622,7 +2630,6 @@ class InputPort extends HTMLElement {
     this.animationFrameHandle = requestAnimationFrame(this.onAnimationFrame);
   }
 
-  /** @override */
   disconnectedCallback() {
     let ctx = this._context;
     if (ctx) {
@@ -2634,29 +2641,27 @@ class InputPort extends HTMLElement {
       this._context = null;
     }
   }
-
-  /** @override */
+  
   attributeChangedCallback(attribute, prev, value) {
     switch (attribute) {
-      case 'for':
-        {
-          this._for = value;
-          let target;
-          let name;
-          if (value) {
-            target = document.getElementById(value);
-            name = `${target.tagName.toLowerCase()}#${value}`;
-          } else {
-            target = this;
-            name = 'input-port';
-          }
-          this._eventTarget = target;
-          if (this._context) {
-            this._context.setEventTarget(this._eventTarget);
-          }
-          // For debug info
-          this._titleElement.innerHTML = `for ${name}`;
+      case 'for': {
+        this._for = value;
+        let target;
+        let name;
+        if (value) {
+          target = document.getElementById(value);
+          name = `${target.tagName.toLowerCase()}#${value}`;
+        } else {
+          target = this;
+          name = 'input-port';
         }
+        this._eventTarget = target;
+        if (this._context) {
+          this._context.setEventTarget(this._eventTarget);
+        }
+        // For debug info
+        this._titleElement.innerHTML = `for ${name}`;
+      }
         break;
       case 'autopoll':
         this._autopoll = value !== null;
@@ -2849,144 +2854,146 @@ function createInputTableEntry(name, key, value, primary = true) {
 }
 
 /**
- * @typedef {import('./axisbutton/Button.js').ButtonReadOnly} ButtonReadOnly
+ * @typedef {import('./state/ButtonState.js').ButtonReadOnly} ButtonReadOnly
  */
 
 const KEYBOARD_SOURCE = Symbol('keyboardSource');
 class Keyboard {
   constructor(eventTarget, opts) {
     /** @type {ButtonReadOnly} */
-    this.KeyA = new Button();
+    this.KeyA = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.KeyB = new Button();
+    this.KeyB = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.KeyC = new Button();
+    this.KeyC = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.KeyD = new Button();
+    this.KeyD = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.KeyE = new Button();
+    this.KeyE = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.KeyF = new Button();
+    this.KeyF = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.KeyG = new Button();
+    this.KeyG = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.KeyH = new Button();
+    this.KeyH = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.KeyI = new Button();
+    this.KeyI = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.KeyJ = new Button();
+    this.KeyJ = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.KeyK = new Button();
+    this.KeyK = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.KeyL = new Button();
+    this.KeyL = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.KeyM = new Button();
+    this.KeyM = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.KeyN = new Button();
+    this.KeyN = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.KeyO = new Button();
+    this.KeyO = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.KeyP = new Button();
+    this.KeyP = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.KeyQ = new Button();
+    this.KeyQ = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.KeyR = new Button();
+    this.KeyR = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.KeyS = new Button();
+    this.KeyS = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.KeyT = new Button();
+    this.KeyT = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.KeyU = new Button();
+    this.KeyU = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.KeyV = new Button();
+    this.KeyV = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.KeyW = new Button();
+    this.KeyW = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.KeyX = new Button();
+    this.KeyX = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.KeyY = new Button();
+    this.KeyY = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.KeyZ = new Button();
+    this.KeyZ = new ButtonState();
 
     /** @type {ButtonReadOnly} */
-    this.Digit0 = new Button();
+    this.Digit0 = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.Digit1 = new Button();
+    this.Digit1 = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.Digit2 = new Button();
+    this.Digit2 = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.Digit3 = new Button();
+    this.Digit3 = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.Digit4 = new Button();
+    this.Digit4 = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.Digit5 = new Button();
+    this.Digit5 = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.Digit6 = new Button();
+    this.Digit6 = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.Digit7 = new Button();
+    this.Digit7 = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.Digit8 = new Button();
+    this.Digit8 = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.Digit9 = new Button();
+    this.Digit9 = new ButtonState();
 
     /** @type {ButtonReadOnly} */
-    this.Minus = new Button();
+    this.Minus = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.Equal = new Button();
+    this.Equal = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.BracketLeft = new Button();
+    this.BracketLeft = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.BracketRight = new Button();
+    this.BracketRight = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.Semicolon = new Button();
+    this.Semicolon = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.Quote = new Button();
+    this.Quote = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.Backquote = new Button();
+    this.Backquote = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.Backslash = new Button();
+    this.Backslash = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.Comma = new Button();
+    this.Comma = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.Period = new Button();
+    this.Period = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.Slash = new Button();
+    this.Slash = new ButtonState();
 
     /** @type {ButtonReadOnly} */
-    this.Escape = new Button();
+    this.Escape = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.Space = new Button();
+    this.Space = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.CapsLock = new Button();
+    this.CapsLock = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.Backspace = new Button();
+    this.Backspace = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.Delete = new Button();
+    this.Delete = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.Tab = new Button();
+    this.Tab = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.Enter = new Button();
+    this.Enter = new ButtonState();
 
     /** @type {ButtonReadOnly} */
-    this.ArrowUp = new Button();
+    this.ArrowUp = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.ArrowDown = new Button();
+    this.ArrowDown = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.ArrowLeft = new Button();
+    this.ArrowLeft = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.ArrowRight = new Button();
+    this.ArrowRight = new ButtonState();
 
     const deviceName = KEYBOARD;
     const device = new KeyboardDevice(deviceName, eventTarget, opts);
     const bindings = new InputBindings();
     for (let key in this) {
       if (Object.prototype.hasOwnProperty.call(this, key)) {
-        let input = this[key];
+        let input = /** @type {ButtonState} */ (this[key]);
         bindings.bind(input, deviceName, key);
       }
     }
     const adapter = new DeviceInputAdapter(bindings);
+    // @ts-ignore
     device.addEventListener('input', adapter.onInput);
+    // @ts-ignore
     const autopoller = new AutoPoller(adapter);
     autopoller.start();
     this[KEYBOARD_SOURCE] = {
@@ -3000,6 +3007,7 @@ class Keyboard {
   destroy() {
     const source = this[KEYBOARD_SOURCE];
     source.autopoller.stop();
+    // @ts-ignore
     source.device.removeEventListener('input', source.adapter.onInput);
     source.device.destroy();
     source.bindings.clear();
@@ -3007,42 +3015,42 @@ class Keyboard {
 }
 
 /**
- * @typedef {import('./axisbutton/Axis.js').AxisReadOnly} AxisReadOnly
- * @typedef {import('./axisbutton/Button.js').ButtonReadOnly} ButtonReadOnly
+ * @typedef {import('./state/AxisState.js').AxisReadOnly} AxisReadOnly
+ * @typedef {import('./state/ButtonState.js').ButtonReadOnly} ButtonReadOnly
  */
 
 const MOUSE_SOURCE = Symbol('mouseSource');
 class Mouse {
   constructor(eventTarget, opts) {
     /** @type {AxisReadOnly} */
-    this.PosX = new Axis();
+    this.PosX = new AxisState();
     /** @type {AxisReadOnly} */
-    this.PosY = new Axis();
+    this.PosY = new AxisState();
 
     /** @type {AxisReadOnly} */
-    this.WheelX = new Axis();
+    this.WheelX = new AxisState();
     /** @type {AxisReadOnly} */
-    this.WheelY = new Axis();
+    this.WheelY = new AxisState();
     /** @type {AxisReadOnly} */
-    this.WheelZ = new Axis();
+    this.WheelZ = new AxisState();
 
     /** @type {ButtonReadOnly} */
-    this.Button0 = new Button();
+    this.Button0 = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.Button1 = new Button();
+    this.Button1 = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.Button2 = new Button();
+    this.Button2 = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.Button3 = new Button();
+    this.Button3 = new ButtonState();
     /** @type {ButtonReadOnly} */
-    this.Button4 = new Button();
+    this.Button4 = new ButtonState();
 
     const deviceName = MOUSE;
     const device = new MouseDevice(deviceName, eventTarget, opts);
     const bindings = new InputBindings();
     for (let key in this) {
       if (Object.prototype.hasOwnProperty.call(this, key)) {
-        let input = this[key];
+        let input = /** @type {AxisState|ButtonState} */ (this[key]);
         bindings.bind(input, deviceName, key);
       }
     }
@@ -3067,4 +3075,4 @@ class Mouse {
   }
 }
 
-export { AutoPoller, Axis, AxisBinding, AxisButtonBinding, Button, ButtonBinding, CLEAR_DOWN_STATE_BITS, CLEAR_INVERTED_MODIFIER_BITS, CLEAR_POLL_BITS, DOWN_STATE_BIT, DeviceInputAdapter, INVERTED_MODIFIER_BIT, InputBase, InputBindings, InputCode, InputContext, InputDevice, InputPort, KeyCodes, Keyboard, KeyboardDevice, Mouse, MouseDevice, PRESSED_STATE_BIT, RELEASED_STATE_BIT, REPEATED_STATE_BIT, stringsToKeyCodes };
+export { AutoPoller, AxisBinding, AxisButtonBinding, AxisState, ButtonBinding, ButtonState, CLEAR_DOWN_STATE_BITS, CLEAR_INVERTED_MODIFIER_BITS, CLEAR_POLL_BITS, DOWN_STATE_BIT, DeviceInputAdapter, INVERTED_MODIFIER_BIT, InputBindings, InputCode, InputContext, InputDevice, InputPort, InputState, KeyCodes, Keyboard, KeyboardDevice, Mouse, MouseDevice, PRESSED_STATE_BIT, RELEASED_STATE_BIT, REPEATED_STATE_BIT, stringsToKeyCodes };
