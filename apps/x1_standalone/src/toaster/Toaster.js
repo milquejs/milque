@@ -9,7 +9,7 @@ export async function connectInputs(inputs, inputPortQuerySelector = 'input-port
     /** @type {import('@milque/input').InputPort} */
     let inputPort = document.querySelector(inputPortQuerySelector);
     let ctx = inputPort.getContext('axisbutton');
-    ctx.bindBindings(Object.values(inputs));
+    ctx.bindBindings(inputs);
     return ctx;
 }
 

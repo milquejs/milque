@@ -24,7 +24,8 @@
     "@milque/mogli": "~0.0.1",
     "@milque/asset": "~0.0.1",
     "@milque/util": "~0.0.1",
-    "gl-matrix": "~3.3.0"
+    "gl-matrix": "~3.3.0",
+    "three": "0.144.0"
   },
   "devDependencies": {
     "@milque/toolkit": "~0.0.1",

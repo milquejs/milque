@@ -39,7 +39,7 @@ dependencies:
   rollup-plugin-terser: 7.0.2_rollup@2.47.0
   stylelint: 13.13.1
   stylelint-config-standard: 22.0.0_stylelint@13.13.1
-  twgl.js: 4.24.0
+  three: 0.144.0
   typescript: 4.2.4
 lockfileVersion: 5.2
 packages:
@@ -3804,6 +3804,10 @@ packages:
     dev: false
     resolution:
       integrity: sha1-f17oI66AUgfACvLfSoTsP8+lcLQ=
+  /three/0.144.0:
+    dev: false
+    resolution:
+      integrity: sha512-R8AXPuqfjfRJKkYoTQcTK7A6i3AdO9++2n8ubya/GTU+fEHhYKu1ZooRSCPkx69jbnzT7dD/xEo6eROQTt2lJw==
   /time-zone/1.0.0:
     dev: false
     engines:
@@ -4396,11 +4400,12 @@ packages:
       prettier: 2.4.1
       stylelint: 13.13.1
       stylelint-config-standard: 22.0.0_stylelint@13.13.1
+      three: 0.144.0
       twgl.js: 4.24.0
     dev: false
     name: '@rush-temp/standalone'
     resolution:
-      integrity: sha512-h9tuHputwP8Uf4a/mLyYKwW9rPdvJ7Il22pSDq9OsPfkHmMUUaejNynaxAK6J6iDf2Bb/iS139zMvbsqCU/bfQ==
+      integrity: sha512-H+M2DkNUqMb4KroCAQp8WgFuRuVblpcc0c43T09DrzldZf8Qz5Tq6GfQI7i39p0fp8tyPbbWdgQQ0omeaqfpEg==
       tarball: file:projects/standalone.tgz
     version: 0.0.0
   file:projects/toolkit.tgz:
@@ -4477,5 +4482,5 @@ specifiers:
   rollup-plugin-terser: ~7.0.2
   stylelint: ~13.13.1
   stylelint-config-standard: ~22.0.0
-  twgl.js: ~4.24.0
+  three: 0.144.0
   typescript: ~4.2.4

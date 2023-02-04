@@ -1,0 +1,48 @@
+{
+  "name": "milque-vscode-knobs",
+  "displayName": "Visual data knobs",
+  "version": "0.0.1",
+  "description": "A visual data knob",
+  "publisher": "milque",
+  "engines": {
+    "vscode": "^1.46.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "main": "./out/extension.js",
+  "activationEvents": [
+    "onCommand:extension.milque.knob.test"
+  ],
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/andykuo1/milque.git"
+	},
+  "keywords": [],
+  "author": "Andrew Kuo",
+  "license": "MIT",
+  "contributes": {
+    "commands": [
+      {
+        "command": "extension.milque.knob.test",
+        "title": "Hello World"
+      }
+    ]
+  },
+  "scripts": {
+    "start": "tsc -w -p ./",
+    "build": "tsc -p ./",
+    "package": "vsce package --out './out' --yarn",
+    "lint": "eslint . --ext .ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "devDependencies": {
+    "@types/node": "^14.10.1",
+    "@types/vscode": "^1.46.0",
+    "@typescript-eslint/eslint-plugin": "^4.1.0",
+    "@typescript-eslint/parser": "^4.1.0",
+    "eslint": "^7.1.0",
+    "typescript": "^4.8.3",
+    "vsce": "^2.11.0"
+  }
+}
