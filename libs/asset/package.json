@@ -1,0 +1,34 @@
+{
+  "name": "@milque/asset",
+  "version": "1.0.0",
+  "description": "An asset manager with async loading.",
+  "main": "dist/milque-asset.cjs.js",
+  "module": "dist/milque-asset.esm.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "require": "./dist/milque-asset.cjs.js",
+      "import": "./dist/milque-asset.esm.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "globals": {
+    "@milque/asset": "milque.asset"
+  },
+  "scripts": {
+    "build": "milque-dev build"
+  },
+  "keywords": [
+    "milque",
+    "asset"
+  ],
+  "author": "Andrew Kuo <andrewbkuo@gmail.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "milque-dev": "workspace:*"
+  },
+  "dependencies": {
+    "fflate": "~0.7.4",
+    "picomatch": "~2.3.1"
+  }
+}

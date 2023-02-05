@@ -1,0 +1,31 @@
+{
+  "name": "@milque/input",
+  "version": "1.0.0",
+  "description": "A mappable input manager with binding abstractions.",
+  "main": "dist/milque-input.cjs.js",
+  "module": "dist/milque-input.esm.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "require": "./dist/milque-input.cjs.js",
+      "import": "./dist/milque-input.esm.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "globals": {
+    "@milque/input": "milque.input"
+  },
+  "scripts": {
+    "build": "milque-dev build"
+  },
+  "keywords": [
+    "milque",
+    "input",
+    "keycode"
+  ],
+  "author": "Andrew Kuo <andrewbkuo@gmail.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "milque-dev": "workspace:*"
+  }
+}

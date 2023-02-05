@@ -12,26 +12,19 @@
   "scripts": {
     "munge": "node munge.js",
     "start": "node build.js --dev",
-    "build": "node build.js",
-    "lint": "eslint **/*.js && stylelint **/*.css",
-    "format": "prettier --write *"
-  },
-  "dependencies": {
-    "@milque/display": "~0.0.1",
-    "@milque/input": "~0.0.1",
-    "@milque/random": "~0.0.1",
-    "@milque/scene": "~0.0.1",
-    "@milque/mogli": "~0.0.1",
-    "@milque/asset": "~0.0.1",
-    "@milque/util": "~0.0.1",
-    "gl-matrix": "~3.3.0"
+    "build": "node build.js"
   },
   "devDependencies": {
-    "@milque/toolkit": "~0.0.1",
-    "eslint": "~7.25.0",
-    "eslint-config-prettier": "~8.3.0",
-    "stylelint": "~13.13.1",
-    "stylelint-config-standard": "~22.0.0",
-    "prettier": "~2.4.1"
+    "@milque/toolkit": "workspace:*"
+  },
+  "dependencies": {
+    "gl-matrix": "~3.4.3",
+    "@milque/asset": "workspace:*",
+    "@milque/display": "workspace:*",
+    "@milque/random": "workspace:*",
+    "@milque/input": "workspace:*",
+    "@milque/scene": "workspace:*",
+    "@milque/mogli": "workspace:*",
+    "@milque/util": "workspace:*"
   }
 }

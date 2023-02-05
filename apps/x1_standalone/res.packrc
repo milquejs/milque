@@ -1,14 +1,8 @@
 {
     "version": "1.0.0",
     "manifest": {
-        "files": [
-            {
-                "name": "res/toast.png",
-                "bytes": 198,
-                "crc": -630160006
-            }
-        ],
-        "totalBytes": 198,
-        "checksum": -930399499
+        "files": [],
+        "totalBytes": 0,
+        "checksum": 628136473
     }
 }

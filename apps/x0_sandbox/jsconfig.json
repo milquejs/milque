@@ -1,14 +1,15 @@
 {
-  "compilerOptions": {
-    "target": "ES5",
-    "lib": ["ES2021", "DOM"],
-    "allowJs": true,
-    "checkJs": true,
-    "baseUrl": ".",
-    "paths": {
-      "src/*": ["./src/*"]
-    }
-  },
-  "exclude": ["node_modules", "dist", "out", "public"],
-  "include": ["src/**/*.js"]
-}
+    "compilerOptions": {
+      "target": "ES5",
+      "lib": ["ES2021", "DOM"],
+      "allowJs": true,
+      "checkJs": true,
+      "baseUrl": ".",
+      "paths": {
+        "src/*": ["./src/*"]
+      }
+    },
+    "exclude": ["node_modules", "dist", "out", "public"],
+    "include": ["src/**/*.js"]
+  }
+  

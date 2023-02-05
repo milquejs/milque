@@ -1,0 +1,30 @@
+{
+  "name": "@milque/random",
+  "version": "1.0.0",
+  "description": "A seedable random number generator.",
+  "main": "dist/milque-random.cjs.js",
+  "module": "dist/milque-random.esm.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "require": "./dist/milque-random.cjs.js",
+      "import": "./dist/milque-random.esm.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "globals": {
+    "@milque/random": "milque.random"
+  },
+  "scripts": {
+    "build": "milque-dev build"
+  },
+  "keywords": [
+    "milque",
+    "random"
+  ],
+  "author": "Andrew Kuo <andrewbkuo@gmail.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "milque-dev": "workspace:*"
+  }
+}

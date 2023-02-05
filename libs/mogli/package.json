@@ -1,0 +1,33 @@
+{
+  "name": "@milque/mogli",
+  "version": "1.0.0",
+  "description": "A WebGL helper.",
+  "main": "dist/milque-mogli.cjs.js",
+  "module": "dist/milque-mogli.esm.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "require": "./dist/milque-mogli.cjs.js",
+      "import": "./dist/milque-mogli.esm.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "globals": {
+    "@milque/mogli": "milque.mogli"
+  },
+  "scripts": {
+    "build": "milque-dev build"
+  },
+  "keywords": [
+    "milque",
+    "milque"
+  ],
+  "author": "Andrew Kuo <andrewbkuo@gmail.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "milque-dev": "workspace:*"
+  },
+  "dependencies": {
+    "gl-matrix": "~3.4.3"
+  }
+}

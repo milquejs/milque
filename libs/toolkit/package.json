@@ -1,0 +1,28 @@
+{
+  "name": "@milque/toolkit",
+  "version": "1.0.0",
+  "description": "A build toolkit for milque.js apps",
+  "main": "src/index.js",
+  "type": "module",
+  "bin": {
+    "@milque/toolkit": "bin/index.js",
+    "milque-toolkit": "bin/index.js"
+  },
+  "scripts": {
+    "build": "echo ''"
+  },
+  "keywords": [
+    "milque"
+  ],
+  "author": "Andrew Kuo <andrewbkuo@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "esbuild": "~0.11.18",
+    "esbuild-plugin-alias": "~0.1.2",
+    "@esbuild-plugins/node-modules-polyfill": "~0.1.1",
+    "open": "~8.0.7",
+    "typescript": "~4.2.4",
+    "chokidar": "~3.5.1",
+    "fflate": "~0.6.10"
+  }
+}

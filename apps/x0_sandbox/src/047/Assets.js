@@ -1,5 +1,5 @@
 import { AssetRef } from '@milque/asset';
-import { loadSound } from 'src/audio/SoundLoader.js';
+import { loadSound } from '../../src/audio/SoundLoader.js';
 
 export const SoundStart = new AssetRef(
   'sound://start.wav',
