@@ -1,4 +1,5 @@
 import { Random } from '@milque/random';
+import { useFrameUpdate, useUpdate } from './lib/AsteroidInit';
 
 /**
  * What I learned:
@@ -8,11 +9,28 @@ import { Random } from '@milque/random';
  * just expose an interface for the engine to connect to.
  */
 
-const STAR_SIZE_RANGE = [2, 4];
-const STAR_SPEED_RANGE = [0.3, 1];
-const STAR_PARTICLE_COUNT = 30;
+export const STAR_SIZE_RANGE = [2, 4];
+export const STAR_SPEED_RANGE = [0.3, 1];
+export const STAR_PARTICLE_COUNT = 30;
+export const STARFIELD_DRAW_LAYER_INDEX = 1;
 
-export function createStarfield(width, height) {
+/**
+ * @param {import('./main').AsteroidGame} m 
+ */
+export function StarfieldSystem(m) {
+  const canvas = m.canvas;
+  const starfield = createStarfield(canvas.width, canvas.height);
+  
+  useUpdate(m, () => {
+    updateStarfield(starfield);
+  });
+
+  useFrameUpdate(m, STARFIELD_DRAW_LAYER_INDEX, (ctx) => {
+    renderStarfield(ctx, starfield);
+  });
+}
+
+function createStarfield(width, height) {
   let result = {
     x: [],
     y: [],
@@ -32,7 +50,7 @@ export function createStarfield(width, height) {
   return result;
 }
 
-export function renderStarfield(ctx, starfield, color = 'white') {
+function renderStarfield(ctx, starfield, color = 'white') {
   for (let i = 0; i < starfield.length; ++i) {
     let x = starfield.x[i];
     let y = starfield.y[i];
@@ -44,7 +62,7 @@ export function renderStarfield(ctx, starfield, color = 'white') {
   }
 }
 
-export function updateStarfield(starfield, dx = 1, dy = 0) {
+function updateStarfield(starfield, dx = 1, dy = 0) {
   const { length, width, height } = starfield;
 
   for (let i = 0; i < length; ++i) {

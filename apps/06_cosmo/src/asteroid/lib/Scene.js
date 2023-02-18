@@ -1,6 +1,8 @@
 /** @typedef {(sceneDetail: Scene) => Promise<SceneTerminationCallback>} SceneInitializationCallback */
 /** @typedef {(sceneDetail: Scene) => Promise<void>} SceneTerminationCallback */
 
+// TODO: A scene is a preset configuration of systems.
+
 export class Scene {
     /**
      * @param {SceneInitializationCallback} callback 

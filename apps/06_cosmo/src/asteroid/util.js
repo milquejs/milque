@@ -3,8 +3,7 @@ export const DEBUG = {
 };
 export const FLASH_TIME_STEP = 0.1;
 
-export function wrapAround(scene, position, width, height) {
-    let canvas = scene.display.canvas;
+export function wrapAround(canvas, position, width, height) {
     if (position.x < -width) position.x = canvas.width;
     if (position.y < -height) position.y = canvas.height;
     if (position.x > canvas.width + width / 2) position.x = -width;

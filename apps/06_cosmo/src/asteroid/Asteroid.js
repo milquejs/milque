@@ -164,7 +164,7 @@ export function updateAsteroids(dt, scene, asteroids) {
     for (let asteroid of asteroids) {
         asteroid.x += asteroid.dx;
         asteroid.y += asteroid.dy;
-        wrapAround(scene, asteroid, asteroid.size * 2, asteroid.size * 2);
+        wrapAround(scene.canvas, asteroid, asteroid.size * 2, asteroid.size * 2);
     }
 
     // Update asteroid collision

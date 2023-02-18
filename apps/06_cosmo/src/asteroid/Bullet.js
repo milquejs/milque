@@ -77,7 +77,7 @@ export function updateBullets(dt, scene) {
             bullet.y += bullet.dy;
 
             // Wrap around
-            wrapAround(scene, bullet, BULLET_RADIUS * 2, BULLET_RADIUS * 2);
+            wrapAround(scene.canvas, bullet, BULLET_RADIUS * 2, BULLET_RADIUS * 2);
         }
     }
 

@@ -100,7 +100,7 @@ export function updatePlayer(dt, scene) {
     --player.cooldown;
 
     // Wrap around
-    wrapAround(scene, player, PLAYER_RADIUS * 2, PLAYER_RADIUS * 2);
+    wrapAround(scene.canvas, player, PLAYER_RADIUS * 2, PLAYER_RADIUS * 2);
 
     // Whether to fire a bullet
     if (fireControl) {

@@ -84,7 +84,7 @@ export function updatePowerUps(dt, scene) {
     powerUp.y += powerUp.dy;
 
     // Wrap around
-    wrapAround(scene, powerUp, POWER_UP_RADIUS * 2, POWER_UP_RADIUS * 2);
+    wrapAround(scene.canvas, powerUp, POWER_UP_RADIUS * 2, POWER_UP_RADIUS * 2);
   }
 
   // Update collision

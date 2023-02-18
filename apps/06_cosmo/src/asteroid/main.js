@@ -1,18 +1,20 @@
 import { EntityManager } from './lib/EntityManager.js';
-import { EventManager } from './lib/EventManager.js';
 
 import { Assets, loadAssets } from './assets.js';
-import * as Starfield from './Starfield.js';
 
 import { createAsteroidSpawner, drawAsteroids, onNextLevelAsteroid, updateAsteroids, updateAsteroidSpawner } from './Asteroid.js';
 import { DEBUG, drawCollisionCircle, FLASH_TIME_STEP } from './util.js';
 import { drawPlayer, onNextLevelPlayer, PLAYER_RADIUS, spawnPlayer, updatePlayer } from './Player.js';
-import { drawParticles, onNextLevelParticle, updateParticles } from './Particle.js';
+import { onNextLevelParticle } from './Particle.js';
 import { createPowerUpSpawner, drawPowerUps, onNextLevelPowerUp, PowerUp, updatePowerUps, updatePowerUpSpawner } from './PowerUp.js';
 import { drawBullets, onNextLevelBullet, updateBullets } from './Bullet.js';
 
 import { createAnimationFrameLoop, SceneManager } from './lib/Init.js';
 import { FrameLayerManager, useFrameUpdate, useUpdate } from './lib/AsteroidInit.js';
+import { StarfieldSystem } from './Starfield.js';
+import { SystemManager } from './lib/SystemManager.js';
+import { DrawLayerManager } from './lib/DrawLayerManager.js';
+import { ProviderManager, useProvider } from './lib/SystemProvider.js';
 
 /** @typedef {import('@milque/display').DisplayPort} DisplayPort */
 
@@ -38,12 +40,17 @@ async function init() {
   await loadAssets();
   console.log('...loading complete!');
 
+  // const systemManager = new SystemManager();
+
+  /** @type {SceneManager} */
   const sceneManager = new SceneManager([
-    AsteroidGameScene
+    AsteroidGameScene,
+    StarfieldSystem,
   ]);
   const frames = new FrameLayerManager();
   const ents = new EntityManager();
-  const events = new EventManager();
+  const drawLayerManager = new DrawLayerManager();
+  const providerManager = new ProviderManager();
 
   return {
     display,
@@ -52,8 +59,9 @@ async function init() {
     frames,
     sceneManager,
     ents,
-    events,
-  }
+    draws: drawLayerManager,
+    provides: providerManager,
+  };
 }
 
 const INSTRUCTION_HINT_TEXT = '[ wasd_ ]';
@@ -84,8 +92,6 @@ function AsteroidGameScene(m) {
 
   this.powerUpSpawner = createPowerUpSpawner(this);
 
-  this.starfield = Starfield.createStarfield(canvas.width, canvas.height);
-
   this.gamePause = true;
   this.showPlayer = true;
   this.gameStart = true;
@@ -97,8 +103,6 @@ function AsteroidGameScene(m) {
 
   useUpdate(m, ({ deltaTime: dt }) => {
     if (this.gamePause) {
-      // Update particles
-      updateParticles(dt, this);
       return;
     }
 
@@ -108,14 +112,10 @@ function AsteroidGameScene(m) {
     updatePlayer(dt, this);
     // Update bullets
     updateBullets(dt, this);
-    // Update particles
-    updateParticles(dt, this);
     // Update asteroids
     updateAsteroids(dt, this, this.asteroids);
     // Update power-up
-    updatePowerUps(dt, this)
-    // Update starfield
-    Starfield.updateStarfield(this.starfield);
+    updatePowerUps(dt, this);
     // Update spawners
     updateAsteroidSpawner(dt, this, this.asteroidSpawner);
     updatePowerUpSpawner(dt, this, this.powerUpSpawner);
@@ -129,14 +129,15 @@ function AsteroidGameScene(m) {
   });
 
   useFrameUpdate(m, 0, (ctx) => {
-    let canvas = ctx.canvas;
+    const canvas = ctx.canvas;
 
     // Draw background
     ctx.fillStyle = 'black';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+  });
 
-    // Draw starfield
-    Starfield.renderStarfield(ctx, this.starfield);
+  useFrameUpdate(m, 2, (ctx) => {
+    let canvas = ctx.canvas;
 
     // Draw hint
     ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
@@ -187,9 +188,9 @@ function AsteroidGameScene(m) {
     drawPowerUps(ctx, this)
     // Draw bullet
     drawBullets(ctx, this);
-    // Draw particle
-    drawParticles(ctx, this);
+  });
 
+  useFrameUpdate(m, 10, (ctx) => {
     // Draw player
     if (this.showPlayer) {
       drawPlayer(ctx, this);
