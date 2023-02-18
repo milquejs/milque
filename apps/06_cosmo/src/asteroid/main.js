@@ -11,41 +11,60 @@ import { drawParticles, onNextLevelParticle, updateParticles } from './Particle.
 import { createPowerUpSpawner, drawPowerUps, onNextLevelPowerUp, PowerUp, updatePowerUps, updatePowerUpSpawner } from './PowerUp.js';
 import { drawBullets, onNextLevelBullet, updateBullets } from './Bullet.js';
 
-/**
- * @typedef {import('@milque/display').DisplayPort} DisplayPort
- */
+import { createAnimationFrameLoop, SceneManager } from './lib/Init.js';
+import { FrameLayerManager, useFrameUpdate, useUpdate } from './lib/AsteroidInit.js';
+
+/** @typedef {import('@milque/display').DisplayPort} DisplayPort */
+
+/** @typedef {Awaited<ReturnType<init>>} AsteroidGame */
 
 export async function main() {
+  const m = await init();
+  await m.sceneManager.initialize(m);
+  requestAnimationFrame(createAnimationFrameLoop((e) => {
+    m.sceneManager.dispatchUpdate(e);
+    m.frames.dispatch(m.ctx);
+    m.ents.flush();
+  }));
+}
+
+async function init() {
   /** @type {DisplayPort} */
   const display = document.querySelector('#display');
   const canvas = display.canvas;
   const ctx = canvas.getContext('2d');
 
-  let core = {
-    display
-  };
-  let scene = {};
-  await load.call(scene);
-  AsteroidGame.call(scene, core);
-  display.addEventListener('frame', (/** @type {CustomEvent} */ e) => {
-    const { deltaTime } = e.detail;
-    update.call(scene, deltaTime);
-    render.call(scene, ctx);
-  });
+  console.log('Loading...');
+  await loadAssets();
+  console.log('...loading complete!');
+
+  const sceneManager = new SceneManager([
+    AsteroidGameScene
+  ]);
+  const frames = new FrameLayerManager();
+  const ents = new EntityManager();
+  const events = new EventManager();
+
+  return {
+    display,
+    ctx,
+    canvas,
+    frames,
+    sceneManager,
+    ents,
+    events,
+  }
 }
 
 const INSTRUCTION_HINT_TEXT = '[ wasd_ ]';
 
-async function load() {
-  console.log('Loading...');
-  await loadAssets();
-  console.log('...loading complete!');
-}
-
-export function AsteroidGame(core) {
-  this.core = core;
-  this.ents = new EntityManager();
-  this.events = new EventManager();
+/** @param {AsteroidGame} m */
+function AsteroidGameScene(m) {
+  const canvas = m.canvas;
+  const display = m.display;
+  this.ents = m.ents;
+  this.display = display;
+  this.canvas = canvas;
 
   this.level = 0;
   this.score = 0;
@@ -56,9 +75,6 @@ export function AsteroidGame(core) {
   this.flashHighScoreDelta = 0;
   this.flashShootDelta = 0;
   this.dt = 0;
-
-  let canvas = core.display.canvas;
-  this.display = core.display;
 
   this.player = null;
   spawnPlayer(this);
@@ -78,118 +94,108 @@ export function AsteroidGame(core) {
 
   document.addEventListener('keydown', (e) => onKeyDown.call(this, e.key));
   document.addEventListener('keyup', (e) => onKeyUp.call(this, e.key));
-}
 
-/**
- * @this {AsteroidGame}
- * @param {number} dt The delta time spent on the previous frame.
- */
-function update(dt) {
-  if (this.gamePause) {
+  useUpdate(m, ({ deltaTime: dt }) => {
+    if (this.gamePause) {
+      // Update particles
+      updateParticles(dt, this);
+      return;
+    }
+
+    this.dt = dt;
+
+    // Update players
+    updatePlayer(dt, this);
+    // Update bullets
+    updateBullets(dt, this);
     // Update particles
     updateParticles(dt, this);
-    return;
-  }
+    // Update asteroids
+    updateAsteroids(dt, this, this.asteroids);
+    // Update power-up
+    updatePowerUps(dt, this)
+    // Update starfield
+    Starfield.updateStarfield(this.starfield);
+    // Update spawners
+    updateAsteroidSpawner(dt, this, this.asteroidSpawner);
+    updatePowerUpSpawner(dt, this, this.powerUpSpawner);
 
-  this.dt = dt;
+    if (!this.gamePause && this.asteroids.length <= 0) {
+      this.gamePause = true;
+      this.showPlayer = true;
+      Assets.SoundStart.current.play();
+      setTimeout(() => (this.gameWait = true), 1000);
+    }
+  });
 
-  // Update players
-  updatePlayer(dt, this);
-  // Update bullets
-  updateBullets(dt, this);
-  // Update particles
-  updateParticles(dt, this);
-  // Update asteroids
-  updateAsteroids(dt, this, this.asteroids);
-  // Update power-up
-  updatePowerUps(dt, this)
-  // Update starfield
-  Starfield.updateStarfield(this.starfield);
-  // Update spawners
-  updateAsteroidSpawner(dt, this, this.asteroidSpawner);
-  updatePowerUpSpawner(dt, this, this.powerUpSpawner);
+  useFrameUpdate(m, 0, (ctx) => {
+    let canvas = ctx.canvas;
 
-  if (!this.gamePause && this.asteroids.length <= 0) {
-    this.gamePause = true;
-    this.showPlayer = true;
-    Assets.SoundStart.current.play();
-    setTimeout(() => (this.gameWait = true), 1000);
-  }
+    // Draw background
+    ctx.fillStyle = 'black';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  this.ents.flush();
-}
+    // Draw starfield
+    Starfield.renderStarfield(ctx, this.starfield);
 
-/**
- * 
- * @param {CanvasRenderingContext2D} ctx 
- */
-function render(ctx) {
-  let canvas = ctx.canvas;
-
-  // Draw background
-  ctx.fillStyle = 'black';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  // Draw starfield
-  Starfield.renderStarfield(ctx, this.starfield);
-
-  // Draw hint
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.font = '16px sans-serif';
-  ctx.fillText(this.hint, canvas.width / 2, canvas.height / 2 - 32);
-
-  // Draw score
-  if (this.flashScore > 0) {
-    ctx.fillStyle = `rgba(255, 255, 255, ${this.flashScore + 0.2})`;
-    this.flashScore -= FLASH_TIME_STEP;
-  } else {
+    // Draw hint
     ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
-  }
-  ctx.font = '48px sans-serif';
-  ctx.fillText(
-    '= ' + String(this.score).padStart(2, '0') + ' =',
-    canvas.width / 2,
-    canvas.height / 2
-  );
-  if (this.flashHighScore > 0) {
-    ctx.fillStyle = `rgba(255, 255, 255, ${this.flashHighScore + 0.2})`;
-    this.flashHighScore -= FLASH_TIME_STEP;
-  } else {
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = '16px sans-serif';
+    ctx.fillText(this.hint, canvas.width / 2, canvas.height / 2 - 32);
+
+    // Draw score
+    if (this.flashScore > 0) {
+      ctx.fillStyle = `rgba(255, 255, 255, ${this.flashScore + 0.2})`;
+      this.flashScore -= FLASH_TIME_STEP;
+    } else {
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+    }
+    ctx.font = '48px sans-serif';
+    ctx.fillText(
+      '= ' + String(this.score).padStart(2, '0') + ' =',
+      canvas.width / 2,
+      canvas.height / 2
+    );
+    if (this.flashHighScore > 0) {
+      ctx.fillStyle = `rgba(255, 255, 255, ${this.flashHighScore + 0.2})`;
+      this.flashHighScore -= FLASH_TIME_STEP;
+    } else {
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+    }
+    ctx.font = '16px sans-serif';
+    ctx.fillText(
+      String(this.highScore).padStart(2, '0'),
+      canvas.width / 2,
+      canvas.height / 2 + 32
+    );
+
+    // Draw timer
     ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
-  }
-  ctx.font = '16px sans-serif';
-  ctx.fillText(
-    String(this.highScore).padStart(2, '0'),
-    canvas.width / 2,
-    canvas.height / 2 + 32
-  );
+    ctx.font = '24px sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(
+      `${Math.ceil(this.asteroidSpawner.spawnTicks / 1000)}`,
+      canvas.width,
+      canvas.height - 12
+    );
 
-  // Draw timer
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
-  ctx.font = '24px sans-serif';
-  ctx.textAlign = 'right';
-  ctx.fillText(
-    `${Math.ceil(this.asteroidSpawner.spawnTicks / 1000)}`,
-    canvas.width,
-    canvas.height - 12
-  );
+    // Draw asteroid
+    drawAsteroids(ctx, this, this.asteroids);
+    // Draw power-up
+    drawPowerUps(ctx, this)
+    // Draw bullet
+    drawBullets(ctx, this);
+    // Draw particle
+    drawParticles(ctx, this);
 
-  // Draw asteroid
-  drawAsteroids(ctx, this, this.asteroids);
-  // Draw power-up
-  drawPowerUps(ctx, this)
-  // Draw bullet
-  drawBullets(ctx, this);
-  // Draw particle
-  drawParticles(ctx, this);
-
-  // Draw player
-  if (this.showPlayer) {
-    drawPlayer(ctx, this);
-  }
-  drawCollisionCircle(ctx, this.player.x, this.player.y, PLAYER_RADIUS);
+    // Draw player
+    if (this.showPlayer) {
+      drawPlayer(ctx, this);
+    }
+    drawCollisionCircle(ctx, this.player.x, this.player.y, PLAYER_RADIUS);
+  });
 }
 
 /**

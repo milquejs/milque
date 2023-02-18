@@ -30,7 +30,7 @@ export const BulletQuery = new EntityQuery(Bullet);
  * @param {number} dy 
  */
 export function spawnBullet(scene, x, y, dx, dy) {
-    let [entityId, bullet] = scene.ents.create(Bullet);
+    let [entityId, bullet] = scene.ents.createAndAttach(Bullet);
     bullet.x = x;
     bullet.y = y;
     bullet.dx = dx;

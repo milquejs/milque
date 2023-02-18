@@ -58,7 +58,7 @@ export function onNextLevelPlayer(scene) {
  */
 export function spawnPlayer(scene) {
     const canvas = scene.display.canvas;
-    let [_, player] = scene.ents.create(Player);
+    let [_, player] = scene.ents.createAndAttach(Player);
     player.x = canvas.width / 2;
     player.y = canvas.height / 2;
     scene.player = player;

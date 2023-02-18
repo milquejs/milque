@@ -137,7 +137,7 @@ export class EntityManager {
      * @param {T} componentClasses 
      * @returns {[EntityId, ...ComponentInstancesOf<T>]}
      */
-    create(...componentClasses) {
+    createAndAttach(...componentClasses) {
         let entityId = nextAvailableEntityId(this);
         let result = /** @type {[EntityId, ...ComponentInstancesOf<T>]} */ (/** @type {unknown} */ ([entityId]));
         for (let componentClass of componentClasses) {
@@ -145,6 +145,13 @@ export class EntityManager {
             result.push(instance);
         }
         return result;
+    }
+
+    /**
+     * @returns {EntityId}
+     */
+    create() {
+        return nextAvailableEntityId(this);
     }
 
     /**

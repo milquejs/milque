@@ -36,7 +36,7 @@ export function onNextLevelParticle(scene) {
  */
 export function spawnParticle(scene, x, y, dx, dy, color, age = 0) {
     if (typeof color === 'function') color = color();
-    let [entityId, particle] = scene.ents.create(Particle);
+    let [entityId, particle] = scene.ents.createAndAttach(Particle);
     particle.x = x;
     particle.y = y;
     particle.dx = dx;

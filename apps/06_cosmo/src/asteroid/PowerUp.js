@@ -57,7 +57,7 @@ export function createPowerUp(scene, x, y, dx, dy) {
  * @param {number} dy 
  */
 export function spawnPowerUp(scene, x, y, dx, dy) {
-  let [entityId, powerUp] = scene.ents.create(PowerUp);
+  let [entityId, powerUp] = scene.ents.createAndAttach(PowerUp);
   powerUp.x = x;
   powerUp.y = y;
   powerUp.dx = dx;
