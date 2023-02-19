@@ -7,8 +7,9 @@ import { PLAYER_RADIUS } from './Player.js';
 import { createPowerUpSpawner, drawPowerUps, updatePowerUps, updatePowerUpSpawner, PowerUp } from './PowerUp.js';
 
 import { useSystem } from './lib/M';
-import { DisplayPortProvider, EntityManagerProvider, nextLevel, useDraw, useUpdate } from './main.js';
+import { DisplayPortProvider, EntityManagerProvider, InputPortProvider, nextLevel, useDraw, useUpdate } from './main.js';
 import { EventTopic } from './lib/system/topics/EventTopic.js';
+import { Debug, MoveDown, MoveLeft, MoveRight, MoveUp, Shoot } from './Inputs.js';
 
 const INSTRUCTION_HINT_TEXT = '[ wasd_ ]';
 
@@ -27,6 +28,7 @@ export function useNextLevel(m, nextLevelCallback) {
 export function AsteroidGame(m) {
     const { display, canvas } = useSystem(m, DisplayPortProvider);
     const ents = useSystem(m, EntityManagerProvider);
+    const { ctx: ab } = useSystem(m, InputPortProvider);
 
     this.ents = ents;
 
@@ -56,9 +58,6 @@ export function AsteroidGame(m) {
     this.gameWait = true;
     this.hint = INSTRUCTION_HINT_TEXT;
 
-    document.addEventListener('keydown', (e) => onKeyDown.call(this, e.key));
-    document.addEventListener('keyup', (e) => onKeyUp.call(this, e.key));
-
     useUpdate(m, ({ deltaTime: dt }) => {
         if (this.gamePause) {
             return;
@@ -79,6 +78,35 @@ export function AsteroidGame(m) {
             this.showPlayer = true;
             Assets.SoundStart.current.play();
             setTimeout(() => (this.gameWait = true), 1000);
+        }
+    });
+
+    useUpdate(m, () => {
+        if (ab.isAnyButtonPressed()) {
+            if (this.gameWait) {
+                if (this.gameStart) {
+                    Assets.BackgroundMusic.current.play();
+                    this.score = 0;
+                    this.flashScore = 1;
+                    this.level = 0;
+                    this.gameStart = false;
+                    this.player.powerMode = 0;
+                    this.ents.clear(PowerUp);
+                    this.asteroidSpawner.reset();
+                    this.powerUpSpawner.reset();
+                }
+                this.gameWait = false;
+                nextLevel(this);
+            }
+        }
+
+        this.player.up = MoveUp.value;
+        this.player.down = MoveDown.value;
+        this.player.left = MoveLeft.value;
+        this.player.right = MoveRight.value;
+        this.player.fire = Shoot.value;
+        if (Debug.released) {
+            DEBUG.showCollision = !DEBUG.showCollision;
         }
     });
 
@@ -147,78 +175,4 @@ export function AsteroidGame(m) {
     });
 
     return this;
-}
-
-/** @this {any} */
-function onKeyDown(key) {
-    if (this.gameWait) {
-        if (this.gameStart) {
-            Assets.BackgroundMusic.current.play();
-            this.score = 0;
-            this.flashScore = true;
-            this.level = 0;
-            this.gameStart = false;
-            this.player.powerMode = 0;
-            this.ents.clear(PowerUp);
-            this.asteroidSpawner.reset();
-            this.powerUpSpawner.reset();
-        }
-        this.gameWait = false;
-        nextLevel(this);
-    }
-
-    switch (key) {
-        case 'w':
-        case 'ArrowUp':
-            this.player.up = 1;
-            break;
-        case 's':
-        case 'ArrowDown':
-            this.player.down = 1;
-            break;
-        case 'a':
-        case 'ArrowLeft':
-            this.player.left = 1;
-            break;
-        case 'd':
-        case 'ArrowRight':
-            this.player.right = 1;
-            break;
-        case ' ':
-            this.player.fire = 1;
-            break;
-        case '\\':
-            break;
-        default:
-            console.log(key);
-    }
-}
-
-function onKeyUp(key) {
-    switch (key) {
-        case 'w':
-        case 'ArrowUp':
-            this.player.up = 0;
-            break;
-        case 's':
-        case 'ArrowDown':
-            this.player.down = 0;
-            break;
-        case 'a':
-        case 'ArrowLeft':
-            this.player.left = 0;
-            break;
-        case 'd':
-        case 'ArrowRight':
-            this.player.right = 0;
-            break;
-        case ' ':
-            this.player.fire = 0;
-            break;
-        case '\\':
-            DEBUG.showCollision = !DEBUG.showCollision;
-            break;
-        default:
-            console.log(key);
-    }
 }

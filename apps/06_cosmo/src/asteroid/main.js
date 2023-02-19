@@ -1,5 +1,7 @@
 import { DisplayPort } from '@milque/display';
+import { InputPort } from '@milque/input';
 import { Assets, loadAssets } from './assets.js';
+import * as Inputs from './Inputs.js';
 
 import { PlayerSystem } from './Player.js';
 import { ParticleSystem } from './Particle.js';
@@ -14,10 +16,16 @@ import { EventTopic } from './lib/system/topics/EventTopic.js';
 import { PriorityEventTopic } from './lib/system/topics/PriorityEventTopic.js';
 import { EntityManager } from './lib/entity/EntityManager.js';
 import { AsteroidSystem } from './Asteroid.js';
+import { AssetManager } from '@milque/asset';
 
-/** @typedef {{ deltaTime: number }} UpdateEventAttachment */
+
+/** @typedef {{ deltaTime: number, currentTime: number }} UpdateEventAttachment */
+/** @type {EventTopic<UpdateEventAttachment>} */
+export const EarlyUpdateEvent = new EventTopic();
 /** @type {EventTopic<UpdateEventAttachment>} */
 export const UpdateEvent = new EventTopic();
+/** @type {EventTopic<UpdateEventAttachment>} */
+export const LateUpdateEvent = new EventTopic();
 
 /** @typedef {CanvasRenderingContext2D} DrawEventAttachment */
 /** @type {PriorityEventTopic<DrawEventAttachment>} */
@@ -26,10 +34,10 @@ export const DrawEvent = new PriorityEventTopic();
 export async function main() {
   const m = await init();
   requestAnimationFrame(createAnimationFrameLoop((e) => {
-    UpdateEvent.dispatch(e.detail);
-    UpdateEvent.flush();
-    DrawEvent.dispatch(m.getState(DisplayPortProvider).ctx);
-    DrawEvent.flush();
+    EarlyUpdateEvent.dispatchImmediately(e.detail);
+    UpdateEvent.dispatchImmediately(e.detail);
+    DrawEvent.dispatchImmediately(m.getState(DisplayPortProvider).ctx);
+    LateUpdateEvent.dispatchImmediately(e.detail);
   }));
 }
 
@@ -41,6 +49,7 @@ async function init() {
   const systemManager = new SystemManager();
   systemManager
     .register(DisplayPortProvider)
+    .register(InputPortProvider)
     .register(EntityManagerProvider, undefined, (state) => state.reset())
     .register(AsteroidGame)
     .register(StarfieldSystem)
@@ -67,6 +76,23 @@ export function nextLevel(scene) {
   }
 }
 
+export async function AssetProvider(m) {
+  await AssetManager.loadAssetPackAsRaw('res.pack');
+  await AssetManager.loadAssetRefs(Object.values(Assets));
+}
+
+export function InputPortProvider() {
+  /** @type {InputPort} */
+  const inputs = document.querySelector('#inputs');
+  const ctx = inputs.getContext('axisbutton');
+  ctx.bindBindings(Object.values(Inputs));
+
+  EarlyUpdateEvent.on(({ currentTime: now }) => {
+    ctx.poll(now);
+  });
+  return { inputs, ctx };
+}
+
 export function DisplayPortProvider() {
   /** @type {DisplayPort} */
   const display = document.querySelector('#display');
@@ -81,13 +107,12 @@ export function EntityManagerProvider() {
   return state;
 }
 
+export function useEarlyUpdate(m, updateCallback) {
+  useEventTopic(m, EarlyUpdateEvent, updateCallback);
+}
+
 export function useUpdate(m, updateCallback) {
-  m.before(() => {
-    UpdateEvent.on(updateCallback);
-    return () => {
-      UpdateEvent.off(updateCallback);
-    };
-  });
+  useEventTopic(m, UpdateEvent, updateCallback);
 }
 
 export function useDraw(m, layerIndex, drawCallback) {
@@ -97,6 +122,19 @@ export function useDraw(m, layerIndex, drawCallback) {
       DrawEvent.off(drawCallback);
     };
   });
+}
+
+export function useLateUpdate(m, updateCallback) {
+  useEventTopic(m, LateUpdateEvent, updateCallback);
+}
+
+export function useEventTopic(m, eventTopic, callback) {
+  m.before(() => {
+    eventTopic.on(callback);
+    return () => {
+      eventTopic.off(callback);
+    };
+  })
 }
 
 export function useCanvas(m) {

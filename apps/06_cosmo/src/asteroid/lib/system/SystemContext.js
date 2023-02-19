@@ -24,7 +24,7 @@ export class SystemContext {
         try {
             ctx.state = await ctx.initCallback.call({}, ctx);
         } catch (e) {
-            throw new Error(`Failed to initialize system context '${ctx.name}' with dependencies [${ctx.dependencies.map(dep => dep.name).join(', ')}].`, { cause: e });
+            throw new Error(`Failed to initialize system context '${ctx.name}' with dependencies [${ctx.dependencies.map(dep => dep.name).join(', ')}].\n\n${e}`, { cause: e });
         }
         return ctx.dependencies;
     }
