@@ -76,17 +76,54 @@ declare const FILE_TYPE_SVG: "svg";
 
 declare function uploadFile(accept?: any[], multiple?: boolean): Promise<any>;
 
-declare class PriorityQueue {
-    constructor(comparator: any);
-    _heap: any[];
-    _comparator: any;
+/**
+ * @template T
+ */
+declare class PriorityQueue<T> {
+    /**
+     * @param {(a: T, b: T) => number} comparator
+     */
+    constructor(comparator: (a: T, b: T) => number);
+    /** @private */
+    private _heap;
+    /** @private */
+    private _comparator;
     get size(): number;
     clear(): void;
-    push(...values: any[]): void;
-    pop(): any;
-    /** Replaces the top value with the new value. */
-    replace(value: any): any;
-    peek(): any;
+    /**
+     * @param {...T} values
+     */
+    push(...values: T[]): void;
+    /**
+     * @returns {T}
+     */
+    pop(): T;
+    /**
+     * Replaces the top value with the new value.
+     * @param {T} value
+     * @returns {T}
+     */
+    replace(value: T): T;
+    /**
+     * @returns {T}
+     */
+    peek(): T;
+    /**
+     * @param {number} index
+     * @returns {T}
+     */
+    at(index: number): T;
+    /**
+     * @param {T} value
+     * @param {number} [fromIndex]
+     */
+    indexOf(value: T, fromIndex?: number): number;
+    /**
+     * @param {number} start
+     * @param {number} [deleteCount]
+     * @returns {Array<T>}
+     */
+    splice(start: number, deleteCount?: number): Array<T>;
     /** @private */
     private _compare;
     /** @private */
@@ -95,8 +132,10 @@ declare class PriorityQueue {
     private _shiftUp;
     /** @private */
     private _shiftDown;
-    values(): any[];
-    [Symbol.iterator](): IterableIterator<any>;
+    /** @returns {Array<T>} */
+    values(): Array<T>;
+    /** @returns {Iterator<T>} */
+    [Symbol.iterator](): Iterator<T>;
 }
 
 /**

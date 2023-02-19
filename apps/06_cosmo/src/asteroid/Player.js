@@ -1,11 +1,11 @@
 import { Random } from '@milque/random';
 import { Assets } from './assets.js';
-import { AsteroidGame } from './AsteroidGame';
+import { AsteroidGame, useNextLevel } from './AsteroidGame';
 import { BULLET_SPEED, countBullets, MAX_BULLET_COUNT, spawnBullet } from './Bullet.js';
 import { explode } from './Explode.js';
-import { DisplayPortSystem } from './lib/DisplayPortSystem.js';
 import { ComponentClass, EntityManager, EntityQuery } from './lib/EntityManager.js';
-import { EntityManagerSystem, useDraw, useSystem, useUpdate } from './lib/M.js';
+import { useSystem } from './lib/M.js';
+import { DisplayPortProvider, EntityManagerProvider, useDraw, useUpdate } from './main.js';
 import { MAX_PARTICLE_AGE, spawnParticle } from './Particle.js';
 import { FLASH_TIME_STEP, wrapAround } from './util.js';
 
@@ -52,12 +52,19 @@ export const PlayerQuery = new EntityQuery(Player);
  * @param {import('./lib/M').M} m 
  */
 export function PlayerSystem(m) {
-    const { canvas } = useSystem(m, DisplayPortSystem);
-    const ents = useSystem(m, EntityManagerSystem);
+    const { canvas } = useSystem(m, DisplayPortProvider);
+    const ents = useSystem(m, EntityManagerProvider);
     const scene = useSystem(m, AsteroidGame);
 
     let player = spawnPlayer(canvas, ents);
     scene.player = player;
+
+    useNextLevel(m, () => {
+        player.x = canvas.width / 2;
+        player.y = canvas.height / 2;
+        player.dx = 0;
+        player.dy = 0;
+    });
 
     useUpdate(m, ({ deltaTime }) => {
         if (scene.gamePause) {
@@ -72,14 +79,6 @@ export function PlayerSystem(m) {
         }
     });
     return player;
-}
-
-export function onNextLevelPlayer(scene) {
-    let canvas = scene.display.canvas;
-    scene.player.x = canvas.width / 2;
-    scene.player.y = canvas.height / 2;
-    scene.player.dx = 0;
-    scene.player.dy = 0;
 }
 
 /**

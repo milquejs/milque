@@ -1,8 +1,9 @@
 import { SystemContext } from './SystemContext.js';
+import { assertNotNull } from '../Assertion.js';
 
 /**
  * @template T
- * @typedef {(m: SystemContext<T>) => T|Promise<T>} System<T>
+ * @typedef {(m: SystemContext<T>) => void|T|Promise<T>} System<T>
  */
 
 export class SystemManager {
@@ -12,63 +13,101 @@ export class SystemManager {
          * @protected
          * @type {Array<SystemContext<?>>}
          */
-        this.systems = [];
+        this.pendingSystems = [];
+        /**
+         * @protected
+         * @type {Array<SystemContext<?>>}
+         */
+        this.activeSystems = [];
     }
 
     /**
-     * @param {...System<?>} systems
+     * @template T
+     * @param {any} handle 
+     * @param {import('./SystemContext.js').SystemInitCallback<T>} [initCallback] 
+     * @param {import('./SystemContext.js').SystemDeadCallback<T>} [deadCallback]
      */
-    async start(...systems) {
-        // Create system contexts to be started
-        let created = [];
-        for (let init of systems) {
-            let ctx = new SystemContext(this, init.name, init);
-            this.systems.push(ctx);
-            created.push(ctx);
+    register(handle, initCallback = undefined, deadCallback = undefined) {
+        assertNotNull(handle);
+
+        // Resolve handle.
+        let name;
+        if (typeof handle === 'function') {
+            name = /** @type {Function} */ (handle).name;
+        } else if (typeof handle === 'object') {
+            if ('name' in handle) {
+                name = handle.name;
+            } else {
+                throw new Error('Invalid handle for system - missing name.');
+            }
+        } else {
+            // Use handle as is :)
+            name = handle;
         }
+
+        // Resolve init callback.
+        if (!initCallback) {
+            if (typeof handle === 'function') {
+                initCallback = handle;
+            } else {
+                initCallback = () => {};
+            }
+        }
+
+        // Resolve dead callback.
+        if (!deadCallback) {
+            deadCallback = () => {};
+        }
+
+        let ctx = new SystemContext(this, name, initCallback, deadCallback);
+        this.pendingSystems.push(ctx);
+        return this;
+    }
+
+    /**
+     * @param {any} handle
+     */
+    unregister(handle) {
+        let i = this.pendingSystems.findIndex(ctx => ctx.name === handle);
+        if (i >= 0) {
+            this.pendingSystems.splice(i, 1);
+        }
+        return this;
+    }
+
+    async start() {
+        let created = this.pendingSystems.slice();
+        // Prepare for active
+        this.pendingSystems.length = 0;
         // Connect systems
         for (let ctx of created) {
-            // @ts-ignore
-            ctx.state = await ctx.init.call({}, ctx);
+            this.activeSystems.push(ctx);
+            await SystemContext.initializeContext(ctx);
         }
         // Initialize systems
         for (let ctx of created) {
-            // @ts-ignore
-            await ctx.effects.startEffects();
+            await SystemContext.initializeEffects(ctx);
         }
+        return this;
     }
 
-    /**
-     * @param {...System<?>} systems 
-     */
-    async stop(...systems) {
-        // Find system contexts to be stopped
-        let deleted = [];
-        for (let init of systems) {
-            let i = this.systems.findIndex(ctx => ctx.name === init.name);
-            if (i < 0) {
-                // System was not started here.
-                continue;
-            }
-            let ctx = this.systems[i];
-            // @ts-ignore
-            ctx.dead = true;
-            deleted.push(ctx);
-        }
+    async stop() {
+        let deleted = this.activeSystems.slice().reverse();
+        // Prepare for death
+        deleted.forEach(SystemContext.markDead);
         // Terminate systems
         for (let ctx of deleted) {
-            // @ts-ignore
-            await ctx.effects.stopEffects();
+            await SystemContext.terminateEffects(ctx);
         }
         // Disconnect systems
         for (let ctx of deleted) {
-            let i = this.systems.indexOf(ctx);
-            if (i < 0) {
-                throw new Error('Cannot find system context object in deleted list?');
+            await SystemContext.terminateContext(ctx);
+            let i = this.activeSystems.indexOf(ctx);
+            if (i >= 0) {
+                this.activeSystems.splice(i, 1);
             }
-            ctx.state = null;
-            this.systems.splice(i, 1);
         }
+        return this;
     }
 
     /**
@@ -77,7 +116,7 @@ export class SystemManager {
      * @returns {T}
      */
     getState(system) {
-        let ctx = this.systems.find(ctx => ctx.name === system.name);
+        let ctx = this.activeSystems.find(ctx => ctx.name === system.name);
         if (!ctx) {
             return null;
         }

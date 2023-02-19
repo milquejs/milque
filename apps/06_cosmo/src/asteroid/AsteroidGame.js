@@ -7,16 +7,27 @@ import { PLAYER_RADIUS } from './Player.js';
 import { createPowerUpSpawner, drawPowerUps, updatePowerUps, updatePowerUpSpawner, PowerUp } from './PowerUp.js';
 import { drawBullets, updateBullets } from './Bullet.js';
 
-import { DisplayPortSystem } from './lib/DisplayPortSystem.js';
-import { EntityManagerSystem, useDraw, useSystem, useUpdate } from './lib/M';
-import { nextLevel } from './main.js';
+import { useSystem } from './lib/M';
+import { DisplayPortProvider, EntityManagerProvider, nextLevel, useDraw, useUpdate } from './main.js';
+import { EventTopic } from './lib/system/topics/EventTopic.js';
 
 const INSTRUCTION_HINT_TEXT = '[ wasd_ ]';
 
+export const NextLevelEvent = new EventTopic();
+
+export function useNextLevel(m, nextLevelCallback) {
+    m.before(() => {
+        NextLevelEvent.on(nextLevelCallback);
+        return () => {
+            NextLevelEvent.off(nextLevelCallback)
+        };
+    });
+}
+
 /** @param {import('./lib/M').M} m */
 export function AsteroidGame(m) {
-    const { display, canvas } = useSystem(m, DisplayPortSystem);
-    const ents = useSystem(m, EntityManagerSystem);
+    const { display, canvas } = useSystem(m, DisplayPortProvider);
+    const ents = useSystem(m, EntityManagerProvider);
 
     this.ents = ents;
 

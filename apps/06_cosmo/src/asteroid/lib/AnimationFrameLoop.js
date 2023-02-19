@@ -1,13 +1,13 @@
 /** @typedef {(frameDetail: AnimationFrameLoop) => void} AnimationFrameLoopCallback */
 
 export class AnimationFrameLoop {
+    
     /**
      * @param {AnimationFrameLoopCallback} callback 
      * @param {object} [opts]
      * @param {Window} [opts.animationFrameHandler]
      */
     constructor(callback, opts = undefined) {
-
         const { animationFrameHandler = window } = opts || {};
 
         /** @type {ReturnType<requestAnimationFrame>} */

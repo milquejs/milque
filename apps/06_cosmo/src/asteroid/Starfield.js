@@ -1,6 +1,6 @@
 import { Random } from '@milque/random';
-import { DisplayPortSystem } from './lib/DisplayPortSystem';
-import { useDraw, useSystem, useUpdate } from './lib/M';
+import { useSystem } from './lib/M';
+import { DisplayPortProvider, useDraw, useUpdate } from './main';
 
 /**
  * What I learned:
@@ -16,10 +16,10 @@ export const STAR_PARTICLE_COUNT = 30;
 export const STARFIELD_DRAW_LAYER_INDEX = 1;
 
 /**
- * @param {import('./lib/system/SystemManager').SystemContext<StarfieldSystem>} m 
+ * @param {import('./lib/M').M} m 
  */
 export function StarfieldSystem(m) {
-  const { canvas } = useSystem(m, DisplayPortSystem);
+  const { canvas } = useSystem(m, DisplayPortProvider);
   const starfield = createStarfield(canvas.width, canvas.height);
   
   useUpdate(m, () => {

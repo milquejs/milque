@@ -1,10 +1,12 @@
 import { Random } from '@milque/random';
+import { AsteroidGame, useNextLevel } from './AsteroidGame.js';
 import { explode } from './Explode.js';
+import { useSystem } from './lib/M.js';
 import { PLAYER_RADIUS, killPlayer } from './Player.js';
 import { drawCollisionCircle, withinRadius, wrapAround } from './util.js';
 
 /**
- * @typedef {import('./main.js').AsteroidGame} AsteroidGame
+ * @typedef {import('./AsteroidGame.js').AsteroidGame} AsteroidGame
  */
 
 export const ASTEROID_SPEED = 1;
@@ -30,14 +32,14 @@ const ASTEROID_EXPLODE_PARTICLE_COLORS = [
     'yellow',
 ];
 
-/**
- * @param {AsteroidGame} scene 
- */
-export function onNextLevelAsteroid(scene) {
-    scene.asteroids.length = 0;
-    for (let i = 0; i < ASTEROID_SPAWN_INIT_COUNT * scene.level; ++i) {
-        scene.asteroidSpawner.spawn(scene);
-    }
+export function AsteroidSystem(m) {
+    const scene = useSystem(m, AsteroidGame);
+    useNextLevel(m, () => {
+        scene.asteroids.length = 0;
+        for (let i = 0; i < ASTEROID_SPAWN_INIT_COUNT * scene.level; ++i) {
+            scene.asteroidSpawner.spawn(scene);
+        }
+    });
 }
 
 /**

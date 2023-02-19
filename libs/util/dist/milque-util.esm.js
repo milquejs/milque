@@ -525,9 +525,17 @@ async function uploadFile(accept = [], multiple = false) {
 const TOP_INDEX = 0;
 
 // NOTE: Uses a binary heap to sort.
+/**
+ * @template T
+ */
 class PriorityQueue {
+  /**
+   * @param {(a: T, b: T) => number} comparator 
+   */
   constructor(comparator) {
+    /** @private */
     this._heap = [];
+    /** @private */
     this._comparator = comparator;
   }
 
@@ -539,6 +547,9 @@ class PriorityQueue {
     this._heap.length = 0;
   }
 
+  /**
+   * @param {...T} values
+   */
   push(...values) {
     for (const value of values) {
       this._heap.push(value);
@@ -546,6 +557,9 @@ class PriorityQueue {
     }
   }
 
+  /**
+   * @returns {T}
+   */
   pop() {
     const result = this.peek();
     let bottom = bottomIndex(this);
@@ -557,7 +571,11 @@ class PriorityQueue {
     return result;
   }
 
-  /** Replaces the top value with the new value. */
+  /**
+   * Replaces the top value with the new value.
+   * @param {T} value
+   * @returns {T}
+   */
   replace(value) {
     const result = this.peek();
     this._heap[TOP_INDEX] = value;
@@ -565,8 +583,36 @@ class PriorityQueue {
     return result;
   }
 
+  /**
+   * @returns {T}
+   */
   peek() {
     return this._heap[TOP_INDEX];
+  }
+
+  /**
+   * @param {number} index
+   * @returns {T}
+   */
+  at(index) {
+    return this._heap[index];
+  }
+
+  /**
+   * @param {T} value 
+   * @param {number} [fromIndex]
+   */
+  indexOf(value, fromIndex = undefined) {
+    return this._heap.indexOf(value, fromIndex);
+  }
+
+  /**
+   * @param {number} start 
+   * @param {number} [deleteCount]
+   * @returns {Array<T>}
+   */
+  splice(start, deleteCount = undefined) {
+    return this._heap.splice(start, deleteCount);
   }
 
   /** @private */
@@ -621,10 +667,12 @@ class PriorityQueue {
     }
   }
 
+  /** @returns {Array<T>} */
   values() {
     return this._heap;
   }
 
+  /** @returns {Iterator<T>} */
   [Symbol.iterator]() {
     return this._heap[Symbol.iterator]();
   }

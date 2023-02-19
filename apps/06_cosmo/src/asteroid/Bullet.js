@@ -1,10 +1,13 @@
 import { Assets } from './assets.js';
 import { ASTEROID_BREAK_DAMP_FACTOR, breakUpAsteroid, explodeAsteroid } from './Asteroid.js';
+import { useNextLevel } from './AsteroidGame.js';
 import { ComponentClass, EntityQuery } from './lib/EntityManager.js';
+import { useSystem } from './lib/M.js';
+import { EntityManagerProvider } from './main.js';
 import { drawCollisionCircle, withinRadius, wrapAround } from './util.js';
 
 /**
- * @typedef {import('./main.js').AsteroidGame} AsteroidGame
+ * @typedef {import('./AsteroidGame.js').AsteroidGame} AsteroidGame
  * @typedef {import('./lib/EntityManager.js').EntityId} EntityId
  */
 
@@ -21,6 +24,14 @@ export const Bullet = new ComponentClass('Bullet', () => ({
     age: 0,
 }));
 export const BulletQuery = new EntityQuery(Bullet);
+
+export function BulletSystem(m) {
+    const ents = useSystem(m, EntityManagerProvider);
+
+    useNextLevel(m, () => {
+        ents.clear(Bullet);
+    });
+}
 
 /**
  * @param {AsteroidGame} scene 
@@ -53,13 +64,6 @@ export function destroyBullet(scene, entityId) {
  */
 export function countBullets(scene) {
     return scene.ents.count(Bullet);
-}
-
-/**
- * @param {AsteroidGame} scene
- */
-export function onNextLevelBullet(scene) {
-    scene.ents.clear(Bullet);
 }
 
 /**

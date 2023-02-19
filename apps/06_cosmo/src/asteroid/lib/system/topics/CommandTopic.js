@@ -1,13 +1,20 @@
 /**
  * @template T
  */
-export class SystemTopic {
+export class CommandTopic {
     
     constructor() {
-        /** @private */
-        this.queued = [];
-        /** @private */
+        /**
+         * @private
+         * @type {Array<T>}
+         */
         this.messages = [];
+        
+        /**
+         * @private
+         * @type {Array<T>}
+         */
+        this.queued = [];
     }
 
     /**
@@ -27,7 +34,6 @@ export class SystemTopic {
     flush() {
         this.messages.push(...this.queued);
         this.queued.length = 0;
-        return this;
     }
 
     /**

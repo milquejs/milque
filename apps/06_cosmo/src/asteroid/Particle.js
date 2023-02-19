@@ -1,10 +1,11 @@
-import { DisplayPortSystem } from './lib/DisplayPortSystem.js';
+import { useNextLevel } from './AsteroidGame.js';
 import { ComponentClass, EntityQuery } from './lib/EntityManager.js';
-import { EntityManagerSystem, useDraw, useSystem, useUpdate } from './lib/M.js';
+import { useSystem } from './lib/M';
+import { DisplayPortProvider, EntityManagerProvider, useDraw, useUpdate } from './main.js';
 import { wrapAround } from './util.js';
 
 /**
- * @typedef {import('./main.js').AsteroidGame} AsteroidGame
+ * @typedef {import('./AsteroidGame.js').AsteroidGame} AsteroidGame
  * @typedef {import('./lib/EntityManager.js').EntityId} EntityId
  * @typedef {import('./lib/EntityManager.js').EntityManager} EntityManager
  */
@@ -30,23 +31,39 @@ export const ParticleQuery = new EntityQuery(Particle);
  * @param {import('./lib/M').M} m 
  */
 export function ParticleSystem(m) {
-    const ents = useSystem(m, EntityManagerSystem);
-    const { canvas } = useSystem(m, DisplayPortSystem);
+    const ents = useSystem(m, EntityManagerProvider);
+    const { canvas } = useSystem(m, DisplayPortProvider);
+
+    useNextLevel(m, () => {
+        ents.clear(Particle);
+    });
 
     useUpdate(m, ({ deltaTime: dt }) => {
-        updateParticles(dt, ents, canvas);
+        // Update particle motion
+        for (let [entityId, particle] of ParticleQuery.findAll(ents)) {
+            particle.age += dt;
+            if (particle.age > MAX_PARTICLE_AGE) {
+                ents.destroy(entityId);
+            } else {
+                particle.x += particle.dx;
+                particle.y += particle.dy;
+    
+                // Wrap around
+                wrapAround(canvas, particle, PARTICLE_RADIUS * 2, PARTICLE_RADIUS * 2);
+            }
+        }
     });
 
     useDraw(m, PARTICLES_DRAW_LAYER_INDEX, (ctx) => {
-        drawParticles(ctx, ents);
+        for (let [_, particle] of ParticleQuery.findAll(ents)) {
+            ctx.translate(particle.x, particle.y);
+            ctx.rotate(particle.rotation);
+            ctx.fillStyle = particle.color;
+            let size = PARTICLE_RADIUS * (1 - particle.age / MAX_PARTICLE_AGE);
+            ctx.fillRect(-size, -size, size * 2, size * 2);
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+        }
     });
-}
-
-/**
- * @param {AsteroidGame} scene 
- */
-export function onNextLevelParticle(scene) {
-    scene.ents.clear(Particle);
 }
 
 /**
@@ -68,48 +85,4 @@ export function spawnParticle(scene, x, y, dx, dy, color, age = 0) {
     particle.age = age;
     particle.color = color;
     return entityId;
-}
-
-/**
- * @param {EntityManager} ents 
- * @param {EntityId} entityId 
- */
-function destroyParticle(ents, entityId) {
-    ents.destroy(entityId);
-}
-
-/**
- * @param {number} dt 
- * @param {EntityManager} ents
- * @param {HTMLCanvasElement} canvas
- */
-function updateParticles(dt, ents, canvas) {
-    // Update particle motion
-    for (let [entityId, particle] of ParticleQuery.findAll(ents)) {
-        particle.age += dt;
-        if (particle.age > MAX_PARTICLE_AGE) {
-            destroyParticle(ents, entityId);
-        } else {
-            particle.x += particle.dx;
-            particle.y += particle.dy;
-
-            // Wrap around
-            wrapAround(canvas, particle, PARTICLE_RADIUS * 2, PARTICLE_RADIUS * 2);
-        }
-    }
-}
-
-/**
- * @param {CanvasRenderingContext2D} ctx
- * @param {EntityManager} ents
- */
-function drawParticles(ctx, ents) {
-    for (let [_, particle] of ParticleQuery.findAll(ents)) {
-        ctx.translate(particle.x, particle.y);
-        ctx.rotate(particle.rotation);
-        ctx.fillStyle = particle.color;
-        let size = PARTICLE_RADIUS * (1 - particle.age / MAX_PARTICLE_AGE);
-        ctx.fillRect(-size, -size, size * 2, size * 2);
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
-    }
 }

@@ -1,12 +1,14 @@
 import { Random } from '@milque/random';
 import { ASTEROID_SPEED, calculateAsteroidSpawnRanges } from './Asteroid.js';
+import { AsteroidGame, useNextLevel } from './AsteroidGame.js';
 import { explode } from './Explode.js';
 import { ComponentClass, EntityQuery } from './lib/EntityManager.js';
+import { useSystem } from './lib/M.js';
+import { EntityManagerProvider } from './main.js';
 import { PLAYER_RADIUS } from './Player.js';
 import { drawCollisionCircle, withinRadius, wrapAround } from './util.js';
 
 /**
- * @typedef {import('./main.js').AsteroidGame} AsteroidGame
  * @typedef {import('./lib/EntityManager.js').EntityId} EntityId
  */
 
@@ -16,22 +18,24 @@ const POWER_UP_EXPLODE_PARTICLE_COLORS = ['white', 'violet', 'violet'];
 const POWER_UP_AMOUNT = 30;
 const POWER_UP_SPAWN_CHANCE = 0.7;
 
-/**
- * @param {AsteroidGame} scene 
- */
-export function onNextLevelPowerUp(scene) {
-  scene.ents.clear(PowerUp);
-  if (Random.next() > POWER_UP_SPAWN_CHANCE) {
-    scene.powerUpSpawner.spawn(scene);
-  }
-}
-
 export const PowerUp = new ComponentClass('PowerUp', () => ({
   x: 0, y: 0,
   dx: 0, dy: 0,
   rotation: 0,
 }));
 export const PowerUpQuery = new EntityQuery(PowerUp);
+
+export function PowerUpSystem(m) {
+  const ents = useSystem(m, EntityManagerProvider);
+  const scene = useSystem(m, AsteroidGame);
+
+  useNextLevel(m, () => {
+    ents.clear(PowerUp);
+    if (Random.next() > POWER_UP_SPAWN_CHANCE) {
+      scene.powerUpSpawner.spawn(scene);
+    }
+  });
+}
 
 /**
  * @param {AsteroidGame} scene 

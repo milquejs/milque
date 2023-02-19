@@ -262,6 +262,12 @@ export class EntityManager {
             return Object.keys(instanceMap).length;
         }
     }
+
+    reset() {
+        this.components = {};
+        this[NEXT_AVAILABLE_ENTITY_ID] = 1;
+        this.queue.length = 0;
+    }
 }
 
 /**
