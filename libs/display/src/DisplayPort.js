@@ -131,6 +131,7 @@ export class DisplayPort extends HTMLElement {
   /**
    * @param {object} [opts]
    * @param {HTMLElement} [opts.root]
+   * @param {string} [opts.id]
    * @param {DisplayScaling} [opts.mode]
    * @param {number} [opts.width]
    * @param {number} [opts.height]
@@ -139,12 +140,14 @@ export class DisplayPort extends HTMLElement {
   static create(opts = {}) {
     const {
       root = document.body,
+      id = undefined,
       mode = DEFAULT_MODE,
       width = DEFAULT_WIDTH,
       height = DEFAULT_HEIGHT,
       debug = false
     } = opts || {};
     let result = new DisplayPort();
+    result.id = id;
     result.mode = mode;
     result.width = width;
     result.height = height;

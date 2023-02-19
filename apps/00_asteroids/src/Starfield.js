@@ -25,8 +25,8 @@ export function createStarfield(width, height) {
   for (let i = 0; i < STAR_PARTICLE_COUNT; ++i) {
     result.x.push(Random.range(0, width));
     result.y.push(Random.range(0, height));
-    result.size.push(Random.range(...STAR_SIZE_RANGE));
-    result.speed.push(Random.range(...STAR_SPEED_RANGE));
+    result.size.push(Random.range(STAR_SIZE_RANGE[0], STAR_SIZE_RANGE[1]));
+    result.speed.push(Random.range(STAR_SPEED_RANGE[0], STAR_SPEED_RANGE[1]));
     result.length++;
   }
   return result;

@@ -1,7 +1,11 @@
 window.addEventListener('error', error, true);
 window.addEventListener('unhandledrejection', error, true);
 
+let errored = false;
 export function error(e) {
+  if (errored) {
+    return;
+  }
   if (typeof e === 'object') {
     if (e instanceof PromiseRejectionEvent) {
       error(e.reason);
@@ -15,4 +19,5 @@ export function error(e) {
   } else {
     window.alert(e);
   }
+  errored = true;
 }

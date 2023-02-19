@@ -1,0 +1,16 @@
+{
+  "name": "arena",
+  "version": "1.0.0",
+  "description": "Fight time.",
+  "browser": "dist/index.js",
+  "author": "Andrew Kuo",
+  "license": "MIT",
+  "keywords": [
+    "milque"
+  ],
+  "dependencies": {
+    "@milque/display": "^0.0.1",
+    "@milque/input": "^0.0.1",
+    "@milque/cuttle.macro": "^0.0.1"
+  }
+}

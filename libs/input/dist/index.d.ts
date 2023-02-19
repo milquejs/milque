@@ -1197,11 +1197,13 @@ declare class InputPort extends HTMLElement {
     /**
      * @param {object} [opts]
      * @param {HTMLElement} [opts.root]
+     * @param {string} [opts.id]
      * @param {string} [opts.for]
      * @param {boolean} [opts.autopoll]
      */
     static create(opts?: {
         root?: HTMLElement;
+        id?: string;
         for?: string;
         autopoll?: boolean;
     }): InputPort;

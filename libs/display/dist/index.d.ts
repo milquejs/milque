@@ -102,6 +102,7 @@ declare class DisplayPort extends HTMLElement {
     /**
      * @param {object} [opts]
      * @param {HTMLElement} [opts.root]
+     * @param {string} [opts.id]
      * @param {DisplayScaling} [opts.mode]
      * @param {number} [opts.width]
      * @param {number} [opts.height]
@@ -109,6 +110,7 @@ declare class DisplayPort extends HTMLElement {
      */
     static create(opts?: {
         root?: HTMLElement;
+        id?: string;
         mode?: DisplayScaling;
         width?: number;
         height?: number;

@@ -12,13 +12,10 @@ const SMALL_ASTEROID_RADIUS = 4;
 const MAX_ASTEROID_COUNT = 100;
 const ASTEROID_SPAWN_INIT_COUNT = 1;
 const ASTEROID_RADIUS = 8;
-
-/** @knob range */
 const ASTEROID_SPAWN_RATE = { MIN: 3_000, MAX: 10_000 };
 const ASTEROID_SPAWN_RATE_RAND = (/** @type {Random} */ r) => r.range(
     ASTEROID_SPAWN_RATE.MIN,
     ASTEROID_SPAWN_RATE.MAX);
-
 const ASTEROID_EXPLODE_PARTICLE_COLORS = [
     'blue',
     'blue',
@@ -28,7 +25,6 @@ const ASTEROID_EXPLODE_PARTICLE_COLORS = [
     'darkgray',
     'yellow',
 ];
-
 const ASTEROIDS_DRAW_LAYER_INDEX = 5;
 
 export function AsteroidSystem(m) {
