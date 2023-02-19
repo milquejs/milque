@@ -3,7 +3,6 @@ import { ASTEROID_BREAK_DAMP_FACTOR, breakUpAsteroid, explodeAsteroid } from './
 import { AsteroidGame, useNextLevel } from './AsteroidGame.js';
 import { ComponentClass, EntityQuery } from './lib/entity/EntityManager.js';
 import { useSystem } from './lib/M.js';
-import { CommandTopic } from './lib/system/topics/CommandTopic.js';
 import { EntityManagerProvider, useDraw, useUpdate } from './main.js';
 import { drawCollisionCircle, withinRadius, wrapAround } from './util.js';
 
@@ -16,14 +15,14 @@ const MAX_BULLET_AGE = 2000;
 export const BULLET_DRAW_LAYER_INDEX = 5;
 
 export const Bullet = new ComponentClass('Bullet', () => ({
-    x: 0, y: 0,
-    dx: 0, dy: 0,
+    x: 0,
+    y: 0,
+    dx: 0,
+    dy: 0,
     rotation: 0,
     age: 0,
 }));
 export const BulletQuery = new EntityQuery(Bullet);
-
-export const SpawnBulletCommand = new CommandTopic();
 
 export function BulletSystem(m) {
     const ents = useSystem(m, EntityManagerProvider);

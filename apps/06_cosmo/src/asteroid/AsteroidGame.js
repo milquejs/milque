@@ -8,7 +8,7 @@ import { createPowerUpSpawner, drawPowerUps, updatePowerUps, updatePowerUpSpawne
 
 import { useSystem } from './lib/M';
 import { DisplayPortProvider, EntityManagerProvider, InputPortProvider, nextLevel, useDraw, useUpdate } from './main.js';
-import { EventTopic } from './lib/system/topics/EventTopic.js';
+import { EventTopic } from './lib/topic/EventTopic.js';
 import { Debug, MoveDown, MoveLeft, MoveRight, MoveUp, Shoot } from './Inputs.js';
 
 const INSTRUCTION_HINT_TEXT = '[ wasd_ ]';

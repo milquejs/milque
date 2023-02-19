@@ -270,4 +270,303 @@ type WalkBackCallback = (sceneNode: SceneNode, sceneGraph: SceneGraph) => any;
  */
 type WalkChildrenCallback = (childNodes: Array<SceneNode>, parentNode: SceneNode, sceneGraph: SceneGraph) => Array<SceneNode>;
 
-export { Camera, FirstPersonCameraController, OrthographicCamera, PerspectiveCamera, SceneGraph, SceneNode, SceneNodeInfo, WalkBackCallback, WalkCallback, WalkChildrenCallback, lookAt, panTo, screenToWorldRay };
+/**
+ * @template T
+ */
+declare class ComponentClass<T> {
+    /**
+     * @param {string} name
+     * @param {() => T} newCallback
+     * @param {(component: T) => void} [deleteCallback]
+     */
+    constructor(name: string, newCallback?: () => T, deleteCallback?: (component: T) => void);
+    name: string;
+    new: () => T;
+    delete: (component: T) => void;
+}
+
+declare class EntityManager {
+    /**
+     * @protected
+     * @type {ComponentClassMap}
+     */
+    protected components: ComponentClassMap;
+    /**
+     * @protected
+     * @type {Array<[string, ...any]>}
+     */
+    protected queue: Array<[string, ...any]>;
+    flush(): void;
+    /**
+     * @template {ComponentClass<any>[]}T
+     * @param {T} componentClasses
+     * @returns {[EntityId, ...ComponentInstancesOf<T>]}
+     */
+    createAndAttach<T extends ComponentClass<any>[]>(...componentClasses: T): [number, ...ComponentInstancesOf<T>];
+    /**
+     * @returns {EntityId}
+     */
+    create(): EntityId;
+    /**
+     * @param {EntityId} entityId
+     */
+    destroy(entityId: EntityId): void;
+    /**
+     * @param {EntityId} entityId
+     */
+    exists(entityId: EntityId): boolean;
+    /**
+     * @template T
+     * @param {EntityId} entityId
+     * @param {ComponentClass<T>} componentClass
+     * @returns {T}
+     */
+    attach<T_1>(entityId: EntityId, componentClass: ComponentClass<T_1>): T_1;
+    /**
+     * @template T
+     * @param {EntityId} entityId
+     * @param {ComponentClass<T>} componentClass
+     * @returns {T}
+     */
+    attachImmediately<T_2>(entityId: EntityId, componentClass: ComponentClass<T_2>): T_2;
+    /**
+     * @template T
+     * @param {EntityId} entityId
+     * @param {ComponentClass<T>} componentClass
+     */
+    detach<T_3>(entityId: EntityId, componentClass: ComponentClass<T_3>): void;
+    /**
+     * @template T
+     * @param {EntityId} entityId
+     * @param {ComponentClass<T>} componentClass
+     */
+    detachImmediately<T_4>(entityId: EntityId, componentClass: ComponentClass<T_4>): void;
+    /**
+     * @template T
+     * @param {ComponentClass<T>} componentClass
+     */
+    clear<T_5>(componentClass: ComponentClass<T_5>): void;
+    /**
+     * @param {ComponentClass<any>} componentClass
+     */
+    clearImmediately(componentClass: ComponentClass<any>): void;
+    /**
+     * @template T
+     * @param {EntityId} entityId
+     * @param {ComponentClass<T>} componentClass
+     * @returns {T}
+     */
+    get<T_6>(entityId: EntityId, componentClass: ComponentClass<T_6>): T_6;
+    /**
+     * @param {ComponentClass<?>} componentClass
+     * @returns {number}
+     */
+    count(componentClass: ComponentClass<unknown>): number;
+    reset(): void;
+    /** @type {EntityId} */
+    [NEXT_AVAILABLE_ENTITY_ID]: EntityId;
+}
+/**
+ * @template {ComponentClass<any>[]} T
+ */
+declare class EntityTemplate<T extends ComponentClass<any>[]> {
+    /**
+     * @param {T} componentClasses
+     */
+    constructor(...componentClasses: T);
+    /** @private */
+    private componentClasses;
+    /**
+     * @param {EntityManager} entityManager
+     * @returns {[EntityId, ...ComponentInstancesOf<T>]}
+     */
+    create(entityManager: EntityManager): [EntityId, ...ComponentInstancesOf<T>];
+    /**
+     * @param {EntityManager} entityManager
+     * @param {EntityId} entityId
+     */
+    destroy(entityManager: EntityManager, entityId: EntityId): void;
+}
+/**
+ * @template {ComponentClass<any>[]} T
+ */
+declare class EntityQuery<T extends ComponentClass<any>[]> {
+    /**
+     * @param {T} selectors
+     */
+    constructor(...selectors: T);
+    /** @private */
+    private selectors;
+    /**
+     * @param {EntityManager} entityManager
+     * @returns {number}
+     */
+    count(entityManager: EntityManager): number;
+    /**
+     * @param {EntityManager} entityManager
+     * @returns {[EntityId, ...ComponentInstancesOf<T>]}
+     */
+    find(entityManager: EntityManager): [EntityId, ...ComponentInstancesOf<T>];
+    /**
+     * @param {EntityManager} entityManager
+     * @returns {Generator<[EntityId, ...ComponentInstancesOf<T>]>}
+     */
+    findAll(entityManager: EntityManager): Generator<[EntityId, ...ComponentInstancesOf<T>]>;
+}
+type ComponentInstanceMap = Record<number, object>;
+type ComponentClassMap = Record<string, ComponentInstanceMap>;
+type EntityId = number;
+type ComponentName = string;
+/**
+ * <T>
+ */
+type ComponentInstancesOf<T extends ComponentClass<any>[]> = { [K in keyof T]: T[K] extends ComponentClass<infer V> ? V : never; };
+
+declare const NEXT_AVAILABLE_ENTITY_ID: unique symbol;
+
+/**
+ * @template T
+ */
+declare class Topic<T> {
+    /**
+     * @abstract
+     * @param {T} [attachment]
+     */
+    dispatch(attachment?: T): void;
+    /**
+     * @abstract
+     * @param {T} [attachment]
+     */
+    dispatchImmediately(attachment?: T): void;
+    /**
+     * @abstract
+     * @param {number} max
+     */
+    flush(max?: number): void;
+}
+
+/**
+ * @template T
+ */
+declare class CommandTopic<T> extends Topic<any> {
+    /**
+     * @private
+     * @type {Array<T>}
+     */
+    private messages;
+    /**
+     * @private
+     * @type {Array<T>}
+     */
+    private queued;
+    /**
+     * @override
+     * @param {T} message
+     */
+    override dispatch(message: T): void;
+    /**
+     * @override
+     * @param {T} message
+     */
+    override dispatchImmediately(message: T): void;
+    /**
+     * @param {number} [max]
+     * @return {Iterable<T>}
+     */
+    poll(max?: number): Iterable<T>;
+}
+
+/**
+ * @template T
+ * @typedef {(t: T) => void|boolean} EventTopicCallback
+ */
+/** @template T */
+declare class EventTopic<T> extends Topic<any> {
+    /**
+     * @private
+     * @type {Array<EventTopicCallback<T>>}
+     */
+    private listeners;
+    /**
+     * @private
+     * @type {Array<T>}
+     */
+    private queued;
+    /**
+     * @param {EventTopicCallback<T>} callback
+     */
+    on(callback: EventTopicCallback<T>): EventTopic<T>;
+    /**
+     * @param {EventTopicCallback<T>} callback
+     */
+    off(callback: EventTopicCallback<T>): EventTopic<T>;
+    /**
+     * @param {EventTopicCallback<T>} callback
+     */
+    once(callback: EventTopicCallback<T>): EventTopic<T>;
+    /**
+     * @override
+     * @param {T} [attachment]
+     */
+    override dispatch(attachment?: T): void;
+    /**
+     * @override
+     * @param {T} [attachment]
+     */
+    override dispatchImmediately(attachment?: T): void;
+    count(): number;
+}
+type EventTopicCallback<T> = (t: T) => void | boolean;
+
+/**
+ * @template T
+ */
+declare class PriorityEventTopic<T> extends Topic<any> {
+    /**
+     * @private
+     * @type {Array<PriorityTopicOptions<T>>}
+     */
+    private listeners;
+    /**
+     * @private
+     * @type {Array<T>}
+     */
+    private queued;
+    /**
+     * @param {number} priority
+     * @param {PriorityTopicCallback<T>} callback
+     */
+    on(priority: number, callback: PriorityTopicCallback<T>): PriorityEventTopic<T>;
+    /**
+     * @param {PriorityTopicCallback<T>} callback
+     */
+    off(callback: PriorityTopicCallback<T>): PriorityEventTopic<T>;
+    /**
+     * @param {number} priority
+     * @param {PriorityTopicCallback<T>} callback
+     */
+    once(priority: number, callback: PriorityTopicCallback<T>): PriorityEventTopic<T>;
+    count(): number;
+    /**
+     * @override
+     * @param {T} [attachment]
+     */
+    override dispatch(attachment?: T): PriorityEventTopic<T>;
+    /**
+     * @override
+     * @param {T} [attachment]
+     */
+    override dispatchImmediately(attachment?: T): PriorityEventTopic<T>;
+    /** @override */
+    override flush(max?: number): PriorityEventTopic<T>;
+}
+/**
+ * <T>
+ */
+type PriorityTopicCallback<T> = (t: T) => void | boolean;
+type PriorityTopicOptions<T> = {
+    priority: number;
+    callback: PriorityTopicCallback<T>;
+};
+
+export { Camera, CommandTopic, ComponentClass, ComponentClassMap, ComponentInstanceMap, ComponentInstancesOf, ComponentName, EntityId, EntityManager, EntityQuery, EntityTemplate, EventTopic, EventTopicCallback, FirstPersonCameraController, OrthographicCamera, PerspectiveCamera, PriorityEventTopic, PriorityTopicCallback, PriorityTopicOptions, SceneGraph, SceneNode, SceneNodeInfo, Topic, WalkBackCallback, WalkCallback, WalkChildrenCallback, lookAt, panTo, screenToWorldRay };
