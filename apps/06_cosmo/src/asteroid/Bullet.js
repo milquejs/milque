@@ -13,11 +13,9 @@ export const MAX_BULLET_COUNT = 100;
 const BULLET_RADIUS = 2;
 const BULLET_COLOR = 'gold';
 const MAX_BULLET_AGE = 2000;
-
 export const BULLET_DRAW_LAYER_INDEX = 5;
 
 export const BulletPopSound = new AssetRef('bullet.pop', loadSound, undefined, 'raw://boop.wav');
-
 export const Bullet = new ComponentClass('Bullet', () => ({
     x: 0,
     y: 0,
@@ -47,10 +45,6 @@ export function BulletSystem(m) {
     useDraw(m, BULLET_DRAW_LAYER_INDEX, (ctx) => {
         onDraw(ctx, ents);
     });
-
-    return {
-        spawnBullet,
-    };
 }
 
 /**

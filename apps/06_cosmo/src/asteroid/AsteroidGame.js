@@ -1,7 +1,8 @@
 import { EventTopic } from '@milque/scene';
+import { AssetRef } from '@milque/asset';
 
 import { DEBUG } from './util.js';
-import { createAsteroidSpawner, drawAsteroids, updateAsteroids, updateAsteroidSpawner } from './Asteroid.js';
+import { createAsteroidSpawner } from './Asteroid.js';
 import { drawCollisionCircle, FLASH_TIME_STEP } from './util.js';
 import { PLAYER_RADIUS } from './Player.js';
 import { createPowerUpSpawner, drawPowerUps, updatePowerUps, updatePowerUpSpawner, PowerUp } from './PowerUp.js';
@@ -9,7 +10,6 @@ import { createPowerUpSpawner, drawPowerUps, updatePowerUps, updatePowerUpSpawne
 import { usePreloadedAssets, useSystem } from './lib/M';
 import { AssetManagerProvider, DisplayPortProvider, EntityManagerProvider, InputPortProvider, nextLevel, useDraw, useUpdate } from './main.js';
 import { Debug, MoveDown, MoveLeft, MoveRight, MoveUp, Shoot } from './Inputs.js';
-import { AssetRef } from '@milque/asset';
 import { loadSound } from './SoundLoader.js';
 
 const INSTRUCTION_HINT_TEXT = '[ wasd_ ]';
@@ -75,12 +75,8 @@ export function AsteroidGame(m) {
 
         this.dt = dt;
 
-        // Update asteroids
-        updateAsteroids(dt, this, this.asteroids);
         // Update power-up
         updatePowerUps(dt, this);
-        // Update spawners
-        updateAsteroidSpawner(dt, this, this.asteroidSpawner);
         updatePowerUpSpawner(dt, this, this.powerUpSpawner);
 
         if (!this.gamePause && this.asteroids.length <= 0) {
@@ -174,8 +170,6 @@ export function AsteroidGame(m) {
             canvas.height - 12
         );
 
-        // Draw asteroid
-        drawAsteroids(ctx, this, this.asteroids);
         // Draw power-up
         drawPowerUps(ctx, this);
     });
