@@ -43,19 +43,8 @@ export class DrawLayerManager {
             callback(ctx);
         }
     }
-}
 
-/**
- * @param {SystemContext} m 
- * @param {number} layerIndex 
- * @param {DrawCallback} drawCallback 
- */
-export function useOnDraw(m, layerIndex, drawCallback) {
-    const drawLayerManager = m.draws;
-    m.use(() => {
-        drawLayerManager.addLayer(layerIndex, drawCallback);
-        return () => {
-            drawLayerManager.removeLayer(layerIndex, drawCallback);
-        };
-    });
+    clearLayers() {
+        this.drawList.length = 0;
+    }
 }

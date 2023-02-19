@@ -24,15 +24,11 @@ export class AnimationFrameLoop {
         /** @protected */
         this.callback = callback;
 
-        /** @protected */
         this.next = this.next.bind(this);
-        /** @protected */
         this.start = this.start.bind(this);
-
         this.cancel = this.cancel.bind(this);
     }
-
-    /** @protected */
+    
     next(now = performance.now()) {
         this.handle = this.animationFrameHandler.requestAnimationFrame(this.next);
         let d = this.detail;

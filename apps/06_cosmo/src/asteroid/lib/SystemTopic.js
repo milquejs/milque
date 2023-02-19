@@ -2,6 +2,7 @@
  * @template T
  */
 export class SystemTopic {
+    
     constructor() {
         /** @private */
         this.queued = [];

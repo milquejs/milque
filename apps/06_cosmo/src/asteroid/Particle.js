@@ -1,5 +1,6 @@
-import { useFrameUpdate, useUpdate } from './lib/AsteroidInit.js';
+import { DisplayPortSystem } from './lib/DisplayPortSystem.js';
 import { ComponentClass, EntityQuery } from './lib/EntityManager.js';
+import { EntityManagerSystem, useDraw, useSystem, useUpdate } from './lib/M.js';
 import { wrapAround } from './util.js';
 
 /**
@@ -26,17 +27,17 @@ export const Particle = new ComponentClass('Particle', () => ({
 export const ParticleQuery = new EntityQuery(Particle);
 
 /**
- * @param {AsteroidGame} m 
+ * @param {import('./lib/M').M} m 
  */
 export function ParticleSystem(m) {
-    const ents = m.ents;
-    const canvas = m.canvas;
+    const ents = useSystem(m, EntityManagerSystem);
+    const { canvas } = useSystem(m, DisplayPortSystem);
 
     useUpdate(m, ({ deltaTime: dt }) => {
         updateParticles(dt, ents, canvas);
     });
 
-    useFrameUpdate(m, PARTICLES_DRAW_LAYER_INDEX, (ctx) => {
+    useDraw(m, PARTICLES_DRAW_LAYER_INDEX, (ctx) => {
         drawParticles(ctx, ents);
     });
 }

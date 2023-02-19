@@ -1,14 +1,13 @@
 import { Random } from '@milque/random';
 import { Assets } from './assets.js';
+import { AsteroidGame } from './AsteroidGame';
 import { BULLET_SPEED, countBullets, MAX_BULLET_COUNT, spawnBullet } from './Bullet.js';
 import { explode } from './Explode.js';
-import { ComponentClass, EntityQuery } from './lib/EntityManager.js';
+import { DisplayPortSystem } from './lib/DisplayPortSystem.js';
+import { ComponentClass, EntityManager, EntityQuery } from './lib/EntityManager.js';
+import { EntityManagerSystem, useDraw, useSystem, useUpdate } from './lib/M.js';
 import { MAX_PARTICLE_AGE, spawnParticle } from './Particle.js';
 import { FLASH_TIME_STEP, wrapAround } from './util.js';
-
-/**
- * @typedef {import('./main.js').AsteroidGame} AsteroidGame
- */
 
 export const PLAYER_RADIUS = 5;
 const PLAYER_MOVE_PARTICLE_OFFSET_RANGE = [-2, 2];
@@ -30,10 +29,14 @@ const PLAYER_ROT_SPEED = 0.008;
 const PLAYER_ROT_FRICTION = 0.1;
 const PLAYER_MOVE_FRICTION = 0.001;
 
+export const PLAYER_DRAW_LAYER_INDEX = 10;
+
 export const Player = new ComponentClass('Player', () => ({
-    x: 0, y: 0,
+    x: 0, 
+    y: 0,
     rotation: 0,
-    dx: 0, dy: 0,
+    dx: 0,
+    dy: 0,
     dr: 0,
     left: 0,
     right: 0,
@@ -45,6 +48,32 @@ export const Player = new ComponentClass('Player', () => ({
 }));
 export const PlayerQuery = new EntityQuery(Player);
 
+/**
+ * @param {import('./lib/M').M} m 
+ */
+export function PlayerSystem(m) {
+    const { canvas } = useSystem(m, DisplayPortSystem);
+    const ents = useSystem(m, EntityManagerSystem);
+    const scene = useSystem(m, AsteroidGame);
+
+    let player = spawnPlayer(canvas, ents);
+    scene.player = player;
+
+    useUpdate(m, ({ deltaTime }) => {
+        if (scene.gamePause) {
+            return;
+        }
+        updatePlayer(deltaTime, scene);
+    });
+
+    useDraw(m, PLAYER_DRAW_LAYER_INDEX, (ctx) => {
+        if (scene.showPlayer) {
+            drawPlayer(ctx, scene);
+        }
+    });
+    return player;
+}
+
 export function onNextLevelPlayer(scene) {
     let canvas = scene.display.canvas;
     scene.player.x = canvas.width / 2;
@@ -54,14 +83,13 @@ export function onNextLevelPlayer(scene) {
 }
 
 /**
- * @param {AsteroidGame} scene 
+ * @param {HTMLCanvasElement} canvas
+ * @param {EntityManager} ents
  */
-export function spawnPlayer(scene) {
-    const canvas = scene.display.canvas;
-    let [_, player] = scene.ents.createAndAttach(Player);
+function spawnPlayer(canvas, ents) {
+    let [_, player] = ents.createAndAttach(Player);
     player.x = canvas.width / 2;
     player.y = canvas.height / 2;
-    scene.player = player;
     return player;
 }
 
@@ -69,7 +97,7 @@ export function spawnPlayer(scene) {
  * @param {number} dt 
  * @param {AsteroidGame} scene 
  */
-export function updatePlayer(dt, scene) {
+function updatePlayer(dt, scene) {
     let [_, player] = PlayerQuery.find(scene.ents);
     if (!player) {
         return;
@@ -125,7 +153,7 @@ export function updatePlayer(dt, scene) {
     }
 }
 
-export function drawPlayer(ctx, scene) {
+function drawPlayer(ctx, scene) {
     let [_, player] = PlayerQuery.find(scene.ents);
     if (!player) {
         return;
