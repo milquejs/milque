@@ -12,7 +12,7 @@ import { SystemManager } from './lib/system/SystemManager.js';
 import { AsteroidGame, NextLevelEvent } from './AsteroidGame.js';
 import { EventTopic } from './lib/system/topics/EventTopic.js';
 import { PriorityEventTopic } from './lib/system/topics/PriorityEventTopic.js';
-import { EntityManager } from './lib/EntityManager.js';
+import { EntityManager } from './lib/entity/EntityManager.js';
 import { AsteroidSystem } from './Asteroid.js';
 
 /** @typedef {{ deltaTime: number }} UpdateEventAttachment */

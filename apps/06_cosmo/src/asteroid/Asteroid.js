@@ -5,10 +5,6 @@ import { useSystem } from './lib/M.js';
 import { PLAYER_RADIUS, killPlayer } from './Player.js';
 import { drawCollisionCircle, withinRadius, wrapAround } from './util.js';
 
-/**
- * @typedef {import('./AsteroidGame.js').AsteroidGame} AsteroidGame
- */
-
 export const ASTEROID_SPEED = 1;
 export const ASTEROID_BREAK_DAMP_FACTOR = 0.1;
 const SMALL_ASTEROID_RADIUS = 4;

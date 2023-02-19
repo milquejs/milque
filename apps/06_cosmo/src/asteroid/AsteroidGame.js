@@ -5,7 +5,6 @@ import { createAsteroidSpawner, drawAsteroids, updateAsteroids, updateAsteroidSp
 import { drawCollisionCircle, FLASH_TIME_STEP } from './util.js';
 import { PLAYER_RADIUS } from './Player.js';
 import { createPowerUpSpawner, drawPowerUps, updatePowerUps, updatePowerUpSpawner, PowerUp } from './PowerUp.js';
-import { drawBullets, updateBullets } from './Bullet.js';
 
 import { useSystem } from './lib/M';
 import { DisplayPortProvider, EntityManagerProvider, nextLevel, useDraw, useUpdate } from './main.js';
@@ -67,8 +66,6 @@ export function AsteroidGame(m) {
 
         this.dt = dt;
 
-        // Update bullets
-        updateBullets(dt, this);
         // Update asteroids
         updateAsteroids(dt, this, this.asteroids);
         // Update power-up
@@ -142,9 +139,7 @@ export function AsteroidGame(m) {
         // Draw asteroid
         drawAsteroids(ctx, this, this.asteroids);
         // Draw power-up
-        drawPowerUps(ctx, this)
-        // Draw bullet
-        drawBullets(ctx, this);
+        drawPowerUps(ctx, this);
     });
 
     useDraw(m, 11, (ctx) => {

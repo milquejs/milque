@@ -1,9 +1,13 @@
+import { Topic } from './Topic.js';
+
 /**
  * @template T
  */
-export class CommandTopic {
+export class CommandTopic extends Topic {
     
     constructor() {
+        super();
+
         /**
          * @private
          * @type {Array<T>}
@@ -18,22 +22,25 @@ export class CommandTopic {
     }
 
     /**
+     * @override
      * @param {T} message 
      */
-    push(message) {
+    dispatch(message) {
         this.queued.push(message);
     }
 
     /**
+     * @override
      * @param {T} message 
      */
-    pushImmediately(message) {
+    dispatchImmediately(message) {
         this.messages.push(message);
     }
 
-    flush() {
-        this.messages.push(...this.queued);
-        this.queued.length = 0;
+    /** @override */
+    flush(max = 1000) {
+        let result = this.queued.splice(0, Math.min(max, this.queued.length));
+        this.messages.push(...result);
     }
 
     /**

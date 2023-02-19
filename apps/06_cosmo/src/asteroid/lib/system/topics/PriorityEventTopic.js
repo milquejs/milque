@@ -1,3 +1,5 @@
+import { Topic } from './Topic.js';
+
 /**
  * @template T
  * @typedef {(t: T) => void|boolean} PriorityTopicCallback<T>
@@ -21,9 +23,11 @@ function comparator(a, b) {
 /**
  * @template T
  */
-export class PriorityEventTopic {
+export class PriorityEventTopic extends Topic {
 
     constructor() {
+        super();
+
         /**
          * @private
          * @type {Array<PriorityTopicOptions<T>>}
@@ -72,7 +76,12 @@ export class PriorityEventTopic {
         return this.on(priority, wrapper);
     }
 
+    count() {
+        return this.listeners.length;
+    }
+
     /**
+     * @override
      * @param {T} [attachment]
      */
     dispatch(attachment = null) {
@@ -81,6 +90,7 @@ export class PriorityEventTopic {
     }
 
     /**
+     * @override
      * @param {T} [attachment] 
      */
     dispatchImmediately(attachment = null) {
@@ -94,6 +104,7 @@ export class PriorityEventTopic {
         return this;
     }
 
+    /** @override */
     flush(max = 1000) {
         let i = 0;
         while(this.queued.length > 0 && i++ < max) {
@@ -101,9 +112,5 @@ export class PriorityEventTopic {
             this.dispatchImmediately(attachment);
         }
         return this;
-    }
-
-    count() {
-        return this.listeners.length;
     }
 }

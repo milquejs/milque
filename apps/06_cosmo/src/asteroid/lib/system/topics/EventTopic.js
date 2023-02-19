@@ -1,12 +1,16 @@
+import { Topic } from './Topic.js';
+
 /**
  * @template T
  * @typedef {(t: T) => void|boolean} EventTopicCallback
  */
 
 /** @template T */
-export class EventTopic {
+export class EventTopic extends Topic {
 
     constructor() {
+        super();
+
         /**
          * @private
          * @type {Array<EventTopicCallback<T>>}
@@ -52,6 +56,7 @@ export class EventTopic {
     }
 
     /**
+     * @override
      * @param {T} [attachment]
      */
     dispatch(attachment = null) {
@@ -59,6 +64,7 @@ export class EventTopic {
     }
 
     /**
+     * @override
      * @param {T} [attachment] 
      */
     dispatchImmediately(attachment = null) {
@@ -71,6 +77,7 @@ export class EventTopic {
         }
     }
 
+    /** @override */
     flush(max = 1000) {
         let i = 0;
         while(this.queued.length > 0 && i++ < max) {
