@@ -208,14 +208,14 @@ type ActiveUniformInfo = {
 };
 
 /**
- * @typedef {import('../buffer/BufferInfoHelper.js').BufferInfo} BufferInfo
- * @typedef {import('../buffer/BufferInfoHelper.js').VertexArrayObjectInfo} VertexArrayObjectInfo
+ * @typedef {import('../../buffer/helper/BufferInfoHelper').BufferInfo} BufferInfo
+ * @typedef {import('../../buffer/helper/BufferInfoHelper').VertexArrayObjectInfo} VertexArrayObjectInfo
  */
 /**
  * @typedef ProgramInfo
  * @property {WebGLProgram} handle
- * @property {Record<string, import('./ProgramUniformInfo.js').ActiveUniformInfo>} uniforms
- * @property {Record<string, import('./ProgramAttributeInfo.js').ActiveAttributeInfo>} attributes
+ * @property {Record<string, import('../ProgramUniformInfo.js').ActiveUniformInfo>} uniforms
+ * @property {Record<string, import('../ProgramAttributeInfo.js').ActiveAttributeInfo>} attributes
  */
 /**
  * Assumes all shaders already compiled and linked successfully.
@@ -297,7 +297,7 @@ declare function createBufferInfo(gl: WebGLRenderingContextBase, arrays: Record<
 /**
  * @param {WebGLRenderingContextBase} gl
  * @param {BufferInfo} bufferInfo
- * @param {Array<import('../program/ProgramInfoHelper.js').ProgramInfo>} programInfos
+ * @param {Array<import('../../program/helper/ProgramInfoHelper.js').ProgramInfo>} programInfos
  * @returns {VertexArrayObjectInfo}
  */
 declare function createVertexArrayInfo(gl: WebGLRenderingContextBase, bufferInfo: BufferInfo, programInfos: Array<ProgramInfo$1>): VertexArrayObjectInfo;
@@ -397,7 +397,7 @@ declare function createBuffer(gl: WebGLRenderingContext | WebGL2RenderingContext
  * @param {WebGLRenderingContextBase} gl
  * @param {GLenum} bufferType
  */
-declare function getTypedArrayForBufferType(gl: WebGLRenderingContextBase, bufferType: GLenum): Uint16ArrayConstructor | Int8ArrayConstructor | Uint8ArrayConstructor | Int16ArrayConstructor | Int32ArrayConstructor | Uint32ArrayConstructor | Float32ArrayConstructor;
+declare function getTypedArrayForBufferType(gl: WebGLRenderingContextBase, bufferType: GLenum): Int8ArrayConstructor | Uint8ArrayConstructor | Int16ArrayConstructor | Uint16ArrayConstructor | Int32ArrayConstructor | Uint32ArrayConstructor | Float32ArrayConstructor;
 /**
  * @param {WebGLRenderingContextBase} gl
  * @param {BufferSource} bufferSource
@@ -439,46 +439,46 @@ declare function getBufferByteCount(gl: WebGLRenderingContextBase, target: GLenu
  */
 declare function getBufferLength(gl: WebGLRenderingContextBase, target: GLenum, buffer: WebGLBuffer, type: any): GLenum;
 
-type BufferHelper_ArrayAttrib = ArrayAttrib;
-type BufferHelper_ArrayAttribOption = ArrayAttribOption;
-type BufferHelper_AttribBufferLike = AttribBufferLike;
-type BufferHelper_BufferInfo = BufferInfo;
-type BufferHelper_ElementAttrib = ElementAttrib;
-type BufferHelper_ElementAttribOption = ElementAttribOption;
-type BufferHelper_VertexArrayObjectInfo = VertexArrayObjectInfo;
-declare const BufferHelper_createBuffer: typeof createBuffer;
-declare const BufferHelper_createBufferInfo: typeof createBufferInfo;
-declare const BufferHelper_createBufferSource: typeof createBufferSource;
-declare const BufferHelper_createVertexArrayInfo: typeof createVertexArrayInfo;
-declare const BufferHelper_drawBufferInfo: typeof drawBufferInfo;
-declare const BufferHelper_getBufferByteCount: typeof getBufferByteCount;
-declare const BufferHelper_getBufferLength: typeof getBufferLength;
-declare const BufferHelper_getBufferTypeForBufferSource: typeof getBufferTypeForBufferSource;
-declare const BufferHelper_getBufferTypeForTypedArray: typeof getBufferTypeForTypedArray;
-declare const BufferHelper_getBufferUsage: typeof getBufferUsage;
-declare const BufferHelper_getByteCountForBufferType: typeof getByteCountForBufferType;
-declare const BufferHelper_getTypedArrayForBufferType: typeof getTypedArrayForBufferType;
-declare namespace BufferHelper {
+type index$1_ArrayAttrib = ArrayAttrib;
+type index$1_ArrayAttribOption = ArrayAttribOption;
+type index$1_AttribBufferLike = AttribBufferLike;
+type index$1_BufferInfo = BufferInfo;
+type index$1_ElementAttrib = ElementAttrib;
+type index$1_ElementAttribOption = ElementAttribOption;
+type index$1_VertexArrayObjectInfo = VertexArrayObjectInfo;
+declare const index$1_createBuffer: typeof createBuffer;
+declare const index$1_createBufferInfo: typeof createBufferInfo;
+declare const index$1_createBufferSource: typeof createBufferSource;
+declare const index$1_createVertexArrayInfo: typeof createVertexArrayInfo;
+declare const index$1_drawBufferInfo: typeof drawBufferInfo;
+declare const index$1_getBufferByteCount: typeof getBufferByteCount;
+declare const index$1_getBufferLength: typeof getBufferLength;
+declare const index$1_getBufferTypeForBufferSource: typeof getBufferTypeForBufferSource;
+declare const index$1_getBufferTypeForTypedArray: typeof getBufferTypeForTypedArray;
+declare const index$1_getBufferUsage: typeof getBufferUsage;
+declare const index$1_getByteCountForBufferType: typeof getByteCountForBufferType;
+declare const index$1_getTypedArrayForBufferType: typeof getTypedArrayForBufferType;
+declare namespace index$1 {
   export {
-    BufferHelper_ArrayAttrib as ArrayAttrib,
-    BufferHelper_ArrayAttribOption as ArrayAttribOption,
-    BufferHelper_AttribBufferLike as AttribBufferLike,
-    BufferHelper_BufferInfo as BufferInfo,
-    BufferHelper_ElementAttrib as ElementAttrib,
-    BufferHelper_ElementAttribOption as ElementAttribOption,
-    BufferHelper_VertexArrayObjectInfo as VertexArrayObjectInfo,
-    BufferHelper_createBuffer as createBuffer,
-    BufferHelper_createBufferInfo as createBufferInfo,
-    BufferHelper_createBufferSource as createBufferSource,
-    BufferHelper_createVertexArrayInfo as createVertexArrayInfo,
-    BufferHelper_drawBufferInfo as drawBufferInfo,
-    BufferHelper_getBufferByteCount as getBufferByteCount,
-    BufferHelper_getBufferLength as getBufferLength,
-    BufferHelper_getBufferTypeForBufferSource as getBufferTypeForBufferSource,
-    BufferHelper_getBufferTypeForTypedArray as getBufferTypeForTypedArray,
-    BufferHelper_getBufferUsage as getBufferUsage,
-    BufferHelper_getByteCountForBufferType as getByteCountForBufferType,
-    BufferHelper_getTypedArrayForBufferType as getTypedArrayForBufferType,
+    index$1_ArrayAttrib as ArrayAttrib,
+    index$1_ArrayAttribOption as ArrayAttribOption,
+    index$1_AttribBufferLike as AttribBufferLike,
+    index$1_BufferInfo as BufferInfo,
+    index$1_ElementAttrib as ElementAttrib,
+    index$1_ElementAttribOption as ElementAttribOption,
+    index$1_VertexArrayObjectInfo as VertexArrayObjectInfo,
+    index$1_createBuffer as createBuffer,
+    index$1_createBufferInfo as createBufferInfo,
+    index$1_createBufferSource as createBufferSource,
+    index$1_createVertexArrayInfo as createVertexArrayInfo,
+    index$1_drawBufferInfo as drawBufferInfo,
+    index$1_getBufferByteCount as getBufferByteCount,
+    index$1_getBufferLength as getBufferLength,
+    index$1_getBufferTypeForBufferSource as getBufferTypeForBufferSource,
+    index$1_getBufferTypeForTypedArray as getBufferTypeForTypedArray,
+    index$1_getBufferUsage as getBufferUsage,
+    index$1_getByteCountForBufferType as getByteCountForBufferType,
+    index$1_getTypedArrayForBufferType as getTypedArrayForBufferType,
   };
 }
 
@@ -648,31 +648,31 @@ declare function getProgramStatus(gl: WebGLRenderingContext | WebGL2RenderingCon
     infoLog: string;
 };
 
-declare const ProgramHelper_bindProgramAttributes: typeof bindProgramAttributes;
-declare const ProgramHelper_bindProgramUniforms: typeof bindProgramUniforms;
-declare const ProgramHelper_createProgramInfo: typeof createProgramInfo;
-declare const ProgramHelper_createShader: typeof createShader;
-declare const ProgramHelper_createShaderProgram: typeof createShaderProgram;
-declare const ProgramHelper_draw: typeof draw;
-declare const ProgramHelper_getActiveAttribs: typeof getActiveAttribs;
-declare const ProgramHelper_getActiveUniforms: typeof getActiveUniforms;
-declare const ProgramHelper_getProgramStatus: typeof getProgramStatus;
-declare const ProgramHelper_linkProgramShaders: typeof linkProgramShaders;
-declare namespace ProgramHelper {
+declare const index_bindProgramAttributes: typeof bindProgramAttributes;
+declare const index_bindProgramUniforms: typeof bindProgramUniforms;
+declare const index_createProgramInfo: typeof createProgramInfo;
+declare const index_createShader: typeof createShader;
+declare const index_createShaderProgram: typeof createShaderProgram;
+declare const index_draw: typeof draw;
+declare const index_getActiveAttribs: typeof getActiveAttribs;
+declare const index_getActiveUniforms: typeof getActiveUniforms;
+declare const index_getProgramStatus: typeof getProgramStatus;
+declare const index_linkProgramShaders: typeof linkProgramShaders;
+declare namespace index {
   export {
     BufferInfo$1 as BufferInfo,
     ProgramInfo$1 as ProgramInfo,
     VertexArrayObjectInfo$1 as VertexArrayObjectInfo,
-    ProgramHelper_bindProgramAttributes as bindProgramAttributes,
-    ProgramHelper_bindProgramUniforms as bindProgramUniforms,
-    ProgramHelper_createProgramInfo as createProgramInfo,
-    ProgramHelper_createShader as createShader,
-    ProgramHelper_createShaderProgram as createShaderProgram,
-    ProgramHelper_draw as draw,
-    ProgramHelper_getActiveAttribs as getActiveAttribs,
-    ProgramHelper_getActiveUniforms as getActiveUniforms,
-    ProgramHelper_getProgramStatus as getProgramStatus,
-    ProgramHelper_linkProgramShaders as linkProgramShaders,
+    index_bindProgramAttributes as bindProgramAttributes,
+    index_bindProgramUniforms as bindProgramUniforms,
+    index_createProgramInfo as createProgramInfo,
+    index_createShader as createShader,
+    index_createShaderProgram as createShaderProgram,
+    index_draw as draw,
+    index_getActiveAttribs as getActiveAttribs,
+    index_getActiveUniforms as getActiveUniforms,
+    index_getProgramStatus as getProgramStatus,
+    index_linkProgramShaders as linkProgramShaders,
   };
 }
 
@@ -728,4 +728,4 @@ declare namespace ProgramAttributeEnums {
     const HALF_FLOAT: number;
 }
 
-export { BufferBuilder, BufferDataContext, BufferEnums, BufferHelper, BufferInfo$2 as BufferInfo, BufferInfoBuilder, GLHelper, ProgramAttributeEnums, ProgramBuilder, ProgramHelper, ProgramInfo, ProgramInfoBuilder, ProgramInfoDrawContext, ProgramUniformEnums, ProgramUniformFunctions };
+export { BufferBuilder, BufferDataContext, BufferEnums, index$1 as BufferHelper, BufferInfo$2 as BufferInfo, BufferInfoBuilder, GLHelper, ProgramAttributeEnums, ProgramBuilder, index as ProgramHelper, ProgramInfo, ProgramInfoBuilder, ProgramInfoDrawContext, ProgramUniformEnums, ProgramUniformFunctions };

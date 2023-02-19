@@ -1,1 +1,1 @@
-export { DisplayPort } from './DisplayPort.js';
+export * from './DisplayPort.js';

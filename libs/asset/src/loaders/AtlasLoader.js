@@ -1,17 +1,43 @@
-export async function loadAtlas(src) {
+/**
+ * @typedef {Record<string, AtlasSpriteData>} Atlas
+ * 
+ * @typedef AtlasSpriteData
+ * @property {number} u
+ * @property {number} v
+ * @property {number} w
+ * @property {number} h
+ * @property {number} frames
+ * @property {number} cols
+ * @property {number} rows
+ * @property {string} name
+ */
+
+/**
+ * @param {string|ArrayBuffer} src
+ * @param {{ onprogress: (value: number, loaded: number, total: number) => void }} opts
+ * @returns {Promise<Atlas>}
+ */
+export async function AtlasLoader(src, opts = { onprogress: undefined }) {
   if (typeof src === 'string') {
     const response = await fetch(src);
     const arrayBuffer = await response.arrayBuffer();
-    return loadAtlas(arrayBuffer);
+    return AtlasLoader(arrayBuffer, opts);
   } else if (!(src instanceof ArrayBuffer || ArrayBuffer.isView(src))) {
-    throw new Error(
-      'Cannot load from source - must be ' + 'an array buffer or fetchable url'
-    );
+    throw new Error('Cannot load from source - must be an array buffer or fetchable url.');
   }
-  const arrayBuffer = /** @type {ArrayBuffer} */ (src);
+  /** @type {ArrayBuffer} */
+  const arrayBuffer = src;
   const string = new TextDecoder().decode(arrayBuffer);
+  /** @type {Atlas} */
   let result = {};
-  for (let line of string.split('\n')) {
+  let lines = string.split('\n');
+  let progressTotal = lines.length;
+  let progressLoaded = 0;
+  if (opts.onprogress) {
+    opts.onprogress(0, 0, progressTotal);
+  }
+  for (let line of lines) {
+    ++progressLoaded;
     line = line.trim();
     if (line.length <= 0) continue;
     if (line.startsWith('#')) continue;
@@ -57,6 +83,13 @@ export async function loadAtlas(src) {
       rows,
       name,
     };
+
+    if (opts.onprogress) {
+      opts.onprogress(progressLoaded / progressTotal, progressLoaded, progressTotal);
+    }
+  }
+  if (opts.onprogress) {
+    opts.onprogress(1, progressLoaded, progressLoaded);
   }
   return result;
 }

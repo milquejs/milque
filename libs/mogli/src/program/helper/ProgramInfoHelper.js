@@ -1,18 +1,18 @@
-import { isWebGL2Supported } from '../GLHelper.js';
-import { getActiveAttribsInfo } from './ProgramAttributeInfo.js';
+import { isWebGL2Supported } from '../../GLHelper.js';
+import { getActiveAttribsInfo } from '../ProgramAttributeInfo.js';
 import { createShader, createShaderProgram } from './ProgramHelper.js';
-import { getActiveUniformsInfo } from './ProgramUniformInfo.js';
+import { getActiveUniformsInfo } from '../ProgramUniformInfo.js';
 
 /**
- * @typedef {import('../buffer/BufferInfoHelper.js').BufferInfo} BufferInfo
- * @typedef {import('../buffer/BufferInfoHelper.js').VertexArrayObjectInfo} VertexArrayObjectInfo
+ * @typedef {import('../../buffer/helper/BufferInfoHelper').BufferInfo} BufferInfo
+ * @typedef {import('../../buffer/helper/BufferInfoHelper').VertexArrayObjectInfo} VertexArrayObjectInfo
  */
 
 /**
  * @typedef ProgramInfo
  * @property {WebGLProgram} handle
- * @property {Record<string, import('./ProgramUniformInfo.js').ActiveUniformInfo>} uniforms
- * @property {Record<string, import('./ProgramAttributeInfo.js').ActiveAttributeInfo>} attributes
+ * @property {Record<string, import('../ProgramUniformInfo.js').ActiveUniformInfo>} uniforms
+ * @property {Record<string, import('../ProgramAttributeInfo.js').ActiveAttributeInfo>} attributes
  */
 
 /**

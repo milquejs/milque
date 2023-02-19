@@ -1,14 +1,20 @@
 import { Random } from '@milque/random';
-import { Assets } from './assets.js';
+import { AssetRef } from '@milque/asset';
+
 import { AsteroidGame, useNextLevel } from './AsteroidGame';
 import { BULLET_SPEED, countBullets, MAX_BULLET_COUNT, spawnBullet } from './Bullet.js';
 import { explode } from './Explode.js';
 import { ComponentClass, EntityManager, EntityQuery } from '@milque/scene';
 
 import { useSystem } from './lib/M.js';
-import { DisplayPortProvider, EntityManagerProvider, useDraw, useUpdate } from './main.js';
+import { AssetManagerProvider, DisplayPortProvider, EntityManagerProvider, useDraw, useUpdate } from './main.js';
 import { MAX_PARTICLE_AGE, spawnParticle } from './Particle.js';
 import { FLASH_TIME_STEP, wrapAround } from './util.js';
+import { loadSound } from './SoundLoader.js';
+
+export const PlayerDeadSound = new AssetRef('player.dead', loadSound, undefined, 'raw://dead.wav');
+export const PlayerBoomSound = new AssetRef('player.boom', loadSound, undefined, 'raw://boom.wav');
+export const PlayerShootSound = new AssetRef('player.shoot', loadSound, undefined, 'raw://click.wav');
 
 export const PLAYER_RADIUS = 5;
 const PLAYER_MOVE_PARTICLE_OFFSET_RANGE = [-2, 2];
@@ -56,6 +62,11 @@ export function PlayerSystem(m) {
     const { canvas } = useSystem(m, DisplayPortProvider);
     const ents = useSystem(m, EntityManagerProvider);
     const scene = useSystem(m, AsteroidGame);
+    const assets = useSystem(m, AssetManagerProvider);
+
+    PlayerBoomSound.load(assets);
+    PlayerDeadSound.load(assets);
+    PlayerShootSound.load(assets);
 
     let player = spawnPlayer(canvas, ents);
     scene.player = player;
@@ -211,7 +222,7 @@ export function shootPlayer(scene, player) {
         );
     }
     player.cooldown = PLAYER_SHOOT_COOLDOWN;
-    Assets.SoundShoot.current.play();
+    PlayerShootSound.get(scene.assets).play();
 }
 
 export function killPlayer(scene, player) {
@@ -224,8 +235,9 @@ export function killPlayer(scene, player) {
         100,
         Random.choose.bind(null, PLAYER_EXPLODE_PARTICLE_COLORS)
     );
-    Assets.SoundDead.current.play();
-    Assets.SoundBoom.current.play();
+
+    PlayerDeadSound.get(scene.assets).play();
+    PlayerBoomSound.get(scene.assets).play();
     setTimeout(() => (scene.gameStart = scene.gameWait = true), 1000);
 }
 

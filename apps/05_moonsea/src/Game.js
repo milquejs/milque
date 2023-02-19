@@ -12,10 +12,11 @@ export function game() {
     /** @type {InputContext} */
     const inputs = /** @type {InputPort} */
         (document.querySelector('#inputs')).getContext('axisbutton');
+    const assets = new AssetManager();
     return {
         display,
         inputs,
-        assets: AssetManager,
+        assets,
         now: 0,
         deltaTime: 0,
     };

@@ -2,11 +2,11 @@
  * @param {string|ArrayBuffer} src
  * @returns {Promise<string>}
  */
-export async function loadText(src) {
+export async function TextLoader(src) {
   if (typeof src === 'string') {
     const response = await fetch(src);
     const arrayBuffer = await response.arrayBuffer();
-    return loadText(arrayBuffer);
+    return TextLoader(arrayBuffer);
   } else if (!(src instanceof ArrayBuffer || ArrayBuffer.isView(src))) {
     throw new Error(
       'Cannot load from source - must be ' + 'an array buffer or fetchable url'

@@ -10,11 +10,11 @@
  * @param {string|ArrayBuffer} src
  * @returns {Promise<MeshData>}
  */
-export async function loadOBJ(src) {
+export async function OBJLoader(src) {
   if (typeof src === 'string') {
     const response = await fetch(src);
     const arrayBuffer = await response.arrayBuffer();
-    return loadOBJ(arrayBuffer);
+    return OBJLoader(arrayBuffer);
   } else if (!(src instanceof ArrayBuffer || ArrayBuffer.isView(src))) {
     throw new Error(
       'Cannot load from source - must be ' + 'an array buffer or fetchable url'

@@ -1,7 +1,6 @@
 import { Random } from '@milque/random';
-import { AssetManager, AssetRef } from '@milque/asset';
+import { AssetRef, preloadAssetRefs, ImageLoader } from '@milque/asset';
 import { clamp } from '@milque/util';
-import { loadImage } from './loader/ImageLoader.js';
 import { getDayDelta, getDayIndex, mixDaylightColor, spicyDaylightColor } from './Colors.js';
 
 /**
@@ -15,13 +14,13 @@ const SEA_COLUMN_COUNT = 10;
 const SEA_ROW_COUNT = 8;
 
 export const ASSETS = {
-  Wave1Image: new AssetRef('wave1.png', 'raw://wave1.png', loadImage),
-  Wave2Image: new AssetRef('wave2.png', 'raw://wave2.png', loadImage),
+  Wave1Image: new AssetRef('wave1.png', ImageLoader, undefined, 'raw://wave1.png'),
+  Wave2Image: new AssetRef('wave2.png', ImageLoader, undefined, 'raw://wave2.png'),
 };
 
 /** @param {Game} game */
 export async function load(game) {
-  await AssetManager.loadAssetRefs(Object.values(ASSETS));
+  await preloadAssetRefs(game.assets, Object.values(ASSETS));
 }
 
 /** @param {Game} game */

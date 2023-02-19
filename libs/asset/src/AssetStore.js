@@ -2,13 +2,21 @@ import { GlobExp } from './GlobExp.js';
 
 /**
  * @typedef AssetStore
- * @property {Record<string, object>} cache
+ * @property {Record<string, object>} store
  * @property {Record<string, Loading>} loadings
  * @property {Array<Fallback>} defaults
  */
 
+/**
+ * @template T
+ * @template {object} S
+ * @callback AssetLoader
+ * @param {string|ArrayBuffer} src
+ * @param {S} [opts]
+ * @returns {Promise<T>}
+ */
+
 const FILE_URI_PREFIX_PATTERN = /^([_\w\d]+)\:\/\//;
-const DEFAULT_TIMEOUT = 5_000;
 
 /**
  * Load asset using a loader with the given src.
@@ -16,140 +24,178 @@ const DEFAULT_TIMEOUT = 5_000;
  * - If loading to transform cached raw buffers from an asset pack, use `raw://`.
  * - Otherwise, it will call `fetch()` on src.
  * 
- * @template T
- * @param {AssetStore} store
+ * @template T, S
+ * @param {AssetStore} assets
  * @param {string} uri 
  * @param {string} src
- * @param {(src: string|ArrayBuffer) => Promise<T>} loader
- * @param {number} [timeout]
+ * @param {AssetLoader<T, S>} loader
+ * @param {S} opts
+ * @param {number} timeout
  * @returns {Promise<T>}
  */
- export async function loadInStore(store, uri, src, loader, timeout = DEFAULT_TIMEOUT) {
-    const { cache: globalCache, loadings } = store;
-    if (uri in globalCache) {
-        return globalCache[uri];
-    }
-
+ export async function loadInStore(assets, uri, src, loader, opts, timeout) {
+    const { loadings } = assets;
+    
     let loading;
     if (uri in loadings) {
         loading = loadings[uri];
-        if (loading.active) {
-            return loadings[uri].promise;
-        }
     } else {
         loading = new Loading(timeout);
         loadings[uri] = loading;
     }
 
+    const attempt = Loading.nextAttempt(loading);
+
     /** @type {Array<Promise<T>>} */
     let promises = [loading.promise];
     if (FILE_URI_PREFIX_PATTERN.test(src)) {
         // Loading from cached file
-        promises.push(getLoadedInStore(store, src, timeout)
-            .then(cached => loader(cached))
-            .then(value => cacheInStore(store, uri, value)));
+        promises.push(getLoadedInStore(assets, src, timeout)
+            .then(cached => loader(cached, opts))
+            .then(value => Loading.isCurrentAttempt(loading, attempt)
+                ? cacheInStore(assets, uri, value)
+                : undefined));
     } else {
         // Fetching from network
         promises.push(fetch(src)
             .then(response => response.arrayBuffer())
             .then(arr => loader(arr))
-            .then(value => cacheInStore(store, uri, value)));
+            .then(value => Loading.isCurrentAttempt(loading, attempt)
+                ? cacheInStore(assets, uri, value)
+                : undefined));
     }
     return await Promise.race(promises);
 }
 
 /**
  * @template T
- * @param {AssetStore} store
+ * @param {AssetStore} assets
  * @param {string} uri
- * @param {T} asset
+ * @param {T} value
  * @returns {T}
  */
-export function cacheInStore(store, uri, asset) {
-    const { cache, loadings } = store;
-    cache[uri] = asset;
+export function cacheInStore(assets, uri, value) {
+    const { store, loadings } = assets;
+    store[uri] = value;
     // Send asset to awaiting loaders...
     if (uri in loadings) {
-        loadings[uri].resolve(asset);
+        loadings[uri].resolve(value);
         delete loadings[uri];
     }
-    return asset;
+    return value;
 }
 
 /**
  * @template T
- * @param {AssetStore} store
+ * @param {AssetStore} assets
  * @param {string|GlobExp} glob
- * @param {T} asset
+ * @param {T} value
  * @returns {T}
  */
-export function cacheDefaultInStore(store, glob, asset) {
-    const { defaults } = store;
+export function cacheDefaultInStore(assets, glob, value) {
+    const { defaults } = assets;
     if (typeof glob === 'string') {
         glob = new GlobExp(glob);
     }
     const uri = `__default://[${defaults.length}]`;
-    cacheInStore(store, uri, asset);
+    cacheInStore(assets, uri, value);
     defaults.push(new Fallback(glob, uri));
-    return asset;
+    return value;
 }
 
 /**
- * @param {AssetStore} store
+ * @param {AssetStore} assets
  * @param {string} uri
  */
-export function unloadInStore(store, uri) {
-    const { cache, loadings } = store;
+export function unloadInStore(assets, uri) {
+    const { store, loadings } = assets;
     if (uri in loadings) {
         loadings[uri].reject(new Error('Stop loading to delete asset.'));
         delete loadings[uri];
     }
-    if (uri in cache) {
-        delete cache[uri];
+    if (uri in store) {
+        delete store[uri];
     }
 }
 
 /**
- * @param {AssetStore} store
- * @param {string|GlobExp} [glob]
- * @param {object} [opts] 
- * @param {boolean} [opts.preserveDefault]
+ * @param {AssetStore} assets
+ * @param {string|GlobExp} glob
  */
-export function clearInStore(store, glob = undefined, opts = { preserveDefault: false }) {
-    const { preserveDefault } = opts;
+export function clearInStore(assets, glob) {
     if (typeof glob === 'string') {
         glob = new GlobExp(glob);
     }
-    const { cache, loadings, defaults } = store;
+    const { store, loadings } = assets;
     // Clear loadings
     for (let [uri, loading] of Object.entries(loadings)) {
-        if (!glob || glob.test(uri)) {
-            loading.reject(new Error('Stop loading to clear all assets.'));
+        if (glob.test(uri)) {
+            loading.reject(new Error(`Stop loading to clear assets matching ${glob}`));
             delete loadings[uri];
         }
     }
     // Clear cache
-    for (let uri of Object.keys(cache)) {
-        if (!glob || glob.test(uri)) {
-            delete cache[uri];
+    for (let uri of Object.keys(store)) {
+        if (glob.test(uri)) {
+            delete store[uri];
         }
-    }
-    // Clear defaults
-    if (!preserveDefault) {
-        defaults.length = 0;
     }
 }
 
 /**
- * @param {AssetStore} store
+ * @param {AssetStore} assets 
+ */
+export function resetStore(assets) {
+    const { store, loadings, defaults } = assets;
+    // Clear loadings
+    for (let [uri, loading] of Object.entries(loadings)) {
+        loading.reject(new Error(`Stop loading to clear all assets.`));
+        delete loadings[uri];
+    }
+    // Clear cache
+    for (let uri of Object.keys(store)) {
+        delete store[uri];
+    }
+    // Clear defaults
+    defaults.length = 0;
+}
+
+/**
+ * @param {AssetStore} assets
  * @param {string} uri
- * @param {number} [timeout]
  * @returns {Promise<object>}
  */
-export async function getLoadedInStore(store, uri, timeout = DEFAULT_TIMEOUT) {
-    const { cache, loadings } = store;
-    if (uri in cache) {
-        return cache[uri];
+export function getLoadingInStore(assets, uri) {
+    const { loadings } = assets;
+    if (uri in loadings) {
+        return loadings[uri].promise;
+    } else {
+        return null;
+    }
+}
+
+/**
+ * @param {AssetStore} assets 
+ * @param {string} uri 
+ */
+export function cancelLoadingInStore(assets, uri) {
+    const { loadings } = assets;
+    for (let [uri, loading] of Object.entries(loadings)) {
+        loading.reject(new Error(`Stop loading to clear all assets.`));
+        delete loadings[uri];
+    }
+}
+
+/**
+ * @param {AssetStore} assets
+ * @param {string} uri
+ * @param {number} timeout
+ * @returns {Promise<object>}
+ */
+export async function getLoadedInStore(assets, uri, timeout) {
+    const { store, loadings } = assets;
+    if (uri in store) {
+        return store[uri];
     } else if (uri in loadings) {
         return loadings[uri].promise;
     } else {
@@ -160,62 +206,62 @@ export async function getLoadedInStore(store, uri, timeout = DEFAULT_TIMEOUT) {
 }
 
 /**
- * @param {AssetStore} store
+ * @param {AssetStore} assets
  * @param {string} uri 
  * @returns {object}
  */
-export function getDefaultInStore(store, uri) {
-    const { defaults } = store;
+export function getDefaultInStore(assets, uri) {
+    const { defaults } = assets;
     for (let def of defaults) {
         if (def.glob.test(uri)) {
-            return getCurrentInStore(store, def.uri);
+            return getCurrentInStore(assets, def.uri);
         }
     }
     return null;
 }
 
 /**
- * @param {AssetStore} store
+ * @param {AssetStore} assets
  * @param {string} uri
  * @returns {object}
  */
-export function getCurrentInStore(store, uri) {
-    return store.cache[uri];
+export function getCurrentInStore(assets, uri) {
+    return assets.store[uri];
 }
 
 /**
- * @param {AssetStore} store
+ * @param {AssetStore} assets
  * @param {string} uri 
  * @returns {boolean}
  */
-export function hasInStore(store, uri) {
-    return Boolean(store.cache[uri]);
+export function hasInStore(assets, uri) {
+    return Boolean(assets.store[uri]);
 }
 
 /**
- * @param {AssetStore} store
+ * @param {AssetStore} assets
  * @returns {Array<string>}
  */
-export function keysInStore(store) {
-    return Object.keys(store.cache);
+export function keysInStore(assets) {
+    return Object.keys(assets.store);
 }
 
 /**
- * @param {AssetStore} store
+ * @param {AssetStore} assets
  * @param {string} uri 
  * @returns {boolean}
  */
-export function isAssetCachedInStore(store, uri) {
-    return uri in store.cache;
+export function isAssetCachedInStore(assets, uri) {
+    return uri in assets.store;
 }
 
 /**
- * @param {AssetStore} store
+ * @param {AssetStore} assets
  * @param {string} uri 
  * @returns {boolean}
  */
-export function isAssetLoadingInStore(store, uri) {
-    return uri in store.loadings;
+export function isAssetLoadingInStore(assets, uri) {
+    return uri in assets.loadings;
 }
 
 class Fallback {
@@ -230,9 +276,25 @@ class Fallback {
 }
 
 class Loading {
-    constructor(timeout) {
-        this.active = false;
 
+    /**
+     * @param {Loading} loading
+     */
+    static nextAttempt(loading) {
+        return ++loading._promiseHandle;
+    }
+
+    /**
+     * @param {Loading} loading 
+     * @param {number} attempt
+     */
+    static isCurrentAttempt(loading, attempt) {
+        return loading._promiseHandle === attempt;
+    }
+
+    constructor(timeout) {
+        /** @private */
+        this._promiseHandle = 0;
         /** @private */
         this._resolve = null;
         /** @private */

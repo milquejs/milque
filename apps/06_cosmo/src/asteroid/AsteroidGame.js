@@ -1,4 +1,6 @@
-import { Assets } from './assets.js';
+import { EventTopic } from '@milque/scene';
+
+import { Assets } from './Assets.js';
 
 import { DEBUG } from './util.js';
 import { createAsteroidSpawner, drawAsteroids, updateAsteroids, updateAsteroidSpawner } from './Asteroid.js';
@@ -7,8 +9,7 @@ import { PLAYER_RADIUS } from './Player.js';
 import { createPowerUpSpawner, drawPowerUps, updatePowerUps, updatePowerUpSpawner, PowerUp } from './PowerUp.js';
 
 import { useSystem } from './lib/M';
-import { DisplayPortProvider, EntityManagerProvider, InputPortProvider, nextLevel, useDraw, useUpdate } from './main.js';
-import { EventTopic } from './lib/topic/EventTopic.js';
+import { AssetManagerProvider, DisplayPortProvider, EntityManagerProvider, InputPortProvider, nextLevel, useDraw, useUpdate } from './main.js';
 import { Debug, MoveDown, MoveLeft, MoveRight, MoveUp, Shoot } from './Inputs.js';
 
 const INSTRUCTION_HINT_TEXT = '[ wasd_ ]';
@@ -28,9 +29,11 @@ export function useNextLevel(m, nextLevelCallback) {
 export function AsteroidGame(m) {
     const { display, canvas } = useSystem(m, DisplayPortProvider);
     const ents = useSystem(m, EntityManagerProvider);
+    const assets = useSystem(m, AssetManagerProvider);
     const { ctx: ab } = useSystem(m, InputPortProvider);
 
     this.ents = ents;
+    this.assets = assets;
 
     this.display = display;
     this.canvas = canvas;

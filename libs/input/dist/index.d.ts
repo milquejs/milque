@@ -1,3 +1,31 @@
+declare class InputBinding$1 {
+    /**
+     * @param {string} name
+     */
+    constructor(name: string);
+    /** @returns {boolean} */
+    get polling(): boolean;
+    /** @returns {number} */
+    get value(): number;
+    /** @protected */
+    protected name: string;
+    /** @protected */
+    protected ref: any;
+    /** @protected */
+    protected disabled: boolean;
+    /**
+     * @abstract
+     * @param {import('../InputContext.js').InputContext} inputContext
+     */
+    bindTo(inputContext: InputContext$1): void;
+    disable(force?: boolean): InputBinding$1;
+    /**
+     * @param {number} code
+     * @returns {number}
+     */
+    getState(code: number): number;
+}
+
 /**
  * @typedef {number} BindingIndex
  *
@@ -77,183 +105,6 @@ type InputReadOnly = {
 };
 
 /**
- * @typedef {import('./InputState.js').BindingIndex} BindingIndex The binding index
- * @typedef {import('./InputState.js').BindingOptions} BindingOptions The binding options
- *
- * @typedef AxisBindingState
- * @property {number} value
- * @property {number} delta
- * @property {boolean} inverted
- *
- * @typedef AxisReadOnly
- * @property {number} value
- * @property {number} delta
- * @property {boolean} polling
- */
-declare class AxisState extends InputState$2 {
-    /** @returns {AxisBindingState} */
-    static createAxisBindingState(): AxisBindingState;
-    /**
-     * @param {number} [size]
-     */
-    constructor(size?: number);
-    /** @returns {number} */
-    get delta(): number;
-    /**
-     * @private
-     * @type {Array<AxisBindingState>}
-     */
-    private _state;
-    /** @private */
-    private _value;
-    /** @private */
-    private _delta;
-    /**
-     * @override
-     * @protected
-     */
-    protected override resize(newSize: any): void;
-    /**
-     * @protected
-     * @param {BindingIndex} code
-     * @param {number} x
-     * @param {number} dx
-     */
-    protected onAxisMove(code: BindingIndex$1, x: number, dx: number): void;
-    /**
-     * @protected
-     * @param {BindingIndex} code
-     * @param {number} dx
-     */
-    protected onAxisChange(code: BindingIndex$1, dx: number): void;
-    /**
-     * @protected
-     * @param {BindingIndex} code
-     * @param {number} x
-     */
-    protected onAxisStatus(code: BindingIndex$1, x: number): void;
-}
-/**
- * The binding index
- */
-type BindingIndex$1 = BindingIndex$2;
-type AxisBindingState = {
-    value: number;
-    delta: number;
-    inverted: boolean;
-};
-type AxisReadOnly$1 = {
-    value: number;
-    delta: number;
-    polling: boolean;
-};
-
-/**
- * @typedef {import('./InputState.js').BindingIndex} BindingIndex
- * @typedef {import('./InputState.js').BindingOptions} BindingOptions
- *
- * @typedef ButtonReadOnly
- * @property {number} value
- * @property {boolean} pressed
- * @property {boolean} repeated
- * @property {boolean} released
- * @property {boolean} down
- * @property {boolean} polling
- */
-declare const CLEAR_POLL_BITS: 241;
-declare const CLEAR_DOWN_STATE_BITS: 254;
-declare const CLEAR_INVERTED_MODIFIER_BITS: 239;
-declare const DOWN_STATE_BIT: 1;
-declare const PRESSED_STATE_BIT: 2;
-declare const REPEATED_STATE_BIT: 4;
-declare const RELEASED_STATE_BIT: 8;
-declare const INVERTED_MODIFIER_BIT: 16;
-declare class ButtonState extends InputState$2 {
-    /**
-     * @param {number} [size]
-     */
-    constructor(size?: number);
-    /** @returns {boolean} */
-    get pressed(): boolean;
-    /** @returns {boolean} */
-    get repeated(): boolean;
-    /** @returns {boolean} */
-    get released(): boolean;
-    /** @returns {boolean} */
-    get down(): boolean;
-    /** @private */
-    private _state;
-    /** @private */
-    private _value;
-    /** @private */
-    private _down;
-    /** @private */
-    private _pressed;
-    /** @private */
-    private _repeated;
-    /** @private */
-    private _released;
-    /**
-     * @override
-     * @protected
-     */
-    protected override resize(newSize: any): void;
-    /**
-     * @protected
-     * @param {BindingIndex} code
-     */
-    protected onButtonPressed(code: BindingIndex): void;
-    /**
-     * @protected
-     * @param {BindingIndex} code
-     */
-    protected onButtonReleased(code: BindingIndex): void;
-    /**
-     * @protected
-     * @param {BindingIndex} code
-     * @param {boolean} isDown
-     */
-    protected onButtonStatus(code: BindingIndex, isDown: boolean): void;
-}
-type BindingIndex = BindingIndex$2;
-type ButtonReadOnly$2 = {
-    value: number;
-    pressed: boolean;
-    repeated: boolean;
-    released: boolean;
-    down: boolean;
-    polling: boolean;
-};
-
-declare class InputBinding$1 {
-    /**
-     * @param {string} name
-     */
-    constructor(name: string);
-    /** @returns {boolean} */
-    get polling(): boolean;
-    /** @returns {number} */
-    get value(): number;
-    /** @protected */
-    protected name: string;
-    /** @protected */
-    protected ref: any;
-    /** @protected */
-    protected disabled: boolean;
-    /**
-     * @abstract
-     * @param {import('../InputContext.js').InputContext} inputContext
-     */
-    bindTo(inputContext: InputContext$1): void;
-    disable(force?: boolean): InputBinding$1;
-    /**
-     * @param {number} code
-     * @returns {number}
-     */
-    getState(code: number): number;
-}
-
-/**
  * A class that maps inputs to their respective key bindings.
  *
  * This does not handle input state (refer to InputState.js) nor
@@ -279,7 +130,7 @@ declare class InputBindings$2 {
      * @param {KeyCode} code
      * @param {BindingOptions} [opts]
      */
-    bind(input: InputState$1, device: DeviceName$1, code: KeyCode$5, opts?: BindingOptions$1): void;
+    bind(input: InputState$1, device: DeviceName$2, code: KeyCode$6, opts?: BindingOptions$1): void;
     /**
      * @param {InputState} input
      */
@@ -298,12 +149,12 @@ declare class InputBindings$2 {
      * @param {KeyCode} code
      * @returns {Array<Binding>}
      */
-    getBindings(device: DeviceName$1, code: KeyCode$5): Array<Binding>;
+    getBindings(device: DeviceName$2, code: KeyCode$6): Array<Binding>;
 }
 type InputState$1 = InputState$2;
 type BindingOptions$1 = BindingOptions$2;
-type DeviceName$1 = string;
-type KeyCode$5 = string;
+type DeviceName$2 = string;
+type KeyCode$6 = string;
 /**
  * @typedef {import('./state/InputState.js').InputState} InputState
  * @typedef {import('./state/InputState.js').BindingOptions} BindingOptions
@@ -318,7 +169,7 @@ declare class Binding {
      * @param {InputState} input The parent input
      * @param {number} index The binding index for the input
      */
-    constructor(device: DeviceName$1, code: KeyCode$5, input: InputState$1, index: number);
+    constructor(device: DeviceName$2, code: KeyCode$6, input: InputState$1, index: number);
     /** Name of the device */
     device: string;
     /** The key code for the device */
@@ -413,6 +264,135 @@ type InputDeviceEvent = {
     alt?: boolean;
 };
 type InputDeviceEventListener = (e: InputDeviceEvent) => any;
+
+/**
+ * @typedef {import('./InputState.js').BindingIndex} BindingIndex The binding index
+ * @typedef {import('./InputState.js').BindingOptions} BindingOptions The binding options
+ *
+ * @typedef AxisBindingState
+ * @property {number} value
+ * @property {number} delta
+ * @property {boolean} inverted
+ *
+ * @typedef AxisReadOnly
+ * @property {number} value
+ * @property {number} delta
+ * @property {boolean} polling
+ */
+declare class AxisState extends InputState$2 {
+    /** @returns {AxisBindingState} */
+    static createAxisBindingState(): AxisBindingState$1;
+    /**
+     * @param {number} [size]
+     */
+    constructor(size?: number);
+    /** @returns {number} */
+    get delta(): number;
+    /**
+     * @private
+     * @type {Array<AxisBindingState>}
+     */
+    private _state;
+    /** @private */
+    private _value;
+    /** @private */
+    private _delta;
+    /**
+     * @override
+     * @protected
+     */
+    protected override resize(newSize: any): void;
+    /**
+     * @protected
+     * @param {BindingIndex} code
+     * @param {number} x
+     * @param {number} dx
+     */
+    protected onAxisMove(code: BindingIndex$1, x: number, dx: number): void;
+    /**
+     * @protected
+     * @param {BindingIndex} code
+     * @param {number} dx
+     */
+    protected onAxisChange(code: BindingIndex$1, dx: number): void;
+    /**
+     * @protected
+     * @param {BindingIndex} code
+     * @param {number} x
+     */
+    protected onAxisStatus(code: BindingIndex$1, x: number): void;
+}
+/**
+ * The binding index
+ */
+type BindingIndex$1 = BindingIndex$2;
+type AxisBindingState$1 = {
+    value: number;
+    delta: number;
+    inverted: boolean;
+};
+type AxisReadOnly$2 = {
+    value: number;
+    delta: number;
+    polling: boolean;
+};
+
+declare class ButtonState extends InputState$2 {
+    /**
+     * @param {number} [size]
+     */
+    constructor(size?: number);
+    /** @returns {boolean} */
+    get pressed(): boolean;
+    /** @returns {boolean} */
+    get repeated(): boolean;
+    /** @returns {boolean} */
+    get released(): boolean;
+    /** @returns {boolean} */
+    get down(): boolean;
+    /** @private */
+    private _state;
+    /** @private */
+    private _value;
+    /** @private */
+    private _down;
+    /** @private */
+    private _pressed;
+    /** @private */
+    private _repeated;
+    /** @private */
+    private _released;
+    /**
+     * @override
+     * @protected
+     */
+    protected override resize(newSize: any): void;
+    /**
+     * @protected
+     * @param {BindingIndex} code
+     */
+    protected onButtonPressed(code: BindingIndex): void;
+    /**
+     * @protected
+     * @param {BindingIndex} code
+     */
+    protected onButtonReleased(code: BindingIndex): void;
+    /**
+     * @protected
+     * @param {BindingIndex} code
+     * @param {boolean} isDown
+     */
+    protected onButtonStatus(code: BindingIndex, isDown: boolean): void;
+}
+type BindingIndex = BindingIndex$2;
+type ButtonReadOnly$3 = {
+    value: number;
+    pressed: boolean;
+    repeated: boolean;
+    released: boolean;
+    down: boolean;
+    polling: boolean;
+};
 
 /** @typedef {import('./InputBindings.js').InputBindings} InputBindings */
 /**
@@ -598,12 +578,13 @@ declare class KeyboardDevice$1 extends InputDevice$1 {
  * @typedef {import('./InputBindings.js').BindingOptions} BindingOptions
  *
  * @typedef {import('./binding/InputBinding.js').InputBinding} InputBinding
- *
- * @typedef {string} InputName
  */
 /**
+ * @typedef {string} InputName
+ *
  * @typedef {'bind'|'unbind'|'focus'|'blur'} InputContextEventType
  * @typedef {(e: InputContextEvent) => boolean} InputContextEventListener
+ *
  * @typedef InputContextEvent
  * @property {InputContextEventType} type
  */
@@ -661,17 +642,17 @@ declare class InputContext$1 {
      * @param {InputContextEventType} event
      * @param {InputContextEventListener} listener
      */
-    addEventListener(event: InputContextEventType, listener: InputContextEventListener): void;
+    addEventListener(event: InputContextEventType$1, listener: InputContextEventListener$1): void;
     /**
      * @param {InputContextEventType} event
      * @param {InputContextEventListener} listener
      */
-    removeEventListener(event: InputContextEventType, listener: InputContextEventListener): void;
+    removeEventListener(event: InputContextEventType$1, listener: InputContextEventListener$1): void;
     /**
      * @param {InputContextEvent} e
      * @returns {boolean} Whether the event should be consumed.
      */
-    dispatchEvent(e: InputContextEvent): boolean;
+    dispatchEvent(e: InputContextEvent$1): boolean;
     /**
      * @param {number} now
      */
@@ -699,21 +680,21 @@ declare class InputContext$1 {
      * @param {KeyCode} code
      * @param {BindingOptions} [opts]
      */
-    bindButton(name: InputName, device: DeviceName, code: KeyCode$4, opts?: BindingOptions): void;
+    bindButton(name: InputName$1, device: DeviceName$1, code: KeyCode$5, opts?: BindingOptions): void;
     /**
      * @param {string} name
      * @param {DeviceName} device
      * @param {KeyCode} code
      * @param {BindingOptions} [opts]
      */
-    bindAxis(name: string, device: DeviceName, code: KeyCode$4, opts?: BindingOptions): void;
+    bindAxis(name: string, device: DeviceName$1, code: KeyCode$5, opts?: BindingOptions): void;
     /**
      * @param {string} name
      * @param {DeviceName} device
      * @param {KeyCode} negativeCode
      * @param {KeyCode} positiveCode
      */
-    bindAxisButtons(name: string, device: DeviceName, negativeCode: KeyCode$4, positiveCode: KeyCode$4): void;
+    bindAxisButtons(name: string, device: DeviceName$1, negativeCode: KeyCode$5, positiveCode: KeyCode$5): void;
     /**
      * @param {string} name
      */
@@ -727,19 +708,19 @@ declare class InputContext$1 {
      * @param {InputName} name
      * @returns {InputState}
      */
-    getInput(name: InputName): InputState;
+    getInput(name: InputName$1): InputState;
     /**
      * Get the button for the given name. Assumes a button already exists for the name.
      * @param {InputName} name
      * @returns {ButtonState}
      */
-    getButton(name: InputName): ButtonState;
+    getButton(name: InputName$1): ButtonState;
     /**
      * Get the axis for the given name. Assumes an axis already exists for the name.
      * @param {InputName} name
      * @returns {AxisState}
      */
-    getAxis(name: InputName): AxisState;
+    getAxis(name: InputName$1): AxisState;
     /**
      * Whether a button exists for the name and that it is of type {@link Button}.
      * @returns {boolean}
@@ -755,39 +736,39 @@ declare class InputContext$1 {
      * @param {InputName} name
      * @returns {boolean}
      */
-    isButtonDown(name: InputName): boolean;
+    isButtonDown(name: InputName$1): boolean;
     /**
      * Get whether a button for the given name is pressed. Assumes a button already exists for the name.
      * @param {InputName} name
      * @returns {boolean}
      */
-    isButtonPressed(name: InputName): boolean;
+    isButtonPressed(name: InputName$1): boolean;
     /**
      * Get whether a button for the given name is released. Assumes a button already exists for the name.
      * @param {InputName} name
      * @returns {boolean}
      */
-    isButtonReleased(name: InputName): boolean;
+    isButtonReleased(name: InputName$1): boolean;
     /**
      * @param {InputName} name
      * @returns {number}
      */
-    getInputValue(name: InputName): number;
+    getInputValue(name: InputName$1): number;
     /**
      * @param {InputName} name
      * @returns {number}
      */
-    getButtonValue(name: InputName): number;
+    getButtonValue(name: InputName$1): number;
     /**
      * @param {InputName} name
      * @returns {number}
      */
-    getAxisValue(name: InputName): number;
+    getAxisValue(name: InputName$1): number;
     /**
      * @param {InputName} name
      * @returns {number}
      */
-    getAxisDelta(name: InputName): number;
+    getAxisDelta(name: InputName$1): number;
     /** @returns {boolean} */
     isAnyButtonDown(include?: any): boolean;
     /** @returns {boolean} */
@@ -807,23 +788,27 @@ declare class InputContext$1 {
 }
 type InputDevice = InputDevice$1;
 type InputState = InputState$2;
-type DeviceName = DeviceName$1;
-type KeyCode$4 = KeyCode$5;
+type DeviceName$1 = DeviceName$2;
+type KeyCode$5 = KeyCode$6;
 type BindingOptions = BindingOptions$1;
 type InputBinding = InputBinding$1;
-type InputName = string;
-type InputContextEventType = 'bind' | 'unbind' | 'focus' | 'blur';
-type InputContextEventListener = (e: InputContextEvent) => boolean;
-type InputContextEvent = {
-    type: InputContextEventType;
+type InputName$1 = string;
+type InputContextEventType$1 = 'bind' | 'unbind' | 'focus' | 'blur';
+type InputContextEventListener$1 = (e: InputContextEvent$1) => boolean;
+type InputContextEvent$1 = {
+    type: InputContextEventType$1;
 };
 
-declare class KeyCode$3 {
+type ButtonReadOnly$2 = ButtonReadOnly$3;
+type AxisReadOnly$1 = AxisReadOnly$2;
+type AxisBindingState = AxisBindingState$1;
+
+declare class KeyCode$4 {
     /**
      * @param {string} string
      * @returns {KeyCode}
      */
-    static parse(string: string): KeyCode$3;
+    static parse(string: string): KeyCode$4;
     /**
      * @param {string} device
      * @param {string} code
@@ -856,11 +841,11 @@ declare class AxisBinding extends InputBinding$1 {
      * @param {KeyCode|Array<KeyCode>} keyCodes
      * @param {object} [opts]
      */
-    constructor(name: string, keyCodes: KeyCode$2 | Array<KeyCode$2>, opts?: object);
+    constructor(name: string, keyCodes: KeyCode$3 | Array<KeyCode$3>, opts?: object);
     /** @returns {number} */
     get delta(): number;
     /** @protected */
-    protected keyCodes: KeyCode$3[];
+    protected keyCodes: KeyCode$4[];
     /** @protected */
     protected opts: any;
     /**
@@ -869,7 +854,7 @@ declare class AxisBinding extends InputBinding$1 {
      */
     override bindTo(inputContext: InputContext$1): AxisBinding;
 }
-type KeyCode$2 = KeyCode$3;
+type KeyCode$3 = KeyCode$4;
 
 /**
  * @typedef {import('../keycode/KeyCode.js').KeyCode} KeyCode
@@ -895,7 +880,7 @@ declare class ButtonBinding extends InputBinding$1 {
      * @param {KeyCode|Array<KeyCode>} keyCodes
      * @param {object} [opts]
      */
-    constructor(name: string, keyCodes: KeyCode$1 | Array<KeyCode$1>, opts?: object);
+    constructor(name: string, keyCodes: KeyCode$2 | Array<KeyCode$2>, opts?: object);
     /** @returns {boolean} */
     get pressed(): boolean;
     /** @returns {boolean} */
@@ -905,7 +890,7 @@ declare class ButtonBinding extends InputBinding$1 {
     /** @returns {boolean} */
     get down(): boolean;
     /** @protected */
-    protected keyCodes: KeyCode$3[];
+    protected keyCodes: KeyCode$4[];
     /** @protected */
     protected opts: any;
     /**
@@ -914,7 +899,7 @@ declare class ButtonBinding extends InputBinding$1 {
      */
     override bindTo(inputContext: InputContext): ButtonBinding;
 }
-type KeyCode$1 = KeyCode$3;
+type KeyCode$2 = KeyCode$4;
 type InputContext = InputContext$1;
 
 /** @typedef {import('../keycode/KeyCode.js').KeyCode} KeyCode */
@@ -932,90 +917,90 @@ declare class AxisButtonBinding extends AxisBinding {
      * @param {KeyCode} negativeKeyCode
      * @param {KeyCode} positiveKeyCode
      */
-    constructor(name: string, negativeKeyCode: KeyCode, positiveKeyCode: KeyCode);
+    constructor(name: string, negativeKeyCode: KeyCode$1, positiveKeyCode: KeyCode$1);
     /** @protected */
-    protected negativeKeyCode: KeyCode$3;
+    protected negativeKeyCode: KeyCode$4;
     /** @protected */
-    protected positiveKeyCode: KeyCode$3;
+    protected positiveKeyCode: KeyCode$4;
     /**
      * @param {import('../InputContext.js').InputContext} inputContext
      */
     bindTo(inputContext: InputContext$1): AxisButtonBinding;
 }
-type KeyCode = KeyCode$3;
+type KeyCode$1 = KeyCode$4;
 
-declare function from(device: any, code: any): KeyCode$3;
+declare function from(device: any, code: any): KeyCode$4;
 declare function isKeyCode(object: any): boolean;
 declare const KEYBOARD: "Keyboard";
 declare const MOUSE: "Mouse";
-declare const KEY_A: KeyCode$3;
-declare const KEY_B: KeyCode$3;
-declare const KEY_C: KeyCode$3;
-declare const KEY_D: KeyCode$3;
-declare const KEY_E: KeyCode$3;
-declare const KEY_F: KeyCode$3;
-declare const KEY_G: KeyCode$3;
-declare const KEY_H: KeyCode$3;
-declare const KEY_I: KeyCode$3;
-declare const KEY_J: KeyCode$3;
-declare const KEY_K: KeyCode$3;
-declare const KEY_L: KeyCode$3;
-declare const KEY_M: KeyCode$3;
-declare const KEY_N: KeyCode$3;
-declare const KEY_O: KeyCode$3;
-declare const KEY_P: KeyCode$3;
-declare const KEY_Q: KeyCode$3;
-declare const KEY_R: KeyCode$3;
-declare const KEY_S: KeyCode$3;
-declare const KEY_T: KeyCode$3;
-declare const KEY_U: KeyCode$3;
-declare const KEY_V: KeyCode$3;
-declare const KEY_W: KeyCode$3;
-declare const KEY_X: KeyCode$3;
-declare const KEY_Y: KeyCode$3;
-declare const KEY_Z: KeyCode$3;
-declare const DIGIT_0: KeyCode$3;
-declare const DIGIT_1: KeyCode$3;
-declare const DIGIT_2: KeyCode$3;
-declare const DIGIT_3: KeyCode$3;
-declare const DIGIT_4: KeyCode$3;
-declare const DIGIT_5: KeyCode$3;
-declare const DIGIT_6: KeyCode$3;
-declare const DIGIT_7: KeyCode$3;
-declare const DIGIT_8: KeyCode$3;
-declare const DIGIT_9: KeyCode$3;
-declare const MINUS: KeyCode$3;
-declare const EQUAL: KeyCode$3;
-declare const BRACKET_LEFT: KeyCode$3;
-declare const BRACKET_RIGHT: KeyCode$3;
-declare const SEMICOLON: KeyCode$3;
-declare const QUOTE: KeyCode$3;
-declare const BACKQUOTE: KeyCode$3;
-declare const BACKSLASH: KeyCode$3;
-declare const COMMA: KeyCode$3;
-declare const PERIOD: KeyCode$3;
-declare const SLASH: KeyCode$3;
-declare const ESCAPE: KeyCode$3;
-declare const SPACE: KeyCode$3;
-declare const CAPS_LOCK: KeyCode$3;
-declare const BACKSPACE: KeyCode$3;
-declare const DELETE: KeyCode$3;
-declare const TAB: KeyCode$3;
-declare const ENTER: KeyCode$3;
-declare const ARROW_UP: KeyCode$3;
-declare const ARROW_DOWN: KeyCode$3;
-declare const ARROW_LEFT: KeyCode$3;
-declare const ARROW_RIGHT: KeyCode$3;
-declare const MOUSE_BUTTON_0: KeyCode$3;
-declare const MOUSE_BUTTON_1: KeyCode$3;
-declare const MOUSE_BUTTON_2: KeyCode$3;
-declare const MOUSE_BUTTON_3: KeyCode$3;
-declare const MOUSE_BUTTON_4: KeyCode$3;
-declare const MOUSE_POS_X: KeyCode$3;
-declare const MOUSE_POS_Y: KeyCode$3;
-declare const MOUSE_WHEEL_X: KeyCode$3;
-declare const MOUSE_WHEEL_Y: KeyCode$3;
-declare const MOUSE_WHEEL_Z: KeyCode$3;
+declare const KEY_A: KeyCode$4;
+declare const KEY_B: KeyCode$4;
+declare const KEY_C: KeyCode$4;
+declare const KEY_D: KeyCode$4;
+declare const KEY_E: KeyCode$4;
+declare const KEY_F: KeyCode$4;
+declare const KEY_G: KeyCode$4;
+declare const KEY_H: KeyCode$4;
+declare const KEY_I: KeyCode$4;
+declare const KEY_J: KeyCode$4;
+declare const KEY_K: KeyCode$4;
+declare const KEY_L: KeyCode$4;
+declare const KEY_M: KeyCode$4;
+declare const KEY_N: KeyCode$4;
+declare const KEY_O: KeyCode$4;
+declare const KEY_P: KeyCode$4;
+declare const KEY_Q: KeyCode$4;
+declare const KEY_R: KeyCode$4;
+declare const KEY_S: KeyCode$4;
+declare const KEY_T: KeyCode$4;
+declare const KEY_U: KeyCode$4;
+declare const KEY_V: KeyCode$4;
+declare const KEY_W: KeyCode$4;
+declare const KEY_X: KeyCode$4;
+declare const KEY_Y: KeyCode$4;
+declare const KEY_Z: KeyCode$4;
+declare const DIGIT_0: KeyCode$4;
+declare const DIGIT_1: KeyCode$4;
+declare const DIGIT_2: KeyCode$4;
+declare const DIGIT_3: KeyCode$4;
+declare const DIGIT_4: KeyCode$4;
+declare const DIGIT_5: KeyCode$4;
+declare const DIGIT_6: KeyCode$4;
+declare const DIGIT_7: KeyCode$4;
+declare const DIGIT_8: KeyCode$4;
+declare const DIGIT_9: KeyCode$4;
+declare const MINUS: KeyCode$4;
+declare const EQUAL: KeyCode$4;
+declare const BRACKET_LEFT: KeyCode$4;
+declare const BRACKET_RIGHT: KeyCode$4;
+declare const SEMICOLON: KeyCode$4;
+declare const QUOTE: KeyCode$4;
+declare const BACKQUOTE: KeyCode$4;
+declare const BACKSLASH: KeyCode$4;
+declare const COMMA: KeyCode$4;
+declare const PERIOD: KeyCode$4;
+declare const SLASH: KeyCode$4;
+declare const ESCAPE: KeyCode$4;
+declare const SPACE: KeyCode$4;
+declare const CAPS_LOCK: KeyCode$4;
+declare const BACKSPACE: KeyCode$4;
+declare const DELETE: KeyCode$4;
+declare const TAB: KeyCode$4;
+declare const ENTER: KeyCode$4;
+declare const ARROW_UP: KeyCode$4;
+declare const ARROW_DOWN: KeyCode$4;
+declare const ARROW_LEFT: KeyCode$4;
+declare const ARROW_RIGHT: KeyCode$4;
+declare const MOUSE_BUTTON_0: KeyCode$4;
+declare const MOUSE_BUTTON_1: KeyCode$4;
+declare const MOUSE_BUTTON_2: KeyCode$4;
+declare const MOUSE_BUTTON_3: KeyCode$4;
+declare const MOUSE_BUTTON_4: KeyCode$4;
+declare const MOUSE_POS_X: KeyCode$4;
+declare const MOUSE_POS_Y: KeyCode$4;
+declare const MOUSE_WHEEL_X: KeyCode$4;
+declare const MOUSE_WHEEL_Y: KeyCode$4;
+declare const MOUSE_WHEEL_Z: KeyCode$4;
 
 declare const KeyCodes_ARROW_DOWN: typeof ARROW_DOWN;
 declare const KeyCodes_ARROW_LEFT: typeof ARROW_LEFT;
@@ -1170,7 +1155,7 @@ declare namespace KeyCodes {
  * @param {string|Array<string>} strings
  * @returns {Array<KeyCode>}
  */
-declare function stringsToKeyCodes(strings: string | Array<string>): Array<KeyCode$3>;
+declare function stringsToKeyCodes(strings: string | Array<string>): Array<KeyCode$4>;
 
 declare class InputCode extends HTMLElement {
     static define(customElements?: CustomElementRegistry): void;
@@ -1206,10 +1191,20 @@ declare class InputCode extends HTMLElement {
  * @typedef {import('../InputBindings.js').DeviceName} DeviceName
  * @typedef {import('../InputBindings.js').KeyCode} KeyCode
  * @typedef {import('../InputBindings.js').BindingOptions} BindingOptions
- *
- * @typedef {string} InputName
+ * @typedef {import('../InputContext').InputName} InputName
  */
 declare class InputPort extends HTMLElement {
+    /**
+     * @param {object} [opts]
+     * @param {HTMLElement} [opts.root]
+     * @param {string} [opts.for]
+     * @param {boolean} [opts.autopoll]
+     */
+    static create(opts?: {
+        root?: HTMLElement;
+        for?: string;
+        autopoll?: boolean;
+    }): InputPort;
     static define(customElements?: CustomElementRegistry): void;
     static get observedAttributes(): string[];
     set autopoll(arg: boolean);
@@ -1394,7 +1389,7 @@ declare class Keyboard {
         autopoller: AutoPoller;
     };
 }
-type ButtonReadOnly$1 = ButtonReadOnly$2;
+type ButtonReadOnly$1 = ButtonReadOnly$3;
 /**
  * @typedef {import('./state/ButtonState.js').ButtonReadOnly} ButtonReadOnly
  */
@@ -1430,12 +1425,19 @@ declare class Mouse {
         autopoller: AutoPoller;
     };
 }
-type AxisReadOnly = AxisReadOnly$1;
-type ButtonReadOnly = ButtonReadOnly$2;
+type AxisReadOnly = AxisReadOnly$2;
+type ButtonReadOnly = ButtonReadOnly$3;
 /**
  * @typedef {import('./state/AxisState.js').AxisReadOnly} AxisReadOnly
  * @typedef {import('./state/ButtonState.js').ButtonReadOnly} ButtonReadOnly
  */
 declare const MOUSE_SOURCE: unique symbol;
 
-export { AutoPoller$1 as AutoPoller, AxisBinding, AxisBindingState, AxisButtonBinding, AxisState, ButtonBinding, ButtonState, CLEAR_DOWN_STATE_BITS, CLEAR_INVERTED_MODIFIER_BITS, CLEAR_POLL_BITS, DOWN_STATE_BIT, DeviceInputAdapter$1 as DeviceInputAdapter, INVERTED_MODIFIER_BIT, InputBinding, InputCode, InputContext$1 as InputContext, InputContextEvent, InputContextEventListener, InputContextEventType, InputDeviceEventListener, InputPort, InputReadOnly, KeyCodes, Keyboard, KeyboardDevice$1 as KeyboardDevice, Mouse, MouseDevice$1 as MouseDevice, OnPollCallback, PRESSED_STATE_BIT, Pollable, RELEASED_STATE_BIT, REPEATED_STATE_BIT, stringsToKeyCodes };
+type DeviceName = DeviceName$2;
+type KeyCode = KeyCode$6;
+type InputName = InputName$1;
+type InputContextEventType = InputContextEventType$1;
+type InputContextEventListener = InputContextEventListener$1;
+type InputContextEvent = InputContextEvent$1;
+
+export { AutoPoller$1 as AutoPoller, AxisBinding, AxisBindingState, AxisButtonBinding, AxisReadOnly$1 as AxisReadOnly, AxisState, BindingIndex$2 as BindingIndex, BindingOptions$2 as BindingOptions, ButtonBinding, ButtonReadOnly$2 as ButtonReadOnly, ButtonState, DeviceInputAdapter$1 as DeviceInputAdapter, DeviceName, InputBinding$1 as InputBinding, InputBindings$2 as InputBindings, InputCode, InputContext$1 as InputContext, InputContextEvent, InputContextEventListener, InputContextEventType, InputDevice$1 as InputDevice, InputDeviceEvent, InputDeviceEventListener, InputName, InputPort, InputReadOnly, InputState$2 as InputState, KeyCode, KeyCodes, Keyboard, KeyboardDevice$1 as KeyboardDevice, Mouse, MouseDevice$1 as MouseDevice, OnPollCallback, Pollable, stringsToKeyCodes };

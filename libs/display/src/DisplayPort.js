@@ -127,6 +127,32 @@ const DELAYED_RESIZE_MILLIS = 200;
  * boolean attribute `full` to force the dimensions to be the actual window size.
  */
 export class DisplayPort extends HTMLElement {
+
+  /**
+   * @param {object} [opts]
+   * @param {HTMLElement} [opts.root]
+   * @param {DisplayScaling} [opts.mode]
+   * @param {number} [opts.width]
+   * @param {number} [opts.height]
+   * @param {boolean} [opts.debug]
+   */
+  static create(opts = {}) {
+    const {
+      root = document.body,
+      mode = DEFAULT_MODE,
+      width = DEFAULT_WIDTH,
+      height = DEFAULT_HEIGHT,
+      debug = false
+    } = opts || {};
+    let result = new DisplayPort();
+    result.mode = mode;
+    result.width = width;
+    result.height = height;
+    result.debug = debug;
+    root.appendChild(result);
+    return result;
+  }
+
   /** @private */
   static get [Symbol.for('templateNode')]() {
     let t = document.createElement('template');
@@ -434,17 +460,17 @@ export class DisplayPort extends HTMLElement {
 
   /** Pause animation of the display frames. */
   pause() {
-    cancelAnimationFrame(this._animationRequestHandle);
+    window.cancelAnimationFrame(this._animationRequestHandle);
   }
 
   /** Resume animation of the display frames. */
   resume() {
-    this._animationRequestHandle = requestAnimationFrame(this.update);
+    this._animationRequestHandle = window.requestAnimationFrame(this.update);
   }
 
   /** @private */
   update(now) {
-    this._animationRequestHandle = requestAnimationFrame(this.update);
+    this._animationRequestHandle = window.requestAnimationFrame(this.update);
     this.updateCanvasSize(false);
     const deltaTime = now - this._prevAnimationFrameTime;
     this._prevAnimationFrameTime = now;
@@ -485,7 +511,7 @@ export class DisplayPort extends HTMLElement {
 
   /** @private */
   onDelayCanvasResize() {
-    this._resizeTimeoutHandle = 0;
+    this._resizeTimeoutHandle = null;
     this.updateCanvasSize(true);
   }
 
@@ -498,9 +524,9 @@ export class DisplayPort extends HTMLElement {
       this._resizeCanvasWidth = canvasWidth;
       this._resizeCanvasHeight = canvasHeight;
       if (this._resizeTimeoutHandle) {
-        clearTimeout(this._resizeTimeoutHandle);
+        window.clearTimeout(this._resizeTimeoutHandle);
       }
-      this._resizeTimeoutHandle = setTimeout(
+      this._resizeTimeoutHandle = window.setTimeout(
         this.onDelayCanvasResize,
         DELAYED_RESIZE_MILLIS
       );

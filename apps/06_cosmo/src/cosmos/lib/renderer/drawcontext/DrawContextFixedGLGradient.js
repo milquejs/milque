@@ -1,6 +1,6 @@
 import { ProgramInfoBuilder } from '@milque/mogli';
 import { mat4, quat, vec3, vec4 } from 'gl-matrix';
-import { hex } from 'src/renderer/drawcontext/color.js';
+import { hex } from './color.js';
 import { DrawContextFixedGLTexture } from './DrawContextFixedGLTexture.js';
 
 const VERTEX_SHADER_SOURCE = `

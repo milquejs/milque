@@ -1,5 +1,5 @@
-import { isWebGL2Supported } from '../GLHelper.js';
-import { bindProgramAttributes } from '../program/ProgramInfoHelper.js';
+import { isWebGL2Supported } from '../../GLHelper.js';
+import { bindProgramAttributes } from '../../program/helper/ProgramInfoHelper.js';
 import { getBufferTypeForBufferSource, getByteCountForBufferType, getTypedArrayForBufferType } from './BufferHelper.js';
 
 /**
@@ -68,7 +68,7 @@ export function createBufferInfo(gl, arrays, elementArray = undefined) {
 /**
  * @param {WebGLRenderingContextBase} gl 
  * @param {BufferInfo} bufferInfo 
- * @param {Array<import('../program/ProgramInfoHelper.js').ProgramInfo>} programInfos
+ * @param {Array<import('../../program/helper/ProgramInfoHelper.js').ProgramInfo>} programInfos
  * @returns {VertexArrayObjectInfo}
  */
 export function createVertexArrayInfo(gl, bufferInfo, programInfos) {

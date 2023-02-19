@@ -14,7 +14,7 @@ export class Game {
   constructor(display, inputs) {
     this.display = display;
     this.inputs = inputs;
-    this.assets = AssetManager;
+    this.assets = new AssetManager();
 
     this.deltaTime = 0;
     this.prevTime = 0;

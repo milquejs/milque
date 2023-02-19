@@ -1,4 +1,4 @@
-import { AssetManager } from '@milque/asset';
+import { preloadAssetRefs } from '@milque/asset';
 
 /**
  * @typedef {import('./renderer/drawcontext/DrawContextFixedGLText.js').DrawContextFixedGLText} DrawContextFixedGLText
@@ -9,7 +9,7 @@ export const ASSETS = {};
 
 /** @param {Game} game */
 export async function load(game) {
-  await AssetManager.loadAssetRefs(Object.values(ASSETS));
+  await preloadAssetRefs(game.assets, Object.values(ASSETS));
 }
 
 /** @param {Game} game */

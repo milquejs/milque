@@ -1,119 +1,156 @@
-import { unzip } from 'fflate';
-import { AssetRef } from './AssetRef.js';
-import { cacheInStore, keysInStore, getCurrentInStore } from './AssetStore.js';
+import { cacheDefaultInStore, cacheInStore, clearInStore, getCurrentInStore, getDefaultInStore, getLoadedInStore, getLoadingInStore, hasInStore, isAssetCachedInStore, isAssetLoadingInStore, keysInStore, loadInStore, resetStore, unloadInStore } from './AssetStore.js';
+import { GlobExp } from './GlobExp.js';
 
-const DEFAULT_TIMEOUT = 5_000;
-/** @type {import('./AssetStore.js').AssetStore} */
-const GLOBAL = {
-    cache: {},
-    loadings: {},
-    defaults: [],
-};
+export class AssetManager {
 
-/**
- * Fetch asset pack from url and cache raw file content under `raw://`.
- * 
- * @param {string} url
- * @param {(src: Uint8Array, uri: string, path: string) => void} [callback]
- */
-export async function loadAssetPackAsRaw(url, callback = undefined) {
-    let rootPath = 'raw://';
-    let response = await fetch(url);
-    let arrayBuffer = await response.arrayBuffer();
-    await new Promise((resolve, reject) => {
-        unzip(new Uint8Array(arrayBuffer), (err, data) => {
-            if (err) {
-                reject(err);
-            } else {
-                for (let [path, buf] of Object.entries(data)) {
-                    // Standardize WIN paths
-                    path = path.replaceAll('\\', '/');
-                    // Remove the zip directory name
-                    let i = path.indexOf('/');
-                    if (i >= 0) {
-                        path = path.substring(i + 1);
-                    }
-                    // Put the raw file in cache
-                    let uri = rootPath + path;
-                    cacheInStore(GLOBAL, uri, buf);
-                    if (callback) {
-                        callback(buf, uri, path);
-                    }
-                }
-                resolve();
-            }
-        });
-    });
-}
-
-/**
- * Fetch asset pack from url and cache raw file content under `raw://`.
- * 
- * @param {string} url
- * @param {(src: Uint8Array, path: string) => void} callback
- */
- export async function loadAssetPack(url, callback) {
-    let response = await fetch(url);
-    let arrayBuffer = await response.arrayBuffer();
-    await new Promise((resolve, reject) => {
-        unzip(new Uint8Array(arrayBuffer), (err, data) => {
-            if (err) {
-                reject(err);
-            } else {
-                for (let [path, buf] of Object.entries(data)) {
-                    // Standardize WIN paths
-                    path = path.replaceAll('\\', '/');
-                    callback(buf, path);
-                }
-                resolve();
-            }
-        });
-    });
-}
-
-/**
- * This is the same as calling `await AssetRef.load()` for each ref.
- * 
- * @param {Array<AssetRef>} refs 
- * @param {number} [timeout] 
- */
-export async function loadAssetRefs(refs, timeout = DEFAULT_TIMEOUT) {
-    let promises = [];
-    for (let ref of refs) {
-        promises.push(ref.preload(GLOBAL, timeout));
+    /**
+     * @param {AssetManager} [parent] 
+     */
+    constructor(parent = null) {
+        this.parent = parent;
+        /** @private */
+        this.store = {};
+        /** @private */
+        this.loadings = {};
+        /** @private */
+        this.defaults = [];
     }
-    await Promise.allSettled(promises);
-}
 
-/**
- * @template T
- * @param {string} uri
- * @param {T} asset
- * @returns {T}
- */
-export function cache(uri, asset) {
-    return cacheInStore(GLOBAL, uri, asset);
-}
+    /**
+     * @param {string} uri 
+     * @returns {object}
+     */
+    get(uri) {
+        const assets = /** @type {import('./AssetStore').AssetStore} */ (/** @type {unknown} */ (this));
+        if (isAssetCachedInStore(assets, uri)) {
+            return getCurrentInStore(assets, uri);
+        }
+        let def = getDefaultInStore(assets, uri);
+        if (def) {
+            return def;
+        }
+        return null;
+    }
 
-/**
- * @returns {Array<string>}
- */
-export function keys() {
-    return keysInStore(GLOBAL);
-}
+    /**
+     * @template T, S
+     * @param {string} uri 
+     * @param {string} filepath
+     * @param {import('./AssetStore').AssetLoader<T, S>} loader 
+     * @param {S} opts 
+     * @param {number} timeout 
+     * @returns {Promise<T>}
+     */
+    async resolve(uri, filepath, loader, opts, timeout) {
+        return this.get(uri) || await this.load(uri, filepath, loader, opts, timeout);
+    }
 
-/**
- * @param {string} uri
- * @returns {object}
- */
-export function current(uri) {
-    return getCurrentInStore(GLOBAL, uri);
-}
+    /**
+     * @template T
+     * @param {string|GlobExp} uriGlob 
+     * @param {T} value 
+     * @returns {T}
+     */
+    fallback(uriGlob, value) {
+        const assets = /** @type {import('./AssetStore').AssetStore} */ (/** @type {unknown} */ (this));
+        return cacheDefaultInStore(assets, uriGlob, value);
+    }
 
-/**
- * @param {string} uri
- * @returns {object}
- */
-export function get(uri) {
-    return current(uri);
+    /**
+     * @template T
+     * @param {string} uri 
+     * @param {T} value 
+     * @returns {T}
+     */
+    cache(uri, value) {
+        const assets = /** @type {import('./AssetStore').AssetStore} */ (/** @type {unknown} */ (this));
+        return cacheInStore(assets, uri, value);
+    }
+
+    /**
+     * @template T, S
+     * @param {string} uri 
+     * @param {string} filepath
+     * @param {import('./AssetStore').AssetLoader<T, S>} loader 
+     * @param {S} opts 
+     * @param {number} timeout
+     * @returns {Promise<T>}
+     */
+    async load(uri, filepath, loader, opts, timeout) {
+        const assets = /** @type {import('./AssetStore').AssetStore} */ (/** @type {unknown} */ (this));
+        if (isAssetCachedInStore(assets, uri)) {
+            return getCurrentInStore(assets, uri);
+        } else if (isAssetLoadingInStore(assets, uri)) {
+            return await getLoadedInStore(assets, uri, timeout);
+        }
+        return await loadInStore(assets, uri, filepath, loader, opts, timeout);
+    }
+
+    /**
+     * @template T, S
+     * @param {string} uri 
+     * @param {string} filepath
+     * @param {import('./AssetStore').AssetLoader<T, S>} loader 
+     * @param {S} opts 
+     * @param {number} timeout
+     * @returns {Promise<T>}
+     */
+    async reload(uri, filepath, loader, opts, timeout) {
+        const assets = /** @type {import('./AssetStore').AssetStore} */ (/** @type {unknown} */ (this));
+        return await loadInStore(assets, uri, filepath, loader, opts, timeout);
+    }
+
+    /**
+     * @param {string} uri 
+     */
+    unload(uri) {
+        const assets = /** @type {import('./AssetStore').AssetStore} */ (/** @type {unknown} */ (this));
+        unloadInStore(assets, uri);
+    }
+
+    /**
+     * @param {string|GlobExp} uriGlob 
+     */
+    clear(uriGlob) {
+        const assets = /** @type {import('./AssetStore').AssetStore} */ (/** @type {unknown} */ (this));
+        clearInStore(assets, uriGlob);
+    }
+
+    /**
+     * @param {string} uri
+     */
+    current(uri) {
+        const assets = /** @type {import('./AssetStore').AssetStore} */ (/** @type {unknown} */ (this));
+        return getCurrentInStore(assets, uri);
+    }
+
+    /**
+     * @param {string} uri 
+     */
+    exists(uri) {
+        const assets = /** @type {import('./AssetStore').AssetStore} */ (/** @type {unknown} */ (this));
+        return hasInStore(assets, uri);
+    }
+
+    /**
+     * @param {string} uri 
+     */
+    loading(uri) {
+        const assets = /** @type {import('./AssetStore').AssetStore} */ (/** @type {unknown} */ (this));
+        if (isAssetLoadingInStore(assets, uri)) {
+            return getLoadingInStore(assets, uri);
+        } else {
+            return null;
+        }
+    }
+
+    keys() {
+        const assets = /** @type {import('./AssetStore').AssetStore} */ (/** @type {unknown} */ (this));
+        return keysInStore(assets);
+    }
+
+    reset() {
+        const assets = /** @type {import('./AssetStore').AssetStore} */ (/** @type {unknown} */ (this));
+        resetStore(assets);
+    }
 }

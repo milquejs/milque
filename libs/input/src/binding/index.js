@@ -9,3 +9,4 @@
 export { AxisBinding } from './AxisBinding.js';
 export { ButtonBinding } from './ButtonBinding.js';
 export { AxisButtonBinding } from './AxisButtonBinding.js';
+export { InputBinding } from './InputBinding.js';

@@ -89,14 +89,14 @@
  */
 
 /**
- * @param {string} src
+ * @param {string|ArrayBuffer} src
  * @returns {Promise<BMFontData>}
  */
-export async function loadBMFont(src) {
+export async function BMFontLoader(src) {
   if (typeof src === 'string') {
     const response = await fetch(src);
     const arrayBuffer = await response.arrayBuffer();
-    return loadBMFont(arrayBuffer);
+    return BMFontLoader(arrayBuffer);
   } else if (!(src instanceof ArrayBuffer || ArrayBuffer.isView(src))) {
     throw new Error(
       'Cannot load from source - must be ' + 'an array buffer or fetchable url'
@@ -158,13 +158,13 @@ function parse(string) {
       // Unknown tag.
     }
   }
-  let data = {
+  let data = /** @type {BMFontData} */ ({
     info,
     common,
     page,
     chars,
     kernings,
-  };
+  });
   return data;
 }
 

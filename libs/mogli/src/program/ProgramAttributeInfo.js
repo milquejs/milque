@@ -1,4 +1,4 @@
-import { getActiveAttribs } from './ProgramActives.js';
+import { getActiveAttribs } from './helper/ProgramActives.js';
 import { getAttributeFunction } from './ProgramAttributeFunctions.js';
 import { getAttribVertexSize } from './ProgramAttributeHelper.js';
 

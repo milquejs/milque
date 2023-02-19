@@ -1,68 +1,96 @@
-import { cacheInStore, getCurrentInStore, getDefaultInStore, getLoadedInStore, loadInStore, unloadInStore } from './AssetStore.js';
+import { AssetManager } from './AssetManager';
 
-/** @typedef {import('./AssetStore.js').AssetStore} AssetStore */
+const DEFAULT_TIMEOUT = 5000;
 
-/**
- * @template T
- */
+/** @template T, S */
 export class AssetRef {
+
     /**
      * @param {string} uri 
-     * @param {string} src 
-     * @param {(src: Uint8Array) => Promise<T>} loader 
+     * @param {import('./AssetStore').AssetLoader<T, S>} loader 
+     * @param {S} [opts] 
+     * @param {string} [filepath]
+     * @param {T|AssetRef<T>} [initial]
      */
-    constructor(uri, src, loader) {
+    constructor(uri, loader, opts = undefined, filepath = uri, initial = null) {
         this.uri = uri;
-        /** @protected */
-        this.source = src;
-        /** @protected */
         this.loader = loader;
-        /** @protected */
-        this.store = null;
-    }
+        this.opts = opts;
 
-    /** @returns {T} */
-    get current() {
-        return getCurrentInStore(this.store, this.uri);
-    }
+        /** @private */
+        this.initial = initial;
+        /** @private */
+        this.filepath = filepath;
 
-    /** @param {T} value */
-    set current(value) {
-        cacheInStore(this.store, this.uri, value);
-    }
-
-    /** @returns {T} */
-    get default() {
-        return getDefaultInStore(this.store, this.uri);
-    }
-
-    /** @returns {Promise<T>} */
-    get loaded() {
-        return getLoadedInStore(this.store, this.uri);
+        /** @type {AssetManager} */
+        this.source = null;
+        /** @type {T} */
+        this.current = null;
     }
 
     /**
-     * @param {AssetStore} store
-     * @param {number} [timeout] The time to wait until error for loader.
-     * @param {T} [cached] If defined, will cache this value instead of fetch and loading from source.
-     * @returns {Promise<AssetRef<T>>}
+     * @param {AssetManager} assetManager 
+     * @param {T} value 
      */
-    async preload(store, timeout = undefined, cached = undefined) {
-        this.store = store;
-        if (typeof cached !== 'undefined') {
-            cacheInStore(store, this.uri, cached);
+    cache(assetManager, value) {
+        assetManager.cache(this.uri, value);
+        this.source = assetManager;
+        this.current = value;
+        return this;
+    }
+
+    /**
+     * @param {AssetManager} assetManager 
+     * @returns {T}
+     */
+    get(assetManager) {
+        let result;
+        if (!assetManager.exists(this.uri)) {
+            if (this.initial && this.initial instanceof AssetRef) {
+                result = this.initial.get(assetManager);
+            } else {
+                result = this.initial;
+            }
         } else {
-            await loadInStore(this.store, this.uri, this.source, this.loader, timeout);
+            result = assetManager.current(this.uri);
         }
-        return this;
+        this.source = assetManager;
+        this.current = result;
+        return result;
     }
 
     /**
-     * @returns {Promise<AssetRef<T>>}
+     * @param {AssetManager} assetManager 
+     * @param {number} [timeout]
      */
-    async unload() {
-        unloadInStore(this.store, this.uri);
-        this.store = null;
-        return this;
+    async load(assetManager, timeout = DEFAULT_TIMEOUT) {
+        let result;
+        if (!assetManager.exists(this.uri)) {
+            result = await assetManager.load(this.uri, this.filepath, this.loader, this.opts, timeout);
+            if (!result) {
+                if (this.initial && this.initial instanceof AssetRef) {
+                    let initial = this.initial;
+                    result = await assetManager.load(initial.uri, initial.filepath, initial.loader, initial.opts, timeout);
+                } else {
+                    result = this.initial;
+                }
+            }
+        } else {
+            result = assetManager.current(this.uri);
+        }
+        this.source = assetManager;
+        this.current = result;
+        return result;
+    }
+
+    /**
+     * @param {AssetManager} assetManager 
+     * @param {number} [timeout] 
+     */
+    async reload(assetManager, timeout = DEFAULT_TIMEOUT) {
+        let result = await assetManager.reload(this.uri, this.filepath, this.loader, this.opts, timeout);
+        this.source = assetManager;
+        this.current = result;
+        return result;
     }
 }

@@ -15,13 +15,14 @@ import { InputBindings } from './InputBindings.js';
  * @typedef {import('./InputBindings.js').BindingOptions} BindingOptions
  *
  * @typedef {import('./binding/InputBinding.js').InputBinding} InputBinding
- *
- * @typedef {string} InputName
  */
 
 /**
+ * @typedef {string} InputName
+ * 
  * @typedef {'bind'|'unbind'|'focus'|'blur'} InputContextEventType
  * @typedef {(e: InputContextEvent) => boolean} InputContextEventListener
+ * 
  * @typedef InputContextEvent
  * @property {InputContextEventType} type
  */

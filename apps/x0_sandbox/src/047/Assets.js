@@ -3,35 +3,41 @@ import { loadSound } from '../../src/audio/SoundLoader.js';
 
 export const SoundStart = new AssetRef(
   'sound://start.wav',
-  'res/start.wav',
-  loadSound
+  undefined,
+  loadSound,
+  'res/start.wav'
 );
 export const SoundDead = new AssetRef(
   'sound://dead.wav',
-  'res/dead.wav',
-  loadSound
+  undefined,
+  loadSound,
+  'res/dead.wav'
 );
 export const SoundPop = new AssetRef(
   'sound://pop.wav',
-  'res/boop.wav',
-  loadSound
+  undefined,
+  loadSound,
+  'res/boop.wav'
 );
 export const SoundShoot = new AssetRef(
   'sound://shoot.wav',
-  'res/click.wav',
-  loadSound
+  undefined,
+  loadSound,
+  'res/click.wav'
 );
 export const SoundBoom = new AssetRef(
   'sound://boom.wav',
-  'res/boom.wav',
-  loadSound
+  undefined,
+  loadSound,
+  'res/boom.wav'
 );
 export const BackgroundMusic = new AssetRef(
   'sound://music.wav',
-  'res/music.wav',
-  loadSound
+  undefined,
+  loadSound,
+  'res/music.wav'
 );
 
-export async function loadAssetRefs(refs) {
-  await Promise.all(refs.map(ref => ref.load()));
+export async function loadAssetRefs(refs, assets) {
+  await Promise.all(refs.map(ref => ref.load(assets)));
 }

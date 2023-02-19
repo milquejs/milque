@@ -18,7 +18,6 @@ import * as Fish from './Fish.js';
 import * as Ripple from './Ripple.js';
 import * as Player from './Player.js';
 import { game } from './Game.js';
-import { AssetManager } from '@milque/asset';
 
 /**
  * @typedef {import('@milque/display').DisplayPort} DisplayPort
@@ -30,7 +29,6 @@ import { AssetManager } from '@milque/asset';
 window.addEventListener('DOMContentLoaded', main);
 async function main() {
   const g = game();
-  await AssetManager.loadAssetPackAsRaw('res.pack');
   await start(g);
 }
 
@@ -45,7 +43,7 @@ async function start(game) {
   let canvasHeight = display.height;
 
   initInputs(game.inputs);
-  await initAssets();
+  await initAssets(game.assets);
 
   await Sky.load(game);
   await Sea.load(game);

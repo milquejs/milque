@@ -1,6 +1,6 @@
 {
   "name": "@milque/asset",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "An asset manager with async loading.",
   "main": "dist/milque-asset.cjs.js",
   "module": "dist/milque-asset.esm.js",

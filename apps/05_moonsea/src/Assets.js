@@ -1,17 +1,18 @@
-import { AssetManager, AssetRef } from '@milque/asset';
-import { loadImage } from './loader/ImageLoader.js';
+import { AssetManager, AssetRef, cacheAssetPackAsRaw, preloadAssetRefs, ImageLoader } from '@milque/asset';
 import { loadSound } from './sound/SoundLoader.js';
 
 export const ASSETS = {
-  CanoeImage: new AssetRef('canoe', 'raw://canoe.png', loadImage),
-  PierImage: new AssetRef('pier', 'raw://pier.png', loadImage),
-  PierLegImage: new AssetRef('pierLeg', 'raw://pier_leg.png', loadImage),
-  BucketImage: new AssetRef('bucket', 'raw://bucket.png', loadImage),
-  MusicBack: new AssetRef('musicBack', 'raw://music_back.wav', loadSound),
-  MusicLayer1: new AssetRef('musicLayer1', 'raw://music_1.wav', loadSound),
-  MusicLayer2: new AssetRef('musicLayer2', 'raw://music_2.wav', loadSound),
+  CanoeImage: new AssetRef('canoe', ImageLoader, undefined, 'raw://canoe.png'),
+  PierImage: new AssetRef('pier', ImageLoader, undefined, 'raw://pier.png'),
+  PierLegImage: new AssetRef('pierLeg', ImageLoader, undefined, 'raw://pier_leg.png'),
+  BucketImage: new AssetRef('bucket', ImageLoader, undefined, 'raw://bucket.png'),
+  MusicBack: new AssetRef('musicBack', loadSound, undefined, 'raw://music_back.wav'),
+  MusicLayer1: new AssetRef('musicLayer1', loadSound, undefined, 'raw://music_1.wav'),
+  MusicLayer2: new AssetRef('musicLayer2', loadSound, undefined, 'raw://music_2.wav'),
 };
 
-export async function initAssets() {
-  await AssetManager.loadAssetRefs(Object.values(ASSETS));
+/** @param {AssetManager} assets */
+export async function initAssets(assets) {
+  await cacheAssetPackAsRaw(assets, 'res.pack');
+  await preloadAssetRefs(assets, Object.values(ASSETS));
 }

@@ -1,9 +1,9 @@
 import { DisplayPort } from '@milque/display';
 import { InputPort } from '@milque/input';
-import { AssetManager } from '@milque/asset';
+import { AssetManager, cacheAssetPackAsRaw, preloadAssetRefs } from '@milque/asset';
 import { EntityManager, EventTopic, PriorityEventTopic } from '@milque/scene';
 
-import { Assets, loadAssets } from './assets.js';
+import { Assets } from './Assets.js';
 import * as Inputs from './Inputs.js';
 
 import { PlayerSystem } from './Player.js';
@@ -41,15 +41,12 @@ export async function main() {
 }
 
 async function init() {
-  console.log('Loading...');
-  await loadAssets();
-  console.log('...loading complete!');
-
   const systemManager = new SystemManager();
   systemManager
     .register(DisplayPortProvider)
     .register(InputPortProvider)
     .register(EntityManagerProvider, undefined, (state) => state.reset())
+    .register(AssetManagerProvider)
     .register(AsteroidGame)
     .register(StarfieldSystem)
     .register(ParticleSystem)
@@ -75,9 +72,11 @@ export function nextLevel(scene) {
   }
 }
 
-export async function AssetProvider(m) {
-  await AssetManager.loadAssetPackAsRaw('res.pack');
-  await AssetManager.loadAssetRefs(Object.values(Assets));
+export async function AssetManagerProvider(m) {
+  const assets = new AssetManager();
+  await cacheAssetPackAsRaw(assets, 'res.pack');
+  await preloadAssetRefs(assets, Object.values(Assets));
+  return assets;
 }
 
 export function InputPortProvider() {

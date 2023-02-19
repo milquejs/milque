@@ -1,4 +1,4 @@
-import { AssetManager } from '@milque/asset';
+import { preloadAssetRefs } from '@milque/asset';
 import { clamp } from '@milque/util';
 import { INPUTS } from './Inputs.js';
 import { drawRippleEffect } from './Ripple.js';
@@ -12,7 +12,7 @@ export const ASSETS = {};
 
 /** @param {Game} game */
 export async function load(game) {
-  await AssetManager.loadAssetRefs(Object.values(ASSETS));
+  await preloadAssetRefs(game.assets, Object.values(ASSETS));
 }
 
 const REELING_NEAR_RANGE = 4;

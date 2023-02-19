@@ -37,7 +37,7 @@ import {
 } from './Config.js';
 import { ASSETS } from './asset/Assets.js';
 import { loadAudio } from './asset/Audio.js';
-import { AssetManager } from '@milque/asset';
+import { AssetManager, cacheAssetPackAsRaw } from '@milque/asset';
 
 // TODO: Move the camera towards the placed block each time.
 // TODO: Regionize the block maps.
@@ -50,7 +50,6 @@ import { AssetManager } from '@milque/asset';
  * @typedef {import('@milque/display').DisplayPort} DisplayPort
  * @typedef {import('@milque/display').FrameEvent} FrameEvent
  * @typedef {import('@milque/input').InputContext} InputContext
- * @typedef {import('@milque/asset').AssetPack} AssetPack
  */
 
 document.addEventListener('DOMContentLoaded', main);
@@ -77,8 +76,9 @@ async function main() {
   inputs.bindButton('Save', 'Keyboard', 'KeyS');
   inputs.bindButton('Load', 'Keyboard', 'KeyL');
 
-  await AssetManager.loadAssetPackAsRaw('res.pack');
-  await load(AssetManager);
+  const assets = new AssetManager();
+  await cacheAssetPackAsRaw(assets, 'res.pack');
+  await load(assets);
 
   // Initialize world
   const world = {

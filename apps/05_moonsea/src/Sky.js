@@ -1,7 +1,6 @@
 import { Random } from '@milque/random';
 import { clamp } from '@milque/util';
-import { AssetManager, AssetRef } from '@milque/asset';
-import { loadImage } from './loader/ImageLoader.js';
+import { AssetRef, preloadAssetRefs, ImageLoader } from '@milque/asset';
 import { hex } from './renderer/color.js';
 import { cloudyDaylightColor, getDayDelta, getDayIndex, mixDaylightColor, spicyDaylightColor } from './Colors.js';
 
@@ -17,19 +16,20 @@ const SKY_SHADE_COUNT = 6;
 const SKY_CLOUD_COUNT = 8;
 
 export const ASSETS = {
-  StarImage: new AssetRef('star.png', 'raw://star.png', loadImage),
+  StarImage: new AssetRef('star.png', ImageLoader, undefined, 'raw://star.png'),
   BlurStrokeImage: new AssetRef(
     'blur_stroke.png',
-    'raw://blur_stroke.png',
-    loadImage
+    ImageLoader,
+    undefined,
+    'raw://blur_stroke.png'
   ),
-  CircleImage: new AssetRef('circle.png', 'raw://circle.png', loadImage),
-  CloudImage: new AssetRef('cloud.png', 'raw://cloud.png', loadImage),
+  CircleImage: new AssetRef('circle.png', ImageLoader, undefined, 'raw://circle.png'),
+  CloudImage: new AssetRef('cloud.png', ImageLoader, undefined, 'raw://cloud.png'),
 };
 
 /** @param {Game} game */
 export async function load(game) {
-  await AssetManager.loadAssetRefs(Object.values(ASSETS));
+  await preloadAssetRefs(game.assets, Object.values(ASSETS));
 }
 
 /** @param {Game} game */

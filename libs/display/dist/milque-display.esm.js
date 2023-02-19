@@ -9,6 +9,14 @@ var INNER_STYLE = ":host {\n  display: inline-block;\n  color: #555555;\n}\n\n.c
 const MODE_NOSCALE = 'noscale';
 
 /**
+ * No scaling is applied, but the element fills the
+ * entire viewport. The canvas size maintains a 1:1
+ * pixel ratio to the defined display dimensions and
+ * is centered inside the scaled element.
+ */
+const MODE_CENTER = 'center';
+
+/**
  * Scales the canvas to fill the entire viewport and
  * maintains the same aspect ratio. This will adjust
  * canvas resolution to fit the viewport dimensions.
@@ -120,6 +128,32 @@ const DELAYED_RESIZE_MILLIS = 200;
  * boolean attribute `full` to force the dimensions to be the actual window size.
  */
 class DisplayPort extends HTMLElement {
+
+  /**
+   * @param {object} [opts]
+   * @param {HTMLElement} [opts.root]
+   * @param {DisplayScaling} [opts.mode]
+   * @param {number} [opts.width]
+   * @param {number} [opts.height]
+   * @param {boolean} [opts.debug]
+   */
+  static create(opts = {}) {
+    const {
+      root = document.body,
+      mode = DEFAULT_MODE,
+      width = DEFAULT_WIDTH,
+      height = DEFAULT_HEIGHT,
+      debug = false
+    } = opts || {};
+    let result = new DisplayPort();
+    result.mode = mode;
+    result.width = width;
+    result.height = height;
+    result.debug = debug;
+    root.appendChild(result);
+    return result;
+  }
+
   /** @private */
   static get [Symbol.for('templateNode')]() {
     let t = document.createElement('template');
@@ -427,17 +461,17 @@ class DisplayPort extends HTMLElement {
 
   /** Pause animation of the display frames. */
   pause() {
-    cancelAnimationFrame(this._animationRequestHandle);
+    window.cancelAnimationFrame(this._animationRequestHandle);
   }
 
   /** Resume animation of the display frames. */
   resume() {
-    this._animationRequestHandle = requestAnimationFrame(this.update);
+    this._animationRequestHandle = window.requestAnimationFrame(this.update);
   }
 
   /** @private */
   update(now) {
-    this._animationRequestHandle = requestAnimationFrame(this.update);
+    this._animationRequestHandle = window.requestAnimationFrame(this.update);
     this.updateCanvasSize(false);
     const deltaTime = now - this._prevAnimationFrameTime;
     this._prevAnimationFrameTime = now;
@@ -478,7 +512,7 @@ class DisplayPort extends HTMLElement {
 
   /** @private */
   onDelayCanvasResize() {
-    this._resizeTimeoutHandle = 0;
+    this._resizeTimeoutHandle = null;
     this.updateCanvasSize(true);
   }
 
@@ -491,9 +525,9 @@ class DisplayPort extends HTMLElement {
       this._resizeCanvasWidth = canvasWidth;
       this._resizeCanvasHeight = canvasHeight;
       if (this._resizeTimeoutHandle) {
-        clearTimeout(this._resizeTimeoutHandle);
+        window.clearTimeout(this._resizeTimeoutHandle);
       }
-      this._resizeTimeoutHandle = setTimeout(
+      this._resizeTimeoutHandle = window.setTimeout(
         this.onDelayCanvasResize,
         DELAYED_RESIZE_MILLIS
       );
@@ -588,5 +622,5 @@ function upgradeProperty(element, propertyName) {
   }
 }
 
-export { DisplayPort };
+export { DisplayPort, MODE_CENTER, MODE_FILL, MODE_FIT, MODE_NOSCALE, MODE_SCALE, MODE_STRETCH };
 //# sourceMappingURL=milque-display.esm.js.map

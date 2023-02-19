@@ -1,5 +1,5 @@
 import { getUniformFunction } from './ProgramUniformFunctions.js';
-import { getActiveUniforms } from './ProgramActives.js';
+import { getActiveUniforms } from './helper/ProgramActives.js';
 
 /**
  * @typedef {import('./ProgramUniformFunctions').UniformFunction} UniformFunction

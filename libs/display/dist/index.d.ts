@@ -1,4 +1,53 @@
 /**
+ * No scaling is applied. The canvas size maintains a
+ * 1:1 pixel ratio to the defined display dimensions.
+ */
+declare const MODE_NOSCALE: "noscale";
+/**
+ * No scaling is applied, but the element fills the
+ * entire viewport. The canvas size maintains a 1:1
+ * pixel ratio to the defined display dimensions and
+ * is centered inside the scaled element.
+ */
+declare const MODE_CENTER: "center";
+/**
+ * Scales the canvas to fill the entire viewport and
+ * maintains the same aspect ratio. This will adjust
+ * canvas resolution to fit the viewport dimensions.
+ * In other words, the canvas pixel size remains
+ * constant, but the number of pixels in the canvas
+ * will increase or decrease to compensate. This is
+ * the default scaling mode.
+ */
+declare const MODE_FIT: "fit";
+/**
+ * Scales the canvas to fill the entire viewport and
+ * maintains the same aspect ratio and pixel
+ * resolution. This will upscale and downscale the
+ * pixel size depending on the viewport dimentions
+ * in order to preserve the canvas pixel count. In
+ * other words, the number of pixels in the canvas
+ * remain constant but appear larger or smaller to
+ * compensate.
+ */
+declare const MODE_SCALE: "scale";
+/**
+ * Resizes the canvas to fill the entire viewport.
+ * This does not maintain the aspect ratio nor pixel
+ * count (adds and removes pixels to fill size). If you
+ * care about aspect ratio but not pixel count, consider
+ * using 'fit' mode instead.
+ */
+declare const MODE_FILL: "fill";
+/**
+ * Scales the canvas to fill the entire viewport.
+ * This does not maintain the aspect ratio but
+ * does preserve pixel count (by stretching the pixel
+ * size). If you care about aspect ratio and pixel
+ * count, consider using 'scale' mode instead.
+ */
+declare const MODE_STRETCH: "stretch";
+/**
  * @typedef {CustomEvent} FrameEvent
  * @property {number} detail.now
  * The current time in milliseconds.
@@ -50,6 +99,21 @@
  * boolean attribute `full` to force the dimensions to be the actual window size.
  */
 declare class DisplayPort extends HTMLElement {
+    /**
+     * @param {object} [opts]
+     * @param {HTMLElement} [opts.root]
+     * @param {DisplayScaling} [opts.mode]
+     * @param {number} [opts.width]
+     * @param {number} [opts.height]
+     * @param {boolean} [opts.debug]
+     */
+    static create(opts?: {
+        root?: HTMLElement;
+        mode?: DisplayScaling;
+        width?: number;
+        height?: number;
+        debug?: boolean;
+    }): DisplayPort;
     static define(customElements?: CustomElementRegistry): void;
     /**
      * @protected
@@ -174,6 +238,7 @@ declare class DisplayPort extends HTMLElement {
     /** @private */
     private updateCanvasSize;
 }
+type FrameEvent = CustomEvent;
 type DisplayScaling = "center" | "fit" | "noscale" | "scale" | "fill" | "stretch";
 
-export { DisplayPort };
+export { DisplayPort, DisplayScaling, FrameEvent, MODE_CENTER, MODE_FILL, MODE_FIT, MODE_NOSCALE, MODE_SCALE, MODE_STRETCH };

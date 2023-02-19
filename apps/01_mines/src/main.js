@@ -2,11 +2,13 @@ import '@milque/display';
 import '@milque/input';
 import './error.js';
 
+import { AssetManager, cacheAssetPackAsRaw } from '@milque/asset';
+import { InputPort } from '@milque/input';
+
 import * as MainScene from './MainScene.js';
 import * as MainRender from './MainRender.js';
 
 import { attach } from './MinesControls.js';
-import { AssetManager } from '@milque/asset';
 
 /**
  * @typedef {import('@milque/display').DisplayPort} DisplayPort
@@ -45,12 +47,11 @@ async function main() {
   const ctx = display.canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
 
-  /** @type {InputContext} */
-  const inputs = document.querySelector('input-port').getContext('axisbutton');
+  const inputs = /** @type {InputPort} */ (document.querySelector('input-port')).getContext('axisbutton');
   attach(inputs);
 
-  const assets = AssetManager;
-  await AssetManager.loadAssetPackAsRaw('res.pack');
+  const assets = new AssetManager();
+  await cacheAssetPackAsRaw(assets, 'res.pack');
 
   const world = { display };
   await MainRender.load.call(world, assets);

@@ -2,8 +2,9 @@ import '@milque/display';
 import { Random } from '@milque/random';
 import './error.js';
 
-import { Assets, loadAssets } from './assets.js';
+import * as Assets from './assets.js';
 import * as Starfield from './Starfield.js';
+import { AssetManager, preloadAssetRefs, cacheAssetPackAsRaw } from '@milque/asset';
 
 /**
  * @typedef {import('@milque/display').DisplayPort} DisplayPort
@@ -107,7 +108,9 @@ let SHOW_COLLISION = false;
 
 async function load() {
   console.log('Loading...');
-  await loadAssets();
+  this.assets = new AssetManager();
+  await cacheAssetPackAsRaw(this.assets, 'res.pack');
+  await preloadAssetRefs(this.assets, Object.values(Assets));
   console.log('...loading complete!');
 }
 

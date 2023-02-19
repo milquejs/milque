@@ -1,4 +1,4 @@
-import { createShader, createShaderProgram } from './ProgramHelper.js';
+import { createShader, createShaderProgram } from './helper/ProgramHelper.js';
 
 export class ProgramBuilder {
   /**

@@ -1,6 +1,6 @@
 import { BufferInfo } from './BufferInfo.js';
 import { BufferBuilder } from './BufferBuilder.js';
-import { getBufferTypeForBufferSource, getBufferTypeForTypedArray } from './BufferHelper.js';
+import { getBufferTypeForBufferSource, getBufferTypeForTypedArray } from './helper/BufferHelper.js';
 
 export class BufferInfoBuilder {
   /**

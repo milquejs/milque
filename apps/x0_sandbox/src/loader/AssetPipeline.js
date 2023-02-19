@@ -1,12 +1,14 @@
 import { AssetManager, GlobExp } from '@milque/asset';
 
 export class AssetPipeline {
-  constructor() {
+  constructor(assets) {
     /**
      * @private
      * @type {Record<string, PipelineStage>}
      */
     this._pipeline = {};
+
+    this.assets = assets;
   }
 
   /**
@@ -28,9 +30,9 @@ export class AssetPipeline {
     stage.addHandler(handler);
 
     // Process old assets with new handler...
-    for(let uri of AssetManager.keys()) {
+    for(let uri of this.assets.keys()) {
       if (stage.matches(uri)) {
-        await handler(AssetManager.current(uri), uri);
+        await handler(this.assets.current(uri), uri);
       }
     }
   }

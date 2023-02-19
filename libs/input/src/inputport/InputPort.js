@@ -10,11 +10,30 @@ import { InputContext } from '../InputContext';
  * @typedef {import('../InputBindings.js').DeviceName} DeviceName
  * @typedef {import('../InputBindings.js').KeyCode} KeyCode
  * @typedef {import('../InputBindings.js').BindingOptions} BindingOptions
- *
- * @typedef {string} InputName
+ * @typedef {import('../InputContext').InputName} InputName
  */
 
 export class InputPort extends HTMLElement {
+
+  /**
+   * @param {object} [opts]
+   * @param {HTMLElement} [opts.root]
+   * @param {string} [opts.for]
+   * @param {boolean} [opts.autopoll]
+   */
+  static create(opts = {}) {
+    const {
+      root = document.body,
+      for: forId = undefined,
+      autopoll = false,
+    } = opts || {};
+    let result = new InputPort();
+    result.for = forId;
+    result.autopoll = autopoll;
+    root.appendChild(result);
+    return result;
+  }
+
   /** @protected */
   static get [Symbol.for('templateNode')]() {
     let t = document.createElement('template');
@@ -123,7 +142,7 @@ export class InputPort extends HTMLElement {
     // Make sure the table and values are up to date
     this.updateTable();
     this.updateTableValues();
-    this.animationFrameHandle = requestAnimationFrame(this.onAnimationFrame);
+    this.animationFrameHandle = window.requestAnimationFrame(this.onAnimationFrame);
   }
 
   disconnectedCallback() {
@@ -170,7 +189,7 @@ export class InputPort extends HTMLElement {
 
   /** @private */
   onAnimationFrame() {
-    this.animationFrameHandle = requestAnimationFrame(this.onAnimationFrame);
+    this.animationFrameHandle = window.requestAnimationFrame(this.onAnimationFrame);
     this.updateTableValues();
     this.updatePollStatus();
   }

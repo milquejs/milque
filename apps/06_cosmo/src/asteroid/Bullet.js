@@ -1,6 +1,6 @@
 import { ComponentClass, EntityManager, EntityQuery } from '@milque/scene';
 
-import { Assets } from './assets.js';
+import { Assets } from './Assets.js';
 import { ASTEROID_BREAK_DAMP_FACTOR, breakUpAsteroid, explodeAsteroid } from './Asteroid.js';
 import { AsteroidGame, useNextLevel } from './AsteroidGame.js';
 import { useSystem } from './lib/M.js';

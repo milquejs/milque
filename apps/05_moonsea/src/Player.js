@@ -1,4 +1,4 @@
-import { AssetManager } from '@milque/asset';
+import { preloadAssetRefs } from '@milque/asset';
 import { FISHING_STATE } from './Fisher.js';
 import { INPUTS } from './Inputs.js';
 
@@ -11,7 +11,7 @@ const ASSETS = {};
 
 /** @param {Game} game */
 export async function load(game) {
-  await AssetManager.loadAssetRefs(Object.values(ASSETS));
+  await preloadAssetRefs(game.assets, Object.values(ASSETS));
 }
 
 /** @param {Game} game */

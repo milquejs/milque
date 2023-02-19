@@ -1,5 +1,4 @@
 import '@milque/display';
-import '@milque/asset';
 import { Random } from '@milque/random';
 
 import * as Starfield from './Starfield.js';
@@ -99,7 +98,7 @@ export async function main(game) {
   async function load() {
     console.log('Loading...');
     inputs.bindBindings(Object.values(Inputs));
-    Assets.loadAssetRefs(Object.values(Assets));
+    Assets.loadAssetRefs(Object.values(Assets), assets);
     console.log('...loading complete!');
   }
 

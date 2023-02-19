@@ -1,4 +1,4 @@
-import { loadImage } from './ImageLoader.js';
+import { ImageLoader } from '@milque/asset';
 
 const ASSETS = {
   LOADED: false,
@@ -11,9 +11,9 @@ const ASSETS = {
  * @param {import('@milque/asset').AssetManager} assets
  */
 export async function load(assets) {
-  ASSETS.TILE_IMAGE = await loadImage(assets.get('raw://tile.png'));
-  ASSETS.NUMS_IMAGE = await loadImage(assets.get('raw://nums.png'));
-  ASSETS.MARK_IMAGE = await loadImage(assets.get('raw://flag.png'));
+  ASSETS.TILE_IMAGE = await ImageLoader(/** @type {ArrayBuffer} */ (assets.get('raw://tile.png')));
+  ASSETS.NUMS_IMAGE = await ImageLoader(/** @type {ArrayBuffer} */ (assets.get('raw://nums.png')));
+  ASSETS.MARK_IMAGE = await ImageLoader(/** @type {ArrayBuffer} */ (assets.get('raw://flag.png')));
   ASSETS.LOADED = true;
 }
 

@@ -551,7 +551,7 @@ class PriorityQueue {
    * @param {...T} values
    */
   push(...values) {
-    for (const value of values) {
+    for (let value of values) {
       this._heap.push(value);
       this._shiftUp();
     }

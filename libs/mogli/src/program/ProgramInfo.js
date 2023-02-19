@@ -1,6 +1,6 @@
 import { getActiveUniformsInfo } from './ProgramUniformInfo.js';
 import { getActiveAttribsInfo } from './ProgramAttributeInfo.js';
-import { draw } from './ProgramHelper.js';
+import { draw } from './helper/ProgramHelper.js';
 
 export class ProgramInfo {
   /**

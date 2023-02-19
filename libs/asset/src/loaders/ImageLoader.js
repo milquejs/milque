@@ -1,9 +1,11 @@
 /**
- * @param {string|ArrayBuffer} src 
- * @param {string} imageType 
+ * @param {string|ArrayBuffer} src
+ * @param {object} [opts]
+ * @param {string} [opts.imageType]
  * @returns {Promise<HTMLImageElement>}
  */
-export async function loadImage(src, imageType = undefined) {
+export async function ImageLoader(src, opts = undefined) {
+  let { imageType = undefined } = opts || {};
   if (typeof src === 'string') {
     const response = await fetch(src);
     const arrayBuffer = await response.arrayBuffer();
@@ -15,7 +17,7 @@ export async function loadImage(src, imageType = undefined) {
         imageType = 'image/' + src.slice(i + 1);
       }
     }
-    return loadImage(arrayBuffer, imageType);
+    return ImageLoader(arrayBuffer, { ...opts, imageType });
   } else if (!(src instanceof ArrayBuffer || ArrayBuffer.isView(src))) {
     throw new Error(
       'Cannot load from source - must be ' + 'an array buffer or fetchable url'
