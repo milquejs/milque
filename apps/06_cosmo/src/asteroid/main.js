@@ -1,9 +1,8 @@
 import { DisplayPort } from '@milque/display';
 import { InputPort } from '@milque/input';
-import { AssetManager, cacheAssetPackAsRaw, preloadAssetRefs } from '@milque/asset';
+import { AssetManager, cacheAssetPackAsRaw } from '@milque/asset';
 import { EntityManager, EventTopic, PriorityEventTopic } from '@milque/scene';
 
-import { Assets } from './Assets.js';
 import * as Inputs from './Inputs.js';
 
 import { PlayerSystem } from './Player.js';
@@ -14,7 +13,7 @@ import { BulletSystem } from './Bullet.js';
 import { StarfieldSystem } from './Starfield.js';
 import { createAnimationFrameLoop, useSystem } from './lib/M';
 import { SystemManager } from './lib/system/SystemManager.js';
-import { AsteroidGame, NextLevelEvent } from './AsteroidGame.js';
+import { AsteroidGame, BackgroundMusic, NextLevelEvent } from './AsteroidGame.js';
 import { AsteroidSystem } from './Asteroid.js';
 
 
@@ -67,15 +66,14 @@ export function nextLevel(scene) {
 
   NextLevelEvent.dispatchImmediately(scene);
 
-  if (!Assets.BackgroundMusic.current.isPlaying()) {
-    Assets.BackgroundMusic.current.play({ loop: true });
+  if (!BackgroundMusic.current.isPlaying()) {
+    BackgroundMusic.current.play({ loop: true });
   }
 }
 
 export async function AssetManagerProvider(m) {
   const assets = new AssetManager();
   await cacheAssetPackAsRaw(assets, 'res.pack');
-  await preloadAssetRefs(assets, Object.values(Assets));
   return assets;
 }
 

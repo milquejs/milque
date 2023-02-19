@@ -1,4 +1,4 @@
-/** @typedef {() => void|AfterEffectHandler|Promise<AfterEffectHandler>} EffectHandler */
+/** @typedef {() => void|Promise<void>|AfterEffectHandler|Promise<AfterEffectHandler>} EffectHandler */
 /** @typedef {() => void|Promise<void>} AfterEffectHandler */
 
 export class EffectManager {

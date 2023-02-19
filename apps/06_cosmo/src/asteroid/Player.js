@@ -6,8 +6,8 @@ import { BULLET_SPEED, countBullets, MAX_BULLET_COUNT, spawnBullet } from './Bul
 import { explode } from './Explode.js';
 import { ComponentClass, EntityManager, EntityQuery } from '@milque/scene';
 
-import { useSystem } from './lib/M.js';
-import { AssetManagerProvider, DisplayPortProvider, EntityManagerProvider, useDraw, useUpdate } from './main.js';
+import { usePreloadedAssets, useSystem } from './lib/M.js';
+import { DisplayPortProvider, EntityManagerProvider, useDraw, useUpdate } from './main.js';
 import { MAX_PARTICLE_AGE, spawnParticle } from './Particle.js';
 import { FLASH_TIME_STEP, wrapAround } from './util.js';
 import { loadSound } from './SoundLoader.js';
@@ -62,11 +62,11 @@ export function PlayerSystem(m) {
     const { canvas } = useSystem(m, DisplayPortProvider);
     const ents = useSystem(m, EntityManagerProvider);
     const scene = useSystem(m, AsteroidGame);
-    const assets = useSystem(m, AssetManagerProvider);
-
-    PlayerBoomSound.load(assets);
-    PlayerDeadSound.load(assets);
-    PlayerShootSound.load(assets);
+    usePreloadedAssets(m, [
+        PlayerBoomSound,
+        PlayerDeadSound,
+        PlayerShootSound
+    ]);
 
     let player = spawnPlayer(canvas, ents);
     scene.player = player;

@@ -1,4 +1,6 @@
 import { AnimationFrameLoop } from '@milque/scene';
+import { AssetRef } from '@milque/asset';
+import { AssetManagerProvider } from '../main';
 
 /**
  * @template T
@@ -40,4 +42,15 @@ export function useEffect(m, callback) {
  */
 export function useAfterEffect(m, callback) {
     m.after(callback);
+}
+
+/**
+ * @param {M} m 
+ * @param {Array<AssetRef<?, ?>>} assetRefs 
+ */
+export function usePreloadedAssets(m, assetRefs) {
+    const assets = useSystem(m, AssetManagerProvider);
+    m.before(async () => {
+        Promise.allSettled(assetRefs.map(assetRef => assetRef.load(assets)));
+    });
 }

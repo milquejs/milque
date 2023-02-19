@@ -1,18 +1,21 @@
 import { EventTopic } from '@milque/scene';
 
-import { Assets } from './Assets.js';
-
 import { DEBUG } from './util.js';
 import { createAsteroidSpawner, drawAsteroids, updateAsteroids, updateAsteroidSpawner } from './Asteroid.js';
 import { drawCollisionCircle, FLASH_TIME_STEP } from './util.js';
 import { PLAYER_RADIUS } from './Player.js';
 import { createPowerUpSpawner, drawPowerUps, updatePowerUps, updatePowerUpSpawner, PowerUp } from './PowerUp.js';
 
-import { useSystem } from './lib/M';
+import { usePreloadedAssets, useSystem } from './lib/M';
 import { AssetManagerProvider, DisplayPortProvider, EntityManagerProvider, InputPortProvider, nextLevel, useDraw, useUpdate } from './main.js';
 import { Debug, MoveDown, MoveLeft, MoveRight, MoveUp, Shoot } from './Inputs.js';
+import { AssetRef } from '@milque/asset';
+import { loadSound } from './SoundLoader.js';
 
 const INSTRUCTION_HINT_TEXT = '[ wasd_ ]';
+
+export const GameStartSound = new AssetRef('game.start', loadSound, undefined, 'raw://start.wav');
+export const BackgroundMusic = new AssetRef('background.music', loadSound, undefined, 'raw://music.wav');
 
 export const NextLevelEvent = new EventTopic();
 
@@ -31,6 +34,10 @@ export function AsteroidGame(m) {
     const ents = useSystem(m, EntityManagerProvider);
     const assets = useSystem(m, AssetManagerProvider);
     const { ctx: ab } = useSystem(m, InputPortProvider);
+    usePreloadedAssets(m, [
+        GameStartSound,
+        BackgroundMusic
+    ]);
 
     this.ents = ents;
     this.assets = assets;
@@ -79,7 +86,7 @@ export function AsteroidGame(m) {
         if (!this.gamePause && this.asteroids.length <= 0) {
             this.gamePause = true;
             this.showPlayer = true;
-            Assets.SoundStart.current.play();
+            GameStartSound.current.play();
             setTimeout(() => (this.gameWait = true), 1000);
         }
     });
@@ -88,7 +95,7 @@ export function AsteroidGame(m) {
         if (ab.isAnyButtonPressed()) {
             if (this.gameWait) {
                 if (this.gameStart) {
-                    Assets.BackgroundMusic.current.play();
+                    BackgroundMusic.current.play();
                     this.score = 0;
                     this.flashScore = 1;
                     this.level = 0;

@@ -1,10 +1,11 @@
+import { AssetRef } from '@milque/asset';
 import { ComponentClass, EntityManager, EntityQuery } from '@milque/scene';
 
-import { Assets } from './Assets.js';
 import { ASTEROID_BREAK_DAMP_FACTOR, breakUpAsteroid, explodeAsteroid } from './Asteroid.js';
 import { AsteroidGame, useNextLevel } from './AsteroidGame.js';
-import { useSystem } from './lib/M.js';
+import { usePreloadedAssets, useSystem } from './lib/M.js';
 import { DisplayPortProvider, EntityManagerProvider, useDraw, useUpdate } from './main.js';
+import { loadSound } from './SoundLoader.js';
 import { drawCollisionCircle, withinRadius, wrapAround } from './util.js';
 
 export const BULLET_SPEED = 4;
@@ -15,6 +16,8 @@ const MAX_BULLET_AGE = 2000;
 
 export const BULLET_DRAW_LAYER_INDEX = 5;
 
+export const BulletPopSound = new AssetRef('bullet.pop', loadSound, undefined, 'raw://boop.wav');
+
 export const Bullet = new ComponentClass('Bullet', () => ({
     x: 0,
     y: 0,
@@ -24,6 +27,31 @@ export const Bullet = new ComponentClass('Bullet', () => ({
     age: 0,
 }));
 export const BulletQuery = new EntityQuery(Bullet);
+
+export function BulletSystem(m) {
+    const ents = useSystem(m, EntityManagerProvider);
+    const { canvas } = useSystem(m, DisplayPortProvider);
+    const scene = useSystem(m, AsteroidGame);
+    usePreloadedAssets(m, [
+        BulletPopSound
+    ]);
+
+    useNextLevel(m, () => {
+        ents.clear(Bullet);
+    });
+
+    useUpdate(m, ({ deltaTime: dt }) => {
+        onUpdate(dt, scene, canvas, ents);
+    });
+
+    useDraw(m, BULLET_DRAW_LAYER_INDEX, (ctx) => {
+        onDraw(ctx, ents);
+    });
+
+    return {
+        spawnBullet,
+    };
+}
 
 /**
  * @param {number} dt 
@@ -62,7 +90,7 @@ function onUpdate(dt, scene, canvas, ents) {
                     localStorage.setItem('highscore', `${scene.highScore}`);
                 }
                 explodeAsteroid(scene, asteroid);
-                Assets.SoundPop.current.play();
+                BulletPopSound.current.play();
                 ents.destroy(entityId);
                 breakUpAsteroid(
                     scene,
@@ -94,28 +122,6 @@ function onDraw(ctx, ents) {
 
         drawCollisionCircle(ctx, bullet.x, bullet.y, BULLET_RADIUS);
     }
-}
-
-export function BulletSystem(m) {
-    const ents = useSystem(m, EntityManagerProvider);
-    const { canvas } = useSystem(m, DisplayPortProvider);
-    const scene = useSystem(m, AsteroidGame);
-
-    useNextLevel(m, () => {
-        ents.clear(Bullet);
-    });
-
-    useUpdate(m, ({ deltaTime: dt }) => {
-        onUpdate(dt, scene, canvas, ents);
-    });
-
-    useDraw(m, BULLET_DRAW_LAYER_INDEX, (ctx) => {
-        onDraw(ctx, ents);
-    });
-
-    return {
-        spawnBullet,
-    };
 }
 
 /**
