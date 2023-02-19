@@ -1,5 +1,8 @@
 import { DisplayPort } from '@milque/display';
 import { InputPort } from '@milque/input';
+import { AssetManager } from '@milque/asset';
+import { EntityManager, EventTopic, PriorityEventTopic } from '@milque/scene';
+
 import { Assets, loadAssets } from './assets.js';
 import * as Inputs from './Inputs.js';
 
@@ -12,11 +15,7 @@ import { StarfieldSystem } from './Starfield.js';
 import { createAnimationFrameLoop, useSystem } from './lib/M';
 import { SystemManager } from './lib/system/SystemManager.js';
 import { AsteroidGame, NextLevelEvent } from './AsteroidGame.js';
-import { EventTopic } from './lib/topic/EventTopic.js';
-import { PriorityEventTopic } from './lib/topic/PriorityEventTopic.js';
-import { EntityManager } from './lib/entity/EntityManager.js';
 import { AsteroidSystem } from './Asteroid.js';
-import { AssetManager } from '@milque/asset';
 
 
 /** @typedef {{ deltaTime: number, currentTime: number }} UpdateEventAttachment */

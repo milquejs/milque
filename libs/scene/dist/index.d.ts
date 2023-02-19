@@ -569,4 +569,31 @@ type PriorityTopicOptions<T> = {
     callback: PriorityTopicCallback<T>;
 };
 
-export { Camera, CommandTopic, ComponentClass, ComponentClassMap, ComponentInstanceMap, ComponentInstancesOf, ComponentName, EntityId, EntityManager, EntityQuery, EntityTemplate, EventTopic, EventTopicCallback, FirstPersonCameraController, OrthographicCamera, PerspectiveCamera, PriorityEventTopic, PriorityTopicCallback, PriorityTopicOptions, SceneGraph, SceneNode, SceneNodeInfo, Topic, WalkBackCallback, WalkCallback, WalkChildrenCallback, lookAt, panTo, screenToWorldRay };
+/** @typedef {(frameDetail: AnimationFrameLoop) => void} AnimationFrameLoopCallback */
+declare class AnimationFrameLoop {
+    /**
+     * @param {AnimationFrameLoopCallback} callback
+     * @param {object} [opts]
+     * @param {Window} [opts.animationFrameHandler]
+     */
+    constructor(callback: AnimationFrameLoopCallback, opts?: {
+        animationFrameHandler?: Window;
+    });
+    /** @type {ReturnType<requestAnimationFrame>} */
+    handle: ReturnType<typeof requestAnimationFrame>;
+    detail: {
+        prevTime: number;
+        currentTime: number;
+        deltaTime: number;
+    };
+    /** @protected */
+    protected animationFrameHandler: Window;
+    /** @protected */
+    protected callback: AnimationFrameLoopCallback;
+    next(now?: number): void;
+    start(): AnimationFrameLoop;
+    cancel(): AnimationFrameLoop;
+}
+type AnimationFrameLoopCallback = (frameDetail: AnimationFrameLoop) => void;
+
+export { AnimationFrameLoop, AnimationFrameLoopCallback, Camera, CommandTopic, ComponentClass, ComponentClassMap, ComponentInstanceMap, ComponentInstancesOf, ComponentName, EntityId, EntityManager, EntityQuery, EntityTemplate, EventTopic, EventTopicCallback, FirstPersonCameraController, OrthographicCamera, PerspectiveCamera, PriorityEventTopic, PriorityTopicCallback, PriorityTopicOptions, SceneGraph, SceneNode, SceneNodeInfo, Topic, WalkBackCallback, WalkCallback, WalkChildrenCallback, lookAt, panTo, screenToWorldRay };

@@ -1,13 +1,14 @@
+import { ComponentClass, EntityQuery } from '@milque/scene';
+
 import { useNextLevel } from './AsteroidGame.js';
-import { ComponentClass, EntityQuery } from './lib/entity/EntityManager.js';
 import { useSystem } from './lib/M';
 import { DisplayPortProvider, EntityManagerProvider, useDraw, useUpdate } from './main.js';
 import { wrapAround } from './util.js';
 
 /**
  * @typedef {import('./AsteroidGame.js').AsteroidGame} AsteroidGame
- * @typedef {import('./lib/entity/EntityManager.js').EntityId} EntityId
- * @typedef {import('./lib/entity/EntityManager.js').EntityManager} EntityManager
+ * @typedef {import('@milque/scene').EntityId} EntityId
+ * @typedef {import('@milque/scene').EntityManager} EntityManager
  */
 
 export const PARTICLE_RADIUS = 4;

@@ -3,7 +3,8 @@ import { Assets } from './assets.js';
 import { AsteroidGame, useNextLevel } from './AsteroidGame';
 import { BULLET_SPEED, countBullets, MAX_BULLET_COUNT, spawnBullet } from './Bullet.js';
 import { explode } from './Explode.js';
-import { ComponentClass, EntityManager, EntityQuery } from './lib/entity/EntityManager.js';
+import { ComponentClass, EntityManager, EntityQuery } from '@milque/scene';
+
 import { useSystem } from './lib/M.js';
 import { DisplayPortProvider, EntityManagerProvider, useDraw, useUpdate } from './main.js';
 import { MAX_PARTICLE_AGE, spawnParticle } from './Particle.js';

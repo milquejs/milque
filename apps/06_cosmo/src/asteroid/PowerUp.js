@@ -1,15 +1,16 @@
 import { Random } from '@milque/random';
+import { ComponentClass, EntityQuery } from '@milque/scene';
+
 import { ASTEROID_SPEED, calculateAsteroidSpawnRanges } from './Asteroid.js';
 import { AsteroidGame, useNextLevel } from './AsteroidGame.js';
 import { explode } from './Explode.js';
-import { ComponentClass, EntityQuery } from './lib/entity/EntityManager.js';
 import { useSystem } from './lib/M.js';
 import { EntityManagerProvider } from './main.js';
 import { PLAYER_RADIUS } from './Player.js';
 import { drawCollisionCircle, withinRadius, wrapAround } from './util.js';
 
 /**
- * @typedef {import('./lib/entity/EntityManager.js').EntityId} EntityId
+ * @typedef {import('@milque/scene').EntityId} EntityId
  */
 
 export const POWER_UP_RADIUS = 4;

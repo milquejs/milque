@@ -1,4 +1,4 @@
-import { AnimationFrameLoop } from './AnimationFrameLoop.js';
+import { AnimationFrameLoop } from '@milque/scene';
 
 /**
  * @template T
@@ -7,7 +7,7 @@ import { AnimationFrameLoop } from './AnimationFrameLoop.js';
 /** @typedef {import('./system/EffectManager').EffectHandler} EffectHandler */
 /** @typedef {import('./system/EffectManager').AfterEffectHandler} AfterEffectHandler */
 /** @typedef {import('./system/SystemContext').SystemContext<?>} M */
-/** @typedef {import('./AnimationFrameLoop').AnimationFrameLoopCallback} AnimationFrameLoopCallback */
+/** @typedef {import('@milque/scene').AnimationFrameLoopCallback} AnimationFrameLoopCallback */
 
 /**
  * @param {AnimationFrameLoopCallback} callback
