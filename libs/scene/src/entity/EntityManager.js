@@ -22,6 +22,7 @@ export class EntityManager {
         this.components = {};
         /** @private */
         this.nameClassMapping = {};
+        
         /**
          * @private
          * @type {EntityId}
@@ -32,7 +33,8 @@ export class EntityManager {
          * @type {Array<[string, ...any]>}
          */
         this.queue = [];
-        this.queryManager = new QueryManager();
+
+        this.queries = new QueryManager();
     }
 
     /**
@@ -43,7 +45,7 @@ export class EntityManager {
      * @param {boolean} dead
      */
     entityComponentChangedCallback(entityId, added, removed, dead) {
-        this.queryManager.onEntityComponentChanged(this, entityId, added, removed, dead);
+        this.queries.onEntityComponentChanged(this, entityId, added, removed, dead);
     }
 
     flush() {
@@ -117,10 +119,13 @@ export class EntityManager {
      * @template T
      * @param {EntityId} entityId 
      * @param {ComponentClass<T>} componentClass
+     * @param {T} [instance]
      * @returns {T}
      */
-    attach(entityId, componentClass) {
-        let instance = componentClass.new();
+    attach(entityId, componentClass, instance = undefined) {
+        if (typeof instance === 'undefined') {
+            instance = componentClass.new();
+        }
         this.queue.push(['attach', entityId, componentClass, instance]);
         return instance;
     }
@@ -276,7 +281,7 @@ export class EntityManager {
             this.entityComponentChangedCallback(entityId, null, null, true);
         }
         entities.clear();
-        this.queryManager.reset();
+        this.queries.reset();
         this.components = {};
         this.nextAvailableEntityId = 1;
         this.queue.length = 0;

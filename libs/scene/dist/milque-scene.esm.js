@@ -672,7 +672,7 @@ class QueryManager {
          * @protected
          * @type {Record<string, Array<EntityId>>}
          */
-        this.queries = {};
+        this.cachedResults = {};
         /**
          * @private
          * @type {Record<string, Query<?>>}
@@ -691,7 +691,7 @@ class QueryManager {
      */
     onEntityComponentChanged(entityManager, entityId, added, removed, dead) {
         for(let query of Object.values(this.keyQueryMapping)) {
-            let entities = this.queries[query.key];
+            let entities = this.cachedResults[query.key];
             if (dead) {
                 let i = entities.indexOf(entityId);
                 if (i >= 0) {
@@ -750,10 +750,10 @@ class QueryManager {
         if (!(queryKey in this.keyQueryMapping)) {
             result = [];
             this.keyQueryMapping[queryKey] = query;
-            this.queries[queryKey] = result;
+            this.cachedResults[queryKey] = result;
             query.hydrate(entityManager, result);
         } else {
-            result = this.queries[queryKey];
+            result = this.cachedResults[queryKey];
         }
         return result;
     }
@@ -776,12 +776,12 @@ class QueryManager {
             return;
         }
         delete this.keyQueryMapping[queryKey];
-        delete this.queries[queryKey];
+        delete this.cachedResults[queryKey];
     }
     
     reset() {
         this.keyQueryMapping = {};
-        this.queries = {};
+        this.cachedResults = {};
     }
 }
 
@@ -837,6 +837,7 @@ class EntityManager {
         this.components = {};
         /** @private */
         this.nameClassMapping = {};
+        
         /**
          * @private
          * @type {EntityId}
@@ -847,7 +848,8 @@ class EntityManager {
          * @type {Array<[string, ...any]>}
          */
         this.queue = [];
-        this.queryManager = new QueryManager();
+
+        this.queries = new QueryManager();
     }
 
     /**
@@ -858,7 +860,7 @@ class EntityManager {
      * @param {boolean} dead
      */
     entityComponentChangedCallback(entityId, added, removed, dead) {
-        this.queryManager.onEntityComponentChanged(this, entityId, added, removed, dead);
+        this.queries.onEntityComponentChanged(this, entityId, added, removed, dead);
     }
 
     flush() {
@@ -932,10 +934,13 @@ class EntityManager {
      * @template T
      * @param {EntityId} entityId 
      * @param {ComponentClass<T>} componentClass
+     * @param {T} [instance]
      * @returns {T}
      */
-    attach(entityId, componentClass) {
-        let instance = componentClass.new();
+    attach(entityId, componentClass, instance = undefined) {
+        if (typeof instance === 'undefined') {
+            instance = componentClass.new();
+        }
         this.queue.push(['attach', entityId, componentClass, instance]);
         return instance;
     }
@@ -1091,7 +1096,7 @@ class EntityManager {
             this.entityComponentChangedCallback(entityId, null, null, true);
         }
         entities.clear();
-        this.queryManager.reset();
+        this.queries.reset();
         this.components = {};
         this.nextAvailableEntityId = 1;
         this.queue.length = 0;
@@ -1282,290 +1287,339 @@ function computeResult(out, entityManager, entityId, selectors) {
     return out;
 }
 
+/** @typedef {import('./TopicManager').TopicManager} TopicManager */
+
+/**
+ * @template T
+ * @typedef {import('./TopicManager').TopicCallback<T>} TopicCallback<T>
+ */
+
 /**
  * @template T
  */
 class Topic {
 
     /**
-     * @abstract
-     * @param {T} [attachment] 
+     * @param {string} name 
      */
-    dispatch(attachment = null) {}
-
-    /**
-     * @abstract
-     * @param {T} [attachment] 
-     */
-    dispatchImmediately(attachment = null) {}
-
-    /**
-     * @abstract
-     * @param {number} max 
-     */
-    flush(max = 1000) {}
-}
-
-/**
- * @template T
- */
-class CommandTopic extends Topic {
-    
-    constructor() {
-        super();
-
-        /**
-         * @private
-         * @type {Array<T>}
-         */
-        this.messages = [];
-        
-        /**
-         * @private
-         * @type {Array<T>}
-         */
-        this.queued = [];
+    constructor(name) {
+        this.name = name;
     }
 
     /**
-     * @override
-     * @param {T} message 
+     * @param {TopicManager} topicManager
+     * @param {T} attachment
      */
-    dispatch(message) {
-        this.queued.push(message);
+    dispatch(topicManager, attachment) {
+        topicManager.dispatch(this, attachment);
     }
 
     /**
-     * @override
-     * @param {T} message 
+     * @param {TopicManager} topicManager
+     * @param {number} priority
+     * @param {TopicCallback<T>} callback
      */
-    dispatchImmediately(message) {
-        this.messages.push(message);
-    }
-
-    /** @override */
-    flush(max = 1000) {
-        let result = this.queued.splice(0, Math.min(max, this.queued.length));
-        this.messages.push(...result);
-    }
-
-    /**
-     * @param {number} [max]
-     * @return {Iterable<T>}
-     */
-    *poll(max = 1000) {
-        let iterations = 0;
-        while(iterations < max && this.messages.length > 0) {
-            let message = this.messages.shift();
-            yield message;
-            ++iterations;
-        }
-    }
-}
-
-/**
- * @template T
- * @typedef {(t: T) => void|boolean} EventTopicCallback
- */
-
-/** @template T */
-class EventTopic extends Topic {
-
-    constructor() {
-        super();
-
-        /**
-         * @private
-         * @type {Array<EventTopicCallback<T>>}
-         */
-        this.listeners = [];
-
-        /**
-         * @private
-         * @type {Array<T>}
-         */
-        this.queued = [];
-    }
-
-    /**
-     * @param {EventTopicCallback<T>} callback 
-     */
-    on(callback) {
-        this.listeners.push(callback);
+    on(topicManager, priority, callback) {
+        topicManager.addEventListener(this, callback, { priority });
         return this;
     }
 
     /**
-     * @param {EventTopicCallback<T>} callback 
+     * @param {TopicManager} topicManager
+     * @param {TopicCallback<T>} callback
      */
-    off(callback) {
-        let i = this.listeners.indexOf(callback);
-        if (i >= 0) {
-            this.listeners.splice(i, 1);
-        }
+    off(topicManager, callback) {
+        topicManager.removeEventListener(this, callback);
         return this;
     }
 
     /**
-     * @param {EventTopicCallback<T>} callback 
+     * @param {TopicManager} topicManager
+     * @param {number} priority
+     * @param {TopicCallback<T>} callback
      */
-    once(callback) {
+    once(topicManager, priority, callback) {
         let wrapper = (attachment) => {
-            this.off(wrapper);
+            this.off(topicManager, wrapper);
             return callback(attachment);
         };
-        this.on(wrapper);
-        return this;
+        return this.on(topicManager, priority, wrapper);
     }
 
     /**
-     * @override
-     * @param {T} [attachment]
+     * @param {TopicManager} topicManager 
+     * @param {number} amount 
      */
-    dispatch(attachment = null) {
-        this.queued.push(attachment);
+    *poll(topicManager, amount) {
+        amount = Math.min(amount, topicManager.count(this));
+        for(let i = 0; i < amount; ++i) {
+            yield topicManager.poll(this);
+        }
     }
 
     /**
-     * @override
-     * @param {T} [attachment] 
+     * @param {TopicManager} topicManager 
+     * @param {number} amount 
      */
-    dispatchImmediately(attachment = null) {
-        for(let listener of this.listeners) {
-            let result = listener(attachment);
-            // Consume the event if return true.
-            if (result === true) {
-                break;
-            }
-        }
+    retain(topicManager, amount) {
+        topicManager.retain(this, amount);
     }
 
-    /** @override */
-    flush(max = 1000) {
-        let i = 0;
-        while(this.queued.length > 0 && i++ < max) {
-            let attachment = this.queued.shift();
-            this.dispatchImmediately(attachment);
+    /**
+     * @param {TopicManager} topicManager 
+     * @param {number} amount 
+     */
+    *pollAndRetain(topicManager, amount) {
+        this.retain(topicManager, amount);
+        for(let result of this.poll(topicManager, amount)) {
+            yield result;
         }
-    }
-
-    count() {
-        return this.listeners.length;
     }
 }
 
 /**
  * @template T
- * @typedef {(t: T) => void|boolean} PriorityTopicCallback<T>
+ * @typedef {import('./Topic').Topic<T>} Topic<T>
  */
 
 /**
  * @template T
- * @typedef PriorityTopicOptions
- * @property {number} priority
- * @property {PriorityTopicCallback<T>} callback
+ * @typedef {(attachment: T) => void|boolean} TopicCallback<T>
  */
 
 /**
- * @param {PriorityTopicOptions<?>} a 
- * @param {PriorityTopicOptions<?>} b 
+ * @template T
+ * @typedef TopicCallbackEntry
+ * @property {TopicCallback<T>} callback
+ * @property {number} priority
+ */
+
+/**
+ * @template T
+ * @param {TopicCallbackEntry<T>} a
+ * @param {TopicCallbackEntry<T>} b
  */
 function comparator(a, b) {
     return a.priority - b.priority;
 }
 
-/**
- * @template T
- */
-class PriorityEventTopic extends Topic {
+class TopicManager {
 
     constructor() {
-        super();
-
+        /**
+         * @protected
+         * @type {Record<string, Array<object>>}
+         */
+        this.cachedIn = {};
+        /**
+         * @protected
+         * @type {Record<string, Array<object>>}
+         */
+        this.cachedOut = {};
+        /**
+         * @protected
+         * @type {Record<string, Array<TopicCallbackEntry<?>>>}
+         */
+        this.callbacks = {};
+        /**
+         * @protected
+         * @type {Record<string, number>}
+         */
+        this.maxRetains = {};
         /**
          * @private
-         * @type {Array<PriorityTopicOptions<T>>}
+         * @type {Record<string, Topic<?>>}
          */
-        this.listeners = [];
-
-        /**
-         * @private
-         * @type {Array<T>}
-         */
-        this.queued = [];
+        this.nameTopicMapping = {};
     }
 
     /**
-     * @param {number} priority 
-     * @param {PriorityTopicCallback<T>} callback 
+     * @template T
+     * @param {Topic<T>} topic 
+     * @param {TopicCallback<T>} callback 
+     * @param {object} [opts]
+     * @param {number} [opts.priority]
      */
-    on(priority, callback) {
-        this.listeners.push({ priority, callback });
-        this.listeners.sort(comparator);
-        return this;
+    addEventListener(topic, callback, opts = undefined) {
+        const { priority = 0 } = opts;
+        let callbacks = this.callbacksOf(topic);
+        callbacks.push({
+            callback,
+            priority,
+        });
+        callbacks.sort(comparator);
     }
 
     /**
-     * @param {PriorityTopicCallback<T>} callback 
+     * @template T
+     * @param {Topic<T>} topic 
+     * @param {TopicCallback<T>} callback 
      */
-    off(callback) {
-        for(let i = 0; i < this.listeners.length; ++i) {
-            if (this.listeners.at(i).callback === callback) {
-                this.listeners.splice(i, 1);
-                break;
-            }
+    removeEventListener(topic, callback) {
+        let callbacks = this.callbacksOf(topic);
+        let i = callbacks.findIndex(v => v.callback === callback);
+        if (i >= 0) {
+            callbacks.splice(i, 1);
         }
-        return this;
     }
 
     /**
-     * @param {number} priority 
-     * @param {PriorityTopicCallback<T>} callback 
+     * @param {Topic<?>} topic
      */
-    once(priority, callback) {
-        let wrapper = (attachment) => {
-            this.off(wrapper);
-            return callback(attachment);
-        };
-        return this.on(priority, wrapper);
-    }
-
-    count() {
-        return this.listeners.length;
+    countEventListeners(topic) {
+        return this.callbacksOf(topic).length;
     }
 
     /**
-     * @override
-     * @param {T} [attachment]
+     * @template T
+     * @param {Topic<T>} topic 
+     * @param {T} attachment 
      */
-    dispatch(attachment = null) {
-        this.queued.push(attachment);
-        return this;
+    dispatch(topic, attachment) {
+        let incoming = this.incomingOf(topic);
+        incoming.push(attachment);
     }
 
     /**
-     * @override
-     * @param {T} [attachment] 
+     * @template T
+     * @param {Topic<T>} topic 
+     * @param {T} attachment 
      */
-    dispatchImmediately(attachment = null) {
-        for(let listener of this.listeners) {
-            let result = listener.callback(attachment);
-            // Consume the event if return true.
+    dispatchImmediately(topic, attachment) {
+        let callbacks = this.callbacksOf(topic);
+        for(let { callback } of callbacks) {
+            let result = callback(attachment);
             if (result === true) {
-                break;
+                return;
             }
         }
-        return this;
+        let outgoing = this.outgoingOf(topic);
+        outgoing.push(attachment);
     }
 
-    /** @override */
-    flush(max = 1000) {
-        let i = 0;
-        while(this.queued.length > 0 && i++ < max) {
-            let attachment = this.queued.shift();
-            this.dispatchImmediately(attachment);
+    /**
+     * @param {Topic<?>} topic
+     */
+    count(topic) {
+        let outgoing = this.outgoingOf(topic);
+        return outgoing.length;
+    }
+
+    /**
+     * @template T
+     * @param {Topic<T>} topic 
+     */
+    poll(topic) {
+        let outgoing = this.outgoingOf(topic);
+        if (outgoing.length <= 0) {
+            return null;
         }
-        return this;
+        let result = outgoing.shift();
+        return result;
+    }
+
+    /**
+     * @param {Topic<?>} topic
+     * @param {number} amount
+     */
+    retain(topic, amount) {
+        const topicName = topic.name;
+        let max = Math.max(amount, this.maxRetains[topicName] || 0);
+        this.maxRetains[topicName] = max;
+    }
+
+    /**
+     * @param {number} [maxPerTopic]
+     */
+    flush(maxPerTopic = 100) {
+        for(const topicName of Object.keys(this.cachedIn)) {
+            const topic = this.nameTopicMapping[topicName];
+            const incoming = this.cachedIn[topicName];
+            const outgoing = this.cachedOut[topicName];
+            const retain = this.maxRetains[topicName] || 0;
+            if (retain < outgoing.length) {
+                outgoing.splice(0, outgoing.length - retain);
+            }
+            let max = Math.min(maxPerTopic, incoming.length);
+            for(let i = 0; i < max; ++i) {
+                let attachment = incoming.shift();
+                this.dispatchImmediately(topic, attachment);
+            }
+        }
+    }
+
+    /**
+     * @param {Topic<?>} topic 
+     */
+    getPendingRetainCount(topic) {
+        return this.maxRetains[topic.name] || 0;
+    }
+
+    /**
+     * @param {Topic<?>} topic
+     */
+    getPendingFlushCount(topic) {
+        let incoming = this.incomingOf(topic);
+        return incoming.length;
+    }
+
+    reset() {
+        this.cachedIn = {};
+        this.cachedOut = {};
+        this.callbacks = {};
+        this.maxRetains = {};
+        this.nameTopicMapping = {};
+    }
+
+    /**
+     * @protected
+     * @template T
+     * @param {Topic<T>} topic 
+     * @returns {Array<T>}
+     */
+    incomingOf(topic) {
+        const topicName = topic.name;
+        if (topicName in this.cachedIn) {
+            return this.cachedIn[topicName];
+        } else {
+            let result = [];
+            this.cachedIn[topicName] = result;
+            return result;
+        }
+    }
+
+    /**
+     * @protected
+     * @template T
+     * @param {Topic<T>} topic 
+     * @returns {Array<T>}
+     */
+    outgoingOf(topic) {
+        const topicName = topic.name;
+        if (topicName in this.cachedOut) {
+            return this.cachedOut[topicName];
+        } else {
+            let result = [];
+            this.cachedOut[topicName] = result;
+            return result;
+        }
+    }
+
+    /**
+     * @protected
+     * @template T
+     * @param {Topic<T>} topic 
+     * @returns {Array<TopicCallbackEntry<T>>}
+     */
+    callbacksOf(topic) {
+        const topicName = topic.name;
+        if (topicName in this.callbacks) {
+            return this.callbacks[topicName];
+        } else {
+            let result = [];
+            this.callbacks[topicName] = result;
+            return result;
+        }
     }
 }
 
@@ -1620,5 +1674,5 @@ class AnimationFrameLoop {
     }
 }
 
-export { AnimationFrameLoop, Camera, CommandTopic, ComponentClass, EntityManager, EntityTemplate, EventTopic, FirstPersonCameraController, Not, OrthographicCamera, PerspectiveCamera, PriorityEventTopic, Query, QueryManager, SceneGraph, Topic, isSelectorNot, lookAt, panTo, screenToWorldRay };
+export { AnimationFrameLoop, Camera, ComponentClass, EntityManager, EntityTemplate, FirstPersonCameraController, Not, OrthographicCamera, PerspectiveCamera, Query, QueryManager, SceneGraph, Topic, TopicManager, isSelectorNot, lookAt, panTo, screenToWorldRay };
 //# sourceMappingURL=milque-scene.esm.js.map

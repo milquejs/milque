@@ -1,4 +1,4 @@
-import { EventTopic } from '@milque/scene';
+import { Topic } from '@milque/scene';
 import { AssetRef } from '@milque/asset';
 
 import { DEBUG } from './util.js';
@@ -8,7 +8,7 @@ import { PLAYER_RADIUS } from './Player.js';
 import { createPowerUpSpawner, drawPowerUps, updatePowerUps, updatePowerUpSpawner, PowerUp } from './PowerUp.js';
 
 import { usePreloadedAssets, useSystem } from './lib/M';
-import { AssetManagerProvider, DisplayPortProvider, EntityManagerProvider, InputPortProvider, nextLevel, useDraw, useUpdate } from './main.js';
+import { AssetManagerProvider, DisplayPortProvider, EntityManagerProvider, InputPortProvider, nextLevel, TopicManagerProvider, useDraw, useTopic, useUpdate } from './main.js';
 import { Debug, MoveDown, MoveLeft, MoveRight, MoveUp, Shoot } from './Inputs.js';
 import { loadSound } from './SoundLoader.js';
 
@@ -17,15 +17,11 @@ const INSTRUCTION_HINT_TEXT = '[ wasd_ ]';
 export const GameStartSound = new AssetRef('game.start', loadSound, undefined, 'raw://start.wav');
 export const BackgroundMusic = new AssetRef('background.music', loadSound, undefined, 'raw://music.wav');
 
-export const NextLevelEvent = new EventTopic();
+/** @type {Topic<number>} */
+export const NextLevelEvent = new Topic('game.nextlevel');
 
 export function useNextLevel(m, nextLevelCallback) {
-    m.before(() => {
-        NextLevelEvent.on(nextLevelCallback);
-        return () => {
-            NextLevelEvent.off(nextLevelCallback)
-        };
-    });
+    useTopic(m, NextLevelEvent, 0, nextLevelCallback);
 }
 
 /** @param {import('./lib/M').M} m */
@@ -33,6 +29,7 @@ export function AsteroidGame(m) {
     const { display, canvas } = useSystem(m, DisplayPortProvider);
     const ents = useSystem(m, EntityManagerProvider);
     const assets = useSystem(m, AssetManagerProvider);
+    const topics = useSystem(m, TopicManagerProvider);
     const { ctx: ab } = useSystem(m, InputPortProvider);
     usePreloadedAssets(m, [
         GameStartSound,
@@ -41,6 +38,7 @@ export function AsteroidGame(m) {
 
     this.ents = ents;
     this.assets = assets;
+    this.topics = topics;
 
     this.display = display;
     this.canvas = canvas;

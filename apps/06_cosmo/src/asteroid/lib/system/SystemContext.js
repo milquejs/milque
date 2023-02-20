@@ -4,14 +4,17 @@ import { EffectManager } from './EffectManager.js';
  * @template T
  * @typedef {import('./SystemManager').System<T>} System<T>
  */
+
 /**
  * @template T
  * @typedef {System<T>} SystemInitCallback<T>
  */
+
 /**
  * @template T
  * @typedef {(state: T) => void} SystemDeadCallback<T>
  */
+
 /** @typedef {import('./SystemManager').SystemManager} SystemManager */
 /** @typedef {import('./EffectManager').EffectHandler} EffectHandler */
 /** @typedef {import('./EffectManager').AfterEffectHandler} AfterEffectHandler */
@@ -104,5 +107,9 @@ export class SystemContext {
             this.dependencies.push(system);
         }
         return this.parent.getState(system);
+    }
+
+    isDead() {
+        return this.dead;
     }
 }

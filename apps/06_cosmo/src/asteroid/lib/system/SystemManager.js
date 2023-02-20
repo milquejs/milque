@@ -23,7 +23,7 @@ export class SystemManager {
 
     /**
      * @template T
-     * @param {any} handle 
+     * @param {System<T>} handle 
      * @param {import('./SystemContext.js').SystemInitCallback<T>} [initCallback] 
      * @param {import('./SystemContext.js').SystemDeadCallback<T>} [deadCallback]
      */
@@ -35,8 +35,9 @@ export class SystemManager {
         if (typeof handle === 'function') {
             name = /** @type {Function} */ (handle).name;
         } else if (typeof handle === 'object') {
-            if ('name' in handle) {
-                name = handle.name;
+            let handleAsObject = /** @type {object} */ (handle);
+            if ('name' in handleAsObject) {
+                name = handleAsObject.name;
             } else {
                 throw new Error('Invalid handle for system - missing name.');
             }
@@ -109,7 +110,7 @@ export class SystemManager {
         }
         return this;
     }
-
+    
     /**
      * @template T
      * @param {System<T>} system

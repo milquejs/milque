@@ -15,7 +15,7 @@ export class QueryManager {
          * @protected
          * @type {Record<string, Array<EntityId>>}
          */
-        this.queries = {};
+        this.cachedResults = {};
         /**
          * @private
          * @type {Record<string, Query<?>>}
@@ -34,7 +34,7 @@ export class QueryManager {
      */
     onEntityComponentChanged(entityManager, entityId, added, removed, dead) {
         for(let query of Object.values(this.keyQueryMapping)) {
-            let entities = this.queries[query.key];
+            let entities = this.cachedResults[query.key];
             if (dead) {
                 let i = entities.indexOf(entityId);
                 if (i >= 0) {
@@ -93,10 +93,10 @@ export class QueryManager {
         if (!(queryKey in this.keyQueryMapping)) {
             result = [];
             this.keyQueryMapping[queryKey] = query;
-            this.queries[queryKey] = result;
+            this.cachedResults[queryKey] = result;
             query.hydrate(entityManager, result);
         } else {
-            result = this.queries[queryKey];
+            result = this.cachedResults[queryKey];
         }
         return result;
     }
@@ -119,12 +119,12 @@ export class QueryManager {
             return;
         }
         delete this.keyQueryMapping[queryKey];
-        delete this.queries[queryKey];
+        delete this.cachedResults[queryKey];
     }
     
     reset() {
         this.keyQueryMapping = {};
-        this.queries = {};
+        this.cachedResults = {};
     }
 }
 

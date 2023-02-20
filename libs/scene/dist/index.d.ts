@@ -312,7 +312,7 @@ declare class EntityManager$1 {
      * @type {Array<[string, ...any]>}
      */
     protected queue: Array<[string, ...any]>;
-    queryManager: QueryManager;
+    queries: QueryManager;
     /**
      * @protected
      * @param {EntityId} entityId
@@ -341,9 +341,10 @@ declare class EntityManager$1 {
      * @template T
      * @param {EntityId} entityId
      * @param {ComponentClass<T>} componentClass
+     * @param {T} [instance]
      * @returns {T}
      */
-    attach<T>(entityId: EntityId$3, componentClass: ComponentClass<T>): T;
+    attach<T>(entityId: EntityId$3, componentClass: ComponentClass<T>, instance?: T): T;
     /**
      * @template T
      * @param {EntityId} entityId
@@ -539,7 +540,7 @@ declare class QueryManager {
      * @protected
      * @type {Record<string, Array<EntityId>>}
      */
-    protected queries: Record<string, Array<EntityId>>;
+    protected cachedResults: Record<string, Array<EntityId>>;
     /**
      * @private
      * @type {Record<string, Query<?>>}
@@ -604,150 +605,188 @@ type Selector<T> = Selector$1<T>;
  */
 type SelectorNot<T> = SelectorNot$1<T>;
 
+/** @typedef {import('./TopicManager').TopicManager} TopicManager */
+/**
+ * @template T
+ * @typedef {import('./TopicManager').TopicCallback<T>} TopicCallback<T>
+ */
 /**
  * @template T
  */
-declare class Topic<T> {
+declare class Topic$1<T> {
     /**
-     * @abstract
-     * @param {T} [attachment]
+     * @param {string} name
      */
-    dispatch(attachment?: T): void;
+    constructor(name: string);
+    name: string;
     /**
-     * @abstract
-     * @param {T} [attachment]
+     * @param {TopicManager} topicManager
+     * @param {T} attachment
      */
-    dispatchImmediately(attachment?: T): void;
+    dispatch(topicManager: TopicManager$1, attachment: T): void;
     /**
-     * @abstract
-     * @param {number} max
-     */
-    flush(max?: number): void;
-}
-
-/**
- * @template T
- */
-declare class CommandTopic<T> extends Topic<any> {
-    /**
-     * @private
-     * @type {Array<T>}
-     */
-    private messages;
-    /**
-     * @private
-     * @type {Array<T>}
-     */
-    private queued;
-    /**
-     * @override
-     * @param {T} message
-     */
-    override dispatch(message: T): void;
-    /**
-     * @override
-     * @param {T} message
-     */
-    override dispatchImmediately(message: T): void;
-    /**
-     * @param {number} [max]
-     * @return {Iterable<T>}
-     */
-    poll(max?: number): Iterable<T>;
-}
-
-/**
- * @template T
- * @typedef {(t: T) => void|boolean} EventTopicCallback
- */
-/** @template T */
-declare class EventTopic<T> extends Topic<any> {
-    /**
-     * @private
-     * @type {Array<EventTopicCallback<T>>}
-     */
-    private listeners;
-    /**
-     * @private
-     * @type {Array<T>}
-     */
-    private queued;
-    /**
-     * @param {EventTopicCallback<T>} callback
-     */
-    on(callback: EventTopicCallback<T>): EventTopic<T>;
-    /**
-     * @param {EventTopicCallback<T>} callback
-     */
-    off(callback: EventTopicCallback<T>): EventTopic<T>;
-    /**
-     * @param {EventTopicCallback<T>} callback
-     */
-    once(callback: EventTopicCallback<T>): EventTopic<T>;
-    /**
-     * @override
-     * @param {T} [attachment]
-     */
-    override dispatch(attachment?: T): void;
-    /**
-     * @override
-     * @param {T} [attachment]
-     */
-    override dispatchImmediately(attachment?: T): void;
-    count(): number;
-}
-type EventTopicCallback<T> = (t: T) => void | boolean;
-
-/**
- * @template T
- */
-declare class PriorityEventTopic<T> extends Topic<any> {
-    /**
-     * @private
-     * @type {Array<PriorityTopicOptions<T>>}
-     */
-    private listeners;
-    /**
-     * @private
-     * @type {Array<T>}
-     */
-    private queued;
-    /**
+     * @param {TopicManager} topicManager
      * @param {number} priority
-     * @param {PriorityTopicCallback<T>} callback
+     * @param {TopicCallback<T>} callback
      */
-    on(priority: number, callback: PriorityTopicCallback<T>): PriorityEventTopic<T>;
+    on(topicManager: TopicManager$1, priority: number, callback: TopicCallback$2<T>): Topic$1<T>;
     /**
-     * @param {PriorityTopicCallback<T>} callback
+     * @param {TopicManager} topicManager
+     * @param {TopicCallback<T>} callback
      */
-    off(callback: PriorityTopicCallback<T>): PriorityEventTopic<T>;
+    off(topicManager: TopicManager$1, callback: TopicCallback$2<T>): Topic$1<T>;
     /**
+     * @param {TopicManager} topicManager
      * @param {number} priority
-     * @param {PriorityTopicCallback<T>} callback
+     * @param {TopicCallback<T>} callback
      */
-    once(priority: number, callback: PriorityTopicCallback<T>): PriorityEventTopic<T>;
-    count(): number;
+    once(topicManager: TopicManager$1, priority: number, callback: TopicCallback$2<T>): Topic$1<T>;
     /**
-     * @override
-     * @param {T} [attachment]
+     * @param {TopicManager} topicManager
+     * @param {number} amount
      */
-    override dispatch(attachment?: T): PriorityEventTopic<T>;
+    poll(topicManager: TopicManager$1, amount: number): Generator<T, void, unknown>;
     /**
-     * @override
-     * @param {T} [attachment]
+     * @param {TopicManager} topicManager
+     * @param {number} amount
      */
-    override dispatchImmediately(attachment?: T): PriorityEventTopic<T>;
-    /** @override */
-    override flush(max?: number): PriorityEventTopic<T>;
+    retain(topicManager: TopicManager$1, amount: number): void;
+    /**
+     * @param {TopicManager} topicManager
+     * @param {number} amount
+     */
+    pollAndRetain(topicManager: TopicManager$1, amount: number): Generator<T, void, unknown>;
+}
+type TopicManager$1 = TopicManager;
+/**
+ * <T>
+ */
+type TopicCallback$2<T> = TopicCallback$1<T>;
+
+declare class TopicManager {
+    /**
+     * @protected
+     * @type {Record<string, Array<object>>}
+     */
+    protected cachedIn: Record<string, Array<object>>;
+    /**
+     * @protected
+     * @type {Record<string, Array<object>>}
+     */
+    protected cachedOut: Record<string, Array<object>>;
+    /**
+     * @protected
+     * @type {Record<string, Array<TopicCallbackEntry<?>>>}
+     */
+    protected callbacks: Record<string, Array<TopicCallbackEntry<unknown>>>;
+    /**
+     * @protected
+     * @type {Record<string, number>}
+     */
+    protected maxRetains: Record<string, number>;
+    /**
+     * @private
+     * @type {Record<string, Topic<?>>}
+     */
+    private nameTopicMapping;
+    /**
+     * @template T
+     * @param {Topic<T>} topic
+     * @param {TopicCallback<T>} callback
+     * @param {object} [opts]
+     * @param {number} [opts.priority]
+     */
+    addEventListener<T>(topic: Topic$1<T>, callback: TopicCallback$1<T>, opts?: {
+        priority?: number;
+    }): void;
+    /**
+     * @template T
+     * @param {Topic<T>} topic
+     * @param {TopicCallback<T>} callback
+     */
+    removeEventListener<T_1>(topic: Topic$1<T_1>, callback: TopicCallback$1<T_1>): void;
+    /**
+     * @param {Topic<?>} topic
+     */
+    countEventListeners(topic: Topic<unknown>): number;
+    /**
+     * @template T
+     * @param {Topic<T>} topic
+     * @param {T} attachment
+     */
+    dispatch<T_2>(topic: Topic$1<T_2>, attachment: T_2): void;
+    /**
+     * @template T
+     * @param {Topic<T>} topic
+     * @param {T} attachment
+     */
+    dispatchImmediately<T_3>(topic: Topic$1<T_3>, attachment: T_3): void;
+    /**
+     * @param {Topic<?>} topic
+     */
+    count(topic: Topic<unknown>): number;
+    /**
+     * @template T
+     * @param {Topic<T>} topic
+     */
+    poll<T_4>(topic: Topic$1<T_4>): T_4;
+    /**
+     * @param {Topic<?>} topic
+     * @param {number} amount
+     */
+    retain(topic: Topic<unknown>, amount: number): void;
+    /**
+     * @param {number} [maxPerTopic]
+     */
+    flush(maxPerTopic?: number): void;
+    /**
+     * @param {Topic<?>} topic
+     */
+    getPendingRetainCount(topic: Topic<unknown>): number;
+    /**
+     * @param {Topic<?>} topic
+     */
+    getPendingFlushCount(topic: Topic<unknown>): number;
+    reset(): void;
+    /**
+     * @protected
+     * @template T
+     * @param {Topic<T>} topic
+     * @returns {Array<T>}
+     */
+    protected incomingOf<T_5>(topic: Topic$1<T_5>): T_5[];
+    /**
+     * @protected
+     * @template T
+     * @param {Topic<T>} topic
+     * @returns {Array<T>}
+     */
+    protected outgoingOf<T_6>(topic: Topic$1<T_6>): T_6[];
+    /**
+     * @protected
+     * @template T
+     * @param {Topic<T>} topic
+     * @returns {Array<TopicCallbackEntry<T>>}
+     */
+    protected callbacksOf<T_7>(topic: Topic$1<T_7>): TopicCallbackEntry<T_7>[];
 }
 /**
  * <T>
  */
-type PriorityTopicCallback<T> = (t: T) => void | boolean;
-type PriorityTopicOptions<T> = {
+type Topic<T> = Topic$1<T>;
+/**
+ * <T>
+ */
+type TopicCallback$1<T> = (attachment: T) => void | boolean;
+type TopicCallbackEntry<T> = {
+    callback: TopicCallback$1<T>;
     priority: number;
-    callback: PriorityTopicCallback<T>;
 };
+
+/**
+ * <T>
+ */
+type TopicCallback<T> = TopicCallback$1<T>;
 
 /** @typedef {(frameDetail: AnimationFrameLoop) => void} AnimationFrameLoopCallback */
 declare class AnimationFrameLoop {
@@ -776,4 +815,4 @@ declare class AnimationFrameLoop {
 }
 type AnimationFrameLoopCallback = (frameDetail: AnimationFrameLoop) => void;
 
-export { AnimationFrameLoop, AnimationFrameLoopCallback, Camera, CommandTopic, ComponentClass, ComponentClassMap, ComponentInstanceMap, ComponentName, EntityId$3 as EntityId, EntityManager$1 as EntityManager, EntityTemplate, EventTopic, EventTopicCallback, FirstPersonCameraController, Not, OrthographicCamera, PerspectiveCamera, PriorityEventTopic, PriorityTopicCallback, PriorityTopicOptions, Query$1 as Query, QueryManager, SceneGraph, SceneNode, SceneNodeInfo, Selector, SelectorNot, Topic, WalkBackCallback, WalkCallback, WalkChildrenCallback, isSelectorNot, lookAt, panTo, screenToWorldRay };
+export { AnimationFrameLoop, AnimationFrameLoopCallback, Camera, ComponentClass, ComponentClassMap, ComponentInstanceMap, ComponentName, EntityId$3 as EntityId, EntityManager$1 as EntityManager, EntityTemplate, FirstPersonCameraController, Not, OrthographicCamera, PerspectiveCamera, Query$1 as Query, QueryManager, SceneGraph, SceneNode, SceneNodeInfo, Selector, SelectorNot, Topic$1 as Topic, TopicCallback, TopicManager, WalkBackCallback, WalkCallback, WalkChildrenCallback, isSelectorNot, lookAt, panTo, screenToWorldRay };
