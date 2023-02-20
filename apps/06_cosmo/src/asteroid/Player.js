@@ -4,7 +4,7 @@ import { AssetRef } from '@milque/asset';
 import { AsteroidGame, useNextLevel } from './AsteroidGame';
 import { BULLET_SPEED, countBullets, MAX_BULLET_COUNT, spawnBullet } from './Bullet.js';
 import { explode } from './Explode.js';
-import { ComponentClass, EntityManager, EntityQuery } from '@milque/scene';
+import { ComponentClass, EntityManager, Query } from '@milque/scene';
 
 import { usePreloadedAssets, useSystem } from './lib/M.js';
 import { DisplayPortProvider, EntityManagerProvider, useDraw, useUpdate } from './main.js';
@@ -53,7 +53,7 @@ export const Player = new ComponentClass('Player', () => ({
     cooldown: 0,
     powerMode: 0,
 }));
-export const PlayerQuery = new EntityQuery(Player);
+export const PlayerQuery = new Query(Player);
 
 /**
  * @param {import('./lib/M').M} m 
@@ -99,7 +99,8 @@ export function PlayerSystem(m) {
  * @param {EntityManager} ents
  */
 function spawnPlayer(canvas, ents) {
-    let [_, player] = ents.createAndAttach(Player);
+    let entityId = ents.create();
+    let player = ents.attach(entityId, Player);
     player.x = canvas.width / 2;
     player.y = canvas.height / 2;
     return player;
@@ -110,7 +111,7 @@ function spawnPlayer(canvas, ents) {
  * @param {AsteroidGame} scene 
  */
 function updatePlayer(dt, scene) {
-    let [_, player] = PlayerQuery.find(scene.ents);
+    let [_, player] = PlayerQuery.findAny(scene.ents);
     if (!player) {
         return;
     }
@@ -166,7 +167,7 @@ function updatePlayer(dt, scene) {
 }
 
 function drawPlayer(ctx, scene) {
-    let [_, player] = PlayerQuery.find(scene.ents);
+    let [_, player] = PlayerQuery.findAny(scene.ents);
     if (!player) {
         return;
     }

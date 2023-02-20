@@ -25,6 +25,7 @@
     "@milque/scene": "workspace:*",
     "@milque/mogli": "workspace:*",
     "@milque/util": "workspace:*",
-    "gl-matrix": "~3.4.3"
+    "gl-matrix": "~3.4.3",
+    "three": "~0.149.0"
   }
 }

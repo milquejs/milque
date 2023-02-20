@@ -1,117 +1,49 @@
 import { ComponentClass } from './ComponentClass';
+import { QueryManager } from './QueryManager';
 
 /**
- * @typedef {Record<number, object>} ComponentInstanceMap
- * @typedef {Record<string, ComponentInstanceMap>} ComponentClassMap
+ * @template T
+ * @typedef {Record<number, T>} ComponentInstanceMap<T>
+ */
+
+/**
+ * @typedef {Record<string, ComponentInstanceMap<?>>} ComponentClassMap
  * @typedef {number} EntityId
  * @typedef {string} ComponentName
  */
 
-/**
- * @template {ComponentClass<any>[]} T
- * @typedef {{[K in keyof T]: T[K] extends ComponentClass<infer V> ? V : never}} ComponentInstancesOf<T>
- */
-
-/**
- * @param {EntityManager} entityManager 
- * @param {ComponentName} componentName
- * @returns {ComponentInstanceMap} A map of entity ids to component instance data.
- */
-function resolveComponentInstanceMap(entityManager, componentName) {
-    // @ts-ignore
-    let components = entityManager.components;
-    if (!(componentName in components)) {
-        /** @type {ComponentInstanceMap} */
-        let map = {};
-        components[componentName] = map;
-        return map;
-    } else {
-        return components[componentName];
-    }
-}
-
-/**
- * @param {EntityManager} entityManager 
- * @param {ComponentName} componentName
- * @returns {ComponentInstanceMap} A map of entity ids to component instance data.
- */
-function resetComponentInstanceMap(entityManager, componentName) {
-    // @ts-ignore
-    let components = entityManager.components;
-    /** @type {ComponentInstanceMap} */
-    let map = {};
-    components[componentName] = map;
-    return map;
-}
-
-/**
- * @template T
- * @param {EntityManager} entityManager 
- * @param {EntityId} entityId 
- * @param {ComponentClass<T>} componentClass
- * @param {T} instance
- * @returns {T}
- */
-function attachComponent(entityManager, entityId, componentClass, instance) {
-    let componentName = componentClass.name;
-    let instanceMap = resolveComponentInstanceMap(entityManager, componentName);
-    instanceMap[entityId] = instance;
-    return instance;
-}
-
-/**
- * @template T
- * @param {EntityManager} entityManager 
- * @param {EntityId} entityId 
- * @param {ComponentClass<T>} componentClass
- */
-function detachComponent(entityManager, entityId, componentClass) {
-    let componentName = componentClass.name;
-    let instanceMap = resolveComponentInstanceMap(entityManager, componentName);
-    let instance = instanceMap[entityId];
-    delete instanceMap[entityId];
-    componentClass.delete(instance);
-}
-
-/**
- * @template T
- * @param {EntityManager} entityManager
- * @param {ComponentClass<T>} componentClass
- */
-function clearComponents(entityManager, componentClass) {
-    let componentName = componentClass.name;
-    let instanceMap = resolveComponentInstanceMap(entityManager, componentName);
-    let instances = Object.values(instanceMap);
-    resetComponentInstanceMap(entityManager, componentName);
-    for(let instance of instances) {
-        componentClass.delete(instance);
-    }
-}
-
-const NEXT_AVAILABLE_ENTITY_ID = Symbol('nextAvailableEntityId');
-
-/**
- * @param {EntityManager} entityManager 
- * @returns {EntityId}
- */
-function nextAvailableEntityId(entityManager) {
-    return ++entityManager[NEXT_AVAILABLE_ENTITY_ID];
-}
-
 export class EntityManager {
+
     constructor() {
         /**
          * @protected
          * @type {ComponentClassMap}
          */
         this.components = {};
-        /** @type {EntityId} */
-        this[NEXT_AVAILABLE_ENTITY_ID] = 1;
+        /** @private */
+        this.nameClassMapping = {};
+        /**
+         * @private
+         * @type {EntityId}
+         */
+        this.nextAvailableEntityId = 1;
         /**
          * @protected
          * @type {Array<[string, ...any]>}
          */
         this.queue = [];
+        this.queryManager = new QueryManager();
+    }
+
+    /**
+     * @protected
+     * @param {EntityId} entityId
+     * @param {ComponentClass<?>} added
+     * @param {ComponentClass<?>} removed
+     * @param {boolean} dead
+     */
+    entityComponentChangedCallback(entityId, added, removed, dead) {
+        this.queryManager.onEntityComponentChanged(this, entityId, added, removed, dead);
     }
 
     flush() {
@@ -120,60 +52,62 @@ export class EntityManager {
             switch (type) {
                 case 'attach': {
                     let [entityId, componentClass, instance] = args;
-                    attachComponent(this, entityId, componentClass, instance);
+                    this.attachImmediately(entityId, componentClass, instance);
                 } break;
                 case 'detach': {
                     let [entityId, componentClass] = args;
-                    detachComponent(this, entityId, componentClass);
+                    this.detachImmediately(entityId, componentClass);
                 } break;
                 case 'clear': {
                     let [componentClass] = args;
-                    clearComponents(this, componentClass);
+                    this.clearImmediately(componentClass);
                 } break;
             }
         }
-    }
-
-    /**
-     * @template {ComponentClass<any>[]}T
-     * @param {T} componentClasses 
-     * @returns {[EntityId, ...ComponentInstancesOf<T>]}
-     */
-    createAndAttach(...componentClasses) {
-        let entityId = nextAvailableEntityId(this);
-        let result = /** @type {[EntityId, ...ComponentInstancesOf<T>]} */ (/** @type {unknown} */ ([entityId]));
-        for (let componentClass of componentClasses) {
-            let instance = this.attach(entityId, componentClass);
-            result.push(instance);
-        }
-        return result;
     }
 
     /**
      * @returns {EntityId}
      */
     create() {
-        return nextAvailableEntityId(this);
+        return this.nextAvailableEntityId++;
     }
 
     /**
      * @param {EntityId} entityId 
      */
     destroy(entityId) {
-        for (let instanceMap of Object.values(this.components)) {
+        const components = this.components;
+        for (const componentName of Object.keys(components)) {
+            const instanceMap = components[componentName];
             if (entityId in instanceMap) {
                 delete instanceMap[entityId];
+                this.entityComponentChangedCallback(entityId, null, this.nameClassMapping[componentName], false);
             }
         }
+        this.entityComponentChangedCallback(entityId, null, null, true);
     }
 
     /**
+     * Whether the entity exists with all provided component classes.
+     * 
      * @param {EntityId} entityId 
+     * @param {...ComponentClass<?>} componentClasses
      */
-    exists(entityId) {
-        for (let instanceMap of Object.values(this.components)) {
-            if (entityId in instanceMap) {
-                return true;
+    exists(entityId, ...componentClasses) {
+        if (componentClasses.length > 0) {
+            for(const componentClass of componentClasses) {
+                let instanceMap = this.mapOf(componentClass);
+                if (!(entityId in instanceMap)) {
+                    return false;
+                }
+            }
+            return true;
+        } else {
+            for (let instanceMap of Object.values(this.components)) {
+                if (entityId in instanceMap) {
+                    return true;
+                }
             }
         }
         return false;
@@ -195,11 +129,17 @@ export class EntityManager {
      * @template T
      * @param {EntityId} entityId 
      * @param {ComponentClass<T>} componentClass 
+     * @param {T} [instance]
      * @returns {T}
      */
-    attachImmediately(entityId, componentClass) {
-        let instance = componentClass.new();
-        return attachComponent(this, entityId, componentClass, instance);
+    attachImmediately(entityId, componentClass, instance = undefined) {
+        if (typeof instance === 'undefined') {
+            instance = componentClass.new();
+        }
+        let instanceMap = this.mapOf(componentClass);
+        instanceMap[entityId] = instance;
+        this.entityComponentChangedCallback(entityId, componentClass, null, false);
+        return instance;
     }
 
     /**
@@ -217,12 +157,15 @@ export class EntityManager {
      * @param {ComponentClass<T>} componentClass 
      */
     detachImmediately(entityId, componentClass) {
-        detachComponent(this, entityId, componentClass);
+        let instanceMap = this.mapOf(componentClass);
+        let instance = instanceMap[entityId];
+        delete instanceMap[entityId];
+        componentClass.delete(instance);
+        this.entityComponentChangedCallback(entityId, null, componentClass, false);
     }
 
     /**
-     * @template T
-     * @param {ComponentClass<T>} componentClass 
+     * @param {ComponentClass<?>} componentClass 
      */
     clear(componentClass) {
         this.queue.push(['clear', componentClass]);
@@ -232,7 +175,19 @@ export class EntityManager {
      * @param {ComponentClass<any>} componentClass 
      */
     clearImmediately(componentClass) {
-        clearComponents(this, componentClass);
+        const componentName = componentClass.name;
+        const components = this.components;
+        const instanceMap = components[componentName];
+        let entities = Object.keys(instanceMap).map(Number);
+        let instances = Object.values(instanceMap);
+        components[componentName] = {};
+        this.nameClassMapping[componentName] = componentClass;
+        for(let instance of instances) {
+            componentClass.delete(instance);
+        }
+        for(let entityId of entities) {
+            this.entityComponentChangedCallback(entityId, null, componentClass, false);
+        }
     }
 
     /**
@@ -242,13 +197,7 @@ export class EntityManager {
      * @returns {T}
      */
     get(entityId, componentClass) {
-        let componentName = componentClass.name;
-        let instanceMap = resolveComponentInstanceMap(this, componentName);
-        if (instanceMap) {
-            return null;
-        } else {
-            return instanceMap[entityId] || null;
-        }
+        return this.mapOf(componentClass)[entityId] || null;
     }
 
     /**
@@ -256,129 +205,80 @@ export class EntityManager {
      * @returns {number}
      */
     count(componentClass) {
-        let componentName = componentClass.name;
-        let instanceMap = resolveComponentInstanceMap(this, componentName);
-        if (instanceMap) {
-            return 0;
+        return Object.keys(this.mapOf(componentClass)).length;
+    }
+
+    /**
+     * @param {ComponentClass<?>} componentClass
+     */
+    keysOf(componentClass) {
+        return Object.keys(this.mapOf(componentClass)).map(Number);
+    }
+
+    /**
+     * @template T
+     * @param {ComponentClass<T>} componentClass 
+     * @returns {Array<T>}
+     */
+    valuesOf(componentClass) {
+        return Object.values(this.mapOf(componentClass));
+    }
+
+    /**
+     * @protected
+     * @template T
+     * @param {ComponentClass<T>} componentClass
+     * @returns {ComponentInstanceMap<T>} A map of entity ids to component instance data.
+     */
+    mapOf(componentClass) {
+        const componentName = componentClass.name;
+        const components = this.components;
+        if (!(componentName in components)) {
+            /** @type {ComponentInstanceMap<T>} */
+            let map = {};
+            components[componentName] = map;
+            this.nameClassMapping[componentName] = componentClass;
+            return map;
         } else {
-            return Object.keys(instanceMap).length;
+            return components[componentName];
         }
     }
 
-    reset() {
-        this.components = {};
-        this[NEXT_AVAILABLE_ENTITY_ID] = 1;
-        this.queue.length = 0;
-    }
-}
-
-/**
- * @template {ComponentClass<any>[]} T
- */
-export class EntityTemplate {
-    /**
-     * @param {T} componentClasses 
-     */
-    constructor(...componentClasses) {
-        /** @private */
-        this.componentClasses = componentClasses;
-    }
-
-    /**
-     * @param {EntityManager} entityManager
-     * @returns {[EntityId, ...ComponentInstancesOf<T>]}
-     */
-    create(entityManager) {
-        let entityId = nextAvailableEntityId(entityManager);
-        let result = /** @type {[EntityId, ...ComponentInstancesOf<T>]} */ (/** @type {unknown} */ ([entityId]));
-        for (let componentClass of this.componentClasses) {
-            let instance = entityManager.attach(entityId, componentClass);
-            result.push(instance);
+    /** @returns {Set<EntityId>} */
+    entityIds() {
+        let result = new Set();
+        for (let instanceMap of Object.values(this.components)) {
+            for(let entityId of Object.keys(instanceMap)) {
+                result.add(entityId);
+            }
         }
         return result;
     }
 
-    /**
-     * @param {EntityManager} entityManager 
-     * @param {EntityId} entityId 
-     */
-    destroy(entityManager, entityId) {
-        for (let componentClass of this.componentClasses) {
-            entityManager.detach(entityId, componentClass);
-        }
-    }
-}
-
-/**
- * @template {ComponentClass<any>[]} T
- */
-export class EntityQuery {
-    /**
-     * @param {T} selectors 
-     */
-    constructor(...selectors) {
-        /** @private */
-        this.selectors = selectors;
-    }
-    
-    /**
-     * @param {EntityManager} entityManager 
-     * @returns {number}
-     */
-    count(entityManager) {
-        let count = 0;
-        let iter = this.findAll(entityManager);
-        while(!iter.next().done) {
-            ++count;
-        }
-        return count;
+    /** @returns {Array<ComponentClass<?>>} */
+    componentClasses() {
+        return Object.values(this.nameClassMapping);
     }
 
-    /**
-     * @param {EntityManager} entityManager 
-     * @returns {[EntityId, ...ComponentInstancesOf<T>]}
-     */
-    find(entityManager) {
-        let entities = this.findAll(entityManager);
-        let result = entities.next();
-        if (result.done) {
-            // @ts-ignore
-            return [];
-        } else {
-            return result.value;
-        }
-    }
-
-    /**
-     * @param {EntityManager} entityManager 
-     * @returns {Generator<[EntityId, ...ComponentInstancesOf<T>]>}
-     */
-    *findAll(entityManager) {
-        if (this.selectors.length <= 0) {
-            return;
-        }
-        let componentClass = this.selectors[0];
-        let componentName = componentClass.name;
-        let instanceMap = resolveComponentInstanceMap(entityManager, componentName);
-        let result = /** @type {[EntityId, ...ComponentInstancesOf<T>]} */ (new Array(this.selectors.length + 1));
-        for (let key of Object.keys(instanceMap)) {
-            let entityId = Number(key);
-            let flag = true;
-            result[0] = entityId;
-            let index = 1;
-            for (let otherClass of this.selectors) {
-                let otherName = otherClass.name;
-                let otherMap = resolveComponentInstanceMap(entityManager, otherName);
-                if (!(entityId in otherMap)) {
-                    flag = false;
-                    break;
-                }
-                let other = otherMap[entityId];
-                result[index++] = other;
+    reset() {
+        const components = this.components;
+        /** @type {Set<EntityId>} */
+        let entities = new Set();
+        for(const componentName of Object.keys(components)) {
+            const componentClass = this.nameClassMapping[componentName];
+            const instanceMap = components[componentName];
+            for(let entityId of Object.keys(instanceMap)) {
+                entities.add(Number(entityId));
             }
-            if (flag) {
-                yield result;
-            }
+            this.clearImmediately(componentClass);
         }
+        for(let entityId of entities) {
+            this.entityComponentChangedCallback(entityId, null, null, true);
+        }
+        entities.clear();
+        this.queryManager.reset();
+        this.components = {};
+        this.nextAvailableEntityId = 1;
+        this.queue.length = 0;
     }
 }

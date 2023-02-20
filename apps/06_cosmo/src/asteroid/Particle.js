@@ -1,4 +1,4 @@
-import { ComponentClass, EntityQuery } from '@milque/scene';
+import { ComponentClass, Query } from '@milque/scene';
 
 import { useNextLevel } from './AsteroidGame.js';
 import { useSystem } from './lib/M';
@@ -26,7 +26,7 @@ export const Particle = new ComponentClass('Particle', () => ({
     age: 0,
     color: 'white',
 }));
-export const ParticleQuery = new EntityQuery(Particle);
+export const ParticleQuery = new Query(Particle);
 
 /**
  * @param {import('./lib/M').M} m 

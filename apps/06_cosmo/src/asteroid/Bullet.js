@@ -1,5 +1,5 @@
 import { AssetRef } from '@milque/asset';
-import { ComponentClass, EntityManager, EntityQuery } from '@milque/scene';
+import { ComponentClass, EntityManager, Query } from '@milque/scene';
 
 import { ASTEROID_BREAK_DAMP_FACTOR, breakUpAsteroid, explodeAsteroid } from './Asteroid.js';
 import { AsteroidGame, useNextLevel } from './AsteroidGame.js';
@@ -24,7 +24,7 @@ export const Bullet = new ComponentClass('Bullet', () => ({
     rotation: 0,
     age: 0,
 }));
-export const BulletQuery = new EntityQuery(Bullet);
+export const BulletQuery = new Query(Bullet);
 
 export function BulletSystem(m) {
     const ents = useSystem(m, EntityManagerProvider);
@@ -126,7 +126,8 @@ function onDraw(ctx, ents) {
  * @param {number} dy 
  */
 export function spawnBullet(scene, x, y, dx, dy) {
-    let [entityId, bullet] = scene.ents.createAndAttach(Bullet);
+    let entityId = scene.ents.create();
+    let bullet = scene.ents.attach(entityId, Bullet);
     bullet.x = x;
     bullet.y = y;
     bullet.dx = dx;

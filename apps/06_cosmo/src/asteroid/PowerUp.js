@@ -1,5 +1,5 @@
 import { Random } from '@milque/random';
-import { ComponentClass, EntityQuery } from '@milque/scene';
+import { ComponentClass, Query } from '@milque/scene';
 
 import { ASTEROID_SPEED, calculateAsteroidSpawnRanges } from './Asteroid.js';
 import { AsteroidGame, useNextLevel } from './AsteroidGame.js';
@@ -24,7 +24,7 @@ export const PowerUp = new ComponentClass('PowerUp', () => ({
   dx: 0, dy: 0,
   rotation: 0,
 }));
-export const PowerUpQuery = new EntityQuery(PowerUp);
+export const PowerUpQuery = new Query(PowerUp);
 
 export function PowerUpSystem(m) {
   const ents = useSystem(m, EntityManagerProvider);
@@ -62,7 +62,8 @@ export function createPowerUp(scene, x, y, dx, dy) {
  * @param {number} dy 
  */
 export function spawnPowerUp(scene, x, y, dx, dy) {
-  let [entityId, powerUp] = scene.ents.createAndAttach(PowerUp);
+  let entityId = scene.ents.create();
+  let powerUp = scene.ents.attach(entityId, PowerUp);
   powerUp.x = x;
   powerUp.y = y;
   powerUp.dx = dx;
