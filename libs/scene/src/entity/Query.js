@@ -28,6 +28,9 @@ export class Query {
      * @param {T} selectors 
      */
     constructor(...selectors) {
+        if (selectors.length <= 0) {
+            throw new Error('Must have at least 1 selector for query.');
+        }
         this.selectors = selectors;
         this.key = selectors.map(s => isSelectorNot(s) ? `!${s.name}` : s.name).sort().join('&');
     }
@@ -87,7 +90,7 @@ export class Query {
      * @returns {number}
      */
     count(entityManager) {
-        return entityManager.queryManager.count(entityManager, this);
+        return entityManager.queries.count(entityManager, this);
     }
 
     /**
@@ -95,7 +98,7 @@ export class Query {
      * @returns {[EntityId, ...ComponentInstancesOf<T>]}
      */
     findAny(entityManager) {
-        const queryManager = entityManager.queryManager;
+        const queryManager = entityManager.queries;
         let result = /** @type {[EntityId, ...ComponentInstancesOf<T>]} */ (new Array(this.selectors.length + 1));
         let entityId = queryManager.findAny(entityManager, this);
         if (entityId === null) {
@@ -110,7 +113,7 @@ export class Query {
      * @returns {Generator<[EntityId, ...ComponentInstancesOf<T>]>}
      */
     *findAll(entityManager) {
-        const queryManager = entityManager.queryManager;
+        const queryManager = entityManager.queries;
         let result = /** @type {[EntityId, ...ComponentInstancesOf<T>]} */ (new Array(this.selectors.length + 1));
         let entities = queryManager.findAll(entityManager, this);
         for(let entityId of entities) {

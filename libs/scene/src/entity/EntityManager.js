@@ -12,6 +12,15 @@ import { QueryManager } from './QueryManager';
  * @typedef {string} ComponentName
  */
 
+/**
+ * @callback EntityComponentChangedCallback
+ * @param {EntityManager} entityManager
+ * @param {EntityId} entityId
+ * @param {ComponentClass<?>} attached
+ * @param {ComponentClass<?>} detached
+ * @param {boolean} dead
+ */
+
 export class EntityManager {
 
     constructor() {
@@ -22,7 +31,6 @@ export class EntityManager {
         this.components = {};
         /** @private */
         this.nameClassMapping = {};
-        
         /**
          * @private
          * @type {EntityId}
@@ -33,19 +41,46 @@ export class EntityManager {
          * @type {Array<[string, ...any]>}
          */
         this.queue = [];
-
+        /** @private */
+        this.listeners = [];
         this.queries = new QueryManager();
     }
 
     /**
      * @protected
      * @param {EntityId} entityId
-     * @param {ComponentClass<?>} added
-     * @param {ComponentClass<?>} removed
+     * @param {ComponentClass<?>} attached
+     * @param {ComponentClass<?>} detached
      * @param {boolean} dead
      */
-    entityComponentChangedCallback(entityId, added, removed, dead) {
-        this.queries.onEntityComponentChanged(this, entityId, added, removed, dead);
+    entityComponentChangedCallback(entityId, attached, detached, dead) {
+        this.queries.onEntityComponentChanged(this, entityId, attached, detached, dead);
+        for(let callback of this.listeners) {
+            callback(this, entityId, attached, detached, dead);
+        }
+    }
+
+    /**
+     * @param {'change'} event 
+     * @param {EntityComponentChangedCallback} callback 
+     */
+    addEventListener(event, callback) {
+        if (event === 'change') {
+            this.listeners.push(callback);
+        }
+    }
+
+    /**
+     * @param {'change'} event 
+     * @param {EntityComponentChangedCallback} callback 
+     */
+    removeEventListener(event, callback) {
+        if (event === 'change') {
+            let i = this.listeners.indexOf(callback);
+            if (i >= 0) {
+                this.listeners.splice(i, 1);
+            }
+        }
     }
 
     flush() {
@@ -72,7 +107,9 @@ export class EntityManager {
      * @returns {EntityId}
      */
     create() {
-        return this.nextAvailableEntityId++;
+        let entityId = this.nextAvailableEntityId++;
+        this.entityComponentChangedCallback(entityId, null, null, false);
+        return entityId;
     }
 
     /**
@@ -285,5 +322,6 @@ export class EntityManager {
         this.components = {};
         this.nextAvailableEntityId = 1;
         this.queue.length = 0;
+        this.listeners.length = 0;
     }
 }

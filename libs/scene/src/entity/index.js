@@ -13,3 +13,7 @@ export { Query } from './Query';
  * @template T
  * @typedef {import('./QueryManager').SelectorNot<T>} SelectorNot<T>
  */
+
+/**
+ * @typedef {import('./EntityManager').EntityComponentChangedCallback} EntityComponentChangedCallback
+ */
