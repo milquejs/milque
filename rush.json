@@ -338,6 +338,11 @@
       "projectFolder": "tools/milque-dev",
       "reviewCategory": "tools"
     },
+    {
+      "packageName": "three-scene-editor",
+      "projectFolder": "tools/three-scene-editor",
+      "reviewCategory": "tools"
+    },
     // #milque-dev!libs
     {
       "packageName": "@milque/toolkit",

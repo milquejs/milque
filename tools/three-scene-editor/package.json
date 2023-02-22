@@ -1,0 +1,64 @@
+{
+  "name": "three-scene-editor",
+  "displayName": "three-scene-editor",
+  "description": "A scene editor for Three.js",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onCommand:three-scene-editor.helloWorld"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "three-scene-editor.helloWorld",
+        "title": "Hello World"
+      }
+    ],
+    "customEditors": [
+      {
+        "viewType": "threeSceneEditor.sceneEdit",
+        "displayName": "Three.js Scene Editor",
+        "selector": [
+          {
+            "filenamePattern": "*.three"
+          }
+        ]
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "pnpm run build-ext -- --minify; pnpm run build-web -- --minify",
+    "build": "pnpm run build-ext; pnpm run build-web",
+    "build-ext": "esbuild ./src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node",
+    "build-web": "esbuild ./src/webview.js --bundle --outfile=media/sceneEditor.js --format=iife --platform=browser",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "pnpm run compile && pnpm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js"
+  },
+  "dependencies": {
+    "three": "0.149.0",
+    "@milque/display": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.75.0",
+    "@types/glob": "^8.0.1",
+    "@types/mocha": "^10.0.1",
+    "@types/node": "16.x",
+    "@typescript-eslint/eslint-plugin": "^5.49.0",
+    "@typescript-eslint/parser": "^5.49.0",
+    "eslint": "^8.33.0",
+    "glob": "^8.1.0",
+    "mocha": "^10.1.0",
+    "typescript": "^4.9.4",
+    "@vscode/test-electron": "^2.2.2",
+    "esbuild": "0.17.10"
+  }
+}

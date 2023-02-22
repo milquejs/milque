@@ -1,0 +1,194 @@
+{
+  "metadata": {
+    "version": 4.5,
+    "type": "Object",
+    "generator": "Object3D.toJSON"
+  },
+  "geometries": [
+    {
+      "uuid": "07b81895-0758-4c00-a11b-a005195c2509",
+      "type": "BoxGeometry",
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "widthSegments": 1,
+      "heightSegments": 1,
+      "depthSegments": 1
+    },
+    {
+      "uuid": "42064cc5-9679-4af4-805d-fbf165546f37",
+      "type": "BoxGeometry",
+      "width": 1,
+      "height": 1,
+      "depth": 1,
+      "widthSegments": 1,
+      "heightSegments": 1,
+      "depthSegments": 1
+    }
+  ],
+  "materials": [
+    {
+      "uuid": "9c18a142-b753-4b97-bf07-233532fb203b",
+      "type": "MeshBasicMaterial",
+      "color": 65280,
+      "reflectivity": 1,
+      "refractionRatio": 0.98,
+      "depthFunc": 3,
+      "depthTest": true,
+      "depthWrite": true,
+      "colorWrite": true,
+      "stencilWrite": false,
+      "stencilWriteMask": 255,
+      "stencilFunc": 519,
+      "stencilRef": 0,
+      "stencilFuncMask": 255,
+      "stencilFail": 7680,
+      "stencilZFail": 7680,
+      "stencilZPass": 7680
+    },
+    {
+      "uuid": "b8a0379a-453b-430f-9e24-a19a3fee70b5",
+      "type": "MeshBasicMaterial",
+      "color": 65280,
+      "reflectivity": 1,
+      "refractionRatio": 0.98,
+      "depthFunc": 3,
+      "depthTest": true,
+      "depthWrite": true,
+      "colorWrite": true,
+      "stencilWrite": false,
+      "stencilWriteMask": 255,
+      "stencilFunc": 519,
+      "stencilRef": 0,
+      "stencilFuncMask": 255,
+      "stencilFail": 7680,
+      "stencilZFail": 7680,
+      "stencilZPass": 7680
+    }
+  ],
+  "object": {
+    "uuid": "02d267e5-e48b-475e-9080-1fd3b8ab2751",
+    "type": "Scene",
+    "layers": 1,
+    "matrix": [
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      1
+    ],
+    "children": [
+      {
+        "uuid": "d15b69bc-8094-4bd5-b82d-d0d54f8d5fa7",
+        "type": "Scene",
+        "layers": 1,
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1
+        ],
+        "children": [
+          {
+            "uuid": "d04387e6-583a-41f1-8990-5453dfd066d2",
+            "type": "Mesh",
+            "layers": 1,
+            "matrix": [
+              1,
+              0,
+              0,
+              0,
+              0,
+              0.2504553640323115,
+              0.9681281478334582,
+              0,
+              0,
+              -0.9681281478334582,
+              0.2504553640323115,
+              0,
+              0,
+              0,
+              0,
+              1
+            ],
+            "geometry": "07b81895-0758-4c00-a11b-a005195c2509",
+            "material": "9c18a142-b753-4b97-bf07-233532fb203b"
+          }
+        ]
+      },
+      {
+        "uuid": "be65cdab-304a-4d1b-9a84-90dd5557726d",
+        "type": "Scene",
+        "layers": 1,
+        "matrix": [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1
+        ],
+        "children": [
+          {
+            "uuid": "0be87c2a-2bab-4d0a-906b-36c8dc9f992c",
+            "type": "Mesh",
+            "layers": 1,
+            "matrix": [
+              1,
+              0,
+              0,
+              0,
+              0,
+              0.3541758888343887,
+              -0.9351788276946665,
+              0,
+              0,
+              0.9351788276946665,
+              0.3541758888343887,
+              0,
+              0,
+              0,
+              0,
+              1
+            ],
+            "geometry": "42064cc5-9679-4af4-805d-fbf165546f37",
+            "material": "b8a0379a-453b-430f-9e24-a19a3fee70b5"
+          }
+        ]
+      }
+    ]
+  }
+}
