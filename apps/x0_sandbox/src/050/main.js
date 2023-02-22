@@ -21,7 +21,7 @@ export async function main() {
     let renderer = new WebGLRenderer({ canvas: display.canvas });
     renderer.setSize(display.width, display.height);
 
-    let camera = new PerspectiveCamera(45, display.width / display.height, 1, 100);
+    let camera = new PerspectiveCamera(45, display.width / display.height, 0.01, 1000);
     camera.position.set(5, 5, 5);
     camera.lookAt(0, 0, 0);
     let controller = new OrbitControls(camera, renderer.domElement);
