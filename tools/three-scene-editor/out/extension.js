@@ -36,8 +36,11 @@ __export(extension_exports, {
 module.exports = __toCommonJS(extension_exports);
 var vscode2 = __toESM(require("vscode"));
 
-// src/sceneEditor.ts
+// src/document/sceneEditor.ts
 var vscode = __toESM(require("vscode"));
+
+// src/webview/WebViewHTML.ts
+var import_vscode = require("vscode");
 
 // src/util.ts
 function getNonce() {
@@ -49,10 +52,49 @@ function getNonce() {
   return text;
 }
 
-// src/sceneEditor.ts
+// src/webview/WebViewHTML.ts
+function html(context, webview) {
+  const scriptURI = webview.asWebviewUri(import_vscode.Uri.joinPath(
+    context.extensionUri,
+    "media",
+    "SceneEditor.js"
+  ));
+  const styleURI = webview.asWebviewUri(import_vscode.Uri.joinPath(
+    context.extensionUri,
+    "media",
+    "SceneEditor.css"
+  ));
+  const nonce = getNonce();
+  return (
+    /* html */
+    `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <!--
+            Use a content security policy to only allow loading images from https or from our extension directory,
+            and only allow scripts that have a specific nonce.
+            -->
+            <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${webview.cspSource}; style-src ${webview.cspSource}; script-src 'nonce-${nonce}';">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <link href="${styleURI}" rel="stylesheet" />
+            <title>Three.js Scene Editor</title>
+        </head>
+        <body>
+            <canvas></canvas>
+            <script nonce="${nonce}" src="${scriptURI}"></script>
+        </body>
+        </html>
+    `
+  );
+}
+
+// src/document/sceneEditor.ts
 var _SceneEditorProvider = class {
   constructor(context) {
     this.context = context;
+    this.cachedContent = "";
   }
   static register(context) {
     const provider = new _SceneEditorProvider(context);
@@ -64,10 +106,13 @@ var _SceneEditorProvider = class {
       enableScripts: true
     };
     webviewPanel.webview.html = this.getHTMLForWebview(webviewPanel.webview);
+    const textContent = document.getText();
+    this.cachedContent = JSON.stringify(JSON.parse(textContent), null, 2);
     function updateWebview() {
+      const textContent2 = document.getText();
       webviewPanel.webview.postMessage({
         type: "updateFromDocument",
-        value: document.getText()
+        value: textContent2
       });
     }
     const changeDocumentSubscription = vscode.workspace.onDidChangeTextDocument((e) => {
@@ -95,39 +140,7 @@ var _SceneEditorProvider = class {
     updateWebview();
   }
   getHTMLForWebview(webview) {
-    const scriptURI = webview.asWebviewUri(vscode.Uri.joinPath(
-      this.context.extensionUri,
-      "media",
-      "sceneEditor.js"
-    ));
-    const styleURI = webview.asWebviewUri(vscode.Uri.joinPath(
-      this.context.extensionUri,
-      "media",
-      "sceneEditor.css"
-    ));
-    const nonce = getNonce();
-    return (
-      /* html */
-      `
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <!--
-            Use a content security policy to only allow loading images from https or from our extension directory,
-            and only allow scripts that have a specific nonce.
-            -->
-            <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${webview.cspSource}; style-src ${webview.cspSource}; script-src 'nonce-${nonce}';">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <link href="${styleURI}" rel="stylesheet" />
-            <title>Three.js Scene Editor</title>
-        </head>
-        <body>
-            <canvas></canvas>
-            <script nonce="${nonce}" src="${scriptURI}"></script>
-        </body>
-        </html>`
-    );
+    return html(this.context, webview);
   }
   getDocumentAsJSON(document) {
     const text = document.getText();
@@ -148,8 +161,13 @@ var _SceneEditorProvider = class {
       vscode.window.showErrorMessage("Failed to parse json for text document.");
       return;
     }
+    let content = JSON.stringify(json, null, 2);
+    console.log(this.cachedContent, content);
+    if (this.cachedContent === content) {
+      return;
+    }
     const edit = new vscode.WorkspaceEdit();
-    edit.replace(document.uri, new vscode.Range(0, 0, document.lineCount, 0), JSON.stringify(json, null, 2));
+    edit.replace(document.uri, new vscode.Range(0, 0, document.lineCount, 0), content);
     return vscode.workspace.applyEdit(edit);
   }
 };

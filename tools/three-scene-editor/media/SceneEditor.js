@@ -1,417 +1,5 @@
 "use strict";
 (() => {
-  // ../../libs/display/dist/milque-display.esm.js
-  var INNER_HTML = '<div class="container">\n  <label class="hidden" id="title">display-port</label>\n  <label class="hidden" id="fps">00</label>\n  <label class="hidden" id="dimension">0x0</label>\n  <div class="content">\n    <canvas> Oh no! Your browser does not support canvas. </canvas>\n    <slot id="inner"></slot>\n  </div>\n  <slot name="frame"></slot>\n</div>\n';
-  var INNER_STYLE = ":host {\n  display: inline-block;\n  color: #555555;\n}\n\n.container {\n  display: flex;\n  position: relative;\n  width: 100%;\n  height: 100%;\n}\n\n.content {\n  position: relative;\n  margin: auto;\n}\n\n.content > *:not(canvas) {\n  width: 100%;\n  height: 100%;\n}\n\ncanvas {\n  background: #000000;\n  image-rendering: pixelated;\n}\n\nlabel {\n  position: absolute;\n  font-family: monospace;\n  color: currentColor;\n}\n\n#inner {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n  position: absolute;\n  top: 0;\n  left: 0;\n  pointer-events: none;\n}\n\n#title {\n  left: 0.5rem;\n  top: 0.5rem;\n}\n\n#fps {\n  right: 0.5rem;\n  top: 0.5rem;\n}\n\n#dimension {\n  left: 0.5rem;\n  bottom: 0.5rem;\n}\n\n.hidden {\n  display: none;\n}\n\n:host([debug]) .container {\n  outline: 6px dashed rgba(0, 0, 0, 0.1);\n  outline-offset: -4px;\n  background-color: rgba(0, 0, 0, 0.1);\n}\n\n:host([mode='noscale']) canvas {\n  margin: 0;\n  top: 0;\n  left: 0;\n}\n\n:host([mode='stretch']) canvas,\n:host([mode='scale']) canvas {\n  width: 100%;\n  height: 100%;\n}\n\n:host([mode='fit']),\n:host([mode='scale']),\n:host([mode='center']),\n:host([mode='stretch']),\n:host([mode='fill']) {\n  width: 100%;\n  height: 100%;\n}\n\n:host([full]) {\n  width: 100vw !important;\n  height: 100vh !important;\n}\n\n:host([disabled]) {\n  display: none;\n}\n\nslot {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n  position: absolute;\n  width: 100%;\n  height: 100%;\n  top: 0;\n  left: 0;\n  pointer-events: none;\n}\n\n::slotted(*) {\n  pointer-events: auto;\n}\n";
-  var MODE_NOSCALE = "noscale";
-  var MODE_FIT = "fit";
-  var MODE_SCALE = "scale";
-  var MODE_FILL = "fill";
-  var MODE_STRETCH = "stretch";
-  var DEFAULT_WIDTH = 300;
-  var DEFAULT_HEIGHT = 150;
-  var DEFAULT_MODE = MODE_FIT;
-  var DELAYED_RESIZE_MILLIS = 200;
-  var DisplayPort = class extends HTMLElement {
-    /**
-     * @param {object} [opts]
-     * @param {HTMLElement} [opts.root]
-     * @param {string} [opts.id]
-     * @param {DisplayScaling} [opts.mode]
-     * @param {number} [opts.width]
-     * @param {number} [opts.height]
-     * @param {boolean} [opts.debug]
-     */
-    static create(opts = {}) {
-      const {
-        root = document.body,
-        id = void 0,
-        mode = DEFAULT_MODE,
-        width = DEFAULT_WIDTH,
-        height = DEFAULT_HEIGHT,
-        debug = false
-      } = opts || {};
-      let result = new DisplayPort();
-      result.id = id;
-      result.mode = mode;
-      result.width = width;
-      result.height = height;
-      result.debug = debug;
-      root.appendChild(result);
-      return result;
-    }
-    /** @private */
-    static get [Symbol.for("templateNode")]() {
-      let t = document.createElement("template");
-      t.innerHTML = INNER_HTML;
-      Object.defineProperty(this, Symbol.for("templateNode"), { value: t });
-      return t;
-    }
-    /** @private */
-    static get [Symbol.for("styleNode")]() {
-      let t = document.createElement("style");
-      t.innerHTML = INNER_STYLE;
-      Object.defineProperty(this, Symbol.for("styleNode"), { value: t });
-      return t;
-    }
-    static define(customElements = window.customElements) {
-      customElements.define("display-port", this);
-    }
-    /**
-     * @protected
-     * Override for web component.
-     */
-    static get observedAttributes() {
-      return [
-        "debug",
-        "disabled",
-        // 'mode',
-        "width",
-        "height",
-        "onframe",
-        // Built-in attributes
-        "id",
-        "class"
-      ];
-    }
-    /**
-     * The scaling mode.
-     * - `noscale`: Do not perform scaling.
-     * - `center`: Do not perform scaling but stretch the display to fill the entire
-     * viewport. The unscaled canvas is centered.
-     * - `fit`: Resize resolution to fill the entire viewport and maintains the aspect
-     * ratio. The pixel resolution is changed. This is the default behavior.
-     * - `fill`: Resize resolution to fill the entire viewport but does not maintain
-     * aspect ratio.
-     * - `stretch`: Perform scaling to fill the entire viewport but does not maintain
-     * aspect ratio.
-     * - `scale`: Perform scaling to fill the entire viewport and maintains the
-     * aspect ratio and resolution. The pixel resolution remains constant.
-     * @returns {DisplayScaling} The current scaling mode.
-     */
-    get mode() {
-      return (
-        /** @type {DisplayScaling} */
-        this.getAttribute("mode")
-      );
-    }
-    set mode(value) {
-      this.setAttribute("mode", value);
-    }
-    /**
-     * Set to true for debug information.
-     * @returns {boolean}
-     */
-    get debug() {
-      return this._debug;
-    }
-    set debug(value) {
-      this.toggleAttribute("debug", value);
-    }
-    /**
-     * If disabled, animation frames will not fire.
-     * @returns {boolean}
-     */
-    get disabled() {
-      return this._disabled;
-    }
-    set disabled(value) {
-      this.toggleAttribute("disabled", value);
-    }
-    /**
-     * The canvas width in pixels. This determines the aspect ratio and canvas buffer size.
-     * @returns {number}
-     */
-    get width() {
-      return this._width;
-    }
-    set width(value) {
-      this.setAttribute("width", String(value));
-    }
-    /**
-     * The canvas height in pixels. This determines the aspect ratio and canvas buffer size.
-     */
-    get height() {
-      return this._height;
-    }
-    set height(value) {
-      this.setAttribute("height", String(value));
-    }
-    /** Fired every animation frame. */
-    get onframe() {
-      return this._onframe;
-    }
-    set onframe(value) {
-      if (this._onframe)
-        this.removeEventListener("frame", this._onframe);
-      this._onframe = value;
-      if (this._onframe)
-        this.addEventListener("frame", value);
-    }
-    constructor() {
-      super();
-      const shadowRoot = this.attachShadow({ mode: "open" });
-      shadowRoot.appendChild(
-        this.constructor[Symbol.for("templateNode")].content.cloneNode(true)
-      );
-      shadowRoot.appendChild(
-        this.constructor[Symbol.for("styleNode")].cloneNode(true)
-      );
-      this._canvasElement = shadowRoot.querySelector("canvas");
-      this._contentElement = shadowRoot.querySelector(".content");
-      this._innerElement = shadowRoot.querySelector("#inner");
-      this._titleElement = shadowRoot.querySelector("#title");
-      this._fpsElement = shadowRoot.querySelector("#fps");
-      this._dimensionElement = shadowRoot.querySelector("#dimension");
-      this._debug = false;
-      this._disabled = false;
-      this._width = DEFAULT_WIDTH;
-      this._height = DEFAULT_HEIGHT;
-      this._onframe = void 0;
-      this._animationRequestHandle = 0;
-      this._prevAnimationFrameTime = 0;
-      this._resizeTimeoutHandle = 0;
-      this._resizeCanvasWidth = 0;
-      this._resizeCanvasHeight = 0;
-      this._frameEvent = new CustomEvent("frame", {
-        composed: true,
-        bubbles: false,
-        detail: {
-          now: 0,
-          prevTime: 0,
-          deltaTime: 0,
-          canvas: this._canvasElement
-        }
-      });
-      this._resizeEvent = new CustomEvent("resize", {
-        composed: true,
-        bubbles: false,
-        detail: {
-          width: 0,
-          height: 0
-        }
-      });
-      this.update = this.update.bind(this);
-      this.onDelayCanvasResize = this.onDelayCanvasResize.bind(this);
-    }
-    /** Get the canvas element. */
-    get canvas() {
-      return this._canvasElement;
-    }
-    /**
-     * @protected
-     * Override for web component.
-     */
-    connectedCallback() {
-      upgradeProperty(this, "mode");
-      upgradeProperty(this, "debug");
-      upgradeProperty(this, "disabled");
-      upgradeProperty(this, "width");
-      upgradeProperty(this, "height");
-      upgradeProperty(this, "onframe");
-      if (!this.hasAttribute("mode")) {
-        this.setAttribute("mode", DEFAULT_MODE);
-      }
-      if (!this.hasAttribute("tabindex")) {
-        this.setAttribute("tabindex", "0");
-      }
-      this.updateCanvasSize(true);
-      this.resume();
-    }
-    /**
-     * @protected
-     * Override for web component.
-     */
-    disconnectedCallback() {
-      this.pause();
-    }
-    /**
-     * @protected
-     * Override for web component.
-     */
-    attributeChangedCallback(attribute, prev, value) {
-      switch (attribute) {
-        case "debug":
-          {
-            this._debug = value !== null;
-          }
-          break;
-        case "disabled":
-          {
-            this._disabled = value !== null;
-          }
-          break;
-        case "width":
-          {
-            this._width = Number(value);
-          }
-          break;
-        case "height":
-          {
-            this._height = Number(value);
-          }
-          break;
-        case "onframe":
-          {
-            this.onframe = new Function(
-              "event",
-              "with(document){with(this){" + value + "}}"
-            ).bind(this);
-          }
-          break;
-      }
-      switch (attribute) {
-        case "disabled":
-          if (value) {
-            this.update(0);
-            this.pause();
-          } else {
-            this.resume();
-          }
-          break;
-        case "id":
-        case "class":
-          this._titleElement.innerHTML = `display-port${this.className ? "." + this.className : ""}${this.hasAttribute("id") ? "#" + this.getAttribute("id") : ""}`;
-          break;
-        case "debug":
-          this._titleElement.classList.toggle("hidden", value);
-          this._fpsElement.classList.toggle("hidden", value);
-          this._dimensionElement.classList.toggle("hidden", value);
-          break;
-      }
-    }
-    /**
-     * @param {'2d'|'webgl'|'webgl2'} [contextId]
-     * @param {CanvasRenderingContext2DSettings} [options]
-     */
-    getContext(contextId = "2d", options = void 0) {
-      return this._canvasElement.getContext(contextId, options);
-    }
-    /** Pause animation of the display frames. */
-    pause() {
-      window.cancelAnimationFrame(this._animationRequestHandle);
-    }
-    /** Resume animation of the display frames. */
-    resume() {
-      this._animationRequestHandle = window.requestAnimationFrame(this.update);
-    }
-    /** @private */
-    update(now) {
-      this._animationRequestHandle = window.requestAnimationFrame(this.update);
-      this.updateCanvasSize(false);
-      const deltaTime = now - this._prevAnimationFrameTime;
-      this._prevAnimationFrameTime = now;
-      if (this._debug) {
-        const frames = deltaTime <= 0 ? "--" : String(Math.round(1e3 / deltaTime)).padStart(2, "0");
-        if (this._fpsElement.textContent !== frames) {
-          this._fpsElement.textContent = frames;
-        }
-        const mode = this.mode;
-        if (mode === MODE_NOSCALE) {
-          let result = `${this._width}x${this._height}`;
-          if (this._dimensionElement.textContent !== result) {
-            this._dimensionElement.textContent = result;
-          }
-        } else {
-          let result = `${this._width}x${this._height}|${this.shadowRoot.host.clientWidth}x${this.shadowRoot.host.clientHeight}`;
-          if (this._dimensionElement.textContent !== result) {
-            this._dimensionElement.textContent = result;
-          }
-        }
-      }
-      let event = this._frameEvent;
-      let detail = event.detail;
-      detail.now = now;
-      detail.prevTime = this._prevAnimationFrameTime;
-      detail.deltaTime = deltaTime;
-      this.dispatchEvent(this._frameEvent);
-    }
-    /** @private */
-    onDelayCanvasResize() {
-      this._resizeTimeoutHandle = null;
-      this.updateCanvasSize(true);
-    }
-    delayCanvasResize(canvasWidth, canvasHeight) {
-      if (canvasWidth !== this._resizeCanvasWidth || canvasHeight !== this._resizeCanvasHeight) {
-        this._resizeCanvasWidth = canvasWidth;
-        this._resizeCanvasHeight = canvasHeight;
-        if (this._resizeTimeoutHandle) {
-          window.clearTimeout(this._resizeTimeoutHandle);
-        }
-        this._resizeTimeoutHandle = window.setTimeout(
-          this.onDelayCanvasResize,
-          DELAYED_RESIZE_MILLIS
-        );
-      }
-    }
-    /** @private */
-    updateCanvasSize(force = true) {
-      const clientRect = this.shadowRoot.host.getBoundingClientRect();
-      const clientWidth = clientRect.width;
-      const clientHeight = clientRect.height;
-      let canvas = this._canvasElement;
-      let canvasWidth = this._width;
-      let canvasHeight = this._height;
-      const mode = this.mode;
-      if (mode === MODE_STRETCH || mode === MODE_FILL) {
-        canvasWidth = clientWidth;
-        canvasHeight = clientHeight;
-      } else if (mode !== MODE_NOSCALE) {
-        if (clientWidth < canvasWidth || clientHeight < canvasHeight || mode === MODE_FIT || mode == MODE_SCALE) {
-          let ratioX = clientWidth / canvasWidth;
-          let ratioY = clientHeight / canvasHeight;
-          if (ratioX < ratioY) {
-            canvasWidth = clientWidth;
-            canvasHeight = canvasHeight * ratioX;
-          } else {
-            canvasWidth = canvasWidth * ratioY;
-            canvasHeight = clientHeight;
-          }
-        }
-      }
-      canvasWidth = Math.floor(canvasWidth);
-      canvasHeight = Math.floor(canvasHeight);
-      if (typeof force === "undefined") {
-        force = canvas.clientWidth !== canvasWidth || canvas.clientHeight !== canvasHeight;
-      }
-      if (!force) {
-        this.delayCanvasResize(canvasWidth, canvasHeight);
-        return;
-      }
-      let fontSize = Math.min(canvasWidth / this._width, canvasHeight / this._height) * 0.5;
-      this._innerElement.style.fontSize = `font-size: ${fontSize}em`;
-      if (force) {
-        if (mode === MODE_SCALE) {
-          canvas.width = this._width;
-          canvas.height = this._height;
-        } else if (mode !== MODE_STRETCH) {
-          canvas.width = canvasWidth;
-          canvas.height = canvasHeight;
-        }
-        let contentStyle = this._contentElement.style;
-        contentStyle.width = `${canvasWidth}px`;
-        contentStyle.height = `${canvasHeight}px`;
-        if (mode === MODE_FIT || mode === MODE_FILL) {
-          this._width = canvasWidth;
-          this._height = canvasHeight;
-        }
-        let event = this._resizeEvent;
-        let detail = event.detail;
-        detail.width = canvasWidth;
-        detail.height = canvasHeight;
-        this.dispatchEvent(this._resizeEvent);
-      }
-    }
-  };
-  DisplayPort.define();
-  function upgradeProperty(element, propertyName) {
-    if (Object.prototype.hasOwnProperty.call(element, propertyName)) {
-      let value = element[propertyName];
-      delete element[propertyName];
-      element[propertyName] = value;
-    }
-  }
-
   // ../../common/temp/node_modules/.pnpm/three@0.149.0/node_modules/three/build/three.module.js
   var REVISION = "149";
   var MOUSE = { LEFT: 0, MIDDLE: 1, RIGHT: 2, ROTATE: 0, DOLLY: 1, PAN: 2 };
@@ -26527,8 +26115,53 @@
     }
   };
 
-  // src/webview.js
+  // src/webview/ThreeWorld.js
+  var ThreeWorld = class {
+    constructor() {
+      this.scene = new Scene();
+      this.meshes = [];
+      this.geometries = {};
+      this.materials = {};
+      this.animations = {};
+    }
+    createCube() {
+      let g = new BoxGeometry(1, 1, 1);
+      this.geometries[g.uuid] = g;
+      let m = new MeshBasicMaterial({ color: 65280 });
+      this.materials[m.uuid] = m;
+      let mesh = new Mesh(g, m);
+      this.meshes.push(mesh);
+      this.scene.add(mesh);
+      return mesh;
+    }
+    applyChanges() {
+    }
+    async syncFrom(text) {
+      let json;
+      try {
+        json = JSON.parse(text);
+      } catch (e) {
+        throw new Error(`Invalid json - ${e}`);
+      }
+      let loader = new ObjectLoader();
+      let object = await loader.parseAsync(json);
+      this.scene = object;
+    }
+    stringify() {
+      let json = this.scene.toJSON();
+      let text = JSON.stringify(json, null, 2);
+      return text;
+    }
+  };
+
+  // src/webview/webview.js
   var vscode = acquireVsCodeApi();
+  function updateFromWebview(jsonString) {
+    vscode.postMessage({
+      type: "updateFromWebview",
+      value: jsonString
+    });
+  }
   function alert(message) {
     vscode.postMessage({ type: "alert", value: typeof message === "string" ? message : JSON.stringify(message) });
   }
@@ -26548,10 +26181,10 @@
       this.camera = new PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1e3);
       this.camera.position.set(5, 5, 5);
       this.camera.lookAt(0, 0, 0);
-      this.scene = new Scene();
       this.renderer = new WebGLRenderer({ canvas: this.canvas });
       this.controller = new OrbitControls(this.camera, this.canvas);
       this.controller.update();
+      this.world = new ThreeWorld();
       this.resizeTimeout = null;
       this.onAnimationFrame = this.onAnimationFrame.bind(this);
       this.onResize = this.onResize.bind(this);
@@ -26559,15 +26192,14 @@
       this.prevTime = 0;
       this.currentTime = 0;
       this.deltaTime = 0;
-      this.currentText = "";
       window.requestAnimationFrame(this.onAnimationFrame);
       window.addEventListener("resize", this.onResize);
       window.setInterval(this.onInterval, 3e3);
       this.onResize();
     }
     onInterval() {
-      let json = this.scene.toJSON();
-      this.updateFromWebview(json);
+      let string = this.world.stringify();
+      updateFromWebview(string);
     }
     onAnimationFrame(now) {
       this.prevTime = this.currentTime;
@@ -26576,7 +26208,7 @@
       window.requestAnimationFrame(this.onAnimationFrame);
       this.controller.update();
       let dt = this.deltaTime / 60;
-      this.renderer.render(this.scene, this.camera);
+      this.renderer.render(this.world.scene, this.camera);
     }
     onResize() {
       if (this.resizeTimeout) {
@@ -26592,26 +26224,9 @@
         this.renderer.setSize(w, h);
       }, 100);
     }
-    updateFromWebview(json) {
-      this.currentText = JSON.stringify(json, null, 2);
-      vscode.postMessage({
-        type: "updateFromWebview",
-        value: this.currentText
-      });
-    }
     async updateFromDocument(text) {
       info("DOC");
-      let json;
-      try {
-        json = JSON.parse(text);
-      } catch {
-        alert("Failed to parse json.");
-        return;
-      }
-      this.scene.clear();
-      let loader = new ObjectLoader();
-      let result = await loader.parseAsync(json);
-      this.scene.add(result);
+      this.world.syncFrom(text);
     }
   };
   async function main() {

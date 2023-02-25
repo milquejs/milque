@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { ThreeWorld } from './ThreeWorld';
 
 // @ts-ignore
 const vscode = acquireVsCodeApi();
@@ -34,12 +35,11 @@ class ThreeApplication {
         this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000);
         this.camera.position.set(5, 5, 5);
         this.camera.lookAt(0, 0, 0);
-        this.scene = new THREE.Scene();
         this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas });
         this.controller = new OrbitControls(this.camera, this.canvas);
         this.controller.update();
 
-        this.world = new ThreeJSONWorld(this.scene);
+        this.world = new ThreeWorld();
 
         //this.mesh = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial({ color: 0x00ff00 }));
         //this.scene.add(this.mesh);
@@ -78,7 +78,7 @@ class ThreeApplication {
 
         let dt = this.deltaTime / 60;
         // this.mesh.rotation.x += 0.1 * dt;
-        this.renderer.render(this.scene, this.camera);
+        this.renderer.render(this.world.scene, this.camera);
     }
 
     onResize() {
@@ -98,17 +98,7 @@ class ThreeApplication {
 
     async updateFromDocument(text) {
         info('DOC');
-        let json;
-        try {
-            json = JSON.parse(text);
-        } catch {
-            alert('Failed to parse json.');
-            return;
-        }
-        this.scene.clear();
-        let loader = new THREE.ObjectLoader();
-        let result = await loader.parseAsync(json);
-        this.scene.add(result);
+        this.world.syncFrom(text);
     }
 }
 
@@ -129,46 +119,5 @@ async function main() {
     const state = vscode.getState();
     if (state) {
         app.updateFromDocument(state.text);
-    }
-}
-
-class ThreeJSONWorld {
-
-    constructor() {
-        this.scene = new THREE.Scene();
-
-        this.geometryUUIDToId = {};
-    }
-
-    syncFrom(text) {
-        let json;
-        try {
-            json = JSON.parse(text);
-        } catch {
-            throw new Error('Invalid json.');
-        }
-        if (!json || typeof json !== 'object') {
-            throw new Error('Must be a non-empty object json.');
-        }
-        for(let object of json.object) {
-            let uuid = object.uuid;
-        }
-        // TODO: Sync this properly
-        for(let geometry of json.geometries) {
-            let id = this.geometryUUIDToId[geometry.uuid];
-            if (!id) {
-
-            }
-            this.scene.getObjectById(geometry.uuid);
-        }
-    }
-
-    jsonify() {
-        return this.scene.toJSON();
-    }
-
-    stringify() {
-        let json = this.jsonify();
-        return JSON.stringify(json, null, 2);
     }
 }

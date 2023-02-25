@@ -2,6 +2,7 @@
   "name": "three-scene-editor",
   "displayName": "three-scene-editor",
   "description": "A scene editor for Three.js",
+  "publisher": "milquejs",
   "version": "0.0.1",
   "engines": {
     "vscode": "^1.75.0"
@@ -33,10 +34,9 @@
     ]
   },
   "scripts": {
-    "vscode:prepublish": "pnpm run build-ext -- --minify; pnpm run build-web -- --minify",
-    "build": "pnpm run build-ext; pnpm run build-web",
-    "build-ext": "esbuild ./src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node",
-    "build-web": "esbuild ./src/webview.js --bundle --outfile=media/sceneEditor.js --format=iife --platform=browser",
+    "vscode:prepublish": "pnpm run build -- --minify",
+    "build": "node ./build.js",
+    "start": "node ./build.js --watch",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "pretest": "pnpm run compile && pnpm run lint",

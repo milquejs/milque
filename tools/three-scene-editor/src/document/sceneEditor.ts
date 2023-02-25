@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { getNonce } from './util';
+import { html } from '../webview/WebViewHTML';
 
 export class SceneEditorProvider implements vscode.CustomTextEditorProvider {
     
@@ -10,6 +10,7 @@ export class SceneEditorProvider implements vscode.CustomTextEditorProvider {
     }
 
     private static readonly viewType = 'threeSceneEditor.sceneEdit';
+    private cachedContent = '';
 
     constructor(
         private readonly context: vscode.ExtensionContext
@@ -21,10 +22,14 @@ export class SceneEditorProvider implements vscode.CustomTextEditorProvider {
         };
         webviewPanel.webview.html = this.getHTMLForWebview(webviewPanel.webview);
 
+        const textContent = document.getText();
+        this.cachedContent = JSON.stringify(JSON.parse(textContent), null, 2);
+
         function updateWebview() {
+            const textContent = document.getText();
             webviewPanel.webview.postMessage({
                 type: 'updateFromDocument',
-                value: document.getText(),
+                value: textContent,
             });
         }
 
@@ -57,31 +62,7 @@ export class SceneEditorProvider implements vscode.CustomTextEditorProvider {
     }
 
     private getHTMLForWebview(webview: vscode.Webview): string {
-        const scriptURI = webview.asWebviewUri(vscode.Uri.joinPath(
-            this.context.extensionUri, 'media', 'sceneEditor.js'));
-        const styleURI = webview.asWebviewUri(vscode.Uri.joinPath(
-            this.context.extensionUri, 'media', 'sceneEditor.css'));
-        
-        const nonce = getNonce();
-        return /* html */`
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <!--
-            Use a content security policy to only allow loading images from https or from our extension directory,
-            and only allow scripts that have a specific nonce.
-            -->
-            <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${webview.cspSource}; style-src ${webview.cspSource}; script-src 'nonce-${nonce}';">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <link href="${styleURI}" rel="stylesheet" />
-            <title>Three.js Scene Editor</title>
-        </head>
-        <body>
-            <canvas></canvas>
-            <script nonce="${nonce}" src="${scriptURI}"></script>
-        </body>
-        </html>`;
+        return html(this.context, webview);
     }
 
     private getDocumentAsJSON(document: vscode.TextDocument): any {
@@ -104,8 +85,13 @@ export class SceneEditorProvider implements vscode.CustomTextEditorProvider {
             vscode.window.showErrorMessage('Failed to parse json for text document.');
             return;
         }
+        let content = JSON.stringify(json, null, 2);
+        console.log(this.cachedContent, content);
+        if (this.cachedContent === content) {
+            return;
+        }
         const edit = new vscode.WorkspaceEdit();
-        edit.replace(document.uri, new vscode.Range(0, 0, document.lineCount, 0), JSON.stringify(json, null, 2));
+        edit.replace(document.uri, new vscode.Range(0, 0, document.lineCount, 0), content);
         return vscode.workspace.applyEdit(edit);
     }
 }
