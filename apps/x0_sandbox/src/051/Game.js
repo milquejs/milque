@@ -1,6 +1,6 @@
 import { AssetRef } from '@milque/asset';
 import { ButtonBinding, KeyCodes } from '@milque/input';
-import { useProvider } from '@milque/scene';
+import { Toaster } from '@milque/scene';
 
 import { clearScreen, fillCircle } from './Canvas2d.js';
 import { Canvas2dProvider, InputProvider } from './main.js';
@@ -21,7 +21,7 @@ export async function load(m) {
 }
 
 export function init(m) {
-    let { axb } = useProvider(m, InputProvider);
+    let { axb } = Toaster.useProvider(m, InputProvider);
     axb.bindBindings(Inputs);
 }
 
@@ -33,7 +33,7 @@ export function update(m) {
 }
 
 export function draw(m) {
-    let { ctx } = useProvider(m, Canvas2dProvider);
+    let { ctx } = Toaster.useProvider(m, Canvas2dProvider);
     clearScreen(ctx, 0x000000);
     fillCircle(ctx, x, y, 16, 0xFFF000);
 }

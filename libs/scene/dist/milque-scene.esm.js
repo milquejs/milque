@@ -1991,5 +1991,132 @@ function getContextIfExists(provider, target) {
     return null;
 }
 
-export { AnimationFrameLoop, Camera, ComponentClass, EntityManager, EntityTemplate, FirstPersonCameraController, Not, OrthographicCamera, PerspectiveCamera, Query, QueryManager, SceneGraph, Topic, TopicManager, applyEffects, ejectProviders, injectProviders, isSelectorNot, lookAt, panTo, revertEffects, screenToWorldRay, useEffect, useProvider };
+/**
+ * @type {Topic<import('../loop/AnimationFrameLoop').AnimationFrameLoop>}
+ */
+const SystemUpdateTopic = new Topic('main.update');
+
+/**
+ * @template M
+ * @param {M} m 
+ * @param {import('../topic/TopicManager').TopicManager} topics 
+ * @param {import('../topic/TopicManager').TopicCallback<import('../loop/AnimationFrameLoop').AnimationFrameLoop>} callback 
+ */
+function useSystemUpdate(m, topics, callback) {
+    useEffect(m, () => {
+        SystemUpdateTopic.on(topics, 0, callback);
+        return () => {
+            SystemUpdateTopic.off(topics, callback);
+        };
+    });
+}
+
+/**
+ * @template M, T
+ * @param {M} m 
+ * @param {import('../topic/Topic').Topic<T>} topic 
+ * @param {number} priority 
+ * @param {import('../topic/Topic').TopicCallback<T>} callback 
+ */
+function useTopic(m, topic, priority, callback) {
+    const topics = useProvider(m, TopicsProvider);
+    useEffect(m, () => {
+        topic.on(topics, priority, callback);
+        return () => {
+            topic.off(topics, callback);
+        };
+    });
+}
+
+/**
+ * @template M
+ * @param {M} m
+ */
+function TopicsProvider(m) {
+    const topics = new TopicManager();
+    useSystemUpdate(m, topics, () => {
+        topics.flush();
+    });
+    return topics;
+}
+
+/**
+ * @template M
+ * @typedef ToastHandler
+ * @property {(m: M) => Promise<void>} [load]
+ * @property {(m: M) => Promise<void>} [unload]
+ * @property {(m: M) => void} [init]
+ * @property {(m: M) => void} [dead]
+ * @property {(m: M) => void} [update]
+ * @property {(m: M) => void} [draw]
+ */
+
+/**
+ * @template M
+ * @param {M} m
+ * @param {ToastHandler<M>} handler
+ */
+function toast(m, handler, providers = []) {
+    function GameSystem(m) {
+        const topics = useProvider(m, TopicsProvider);
+        useEffect(m, async () => {
+            if (handler.load) await handler.load(m);
+            if (handler.init) handler.init(m);
+            return async () => {
+                if (handler.dead) handler.dead(m);
+                if (handler.unload) await handler.unload(m);
+            };
+        });
+        useSystemUpdate(m, topics, () => {
+            if (handler.update) handler.update(m);
+            if (handler.draw) handler.draw(m);
+        });
+    }
+    const result = [
+        TopicsProvider,
+        AnimationFrameLoopProvider,
+        ...providers,
+        GameSystem,
+    ];
+    return {
+        async start() {
+            injectProviders(m, result);
+            await applyEffects(m, result);
+            return this;
+        },
+        async stop() {
+            await revertEffects(m, result);
+            ejectProviders(m, result);
+            return this;
+        },
+    }
+}
+
+/**
+ * @template M
+ * @param {M} m
+ */
+function AnimationFrameLoopProvider(m) {
+    const topics = useProvider(m, TopicsProvider);
+    const loop = new AnimationFrameLoop((e) => {
+        SystemUpdateTopic.dispatchImmediately(topics, e);
+    });
+    useEffect(m, () => {
+        loop.start();
+    });
+    return loop;
+}
+
+var index = /*#__PURE__*/Object.freeze({
+  __proto__: null,
+  AnimationFrameLoopProvider: AnimationFrameLoopProvider,
+  TopicsProvider: TopicsProvider,
+  toast: toast,
+  useEffect: useEffect,
+  useProvider: useProvider,
+  useSystemUpdate: useSystemUpdate,
+  useTopic: useTopic
+});
+
+export { AnimationFrameLoop, Camera, ComponentClass, EntityManager, EntityTemplate, FirstPersonCameraController, Not, OrthographicCamera, PerspectiveCamera, Query, QueryManager, SceneGraph, index as Toaster, Topic, TopicManager, isSelectorNot, lookAt, panTo, screenToWorldRay };
 //# sourceMappingURL=milque-scene.esm.js.map

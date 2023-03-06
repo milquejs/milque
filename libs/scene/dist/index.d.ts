@@ -863,20 +863,6 @@ type AnimationFrameLoopCallback = (frameDetail: AnimationFrameLoop) => void;
  * @returns {T}
  */
 declare function useProvider<M, T>(m: M, provider: Provider<M, T>): T;
-/**
- * @template M
- * @param {M} m
- * @param {Array<Provider<?, ?>>} providers
- * @returns {M}
- */
-declare function injectProviders<M>(m: M, providers: Array<Provider<unknown, unknown>>): M;
-/**
- * @template M
- * @param {M} m
- * @param {Array<Provider<?, ?>>} providers
- * @returns {M}
- */
-declare function ejectProviders<M>(m: M, providers: Array<Provider<unknown, unknown>>): M;
 type Provider<M, T> = (m: M, [opts]: object) => T;
 
 /**
@@ -898,19 +884,81 @@ type Provider<M, T> = (m: M, [opts]: object) => T;
  * @param {EffectHandler} handler
  */
 declare function useEffect<M>(m: M, handler: EffectHandler): void;
-/**
- * @template M
- * @param {M} m
- * @param {Array<import('./ProviderHook').Provider<M, ?>>} providers
- */
-declare function applyEffects<M>(m: M, providers: Provider<M, any>[]): Promise<M>;
-/**
- * @template M
- * @param {M} m
- * @param {Array<import('./ProviderHook').Provider<M, ?>>} providers
- */
-declare function revertEffects<M>(m: M, providers: Provider<M, any>[]): Promise<M>;
 type EffectHandler = () => AfterEffectHandler | Promise<AfterEffectHandler> | Promise<void> | void;
 type AfterEffectHandler = () => Promise<void> | void;
 
-export { AnimationFrameLoop, AnimationFrameLoopCallback, Camera, ComponentClass, ComponentClassMap, ComponentInstanceMap, ComponentName, EntityComponentChangedCallback, EntityId, EntityManager, EntityTemplate, FirstPersonCameraController, Not, OrthographicCamera, PerspectiveCamera, Query$1 as Query, QueryManager, SceneGraph, SceneNode, SceneNodeInfo, Selector, SelectorNot, Topic$1 as Topic, TopicCallback, TopicManager, WalkBackCallback, WalkCallback, WalkChildrenCallback, applyEffects, ejectProviders, injectProviders, isSelectorNot, lookAt, panTo, revertEffects, screenToWorldRay, useEffect, useProvider };
+/**
+ * @template M
+ * @param {M} m
+ * @param {import('../topic/TopicManager').TopicManager} topics
+ * @param {import('../topic/TopicManager').TopicCallback<import('../loop/AnimationFrameLoop').AnimationFrameLoop>} callback
+ */
+declare function useSystemUpdate<M>(m: M, topics: TopicManager, callback: TopicCallback$1<AnimationFrameLoop>): void;
+
+/**
+ * @template M, T
+ * @param {M} m
+ * @param {import('../topic/Topic').Topic<T>} topic
+ * @param {number} priority
+ * @param {import('../topic/Topic').TopicCallback<T>} callback
+ */
+declare function useTopic<M, T>(m: M, topic: Topic$1<T>, priority: number, callback: TopicCallback$2<T>): void;
+/**
+ * @template M
+ * @param {M} m
+ */
+declare function TopicsProvider<M>(m: M): TopicManager;
+
+/**
+ * @template M
+ * @typedef ToastHandler
+ * @property {(m: M) => Promise<void>} [load]
+ * @property {(m: M) => Promise<void>} [unload]
+ * @property {(m: M) => void} [init]
+ * @property {(m: M) => void} [dead]
+ * @property {(m: M) => void} [update]
+ * @property {(m: M) => void} [draw]
+ */
+/**
+ * @template M
+ * @param {M} m
+ * @param {ToastHandler<M>} handler
+ */
+declare function toast<M>(m: M, handler: ToastHandler<M>, providers?: any[]): {
+    start(): Promise<any>;
+    stop(): Promise<any>;
+};
+/**
+ * @template M
+ * @param {M} m
+ */
+declare function AnimationFrameLoopProvider<M>(m: M): AnimationFrameLoop;
+type ToastHandler<M> = {
+    load?: (m: M) => Promise<void>;
+    unload?: (m: M) => Promise<void>;
+    init?: (m: M) => void;
+    dead?: (m: M) => void;
+    update?: (m: M) => void;
+    draw?: (m: M) => void;
+};
+
+declare const index_AnimationFrameLoopProvider: typeof AnimationFrameLoopProvider;
+declare const index_TopicsProvider: typeof TopicsProvider;
+declare const index_toast: typeof toast;
+declare const index_useEffect: typeof useEffect;
+declare const index_useProvider: typeof useProvider;
+declare const index_useSystemUpdate: typeof useSystemUpdate;
+declare const index_useTopic: typeof useTopic;
+declare namespace index {
+  export {
+    index_AnimationFrameLoopProvider as AnimationFrameLoopProvider,
+    index_TopicsProvider as TopicsProvider,
+    index_toast as toast,
+    index_useEffect as useEffect,
+    index_useProvider as useProvider,
+    index_useSystemUpdate as useSystemUpdate,
+    index_useTopic as useTopic,
+  };
+}
+
+export { AnimationFrameLoop, AnimationFrameLoopCallback, Camera, ComponentClass, ComponentClassMap, ComponentInstanceMap, ComponentName, EntityComponentChangedCallback, EntityId, EntityManager, EntityTemplate, FirstPersonCameraController, Not, OrthographicCamera, PerspectiveCamera, Query$1 as Query, QueryManager, SceneGraph, SceneNode, SceneNodeInfo, Selector, SelectorNot, index as Toaster, Topic$1 as Topic, TopicCallback, TopicManager, WalkBackCallback, WalkCallback, WalkChildrenCallback, isSelectorNot, lookAt, panTo, screenToWorldRay };
