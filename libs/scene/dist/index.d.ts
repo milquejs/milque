@@ -914,9 +914,9 @@ declare function TopicsProvider<M>(m: M): TopicManager;
  * @typedef ToastHandler
  * @property {(m: M) => Promise<void>} [load]
  * @property {(m: M) => Promise<void>} [unload]
- * @property {(m: M) => void} [init]
+ * @property {(m: M) => void} init
  * @property {(m: M) => void} [dead]
- * @property {(m: M) => void} [update]
+ * @property {(m: M) => void} update
  * @property {(m: M) => void} [draw]
  */
 /**
@@ -936,9 +936,9 @@ declare function AnimationFrameLoopProvider<M>(m: M): AnimationFrameLoop;
 type ToastHandler<M> = {
     load?: (m: M) => Promise<void>;
     unload?: (m: M) => Promise<void>;
-    init?: (m: M) => void;
+    init: (m: M) => void;
     dead?: (m: M) => void;
-    update?: (m: M) => void;
+    update: (m: M) => void;
     draw?: (m: M) => void;
 };
 

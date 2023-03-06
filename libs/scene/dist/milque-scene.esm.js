@@ -2045,9 +2045,9 @@ function TopicsProvider(m) {
  * @typedef ToastHandler
  * @property {(m: M) => Promise<void>} [load]
  * @property {(m: M) => Promise<void>} [unload]
- * @property {(m: M) => void} [init]
+ * @property {(m: M) => void} init
  * @property {(m: M) => void} [dead]
- * @property {(m: M) => void} [update]
+ * @property {(m: M) => void} update
  * @property {(m: M) => void} [draw]
  */
 
