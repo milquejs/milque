@@ -827,6 +827,15 @@ function isSelectorNot(selector) {
  * @typedef {string} ComponentName
  */
 
+/**
+ * @callback EntityComponentChangedCallback
+ * @param {EntityManager} entityManager
+ * @param {EntityId} entityId
+ * @param {ComponentClass<?>} attached
+ * @param {ComponentClass<?>} detached
+ * @param {boolean} dead
+ */
+
 class EntityManager {
 
     constructor() {
@@ -837,7 +846,6 @@ class EntityManager {
         this.components = {};
         /** @private */
         this.nameClassMapping = {};
-        
         /**
          * @private
          * @type {EntityId}
@@ -848,19 +856,46 @@ class EntityManager {
          * @type {Array<[string, ...any]>}
          */
         this.queue = [];
-
+        /** @private */
+        this.listeners = [];
         this.queries = new QueryManager();
     }
 
     /**
      * @protected
      * @param {EntityId} entityId
-     * @param {ComponentClass<?>} added
-     * @param {ComponentClass<?>} removed
+     * @param {ComponentClass<?>} attached
+     * @param {ComponentClass<?>} detached
      * @param {boolean} dead
      */
-    entityComponentChangedCallback(entityId, added, removed, dead) {
-        this.queries.onEntityComponentChanged(this, entityId, added, removed, dead);
+    entityComponentChangedCallback(entityId, attached, detached, dead) {
+        this.queries.onEntityComponentChanged(this, entityId, attached, detached, dead);
+        for(let callback of this.listeners) {
+            callback(this, entityId, attached, detached, dead);
+        }
+    }
+
+    /**
+     * @param {'change'} event 
+     * @param {EntityComponentChangedCallback} callback 
+     */
+    addEventListener(event, callback) {
+        if (event === 'change') {
+            this.listeners.push(callback);
+        }
+    }
+
+    /**
+     * @param {'change'} event 
+     * @param {EntityComponentChangedCallback} callback 
+     */
+    removeEventListener(event, callback) {
+        if (event === 'change') {
+            let i = this.listeners.indexOf(callback);
+            if (i >= 0) {
+                this.listeners.splice(i, 1);
+            }
+        }
     }
 
     flush() {
@@ -887,7 +922,9 @@ class EntityManager {
      * @returns {EntityId}
      */
     create() {
-        return this.nextAvailableEntityId++;
+        let entityId = this.nextAvailableEntityId++;
+        this.entityComponentChangedCallback(entityId, null, null, false);
+        return entityId;
     }
 
     /**
@@ -1100,6 +1137,7 @@ class EntityManager {
         this.components = {};
         this.nextAvailableEntityId = 1;
         this.queue.length = 0;
+        this.listeners.length = 0;
     }
 }
 
@@ -1173,6 +1211,9 @@ class Query {
      * @param {T} selectors 
      */
     constructor(...selectors) {
+        if (selectors.length <= 0) {
+            throw new Error('Must have at least 1 selector for query.');
+        }
         this.selectors = selectors;
         this.key = selectors.map(s => isSelectorNot(s) ? `!${s.name}` : s.name).sort().join('&');
     }
@@ -1232,7 +1273,7 @@ class Query {
      * @returns {number}
      */
     count(entityManager) {
-        return entityManager.queryManager.count(entityManager, this);
+        return entityManager.queries.count(entityManager, this);
     }
 
     /**
@@ -1240,7 +1281,7 @@ class Query {
      * @returns {[EntityId, ...ComponentInstancesOf<T>]}
      */
     findAny(entityManager) {
-        const queryManager = entityManager.queryManager;
+        const queryManager = entityManager.queries;
         let result = /** @type {[EntityId, ...ComponentInstancesOf<T>]} */ (new Array(this.selectors.length + 1));
         let entityId = queryManager.findAny(entityManager, this);
         if (entityId === null) {
@@ -1255,7 +1296,7 @@ class Query {
      * @returns {Generator<[EntityId, ...ComponentInstancesOf<T>]>}
      */
     *findAll(entityManager) {
-        const queryManager = entityManager.queryManager;
+        const queryManager = entityManager.queries;
         let result = /** @type {[EntityId, ...ComponentInstancesOf<T>]} */ (new Array(this.selectors.length + 1));
         let entities = queryManager.findAll(entityManager, this);
         for(let entityId of entities) {
@@ -1312,6 +1353,14 @@ class Topic {
      */
     dispatch(topicManager, attachment) {
         topicManager.dispatch(this, attachment);
+    }
+
+    /**
+     * @param {TopicManager} topicManager
+     * @param {T} attachment
+     */
+    dispatchImmediately(topicManager, attachment) {
+        topicManager.dispatchImmediately(this, attachment);
     }
 
     /**
@@ -1403,6 +1452,10 @@ function comparator(a, b) {
     return a.priority - b.priority;
 }
 
+/**
+ * A manager for topic states. You should call `flush()` regularly to
+ * process dispatched events or use `dispatchImmediately()`.
+ */
 class TopicManager {
 
     constructor() {
@@ -1584,6 +1637,8 @@ class TopicManager {
         } else {
             let result = [];
             this.cachedIn[topicName] = result;
+            this.cachedOut[topicName] = [];
+            this.nameTopicMapping[topicName] = topic;
             return result;
         }
     }
@@ -1600,7 +1655,9 @@ class TopicManager {
             return this.cachedOut[topicName];
         } else {
             let result = [];
+            this.cachedIn[topicName] = [];
             this.cachedOut[topicName] = result;
+            this.nameTopicMapping[topicName] = topic;
             return result;
         }
     }
@@ -1674,5 +1731,265 @@ class AnimationFrameLoop {
     }
 }
 
-export { AnimationFrameLoop, Camera, ComponentClass, EntityManager, EntityTemplate, FirstPersonCameraController, Not, OrthographicCamera, PerspectiveCamera, Query, QueryManager, SceneGraph, Topic, TopicManager, isSelectorNot, lookAt, panTo, screenToWorldRay };
+/**
+ * @template M, T
+ * @typedef {(m: M, [opts]: object) => T} Provider
+ */
+
+/**
+ * @template M, T
+ * @typedef ProviderContext
+ * @property {Provider<M, T>} handle
+ * @property {T} value
+ */
+
+/**
+ * @template M, T
+ * @param {M} m 
+ * @param {Provider<M, T>} provider 
+ * @returns {T}
+ */
+function useProvider(m, provider) {
+    let state = resolveState$1(m);
+    let handle = provider.name;
+    if (handle in state.contexts) {
+        /** @type {ProviderContext<M, T>} */
+        let { value } = state.contexts[handle];
+        if (value) {
+            return value;
+        } else {
+            let current = getCurrentProvider(m);
+            if (current.name === provider.name) {
+                throw new Error(`Cannot useProvider() on self during initialization!`);
+            } else {
+                throw new Error('This is not a provider.');
+            }
+        }
+    }
+    throw new Error(`Missing assigned dependent provider '${handle}' in context.`);
+}
+
+/**
+ * @template M
+ * @param {M} m 
+ * @param {Array<Provider<?, ?>>} providers
+ * @returns {M}
+ */
+function injectProviders(m, providers) {
+    let state = resolveState$1(m);
+    for(let provider of providers) {
+        /** @type {ProviderContext<?, ?>} */
+        let context = {
+            handle: provider,
+            value: null,
+        };
+        state.contexts[provider.name] = context;
+        state.current = provider;
+        context.value = provider(m);
+    }
+    return m;
+}
+
+/**
+ * @template M
+ * @param {M} m 
+ * @param {Array<Provider<?, ?>>} providers
+ * @returns {M}
+ */
+function ejectProviders(m, providers) {
+    let state = getStateIfExists$1(m);
+    if (!state) {
+        return m;
+    }
+    for(let provider of providers.slice().reverse()) {
+        let context = state.contexts[provider.name];
+        context.value = null;
+        delete state.contexts[provider.name];
+    }
+    return m;
+}
+
+/**
+ * @template M
+ * @param {M} m
+ */
+function getCurrentProvider(m) {
+    let state = getStateIfExists$1(m);
+    if (!state) {
+        throw new Error('This is not a provider.');
+    }
+    return state.current;
+}
+
+const KEY$1 = Symbol('providers');
+
+function createState$1() {
+    return {
+        /** @type {Record<string, ProviderContext<?, ?>>} */
+        contexts: {},
+        /** @type {Provider<?, ?>} */
+        current: null,
+    };
+}
+
+/**
+ * @param {object} target
+ * @returns {ReturnType<createState>}
+ */
+function resolveState$1(target) {
+    if (KEY$1 in target) {
+        return target[KEY$1];
+    }
+    return target[KEY$1] = createState$1();
+}
+
+/**
+ * @param {object} target
+ * @returns {ReturnType<createState>|null}
+ */
+function getStateIfExists$1(target) {
+    if (KEY$1 in target) {
+        return target[KEY$1];
+    }
+    return null;
+}
+
+/**
+ * @callback EffectHandler
+ * @returns {AfterEffectHandler|Promise<AfterEffectHandler>|Promise<void>|void}
+ */
+
+/**
+ * @callback AfterEffectHandler
+ * @returns {Promise<void>|void}
+ */
+
+/**
+ * @typedef EffectorContext
+ * @property {Array<EffectHandler>} befores
+ * @property {Array<AfterEffectHandler|void>} afters
+ */
+
+/**
+ * @template M
+ * @param {M} m 
+ * @param {EffectHandler} handler
+ */
+function useEffect(m, handler) {
+    const provider = getCurrentProvider(m);
+    if (!provider) {
+        throw new Error('Not a provider.');
+    }
+    let state = resolveState(m);
+    let context = resolveContext(provider, state.contexts);
+    context.befores.push(handler);
+}
+
+/**
+ * @template M
+ * @param {M} m 
+ * @param {Array<import('./ProviderHook').Provider<M, ?>>} providers 
+ */
+async function applyEffects(m, providers) {
+    let state = resolveState(m);
+    for(let provider of providers) {
+        let context = resolveContext(provider, state.contexts);
+        let befores = context.befores.slice();
+        context.befores.length = 0;
+        let result = await Promise.all(befores.map(handler => handler && handler()));
+        context.afters.push(...result);
+    }
+    return m;
+}
+
+/**
+ * @template M
+ * @param {M} m 
+ * @param {Array<import('./ProviderHook').Provider<M, ?>>} providers 
+ */
+async function revertEffects(m, providers) {
+    let state = getStateIfExists(m);
+    if (!state) {
+        return m;
+    }
+    for(let provider of providers.slice().reverse()) {
+        let context = getContextIfExists(provider, state.contexts);
+        if (!context) {
+            throw new Error('Cannot revert context for non-existent provider.');
+        }
+        let afters = context.afters.slice();
+        context.afters.length = 0;
+        await Promise.all(afters.map(handler => handler && handler()));
+    }
+    return m;
+}
+
+const KEY = Symbol('effectors');
+
+function createState() {
+    return {
+        /** @type {Record<string, EffectorContext>} */
+        contexts: {},
+    };
+}
+
+/**
+ * @param {object} target
+ * @returns {ReturnType<createState>}
+ */
+function resolveState(target) {
+    if (KEY in target) {
+        return target[KEY];
+    }
+    return target[KEY] = createState();
+}
+
+/**
+ * @param {object} target
+ * @returns {ReturnType<createState>|null}
+ */
+function getStateIfExists(target) {
+    if (KEY in target) {
+        return target[KEY];
+    }
+    return null;
+}
+
+/**
+ * @returns {EffectorContext}
+ */
+function createContext() {
+    return {
+        befores: [],
+        afters: [],
+    };
+}
+
+/**
+ * @param {import('./ProviderHook').Provider<?, ?>} provider
+ * @param {ReturnType<createState>['contexts']} target
+ * @returns {ReturnType<createContext>}
+ */
+function resolveContext(provider, target) {
+    const key = provider.name;
+    if (key in target) {
+        return target[key];
+    }
+    return target[key] = createContext();
+}
+
+/**
+ * @param {import('./ProviderHook').Provider<?, ?>} provider
+ * @param {ReturnType<createState>['contexts']} target
+ * @returns {ReturnType<createContext>|null}
+ */
+function getContextIfExists(provider, target) {
+    const key = provider.name;
+    if (key in target) {
+        return target[key];
+    }
+    return null;
+}
+
+export { AnimationFrameLoop, Camera, ComponentClass, EntityManager, EntityTemplate, FirstPersonCameraController, Not, OrthographicCamera, PerspectiveCamera, Query, QueryManager, SceneGraph, Topic, TopicManager, applyEffects, ejectProviders, injectProviders, isSelectorNot, lookAt, panTo, revertEffects, screenToWorldRay, useEffect, useProvider };
 //# sourceMappingURL=milque-scene.esm.js.map

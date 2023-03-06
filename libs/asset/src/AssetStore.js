@@ -56,10 +56,8 @@ const FILE_URI_PREFIX_PATTERN = /^([_\w\d]+)\:\/\//;
                 ? cacheInStore(assets, uri, value)
                 : undefined));
     } else {
-        // Fetching from network
-        promises.push(fetch(src)
-            .then(response => response.arrayBuffer())
-            .then(arr => loader(arr))
+        // Just load it
+        promises.push(loader(src)
             .then(value => Loading.isCurrentAttempt(loading, attempt)
                 ? cacheInStore(assets, uri, value)
                 : undefined));

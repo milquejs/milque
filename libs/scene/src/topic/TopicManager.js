@@ -24,6 +24,10 @@ function comparator(a, b) {
     return a.priority - b.priority;
 }
 
+/**
+ * A manager for topic states. You should call `flush()` regularly to
+ * process dispatched events or use `dispatchImmediately()`.
+ */
 export class TopicManager {
 
     constructor() {
@@ -205,6 +209,8 @@ export class TopicManager {
         } else {
             let result = [];
             this.cachedIn[topicName] = result;
+            this.cachedOut[topicName] = [];
+            this.nameTopicMapping[topicName] = topic;
             return result;
         }
     }
@@ -221,7 +227,9 @@ export class TopicManager {
             return this.cachedOut[topicName];
         } else {
             let result = [];
+            this.cachedIn[topicName] = [];
             this.cachedOut[topicName] = result;
+            this.nameTopicMapping[topicName] = topic;
             return result;
         }
     }

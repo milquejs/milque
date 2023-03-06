@@ -285,137 +285,6 @@ declare class ComponentClass<T> {
     delete: (component: T) => void;
 }
 
-/**
- * @template T
- * @typedef {Record<number, T>} ComponentInstanceMap<T>
- */
-/**
- * @typedef {Record<string, ComponentInstanceMap<?>>} ComponentClassMap
- * @typedef {number} EntityId
- * @typedef {string} ComponentName
- */
-declare class EntityManager$1 {
-    /**
-     * @protected
-     * @type {ComponentClassMap}
-     */
-    protected components: ComponentClassMap;
-    /** @private */
-    private nameClassMapping;
-    /**
-     * @private
-     * @type {EntityId}
-     */
-    private nextAvailableEntityId;
-    /**
-     * @protected
-     * @type {Array<[string, ...any]>}
-     */
-    protected queue: Array<[string, ...any]>;
-    queries: QueryManager;
-    /**
-     * @protected
-     * @param {EntityId} entityId
-     * @param {ComponentClass<?>} added
-     * @param {ComponentClass<?>} removed
-     * @param {boolean} dead
-     */
-    protected entityComponentChangedCallback(entityId: EntityId$3, added: ComponentClass<unknown>, removed: ComponentClass<unknown>, dead: boolean): void;
-    flush(): void;
-    /**
-     * @returns {EntityId}
-     */
-    create(): EntityId$3;
-    /**
-     * @param {EntityId} entityId
-     */
-    destroy(entityId: EntityId$3): void;
-    /**
-     * Whether the entity exists with all provided component classes.
-     *
-     * @param {EntityId} entityId
-     * @param {...ComponentClass<?>} componentClasses
-     */
-    exists(entityId: EntityId$3, ...componentClasses: ComponentClass<unknown>[]): boolean;
-    /**
-     * @template T
-     * @param {EntityId} entityId
-     * @param {ComponentClass<T>} componentClass
-     * @param {T} [instance]
-     * @returns {T}
-     */
-    attach<T>(entityId: EntityId$3, componentClass: ComponentClass<T>, instance?: T): T;
-    /**
-     * @template T
-     * @param {EntityId} entityId
-     * @param {ComponentClass<T>} componentClass
-     * @param {T} [instance]
-     * @returns {T}
-     */
-    attachImmediately<T_1>(entityId: EntityId$3, componentClass: ComponentClass<T_1>, instance?: T_1): T_1;
-    /**
-     * @template T
-     * @param {EntityId} entityId
-     * @param {ComponentClass<T>} componentClass
-     */
-    detach<T_2>(entityId: EntityId$3, componentClass: ComponentClass<T_2>): void;
-    /**
-     * @template T
-     * @param {EntityId} entityId
-     * @param {ComponentClass<T>} componentClass
-     */
-    detachImmediately<T_3>(entityId: EntityId$3, componentClass: ComponentClass<T_3>): void;
-    /**
-     * @param {ComponentClass<?>} componentClass
-     */
-    clear(componentClass: ComponentClass<unknown>): void;
-    /**
-     * @param {ComponentClass<any>} componentClass
-     */
-    clearImmediately(componentClass: ComponentClass<any>): void;
-    /**
-     * @template T
-     * @param {EntityId} entityId
-     * @param {ComponentClass<T>} componentClass
-     * @returns {T}
-     */
-    get<T_4>(entityId: EntityId$3, componentClass: ComponentClass<T_4>): T_4;
-    /**
-     * @param {ComponentClass<?>} componentClass
-     * @returns {number}
-     */
-    count(componentClass: ComponentClass<unknown>): number;
-    /**
-     * @param {ComponentClass<?>} componentClass
-     */
-    keysOf(componentClass: ComponentClass<unknown>): number[];
-    /**
-     * @template T
-     * @param {ComponentClass<T>} componentClass
-     * @returns {Array<T>}
-     */
-    valuesOf<T_5>(componentClass: ComponentClass<T_5>): T_5[];
-    /**
-     * @protected
-     * @template T
-     * @param {ComponentClass<T>} componentClass
-     * @returns {ComponentInstanceMap<T>} A map of entity ids to component instance data.
-     */
-    protected mapOf<T_6>(componentClass: ComponentClass<T_6>): ComponentInstanceMap<T_6>;
-    /** @returns {Set<EntityId>} */
-    entityIds(): Set<EntityId$3>;
-    /** @returns {Array<ComponentClass<?>>} */
-    componentClasses(): Array<ComponentClass<unknown>>;
-    reset(): void;
-}
-/**
- * <T>
- */
-type ComponentInstanceMap<T> = Record<number, T>;
-type ComponentClassMap = Record<string, ComponentInstanceMap<unknown>>;
-type EntityId$3 = number;
-type ComponentName = string;
-
 /** @typedef {import('./EntityManager').EntityId} EntityId */
 /**
  * @template {ComponentClass<any>[]} T
@@ -435,14 +304,14 @@ declare class EntityTemplate<T extends ComponentClass<any>[]> {
      * @param {EntityManager} entityManager
      * @returns {[EntityId, ...ComponentInstancesOf<T>]}
      */
-    create(entityManager: EntityManager$1): [number, ...ComponentInstancesOf$1<T>];
+    create(entityManager: EntityManager): [number, ...ComponentInstancesOf$1<T>];
     /**
      * @param {EntityManager} entityManager
      * @param {EntityId} entityId
      */
-    destroy(entityManager: EntityManager$1, entityId: EntityId$2): void;
+    destroy(entityManager: EntityManager, entityId: EntityId$3): void;
 }
-type EntityId$2 = EntityId$3;
+type EntityId$3 = EntityId;
 /**
  * <T>
  */
@@ -479,29 +348,29 @@ declare class Query$1<T extends ComponentClass<any>[]> {
      * @param {EntityManager} entityManager
      * @param {EntityId} entityId
      */
-    test(entityManager: EntityManager$1, entityId: EntityId$1): boolean;
+    test(entityManager: EntityManager, entityId: EntityId$2): boolean;
     /**
      * @param {EntityManager} entityManager
      * @param {Array<EntityId>} result
      */
-    hydrate(entityManager: EntityManager$1, result: Array<EntityId$1>): number[];
+    hydrate(entityManager: EntityManager, result: Array<EntityId$2>): number[];
     /**
      * @param {EntityManager} entityManager
      * @returns {number}
      */
-    count(entityManager: EntityManager$1): number;
+    count(entityManager: EntityManager): number;
     /**
      * @param {EntityManager} entityManager
      * @returns {[EntityId, ...ComponentInstancesOf<T>]}
      */
-    findAny(entityManager: EntityManager$1): [EntityId$1, ...ComponentInstancesOf<T>];
+    findAny(entityManager: EntityManager): [EntityId$2, ...ComponentInstancesOf<T>];
     /**
      * @param {EntityManager} entityManager
      * @returns {Generator<[EntityId, ...ComponentInstancesOf<T>]>}
      */
-    findAll(entityManager: EntityManager$1): Generator<[EntityId$1, ...ComponentInstancesOf<T>]>;
+    findAll(entityManager: EntityManager): Generator<[EntityId$2, ...ComponentInstancesOf<T>]>;
 }
-type EntityId$1 = EntityId$3;
+type EntityId$2 = EntityId;
 /**
  * <T>
  */
@@ -540,7 +409,7 @@ declare class QueryManager {
      * @protected
      * @type {Record<string, Array<EntityId>>}
      */
-    protected cachedResults: Record<string, Array<EntityId>>;
+    protected cachedResults: Record<string, Array<EntityId$1>>;
     /**
      * @private
      * @type {Record<string, Query<?>>}
@@ -553,24 +422,24 @@ declare class QueryManager {
      * @param {ComponentClass<?>} removed
      * @param {boolean} dead
      */
-    onEntityComponentChanged(entityManager: EntityManager, entityId: EntityId, added: ComponentClass<unknown>, removed: ComponentClass<unknown>, dead: boolean): void;
+    onEntityComponentChanged(entityManager: EntityManager$1, entityId: EntityId$1, added: ComponentClass<unknown>, removed: ComponentClass<unknown>, dead: boolean): void;
     /**
      * @param {EntityManager} entityManager
      * @param {Query<?>} query
      * @returns {EntityId}
      */
-    findAny(entityManager: EntityManager, query: Query<unknown>): EntityId;
+    findAny(entityManager: EntityManager$1, query: Query<unknown>): EntityId$1;
     /**
      * @param {EntityManager} entityManager
      * @param {Query<?>} query
      * @returns {Array<EntityId>}
      */
-    findAll(entityManager: EntityManager, query: Query<unknown>): Array<EntityId>;
+    findAll(entityManager: EntityManager$1, query: Query<unknown>): Array<EntityId$1>;
     /**
      * @param {EntityManager} entityManager
      * @param {Query<?>} query
      */
-    count(entityManager: EntityManager, query: Query<unknown>): number;
+    count(entityManager: EntityManager$1, query: Query<unknown>): number;
     /**
      * @param {Query<?>} query
      */
@@ -589,12 +458,164 @@ type SelectorNot$1<T> = {
     name: string;
     value: ComponentClass<T>;
 };
-type EntityManager = EntityManager$1;
-type EntityId = EntityId$3;
+type EntityManager$1 = EntityManager;
+type EntityId$1 = EntityId;
 /**
  * <T>
  */
 type Query<T> = Query$1<T>;
+
+/**
+ * @template T
+ * @typedef {Record<number, T>} ComponentInstanceMap<T>
+ */
+/**
+ * @typedef {Record<string, ComponentInstanceMap<?>>} ComponentClassMap
+ * @typedef {number} EntityId
+ * @typedef {string} ComponentName
+ */
+/**
+ * @callback EntityComponentChangedCallback
+ * @param {EntityManager} entityManager
+ * @param {EntityId} entityId
+ * @param {ComponentClass<?>} attached
+ * @param {ComponentClass<?>} detached
+ * @param {boolean} dead
+ */
+declare class EntityManager {
+    /**
+     * @protected
+     * @type {ComponentClassMap}
+     */
+    protected components: ComponentClassMap;
+    /** @private */
+    private nameClassMapping;
+    /**
+     * @private
+     * @type {EntityId}
+     */
+    private nextAvailableEntityId;
+    /**
+     * @protected
+     * @type {Array<[string, ...any]>}
+     */
+    protected queue: Array<[string, ...any]>;
+    /** @private */
+    private listeners;
+    queries: QueryManager;
+    /**
+     * @protected
+     * @param {EntityId} entityId
+     * @param {ComponentClass<?>} attached
+     * @param {ComponentClass<?>} detached
+     * @param {boolean} dead
+     */
+    protected entityComponentChangedCallback(entityId: EntityId, attached: ComponentClass<unknown>, detached: ComponentClass<unknown>, dead: boolean): void;
+    /**
+     * @param {'change'} event
+     * @param {EntityComponentChangedCallback} callback
+     */
+    addEventListener(event: 'change', callback: EntityComponentChangedCallback$1): void;
+    /**
+     * @param {'change'} event
+     * @param {EntityComponentChangedCallback} callback
+     */
+    removeEventListener(event: 'change', callback: EntityComponentChangedCallback$1): void;
+    flush(): void;
+    /**
+     * @returns {EntityId}
+     */
+    create(): EntityId;
+    /**
+     * @param {EntityId} entityId
+     */
+    destroy(entityId: EntityId): void;
+    /**
+     * Whether the entity exists with all provided component classes.
+     *
+     * @param {EntityId} entityId
+     * @param {...ComponentClass<?>} componentClasses
+     */
+    exists(entityId: EntityId, ...componentClasses: ComponentClass<unknown>[]): boolean;
+    /**
+     * @template T
+     * @param {EntityId} entityId
+     * @param {ComponentClass<T>} componentClass
+     * @param {T} [instance]
+     * @returns {T}
+     */
+    attach<T>(entityId: EntityId, componentClass: ComponentClass<T>, instance?: T): T;
+    /**
+     * @template T
+     * @param {EntityId} entityId
+     * @param {ComponentClass<T>} componentClass
+     * @param {T} [instance]
+     * @returns {T}
+     */
+    attachImmediately<T_1>(entityId: EntityId, componentClass: ComponentClass<T_1>, instance?: T_1): T_1;
+    /**
+     * @template T
+     * @param {EntityId} entityId
+     * @param {ComponentClass<T>} componentClass
+     */
+    detach<T_2>(entityId: EntityId, componentClass: ComponentClass<T_2>): void;
+    /**
+     * @template T
+     * @param {EntityId} entityId
+     * @param {ComponentClass<T>} componentClass
+     */
+    detachImmediately<T_3>(entityId: EntityId, componentClass: ComponentClass<T_3>): void;
+    /**
+     * @param {ComponentClass<?>} componentClass
+     */
+    clear(componentClass: ComponentClass<unknown>): void;
+    /**
+     * @param {ComponentClass<any>} componentClass
+     */
+    clearImmediately(componentClass: ComponentClass<any>): void;
+    /**
+     * @template T
+     * @param {EntityId} entityId
+     * @param {ComponentClass<T>} componentClass
+     * @returns {T}
+     */
+    get<T_4>(entityId: EntityId, componentClass: ComponentClass<T_4>): T_4;
+    /**
+     * @param {ComponentClass<?>} componentClass
+     * @returns {number}
+     */
+    count(componentClass: ComponentClass<unknown>): number;
+    /**
+     * @param {ComponentClass<?>} componentClass
+     */
+    keysOf(componentClass: ComponentClass<unknown>): number[];
+    /**
+     * @template T
+     * @param {ComponentClass<T>} componentClass
+     * @returns {Array<T>}
+     */
+    valuesOf<T_5>(componentClass: ComponentClass<T_5>): T_5[];
+    /**
+     * @protected
+     * @template T
+     * @param {ComponentClass<T>} componentClass
+     * @returns {ComponentInstanceMap<T>} A map of entity ids to component instance data.
+     */
+    protected mapOf<T_6>(componentClass: ComponentClass<T_6>): ComponentInstanceMap<T_6>;
+    /** @returns {Set<EntityId>} */
+    entityIds(): Set<EntityId>;
+    /** @returns {Array<ComponentClass<?>>} */
+    componentClasses(): Array<ComponentClass<unknown>>;
+    reset(): void;
+}
+/**
+ * <T>
+ */
+type ComponentInstanceMap<T> = Record<number, T>;
+type ComponentClassMap = Record<string, ComponentInstanceMap<unknown>>;
+type EntityId = number;
+type ComponentName = string;
+type EntityComponentChangedCallback$1 = (entityManager: EntityManager, entityId: EntityId, attached: ComponentClass<unknown>, detached: ComponentClass<unknown>, dead: boolean) => any;
 
 /**
  * <T>
@@ -604,6 +625,7 @@ type Selector<T> = Selector$1<T>;
  * <T>
  */
 type SelectorNot<T> = SelectorNot$1<T>;
+type EntityComponentChangedCallback = EntityComponentChangedCallback$1;
 
 /** @typedef {import('./TopicManager').TopicManager} TopicManager */
 /**
@@ -624,6 +646,11 @@ declare class Topic$1<T> {
      * @param {T} attachment
      */
     dispatch(topicManager: TopicManager$1, attachment: T): void;
+    /**
+     * @param {TopicManager} topicManager
+     * @param {T} attachment
+     */
+    dispatchImmediately(topicManager: TopicManager$1, attachment: T): void;
     /**
      * @param {TopicManager} topicManager
      * @param {number} priority
@@ -663,6 +690,10 @@ type TopicManager$1 = TopicManager;
  */
 type TopicCallback$2<T> = TopicCallback$1<T>;
 
+/**
+ * A manager for topic states. You should call `flush()` regularly to
+ * process dispatched events or use `dispatchImmediately()`.
+ */
 declare class TopicManager {
     /**
      * @protected
@@ -815,4 +846,71 @@ declare class AnimationFrameLoop {
 }
 type AnimationFrameLoopCallback = (frameDetail: AnimationFrameLoop) => void;
 
-export { AnimationFrameLoop, AnimationFrameLoopCallback, Camera, ComponentClass, ComponentClassMap, ComponentInstanceMap, ComponentName, EntityId$3 as EntityId, EntityManager$1 as EntityManager, EntityTemplate, FirstPersonCameraController, Not, OrthographicCamera, PerspectiveCamera, Query$1 as Query, QueryManager, SceneGraph, SceneNode, SceneNodeInfo, Selector, SelectorNot, Topic$1 as Topic, TopicCallback, TopicManager, WalkBackCallback, WalkCallback, WalkChildrenCallback, isSelectorNot, lookAt, panTo, screenToWorldRay };
+/**
+ * @template M, T
+ * @typedef {(m: M, [opts]: object) => T} Provider
+ */
+/**
+ * @template M, T
+ * @typedef ProviderContext
+ * @property {Provider<M, T>} handle
+ * @property {T} value
+ */
+/**
+ * @template M, T
+ * @param {M} m
+ * @param {Provider<M, T>} provider
+ * @returns {T}
+ */
+declare function useProvider<M, T>(m: M, provider: Provider<M, T>): T;
+/**
+ * @template M
+ * @param {M} m
+ * @param {Array<Provider<?, ?>>} providers
+ * @returns {M}
+ */
+declare function injectProviders<M>(m: M, providers: Array<Provider<unknown, unknown>>): M;
+/**
+ * @template M
+ * @param {M} m
+ * @param {Array<Provider<?, ?>>} providers
+ * @returns {M}
+ */
+declare function ejectProviders<M>(m: M, providers: Array<Provider<unknown, unknown>>): M;
+type Provider<M, T> = (m: M, [opts]: object) => T;
+
+/**
+ * @callback EffectHandler
+ * @returns {AfterEffectHandler|Promise<AfterEffectHandler>|Promise<void>|void}
+ */
+/**
+ * @callback AfterEffectHandler
+ * @returns {Promise<void>|void}
+ */
+/**
+ * @typedef EffectorContext
+ * @property {Array<EffectHandler>} befores
+ * @property {Array<AfterEffectHandler|void>} afters
+ */
+/**
+ * @template M
+ * @param {M} m
+ * @param {EffectHandler} handler
+ */
+declare function useEffect<M>(m: M, handler: EffectHandler): void;
+/**
+ * @template M
+ * @param {M} m
+ * @param {Array<import('./ProviderHook').Provider<M, ?>>} providers
+ */
+declare function applyEffects<M>(m: M, providers: Provider<M, any>[]): Promise<M>;
+/**
+ * @template M
+ * @param {M} m
+ * @param {Array<import('./ProviderHook').Provider<M, ?>>} providers
+ */
+declare function revertEffects<M>(m: M, providers: Provider<M, any>[]): Promise<M>;
+type EffectHandler = () => AfterEffectHandler | Promise<AfterEffectHandler> | Promise<void> | void;
+type AfterEffectHandler = () => Promise<void> | void;
+
+export { AnimationFrameLoop, AnimationFrameLoopCallback, Camera, ComponentClass, ComponentClassMap, ComponentInstanceMap, ComponentName, EntityComponentChangedCallback, EntityId, EntityManager, EntityTemplate, FirstPersonCameraController, Not, OrthographicCamera, PerspectiveCamera, Query$1 as Query, QueryManager, SceneGraph, SceneNode, SceneNodeInfo, Selector, SelectorNot, Topic$1 as Topic, TopicCallback, TopicManager, WalkBackCallback, WalkCallback, WalkChildrenCallback, applyEffects, ejectProviders, injectProviders, isSelectorNot, lookAt, panTo, revertEffects, screenToWorldRay, useEffect, useProvider };

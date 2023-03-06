@@ -27,6 +27,14 @@ export class Topic {
 
     /**
      * @param {TopicManager} topicManager
+     * @param {T} attachment
+     */
+    dispatchImmediately(topicManager, attachment) {
+        topicManager.dispatchImmediately(this, attachment);
+    }
+
+    /**
+     * @param {TopicManager} topicManager
      * @param {number} priority
      * @param {TopicCallback<T>} callback
      */

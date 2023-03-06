@@ -1,5 +1,134 @@
-import INNER_HTML from './DisplayPort.template.html';
-import INNER_STYLE from './DisplayPort.module.css';
+const INNER_HTML = /* html */`
+<div class="container">
+  <label class="hidden" id="title">display-port</label>
+  <label class="hidden" id="fps">00</label>
+  <label class="hidden" id="dimension">0x0</label>
+  <div class="content">
+    <slot id="inner">
+      <canvas>
+        Oh no! Your browser does not support canvas.
+      </canvas>
+    </slot>
+  </div>
+  <slot name="frame"></slot>
+</div>`;
+
+const INNER_STYLE = /* css */`
+:host {
+  display: inline-block;
+  color: #555555;
+}
+
+.container {
+  display: flex;
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.content {
+  position: relative;
+  margin: auto;
+}
+
+.content > *:not(canvas) {
+  width: 100%;
+  height: 100%;
+}
+
+canvas {
+  background: #000000;
+  image-rendering: pixelated;
+}
+
+label {
+  position: absolute;
+  font-family: monospace;
+  color: currentColor;
+}
+
+#inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
+
+#title {
+  left: 0.5rem;
+  top: 0.5rem;
+}
+
+#fps {
+  right: 0.5rem;
+  top: 0.5rem;
+}
+
+#dimension {
+  left: 0.5rem;
+  bottom: 0.5rem;
+}
+
+.hidden {
+  display: none;
+}
+
+:host([debug]) .container {
+  outline: 6px dashed rgba(0, 0, 0, 0.1);
+  outline-offset: -4px;
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+:host([mode='noscale']) canvas {
+  margin: 0;
+  top: 0;
+  left: 0;
+}
+
+:host([mode='stretch']) canvas,
+:host([mode='scale']) canvas {
+  width: 100%;
+  height: 100%;
+}
+
+:host([mode='fit']),
+:host([mode='scale']),
+:host([mode='center']),
+:host([mode='stretch']),
+:host([mode='fill']) {
+  width: 100%;
+  height: 100%;
+}
+
+:host([full]) {
+  width: 100vw !important;
+  height: 100vh !important;
+}
+
+:host([disabled]) {
+  display: none;
+}
+
+slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
+
+::slotted(*) {
+  pointer-events: auto;
+}`;
 
 /**
  * No scaling is applied. The canvas size maintains a
@@ -87,12 +216,7 @@ const DELAYED_RESIZE_MILLIS = 200;
  */
 
 /**
- * @typedef {MODE_CENTER
- *          |MODE_FIT
- *          |MODE_NOSCALE
- *          |MODE_SCALE
- *          |MODE_FILL
- *          |MODE_STRETCH} DisplayScaling
+ * @typedef {MODE_CENTER|MODE_FIT|MODE_NOSCALE|MODE_SCALE|MODE_FILL|MODE_STRETCH} DisplayScaling
  */
 
 /**
@@ -156,6 +280,10 @@ export class DisplayPort extends HTMLElement {
     return result;
   }
 
+  static define(customElements = window.customElements) {
+    customElements.define('display-port', this);
+  }
+
   /** @private */
   static get [Symbol.for('templateNode')]() {
     let t = document.createElement('template');
@@ -170,10 +298,6 @@ export class DisplayPort extends HTMLElement {
     t.innerHTML = INNER_STYLE;
     Object.defineProperty(this, Symbol.for('styleNode'), { value: t });
     return t;
-  }
-
-  static define(customElements = window.customElements) {
-    customElements.define('display-port', this);
   }
 
   /**
@@ -285,8 +409,11 @@ export class DisplayPort extends HTMLElement {
       this.constructor[Symbol.for('styleNode')].cloneNode(true)
     );
 
-    /** @private */
-    this._canvasElement = shadowRoot.querySelector('canvas');
+    /**
+     * @private
+     * @type {HTMLCanvasElement}
+     */
+    this._canvasElement = null;
     /**
      * @private
      * @type {HTMLDivElement}
@@ -351,8 +478,12 @@ export class DisplayPort extends HTMLElement {
 
     /** @private */
     this.update = this.update.bind(this);
+
     /** @private */
     this.onDelayCanvasResize = this.onDelayCanvasResize.bind(this);
+
+    /** @private */
+    this.onSlotChange = this.onSlotChange.bind(this);
   }
 
   /** Get the canvas element. */
@@ -381,6 +512,8 @@ export class DisplayPort extends HTMLElement {
       this.setAttribute('tabindex', '0');
     }
 
+    this._innerElement.addEventListener('slotchange', this.onSlotChange);
+
     this.updateCanvasSize(true);
     this.resume();
   }
@@ -390,6 +523,7 @@ export class DisplayPort extends HTMLElement {
    * Override for web component.
    */
   disconnectedCallback() {
+    this._innerElement.removeEventListener('slotchange', this.onSlotChange);
     this.pause();
   }
 
@@ -451,6 +585,20 @@ export class DisplayPort extends HTMLElement {
         this._dimensionElement.classList.toggle('hidden', value);
         break;
     }
+  }
+
+  /**
+   * @private
+   * @param {Event} e 
+   */
+  onSlotChange(e) {
+    const slot = /** @type {HTMLSlotElement} */ (e.target);
+    let children = slot.assignedElements({ flatten: true });
+    let canvas = /** @type {HTMLCanvasElement} */ (children.find(el => el instanceof HTMLCanvasElement));
+    if (!canvas) {
+      throw new Error('No valid canvas element found for display.');
+    }
+    this._canvasElement = canvas;
   }
 
   /**
@@ -614,7 +762,6 @@ export class DisplayPort extends HTMLElement {
     }
   }
 }
-DisplayPort.define();
 
 function upgradeProperty(element, propertyName) {
   if (Object.prototype.hasOwnProperty.call(element, propertyName)) {

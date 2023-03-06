@@ -8,12 +8,13 @@ import { DisplayPortProvider, EntityManagerProvider, useDraw, useUpdate } from '
 import { loadSound } from './SoundLoader.js';
 import { drawCollisionCircle, withinRadius, wrapAround } from './util.js';
 
+export const BULLET_DRAW_LAYER_INDEX = 5;
+
 export const BULLET_SPEED = 4;
 export const MAX_BULLET_COUNT = 100;
 const BULLET_RADIUS = 2;
 const BULLET_COLOR = 'gold';
 const MAX_BULLET_AGE = 2000;
-export const BULLET_DRAW_LAYER_INDEX = 5;
 
 export const BulletPopSound = new AssetRef('bullet.pop', loadSound, undefined, 'raw://boop.wav');
 export const Bullet = new ComponentClass('Bullet', () => ({

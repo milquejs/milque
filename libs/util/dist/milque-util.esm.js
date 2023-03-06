@@ -991,5 +991,133 @@ function bitCount(n) {
   return (((n + (n >> 4)) & 0xf0f0f0f) * 0x1010101) >> 24;
 }
 
-export { Eventable, FILE_TYPE_PNG, FILE_TYPE_SVG, Logger, PriorityQueue, astarSearch, bitCount, bresenhamLine, clamp, cycle, direction2, distance2, downloadImageFromSVG, downloadText, downloadURL, fisherYatesShuffle, lerp, lookAt2, toDegrees, toRadians, topoSort, uploadFile, uuid, withinRadius };
+/**
+ * @param {string} searchString
+ * @returns {any}
+ */
+function getURLParameters(searchString = window.location.search) {
+    return Object.fromEntries(new URLSearchParams(searchString).entries());
+}
+
+/**
+ * @param {number} hexValue
+ */
+function red(hexValue) {
+    return (hexValue >> 16) & 0xff;
+}
+
+/**
+ * @param {number} hexValue
+ */
+function redf(hexValue) {
+    return ((hexValue >> 16) & 0xff) / 255.0;
+}
+
+/**
+ * @param {number} hexValue
+ */
+function green(hexValue) {
+    return (hexValue >> 8) & 0xff;
+}
+
+/**
+ * @param {number} hexValue
+ */
+function greenf(hexValue) {
+    return ((hexValue >> 8) & 0xff) / 255.0;
+}
+
+/**
+ * @param {number} hexValue
+ */
+function blue(hexValue) {
+    return hexValue & 0xff;
+}
+
+/**
+ * @param {number} hexValue
+ */
+function bluef(hexValue) {
+    return (hexValue & 0xff) / 255.0;
+}
+
+/**
+ * @param {number} hexValue
+ */
+function alpha(hexValue) {
+    return (hexValue >> 24) & 0xff;
+}
+
+/**
+ * @param {number} hexValue
+ */
+function alphaf(hexValue) {
+    return ((hexValue >> 24) & 0xff) / 255.0;
+}
+
+/**
+ * @param {number} redf
+ * @param {number} greenf
+ * @param {number} bluef
+ * @param {number} alphaf
+ */
+function hexf(redf, greenf, bluef, alphaf = 1) {
+    let r = Math.floor(Math.max(Math.min(redf, 1), 0) * 255);
+    let g = Math.floor(Math.max(Math.min(greenf, 1), 0) * 255);
+    let b = Math.floor(Math.max(Math.min(bluef, 1), 0) * 255);
+    let a = Math.floor(Math.max(Math.min(alphaf, 1), 0) * 255);
+    return (
+        ((a & 0xff) << 24) | ((r & 0xff) << 16) | ((g & 0xff) << 8) | (b & 0xff)
+    );
+}
+
+/**
+ * @param {number} from
+ * @param {number} to 
+ * @param {number} delta
+ */
+function mix(from = 0x000000, to = 0xffffff, delta = 0.5) {
+    let rm = this.redf(from);
+    let gm = this.greenf(from);
+    let bm = this.bluef(from);
+    let am = this.alphaf(from);
+    let rf = (this.redf(to) - rm) * delta + rm;
+    let gf = (this.greenf(to) - gm) * delta + gm;
+    let bf = (this.bluef(to) - bm) * delta + bm;
+    let af = (this.alphaf(to) - am) * delta + am;
+    if (af < 0.01) {
+        af = undefined;
+    }
+    return hexf(rf, gf, bf, af);
+}
+
+/**
+ * @param {number} hexValue
+ */
+function toCSSColor(hexValue) {
+    if (typeof hexValue !== 'number') {
+        return hexValue;
+    }
+    let r = red(hexValue).toString(16).padStart(2, '0');
+    let g = green(hexValue).toString(16).padStart(2, '0');
+    let b = blue(hexValue).toString(16).padStart(2, '0');
+    return `#${r}${g}${b}`;
+}
+
+var Hex = /*#__PURE__*/Object.freeze({
+  __proto__: null,
+  alpha: alpha,
+  alphaf: alphaf,
+  blue: blue,
+  bluef: bluef,
+  green: green,
+  greenf: greenf,
+  hexf: hexf,
+  mix: mix,
+  red: red,
+  redf: redf,
+  toCSSColor: toCSSColor
+});
+
+export { Eventable, FILE_TYPE_PNG, FILE_TYPE_SVG, Hex as HEX, Logger, PriorityQueue, astarSearch, bitCount, bresenhamLine, clamp, cycle, direction2, distance2, downloadImageFromSVG, downloadText, downloadURL, fisherYatesShuffle, getURLParameters, lerp, lookAt2, toDegrees, toRadians, topoSort, uploadFile, uuid, withinRadius };
 //# sourceMappingURL=milque-util.esm.js.map

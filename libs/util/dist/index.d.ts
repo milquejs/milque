@@ -202,4 +202,87 @@ declare function fisherYatesShuffle(array: any): any;
 
 declare function bitCount(n: any): number;
 
-export { DependencyCallback, Eventable, FILE_TYPE_PNG, FILE_TYPE_SVG, Logger, NodeCache, PriorityQueue, astarSearch, bitCount, bresenhamLine, clamp, cycle, direction2, distance2, downloadImageFromSVG, downloadText, downloadURL, fisherYatesShuffle, lerp, lookAt2, toDegrees, toRadians, topoSort, uploadFile, uuid, withinRadius };
+/**
+ * @param {string} searchString
+ * @returns {any}
+ */
+declare function getURLParameters(searchString?: string): any;
+
+/**
+ * @param {number} hexValue
+ */
+declare function red(hexValue: number): number;
+/**
+ * @param {number} hexValue
+ */
+declare function redf(hexValue: number): number;
+/**
+ * @param {number} hexValue
+ */
+declare function green(hexValue: number): number;
+/**
+ * @param {number} hexValue
+ */
+declare function greenf(hexValue: number): number;
+/**
+ * @param {number} hexValue
+ */
+declare function blue(hexValue: number): number;
+/**
+ * @param {number} hexValue
+ */
+declare function bluef(hexValue: number): number;
+/**
+ * @param {number} hexValue
+ */
+declare function alpha(hexValue: number): number;
+/**
+ * @param {number} hexValue
+ */
+declare function alphaf(hexValue: number): number;
+/**
+ * @param {number} redf
+ * @param {number} greenf
+ * @param {number} bluef
+ * @param {number} alphaf
+ */
+declare function hexf(redf: number, greenf: number, bluef: number, alphaf?: number): number;
+/**
+ * @param {number} from
+ * @param {number} to
+ * @param {number} delta
+ */
+declare function mix(from?: number, to?: number, delta?: number): number;
+/**
+ * @param {number} hexValue
+ */
+declare function toCSSColor(hexValue: number): string;
+
+declare const Hex_alpha: typeof alpha;
+declare const Hex_alphaf: typeof alphaf;
+declare const Hex_blue: typeof blue;
+declare const Hex_bluef: typeof bluef;
+declare const Hex_green: typeof green;
+declare const Hex_greenf: typeof greenf;
+declare const Hex_hexf: typeof hexf;
+declare const Hex_mix: typeof mix;
+declare const Hex_red: typeof red;
+declare const Hex_redf: typeof redf;
+declare const Hex_toCSSColor: typeof toCSSColor;
+declare namespace Hex {
+  export {
+    Hex_alpha as alpha,
+    Hex_alphaf as alphaf,
+    Hex_blue as blue,
+    Hex_bluef as bluef,
+    Hex_green as green,
+    Hex_greenf as greenf,
+    Hex_hexf as hexf,
+    Hex_mix as mix,
+    Hex_red as red,
+    Hex_redf as redf,
+    Hex_toCSSColor as toCSSColor,
+  };
+}
+
+export { DependencyCallback, Eventable, FILE_TYPE_PNG, FILE_TYPE_SVG, Hex as HEX, Logger, NodeCache, PriorityQueue, astarSearch, bitCount, bresenhamLine, clamp, cycle, direction2, distance2, downloadImageFromSVG, downloadText, downloadURL, fisherYatesShuffle, getURLParameters, lerp, lookAt2, toDegrees, toRadians, topoSort, uploadFile, uuid, withinRadius };

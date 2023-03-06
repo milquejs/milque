@@ -10,3 +10,5 @@ export * from './TopologicalSort.js';
 export * from './AStar.js';
 export * from './Shuffle.js';
 export * from './BitHelper.js';
+export * from './URLHelper.js';
+export * from './color/index.js';

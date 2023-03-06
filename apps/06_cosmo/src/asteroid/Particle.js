@@ -77,7 +77,8 @@ export function ParticleSystem(m) {
  */
 export function spawnParticle(scene, x, y, dx, dy, color, age = 0) {
     if (typeof color === 'function') color = color();
-    let [entityId, particle] = scene.ents.createAndAttach(Particle);
+    let entityId = scene.ents.create();
+    let particle = scene.ents.attach(entityId, Particle);
     particle.x = x;
     particle.y = y;
     particle.dx = dx;
