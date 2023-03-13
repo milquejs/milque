@@ -2107,15 +2107,69 @@ function AnimationFrameLoopProvider(m) {
     return loop;
 }
 
+/**
+ * @template M
+ * @template {keyof WindowEventHandlersEventMap} K
+ * @param {M} m 
+ * @param {keyof WindowEventMap} event
+ * @param {(this: WindowEventHandlers, ev: WindowEventHandlersEventMap[K]) => any} listener
+ */
+function useWindowEventListener(m, event, listener) {
+    useEffect(m, () => {
+        const root = window;
+        root.addEventListener(event, listener);
+        return () => {
+            root.removeEventListener(event, listener);
+        };
+    });
+}
+
+/**
+ * @template M
+ * @template {keyof DocumentAndElementEventHandlersEventMap} K
+ * @param {M} m 
+ * @param {keyof DocumentEventMap} event
+ * @param {(this: DocumentAndElementEventHandlers, ev: DocumentAndElementEventHandlersEventMap[K]) => any} listener
+ */
+function useDocumentEventListener(m, event, listener) {
+    useEffect(m, () => {
+        const root = window.document;
+        root.addEventListener(event, listener);
+        return () => {
+            root.removeEventListener(event, listener);
+        };
+    });
+}
+
+/**
+ * @template M
+ * @template {keyof DocumentAndElementEventHandlersEventMap} K
+ * @param {M} m 
+ * @param {HTMLElement} element
+ * @param {keyof ElementEventMap} event
+ * @param {(this: DocumentAndElementEventHandlers, ev: DocumentAndElementEventHandlersEventMap[K]) => any} listener
+ */
+function useHTMLElementEventListener(m, element, event, listener) {
+    useEffect(m, () => {
+        element.addEventListener(event, listener);
+        return () => {
+            element.removeEventListener(event, listener);
+        };
+    });
+}
+
 var index = /*#__PURE__*/Object.freeze({
   __proto__: null,
   AnimationFrameLoopProvider: AnimationFrameLoopProvider,
   TopicsProvider: TopicsProvider,
   toast: toast,
+  useDocumentEventListener: useDocumentEventListener,
   useEffect: useEffect,
+  useHTMLElementEventListener: useHTMLElementEventListener,
   useProvider: useProvider,
   useSystemUpdate: useSystemUpdate,
-  useTopic: useTopic
+  useTopic: useTopic,
+  useWindowEventListener: useWindowEventListener
 });
 
 export { AnimationFrameLoop, Camera, ComponentClass, EntityManager, EntityTemplate, FirstPersonCameraController, Not, OrthographicCamera, PerspectiveCamera, Query, QueryManager, SceneGraph, index as Toaster, Topic, TopicManager, isSelectorNot, lookAt, panTo, screenToWorldRay };

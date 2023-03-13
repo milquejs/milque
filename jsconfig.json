@@ -1,12 +1,14 @@
 {
   "compilerOptions": {
-    "lib": [
-      "DOM",
-      "ESNext"
-    ],
-    "target": "ESNext",
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM"],
     "moduleResolution": "node",
+    "allowJs": true,
     "checkJs": true,
-    "allowJs": true
-  }
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "exclude": ["node_modules", "dist", "out", "public"],
+  "include": ["**/src/**/*.js"]
 }

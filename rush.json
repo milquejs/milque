@@ -419,11 +419,6 @@
       "packageName": "sandbox",
       "projectFolder": "apps/x0_sandbox",
       "reviewCategory": "production"
-    },
-    {
-      "packageName": "standalone",
-      "projectFolder": "apps/x1_standalone",
-      "reviewCategory": "production"
     }
     // {
     //   /**

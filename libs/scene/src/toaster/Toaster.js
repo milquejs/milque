@@ -9,9 +9,10 @@ import { SystemUpdateTopic, useSystemUpdate } from './SystemUpdateHook';
  * @typedef ToastHandler
  * @property {(m: M) => Promise<void>} [load]
  * @property {(m: M) => Promise<void>} [unload]
+ * @property {(m: M) => Promise<void>} [main]
  * @property {(m: M) => void} init
  * @property {(m: M) => void} [dead]
- * @property {(m: M) => void} update
+ * @property {(m: M) => void} [update]
  * @property {(m: M) => void} [draw]
  */
 
@@ -25,6 +26,7 @@ export function toast(m, handler, providers = []) {
         const topics = useProvider(m, TopicsProvider);
         useEffect(m, async () => {
             if (handler.load) await handler.load(m);
+            if (handler.main) await handler.main(m);
             if (handler.init) handler.init(m);
             return async () => {
                 if (handler.dead) handler.dead(m);

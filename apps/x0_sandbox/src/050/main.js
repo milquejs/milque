@@ -13,35 +13,8 @@ const INPUTS = {
     MoveDown: new ButtonBinding('move2d.down', [KeyCodes.ARROW_DOWN, KeyCodes.KEY_S]),
 };
 
-async function ThreeTextureLoader(src) {
-    if (typeof src === 'string') {
-        return await new THREE.TextureLoader().loadAsync(src);
-    } else {
-        let image = await ImageLoader(src);
-        let result = new THREE.Texture(image,
-            THREE.UVMapping,
-            THREE.ClampToEdgeWrapping,
-            THREE.ClampToEdgeWrapping,
-            THREE.NearestFilter,
-            THREE.NearestFilter);
-        return result;
-    }
-}
-
-const ASSETS = {
-    TexturePlayer: new AssetRef('toast.png', ThreeTextureLoader, {}, 'raw://toast.png'),
-};
-
 export async function main() {
-    let display = DisplayPort.create({ id: 'display', mode: 'fit', debug: true });
-    let input = InputPort.create({ for: 'display' });
-    let asset = new AssetManager();
-    let entity = new EntityManager();
-    let axb = input.getContext('axisbutton');
-    axb.bindBindings(Object.values(INPUTS));
-
-    await cacheAssetPackAsRaw(asset, 'res.pack');
-    await ASSETS.TexturePlayer.load(asset);
+    let display = DisplayPort.create({ id: 'display', debug: true });
 
     let renderer = new THREE.WebGLRenderer({ canvas: display.canvas });
     renderer.setSize(display.width, display.height);
@@ -50,12 +23,10 @@ export async function main() {
     camera.position.set(0, 5, 10);
     camera.lookAt(0, 0, 0);
 
-    let orbitControls = new OrbitControls(camera, renderer.domElement);
+    let orbitControls = new OrbitControls(camera, display);
     orbitControls.update();
 
     let scene = new THREE.Scene();
-    let player = createBillboard(scene, ASSETS.TexturePlayer.get(asset));
-    player.position.y = 0.5;
     let room = createRoom(scene);
 
     let dirLight = new THREE.DirectionalLight(0xFFFFFF, 1.0);
@@ -67,23 +38,9 @@ export async function main() {
     });
 
     requestAnimationFrame(new AnimationFrameLoop((e) => {
-        axb.poll(e.detail.currentTime);
-        let dt = e.detail.deltaTime / 60;
-
         orbitControls.update();
         renderer.render(scene, camera);
     }).next);
-}
-
-function createBillboard(scene, texture) {
-    let geom = new THREE.PlaneGeometry(1, 1);
-    let mat = new THREE.MeshStandardMaterial({
-        map: texture,
-        transparent: true,
-    });
-    let mesh = new THREE.Mesh(geom, mat);
-    scene.add(mesh);
-    return mesh;
 }
 
 function createRoom(scene) {

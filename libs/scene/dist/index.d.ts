@@ -942,22 +942,54 @@ type ToastHandler<M> = {
     draw?: (m: M) => void;
 };
 
+/**
+ * @template M
+ * @template {keyof WindowEventHandlersEventMap} K
+ * @param {M} m
+ * @param {keyof WindowEventMap} event
+ * @param {(this: WindowEventHandlers, ev: WindowEventHandlersEventMap[K]) => any} listener
+ */
+declare function useWindowEventListener<M, K extends keyof WindowEventHandlersEventMap>(m: M, event: keyof WindowEventMap, listener: (this: WindowEventHandlers, ev: WindowEventHandlersEventMap[K]) => any): void;
+/**
+ * @template M
+ * @template {keyof DocumentAndElementEventHandlersEventMap} K
+ * @param {M} m
+ * @param {keyof DocumentEventMap} event
+ * @param {(this: DocumentAndElementEventHandlers, ev: DocumentAndElementEventHandlersEventMap[K]) => any} listener
+ */
+declare function useDocumentEventListener<M, K extends keyof DocumentAndElementEventHandlersEventMap>(m: M, event: keyof DocumentEventMap, listener: (this: DocumentAndElementEventHandlers, ev: DocumentAndElementEventHandlersEventMap[K]) => any): void;
+/**
+ * @template M
+ * @template {keyof DocumentAndElementEventHandlersEventMap} K
+ * @param {M} m
+ * @param {HTMLElement} element
+ * @param {keyof ElementEventMap} event
+ * @param {(this: DocumentAndElementEventHandlers, ev: DocumentAndElementEventHandlersEventMap[K]) => any} listener
+ */
+declare function useHTMLElementEventListener<M, K extends keyof DocumentAndElementEventHandlersEventMap>(m: M, element: HTMLElement, event: keyof ElementEventMap, listener: (this: DocumentAndElementEventHandlers, ev: DocumentAndElementEventHandlersEventMap[K]) => any): void;
+
 declare const index_AnimationFrameLoopProvider: typeof AnimationFrameLoopProvider;
 declare const index_TopicsProvider: typeof TopicsProvider;
 declare const index_toast: typeof toast;
+declare const index_useDocumentEventListener: typeof useDocumentEventListener;
 declare const index_useEffect: typeof useEffect;
+declare const index_useHTMLElementEventListener: typeof useHTMLElementEventListener;
 declare const index_useProvider: typeof useProvider;
 declare const index_useSystemUpdate: typeof useSystemUpdate;
 declare const index_useTopic: typeof useTopic;
+declare const index_useWindowEventListener: typeof useWindowEventListener;
 declare namespace index {
   export {
     index_AnimationFrameLoopProvider as AnimationFrameLoopProvider,
     index_TopicsProvider as TopicsProvider,
     index_toast as toast,
+    index_useDocumentEventListener as useDocumentEventListener,
     index_useEffect as useEffect,
+    index_useHTMLElementEventListener as useHTMLElementEventListener,
     index_useProvider as useProvider,
     index_useSystemUpdate as useSystemUpdate,
     index_useTopic as useTopic,
+    index_useWindowEventListener as useWindowEventListener,
   };
 }
 

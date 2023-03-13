@@ -9,6 +9,7 @@ const INNER_HTML = /* html */`
         Oh no! Your browser does not support canvas.
       </canvas>
     </slot>
+    <slot name="overlay"></slot>
   </div>
   <slot name="frame"></slot>
 </div>`;
@@ -29,6 +30,7 @@ const INNER_STYLE = /* css */`
 .content {
   position: relative;
   margin: auto;
+  overflow: hidden;
 }
 
 .content > *:not(canvas) {
@@ -513,9 +515,11 @@ export class DisplayPort extends HTMLElement {
     }
 
     this._innerElement.addEventListener('slotchange', this.onSlotChange);
-
-    this.updateCanvasSize(true);
-    this.resume();
+    this._canvasElement = this._innerElement.querySelector('canvas');
+    if (this._canvasElement) {
+      this.updateCanvasSize(true);
+      this.resume();
+    }
   }
 
   /**
@@ -599,6 +603,8 @@ export class DisplayPort extends HTMLElement {
       throw new Error('No valid canvas element found for display.');
     }
     this._canvasElement = canvas;
+    this.updateCanvasSize(true);
+    this.resume();
   }
 
   /**
