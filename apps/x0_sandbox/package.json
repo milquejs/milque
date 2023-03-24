@@ -11,11 +11,17 @@
   ],
   "scripts": {
     "munge": "node munge.js",
-    "start": "node build.js --dev",
+    "start": "node build.js -- --watch",
     "build": "node build.js"
   },
   "devDependencies": {
-    "@milque/toolkit": "workspace:*"
+    "@milque/toolkit": "workspace:*",
+    "esbuild": "~0.17.12",
+    "esbuild-plugin-alias": "~0.2.1",
+    "@esbuild-plugins/node-modules-polyfill": "~0.2.2",
+    "open": "~8.0.7",
+    "esbuild-plugin-clear": "~1.0.1",
+    "@sprout2000/esbuild-copy-plugin": "~1.1.4"
   },
   "dependencies": {
     "@milque/asset": "workspace:*",

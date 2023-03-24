@@ -1365,6 +1365,14 @@ class Topic {
 
     /**
      * @param {TopicManager} topicManager
+     * @param {T} attachment
+     */
+    async dispatchImmediatelyAndWait(topicManager, attachment) {
+        await topicManager.dispatchImmediatelyAndWait(this, attachment);
+    }
+
+    /**
+     * @param {TopicManager} topicManager
      * @param {number} priority
      * @param {TopicCallback<T>} callback
      */
@@ -1536,12 +1544,29 @@ class TopicManager {
     /**
      * @template T
      * @param {Topic<T>} topic 
-     * @param {T} attachment 
+     * @param {T} attachment
      */
     dispatchImmediately(topic, attachment) {
         let callbacks = this.callbacksOf(topic);
         for(let { callback } of callbacks) {
             let result = callback(attachment);
+            if (result === true) {
+                return;
+            }
+        }
+        let outgoing = this.outgoingOf(topic);
+        outgoing.push(attachment);
+    }
+
+    /**
+     * @template T
+     * @param {Topic<T>} topic 
+     * @param {T} attachment 
+     */
+    async dispatchImmediatelyAndWait(topic, attachment) {
+        let callbacks = this.callbacksOf(topic);
+        for(let { callback } of callbacks) {
+            let result = await callback(attachment);
             if (result === true) {
                 return;
             }
@@ -1596,7 +1621,11 @@ class TopicManager {
             let max = Math.min(maxPerTopic, incoming.length);
             for(let i = 0; i < max; ++i) {
                 let attachment = incoming.shift();
-                this.dispatchImmediately(topic, attachment);
+                if (typeof attachment === 'object' && attachment instanceof Promise) {
+                    this.dispatchImmediately(topic, attachment);
+                } else {
+                    this.dispatchImmediately(topic, attachment);
+                }
             }
         }
     }
@@ -2045,9 +2074,10 @@ function TopicsProvider(m) {
  * @typedef ToastHandler
  * @property {(m: M) => Promise<void>} [load]
  * @property {(m: M) => Promise<void>} [unload]
+ * @property {(m: M) => Promise<void>} [main]
  * @property {(m: M) => void} init
  * @property {(m: M) => void} [dead]
- * @property {(m: M) => void} update
+ * @property {(m: M) => void} [update]
  * @property {(m: M) => void} [draw]
  */
 
@@ -2061,6 +2091,7 @@ function toast(m, handler, providers = []) {
         const topics = useProvider(m, TopicsProvider);
         useEffect(m, async () => {
             if (handler.load) await handler.load(m);
+            if (handler.main) await handler.main(m);
             if (handler.init) handler.init(m);
             return async () => {
                 if (handler.dead) handler.dead(m);

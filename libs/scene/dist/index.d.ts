@@ -653,6 +653,11 @@ declare class Topic$1<T> {
     dispatchImmediately(topicManager: TopicManager$1, attachment: T): void;
     /**
      * @param {TopicManager} topicManager
+     * @param {T} attachment
+     */
+    dispatchImmediatelyAndWait(topicManager: TopicManager$1, attachment: T): Promise<void>;
+    /**
+     * @param {TopicManager} topicManager
      * @param {number} priority
      * @param {TopicCallback<T>} callback
      */
@@ -753,6 +758,12 @@ declare class TopicManager {
      */
     dispatchImmediately<T_3>(topic: Topic$1<T_3>, attachment: T_3): void;
     /**
+     * @template T
+     * @param {Topic<T>} topic
+     * @param {T} attachment
+     */
+    dispatchImmediatelyAndWait<T_4>(topic: Topic$1<T_4>, attachment: T_4): Promise<void>;
+    /**
      * @param {Topic<?>} topic
      */
     count(topic: Topic<unknown>): number;
@@ -760,7 +771,7 @@ declare class TopicManager {
      * @template T
      * @param {Topic<T>} topic
      */
-    poll<T_4>(topic: Topic$1<T_4>): T_4;
+    poll<T_5>(topic: Topic$1<T_5>): T_5;
     /**
      * @param {Topic<?>} topic
      * @param {number} amount
@@ -785,21 +796,21 @@ declare class TopicManager {
      * @param {Topic<T>} topic
      * @returns {Array<T>}
      */
-    protected incomingOf<T_5>(topic: Topic$1<T_5>): T_5[];
+    protected incomingOf<T_6>(topic: Topic$1<T_6>): T_6[];
     /**
      * @protected
      * @template T
      * @param {Topic<T>} topic
      * @returns {Array<T>}
      */
-    protected outgoingOf<T_6>(topic: Topic$1<T_6>): T_6[];
+    protected outgoingOf<T_7>(topic: Topic$1<T_7>): T_7[];
     /**
      * @protected
      * @template T
      * @param {Topic<T>} topic
      * @returns {Array<TopicCallbackEntry<T>>}
      */
-    protected callbacksOf<T_7>(topic: Topic$1<T_7>): TopicCallbackEntry<T_7>[];
+    protected callbacksOf<T_8>(topic: Topic$1<T_8>): TopicCallbackEntry<T_8>[];
 }
 /**
  * <T>
@@ -914,9 +925,10 @@ declare function TopicsProvider<M>(m: M): TopicManager;
  * @typedef ToastHandler
  * @property {(m: M) => Promise<void>} [load]
  * @property {(m: M) => Promise<void>} [unload]
+ * @property {(m: M) => Promise<void>} [main]
  * @property {(m: M) => void} init
  * @property {(m: M) => void} [dead]
- * @property {(m: M) => void} update
+ * @property {(m: M) => void} [update]
  * @property {(m: M) => void} [draw]
  */
 /**
@@ -936,9 +948,10 @@ declare function AnimationFrameLoopProvider<M>(m: M): AnimationFrameLoop;
 type ToastHandler<M> = {
     load?: (m: M) => Promise<void>;
     unload?: (m: M) => Promise<void>;
+    main?: (m: M) => Promise<void>;
     init: (m: M) => void;
     dead?: (m: M) => void;
-    update: (m: M) => void;
+    update?: (m: M) => void;
     draw?: (m: M) => void;
 };
 

@@ -1,41 +1,59 @@
-import { ButtonBinding, KeyCodes } from '@milque/input';
-import { Toaster as T } from '@milque/scene';
-import { DisplayProvider, InputProvider } from './main';
+import { AssetRef, ImageLoader } from '@milque/asset';
 
-export const INPUTS = {
-    MoveLeft: new ButtonBinding('move.left', [KeyCodes.ARROW_LEFT, KeyCodes.KEY_A]),
-    MoveRight: new ButtonBinding('move.right', [KeyCodes.ARROW_RIGHT, KeyCodes.KEY_D]),
-    MoveUp: new ButtonBinding('move.up', [KeyCodes.ARROW_UP, KeyCodes.KEY_W]),
-    MoveDown: new ButtonBinding('move.down', [KeyCodes.ARROW_DOWN, KeyCodes.KEY_S]),
-};
+import { AssetProvider, DisplayProvider } from './main';
+import { useContext } from './runner';
+import * as BoySystem from './boy/BoySystem';
+
+import { Tia } from './Tia';
+
+// @ts-ignore
+import STAR_PATH from './star.png';
+const StarImage = new AssetRef('star.png', ImageLoader, { imageType: 'png' }, STAR_PATH);
 
 export const PROVIDERS = [
     GameProvider
 ];
 
-function GameProvider(m) {
-    const { axb } = T.useProvider(m, InputProvider);
-    axb.bindBindings(Object.values(INPUTS));
-    
-    const { canvas } = T.useProvider(m, DisplayProvider);
+export function GameProvider(m) {
+    const { canvas } = useContext(m, DisplayProvider);
     const ctx = canvas.getContext('2d');
-
+    const tia = new Tia();
     return {
-        ctx
+        tia,
+        ctx,
     };
 }
 
-export function init(m) {
+export async function preload(m) {
+    await BoySystem.preload(m);
 
+    const { assets } = useContext(m, AssetProvider);
+    await StarImage.load(assets);
+
+    const { display } = useContext(m, DisplayProvider);
+    display.width = 350;
+    display.height = 250;
+    display.mode = 'scale';
+}
+
+export function init(m) {
+    BoySystem.init(m);
 }
 
 export function update(m) {
-    
+    BoySystem.update(m);
 }
 
 export function draw(m) {
-    const { ctx } = T.useProvider(m, GameProvider);
+    const { ctx, tia } = useContext(m, GameProvider);
+    const { display } = useContext(m, DisplayProvider);
+    const { assets } = useContext(m, AssetProvider);
 
-    ctx.fillStyle = 'white';
-    ctx.fillRect(0, 0, 10, 10);
+    tia.cls(ctx, 0xFFFFFF);
+    tia.camera(display.width / 2 - 0.5, display.height / 2 - 0.5, 3, 3);
+
+    let img = StarImage.get(assets);
+    tia.spr(ctx, img, 0, 10, 10, img.width, img.height);
+
+    BoySystem.draw(m);
 }

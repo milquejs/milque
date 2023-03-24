@@ -108,12 +108,29 @@ export class TopicManager {
     /**
      * @template T
      * @param {Topic<T>} topic 
-     * @param {T} attachment 
+     * @param {T} attachment
      */
     dispatchImmediately(topic, attachment) {
         let callbacks = this.callbacksOf(topic);
         for(let { callback } of callbacks) {
             let result = callback(attachment);
+            if (result === true) {
+                return;
+            }
+        }
+        let outgoing = this.outgoingOf(topic);
+        outgoing.push(attachment);
+    }
+
+    /**
+     * @template T
+     * @param {Topic<T>} topic 
+     * @param {T} attachment 
+     */
+    async dispatchImmediatelyAndWait(topic, attachment) {
+        let callbacks = this.callbacksOf(topic);
+        for(let { callback } of callbacks) {
+            let result = await callback(attachment);
             if (result === true) {
                 return;
             }
@@ -168,7 +185,11 @@ export class TopicManager {
             let max = Math.min(maxPerTopic, incoming.length);
             for(let i = 0; i < max; ++i) {
                 let attachment = incoming.shift();
-                this.dispatchImmediately(topic, attachment);
+                if (typeof attachment === 'object' && attachment instanceof Promise) {
+                    this.dispatchImmediately(topic, attachment);
+                } else {
+                    this.dispatchImmediately(topic, attachment);
+                }
             }
         }
     }
