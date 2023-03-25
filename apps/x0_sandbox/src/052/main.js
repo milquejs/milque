@@ -1,10 +1,8 @@
-import { DisplayPort } from '@milque/display';
+import { FlexCanvas } from '@milque/display';
 import { InputPort } from '@milque/input';
 import { run, useWhenSystemUpdate } from '../runner';
 
 import * as Game from './Game';
-
-if (!window.customElements.get('display-port')) DisplayPort.define();
 
 export async function main() {
     await run(Game, [
@@ -15,7 +13,7 @@ export async function main() {
 }
 
 export function DisplayProvider(m) {
-    let display = DisplayPort.create({ id: 'display', debug: true });
+    let display = FlexCanvas.create({ id: 'display', sizing: 'container' });
     let canvas = display.canvas;
     return {
         display,

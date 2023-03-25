@@ -1,12 +1,10 @@
 import { AssetManager, AssetRef, cacheAssetPackAsRaw, ImageLoader } from '@milque/asset';
-import { DisplayPort } from '@milque/display';
-import { ButtonBinding, InputPort, KeyCodes } from '@milque/input';
-import { EntityManager, AnimationFrameLoop } from '@milque/scene';
+import { FlexCanvas } from '@milque/display';
+import { ButtonBinding, KeyCodes } from '@milque/input';
+import { AnimationFrameLoop } from '@milque/scene';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
 import * as THREE from 'three';
-
-if (!window.customElements.get('display-port')) DisplayPort.define();
 
 const INPUTS = {
     MoveLeft: new ButtonBinding('move2d.left', [KeyCodes.ARROW_LEFT, KeyCodes.KEY_A]),
@@ -16,16 +14,16 @@ const INPUTS = {
 };
 
 export async function main() {
-    let display = DisplayPort.create({ id: 'display', debug: true });
+    let canvas = FlexCanvas.create({ sizing: 'container' }).canvas;
 
-    let renderer = new THREE.WebGLRenderer({ canvas: display.canvas });
-    renderer.setSize(display.width, display.height);
+    let renderer = new THREE.WebGLRenderer({ canvas });
+    renderer.setSize(canvas.width, canvas.height);
 
-    let camera = new THREE.PerspectiveCamera(45, display.width / display.height, 1, 100);
+    let camera = new THREE.PerspectiveCamera(45, canvas.width / canvas.height, 1, 100);
     camera.position.set(0, 5, 10);
     camera.lookAt(0, 0, 0);
 
-    let orbitControls = new OrbitControls(camera, display);
+    let orbitControls = new OrbitControls(camera, canvas);
     orbitControls.update();
 
     let scene = new THREE.Scene();
@@ -35,8 +33,8 @@ export async function main() {
     dirLight.position.set(10, 10, 5);
     scene.add(dirLight);
     
-    display.addEventListener('resize', () => {
-        renderer.setSize(display.width, display.height);
+    window.addEventListener('resize', () => {
+        renderer.setSize(canvas.width, canvas.height);
     });
 
     requestAnimationFrame(new AnimationFrameLoop((e) => {

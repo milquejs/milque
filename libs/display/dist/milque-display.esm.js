@@ -875,6 +875,9 @@ class FlexCanvas extends HTMLElement {
             width = DEFAULT_WIDTH,
             height = DEFAULT_HEIGHT,
         } = opts || {};
+        if (!window.customElements.get('flex-canvas')) {
+            window.customElements.define('flex-canvas', FlexCanvas);
+        }
         let result = new FlexCanvas();
         result.id = id;
         result.scaling = scaling;
@@ -885,8 +888,8 @@ class FlexCanvas extends HTMLElement {
         return result;
     }
 
-    static define(tagName = 'flex-canvas', customElements = window.customElements) {
-        customElements.define(tagName, this);
+    static define(customElements = window.customElements) {
+        customElements.define('flex-canvas', this);
     }
 
     /** @private */
@@ -986,6 +989,10 @@ class FlexCanvas extends HTMLElement {
         this.setAttribute('height', String(value));
     }
 
+    get canvas() {
+        return this.canvasElement;
+    }
+
     constructor() {
         super();
         const shadowRoot = this.attachShadow({ mode: 'open' });
@@ -1048,7 +1055,7 @@ class FlexCanvas extends HTMLElement {
         this.animationFrameHandle = requestAnimationFrame(this.onAnimationFrame);
         this.canvasSlotElement.addEventListener('slotchange', this.onSlotChange);
         if (!this.canvasElement) {
-            this.canvasElement = this.canvasSlotElement.querySelector('canvas');
+            this.setCanvasElement(this.canvasSlotElement.querySelector('canvas'));
         }
     }
 
@@ -1096,9 +1103,15 @@ class FlexCanvas extends HTMLElement {
                 break;
             case 'width':
                 this._width = Number(value);
+                if (this.canvasElement) {
+                    this.canvasElement.width = this._width;
+                }
                 break;
             case 'height':
                 this._height = Number(value);
+                if (this.canvasElement) {
+                    this.canvasElement.height = this._height;
+                }
                 break;
             case 'resize-delay':
                 this._resizeDelay = Number(value);
@@ -1150,6 +1163,12 @@ class FlexCanvas extends HTMLElement {
         let ratioX = clientWidth / canvasWidth;
         let ratioY = clientHeight / canvasHeight;
 
+        // noscale
+        if (scaling === 'noscale') {
+            this.style.setProperty('--width', `${canvasWidth}px`);
+            this.style.setProperty('--height', `${canvasHeight}px`);
+        }
+
         // scale
         if (scaling === 'scale') {
             if (ratioX < ratioY) {
@@ -1180,6 +1199,12 @@ class FlexCanvas extends HTMLElement {
                 canvas.style.setProperty('width', `${canvasWidth}px`);
                 canvas.style.setProperty('height', `${canvasHeight}px`);
             }
+            if (canvas.width !== canvasWidth) {
+                canvas.width = canvasWidth;
+            }
+            if (canvas.height !== canvasHeight) {
+                canvas.height = canvasHeight;
+            }
         }
 
         // fill
@@ -1195,15 +1220,12 @@ class FlexCanvas extends HTMLElement {
                 canvas.style.setProperty('width', `${canvasWidth}px`);
                 canvas.style.setProperty('height', `${canvasHeight}px`);
             }
-        }
-
-        if (canvas.width !== canvasWidth) {
-            canvas.width = canvasWidth;
-            this.style.setProperty('--width', `${canvasWidth}px`);
-        }
-        if (canvas.height !== canvasHeight) {
-            canvas.height = canvasHeight;
-            this.style.setProperty('--height', `${canvasHeight}px`);
+            if (canvas.width !== canvasWidth) {
+                canvas.width = canvasWidth;
+            }
+            if (canvas.height !== canvasHeight) {
+                canvas.height = canvasHeight;
+            }
         }
     }
 
@@ -1216,8 +1238,19 @@ class FlexCanvas extends HTMLElement {
         let children = slot.assignedElements({ flatten: true });
         let canvas = /** @type {HTMLCanvasElement} */ (children.find(el => el instanceof HTMLCanvasElement));
         if (canvas) {
-            this.canvasElement = canvas;
+            this.setCanvasElement(canvas);
         }
+    }
+
+    /**
+     * @private
+     * @param {HTMLCanvasElement} canvas 
+     */
+    setCanvasElement(canvas) {
+        canvas.width = this._width;
+        canvas.height = this._height;
+        canvas.style.imageRendering = 'pixelated';
+        this.canvasElement = canvas;
     }
 
     /**

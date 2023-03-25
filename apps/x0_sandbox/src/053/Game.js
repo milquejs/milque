@@ -1,6 +1,6 @@
 import { AssetRef, ImageLoader } from '@milque/asset';
 
-import { AssetProvider, DisplayProvider, EntityProvider } from './main';
+import { AssetProvider, CanvasProvider, EntityProvider } from './main';
 import { useContext, useCurrentAnimationFrameDetail } from '../runner';
 
 import { Tia } from './tia/Tia';
@@ -17,7 +17,7 @@ export const PROVIDERS = [
 ];
 
 export function GameProvider(m) {
-    const { canvas } = useContext(m, DisplayProvider);
+    const canvas = useContext(m, CanvasProvider);
     const ctx = canvas.getContext('2d');
     const tia = new Tia();
     return {
@@ -28,6 +28,8 @@ export function GameProvider(m) {
 
 export function StageProvider(m) {
     return {
+        width: 400,
+        height: 300,
         views: [
             {
                 name: 'main',
@@ -113,17 +115,17 @@ const GameObjectQuery = new Query(GameObjectComponent);
 
 export async function preload(m) {
     const stage = useContext(m, StageProvider);
-    const { assets } = useContext(m, AssetProvider);
-    const { display } = useContext(m, DisplayProvider);
-    display.width = stage.width;
-    display.height = stage.height;
+    const assets = useContext(m, AssetProvider);
+    const canvas = useContext(m, CanvasProvider);
+    canvas.width = stage.width;
+    canvas.height = stage.height;
 
     await StarImage.load(assets);
 }
 
 export function init(m) {
     const stage = useContext(m, StageProvider);
-    const { ents } = useContext(m, EntityProvider);
+    const ents = useContext(m, EntityProvider);
 
     for(let instance of stage.instances) {
         let ent = ents.create();
@@ -143,7 +145,7 @@ export function init(m) {
 export function update(m) {
     const stage = useContext(m, StageProvider);
     const { deltaTime } = useCurrentAnimationFrameDetail(m);
-    const { ents } = useContext(m, EntityProvider);
+    const ents = useContext(m, EntityProvider);
 
     for(let [_, go] of GameObjectQuery.findAll(ents)) {
         let objectConfig = stage.objects.find(obj => obj.name === go.object);
@@ -156,10 +158,11 @@ export function update(m) {
 
 export function draw(m) {
     const stage = useContext(m, StageProvider);
-    const { assets } = useContext(m, AssetProvider);
-    const { ents } = useContext(m, EntityProvider);
+    const assets = useContext(m, AssetProvider);
+    const ents = useContext(m, EntityProvider);
     const { tia, ctx } = useContext(m, GameProvider);
     
+    tia.cls(ctx, 0xFF0000);
     for(let [_, go] of GameObjectQuery.findAll(ents)) {
         if (!go.visible) {
             return;

@@ -1,18 +1,15 @@
-import { DisplayPort } from '@milque/display';
+import { FlexCanvas } from '@milque/display';
 import { InputPort } from '@milque/input';
 import { AssetManager } from '@milque/asset';
 import { EntityManager } from '@milque/scene';
 
 import { run, useWhenSystemUpdate } from '../runner';
 
-//import * as Game from './hustle/HustleGame';
 import * as Game from './Game';
-
-if (!window.customElements.get('display-port')) DisplayPort.define();
 
 export async function main() {
     await run(Game, [
-        DisplayProvider,
+        CanvasProvider,
         InputProvider,
         AssetProvider,
         EntityProvider,
@@ -20,31 +17,22 @@ export async function main() {
     ]);
 }
 
-export function DisplayProvider(m) {
-    let display = DisplayPort.create({ id: 'display', debug: true });
-    let canvas = display.canvas;
-    return {
-        display,
-        canvas,
-    };
+export function CanvasProvider(m) {
+    let flexCanvas = FlexCanvas.create({ id: 'canvas', sizing: 'viewport' });
+    return flexCanvas;
 }
 
 export function InputProvider(m) {
-    let input = InputPort.create({ for: 'display' });
+    let input = InputPort.create({ for: 'canvas' });
     let context = input.getContext('axisbutton');
     useWhenSystemUpdate(m, 0, (e) => {
         context.poll(e.detail.currentTime);
     });
-    return {
-        axb: context,
-    };
+    return context;
 }
 
 export function AssetProvider(m) {
-    let assets = new AssetManager();
-    return {
-        assets,
-    };
+    return new AssetManager();
 }
 
 export function EntityProvider(m) {
@@ -52,7 +40,5 @@ export function EntityProvider(m) {
     useWhenSystemUpdate(m, -1, (e) => {
         ents.flush();
     });
-    return {
-        ents,
-    };
+    return ents;
 }

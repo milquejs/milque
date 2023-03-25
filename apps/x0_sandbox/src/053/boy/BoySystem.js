@@ -55,13 +55,13 @@ export function instantiate(ents) {
 
 // SYSTEMS
 export async function preload(m) {
-    const { assets } = useContext(m, AssetProvider);
+    const assets = useContext(m, AssetProvider);
     await BoyImage.load(assets);
     await Eyes1Image.load(assets);
     await Eyes2Image.load(assets);
     await WorkImage.load(assets);
 
-    const { axb } = useContext(m, InputProvider);
+    const axb = useContext(m, InputProvider);
     MoveLeft.bindTo(axb);
     MoveRight.bindTo(axb);
     MoveUp.bindTo(axb);
@@ -69,13 +69,13 @@ export async function preload(m) {
 }
 
 export function init(m) {
-    const { ents } = useContext(m, EntityProvider);
+    const ents = useContext(m, EntityProvider);
     instantiate(ents);
 }
 
 export function update(m) {
     const { deltaTime } = useCurrentAnimationFrameDetail(m);
-    const { ents } = useContext(m, EntityProvider);
+    const ents = useContext(m, EntityProvider);
     let dx = MoveRight.value - MoveLeft.value;
     let dy = MoveDown.value - MoveUp.value;
     let sx = Math.sign(dx);
@@ -91,8 +91,8 @@ export function update(m) {
 
 export function draw(m) {
     const { ctx, tia } = useContext(m, GameProvider);
-    const { assets } = useContext(m, AssetProvider);
-    const { ents } = useContext(m, EntityProvider);
+    const assets = useContext(m, AssetProvider);
+    const ents = useContext(m, EntityProvider);
     const { currentTime } = useCurrentAnimationFrameDetail(m);
     for(let [_, boy] of BoyQuery.findAll(ents)) {
         tia.spr(ctx, WorkImage.get(assets), Math.floor(currentTime / 100) % 6, boy.x, boy.y, 32, 32, boy.facing > 0);

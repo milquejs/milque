@@ -9,6 +9,7 @@ import { AssetManager, AssetRef, cacheAssetPackAsRaw, ImageLoader, preloadAssetR
 import { DialoguePrompt } from './DialoguePrompt';
 import { AnimatedText } from './AnimatedText';
 import { useContext } from '../runner';
+import { useHTMLElementEventListener } from '../runner/EventListenerHook';
 
 DialoguePrompt.define();
 
@@ -86,7 +87,7 @@ function GameProvider(m) {
     let scene = new THREE.Scene();
 
     // @ts-ignore
-    T.useHTMLElementEventListener(m, display, 'resize', () => {
+    useHTMLElementEventListener(m, display, 'resize', () => {
         renderer.setSize(display.width, display.height);
     });
 

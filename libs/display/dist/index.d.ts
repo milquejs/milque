@@ -273,7 +273,7 @@ declare class FlexCanvas extends HTMLElement {
         width?: number;
         height?: number;
     }): FlexCanvas;
-    static define(tagName?: string, customElements?: CustomElementRegistry): void;
+    static define(customElements?: CustomElementRegistry): void;
     /**
      * @protected
      * Override for web component.
@@ -317,6 +317,7 @@ declare class FlexCanvas extends HTMLElement {
      * The canvas height in pixels. This determines the aspect ratio and canvas buffer size.
      */
     get height(): number;
+    get canvas(): HTMLCanvasElement;
     /** @private */
     private _sizing;
     /** @private */
@@ -364,6 +365,11 @@ declare class FlexCanvas extends HTMLElement {
      * Override for web component.
      */
     protected attributeChangedCallback(attribute: any, prev: any, value: any): void;
+    /**
+     * @private
+     * @param {HTMLCanvasElement} canvas
+     */
+    private setCanvasElement;
     /**
      * @param {'2d'|'webgl'|'webgl2'} [contextId]
      * @param {CanvasRenderingContext2DSettings} [options]
