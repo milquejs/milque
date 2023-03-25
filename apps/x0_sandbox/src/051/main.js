@@ -3,6 +3,8 @@ import { InputPort } from '@milque/input';
 import { run, useContext, useWhenSystemUpdate } from '../runner/Runner.js';
 import * as Toast from './Game.js';
 
+if (!window.customElements.get('display-port')) DisplayPort.define();
+
 export async function main() {
     await run(Toast, [
         DisplayProvider,

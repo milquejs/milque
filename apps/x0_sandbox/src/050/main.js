@@ -6,6 +6,8 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
 import * as THREE from 'three';
 
+if (!window.customElements.get('display-port')) DisplayPort.define();
+
 const INPUTS = {
     MoveLeft: new ButtonBinding('move2d.left', [KeyCodes.ARROW_LEFT, KeyCodes.KEY_A]),
     MoveRight: new ButtonBinding('move2d.right', [KeyCodes.ARROW_RIGHT, KeyCodes.KEY_D]),

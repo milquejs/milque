@@ -246,4 +246,131 @@ declare class DisplayPort extends HTMLElement {
 type FrameEvent = CustomEvent;
 type DisplayScaling = "center" | "fit" | "noscale" | "scale" | "fill" | "stretch";
 
-export { DisplayPort, DisplayScaling, FrameEvent, MODE_CENTER, MODE_FILL, MODE_FIT, MODE_NOSCALE, MODE_SCALE, MODE_STRETCH };
+/**
+ * @typedef {SIZING_NONE|SIZING_CONTAINER|SIZING_VIEWPORT|string} SizingMode
+ */
+/**
+ * @typedef {SCALING_NOSCALE|SCALING_SCALE|SCALING_FILL|SCALING_FIT|SCALING_STRETCH} ScalingMode
+ */
+/**
+ * A canvas wrapper to scale and stretch with respect to the aspect ratio to fill the viewport or container.
+ */
+declare class FlexCanvas extends HTMLElement {
+    /**
+     * @param {object} [opts]
+     * @param {HTMLElement} [opts.root]
+     * @param {string} [opts.id]
+     * @param {ScalingMode} [opts.scaling]
+     * @param {SizingMode} [opts.sizing]
+     * @param {number} [opts.width]
+     * @param {number} [opts.height]
+     */
+    static create(opts?: {
+        root?: HTMLElement;
+        id?: string;
+        scaling?: ScalingMode;
+        sizing?: SizingMode;
+        width?: number;
+        height?: number;
+    }): FlexCanvas;
+    static define(tagName?: string, customElements?: CustomElementRegistry): void;
+    /**
+     * @protected
+     * Override for web component.
+     */
+    protected static get observedAttributes(): string[];
+    set scaling(arg: ScalingMode);
+    /**
+     * The scaling mode.
+     * - `noscale`: Do not perform scaling.
+     * - `fit`: Resize resolution to fill the entire viewport and maintains the aspect
+     * ratio. The pixel resolution is changed. This is the default behavior.
+     * - `fill`: Resize resolution to fill the entire viewport but does not maintain
+     * aspect ratio.
+     * - `stretch`: Perform scaling to fill the entire viewport but does not maintain
+     * aspect ratio.
+     * - `scale`: Perform scaling to fill the entire viewport and maintains the
+     * aspect ratio and resolution. The pixel resolution remains constant.
+     */
+    get scaling(): ScalingMode;
+    set sizing(arg: string);
+    /**
+     * The sizing mode.
+     * - `none`: Sizes to canvas.
+     * - `container`: Sizes to 100% of parent container.
+     * - `viewport`: Sizes to 100% of viewport.
+     */
+    get sizing(): string;
+    set resizeDelay(arg: number);
+    /**
+     * @returns {number}
+     */
+    get resizeDelay(): number;
+    set width(arg: number);
+    /**
+     * The canvas width in pixels. This determines the aspect ratio and canvas buffer size.
+     * @returns {number}
+     */
+    get width(): number;
+    set height(arg: number);
+    /**
+     * The canvas height in pixels. This determines the aspect ratio and canvas buffer size.
+     */
+    get height(): number;
+    /** @private */
+    private _sizing;
+    /** @private */
+    private _width;
+    /** @private */
+    private _height;
+    /** @private */
+    private _resizeDelay;
+    /** @private */
+    private animationFrameHandle;
+    /** @private */
+    private resizeTimeoutHandle;
+    /** @private */
+    private resizeCanvasWidth;
+    /** @private */
+    private resizeCanvasHeight;
+    /** @private */
+    private canvasSlotElement;
+    /** @private */
+    private canvasElement;
+    /** @private */
+    private onResize;
+    /**
+     * @private
+     * @param {number} now
+     */
+    private onAnimationFrame;
+    /**
+     * @private
+     * @param {Event} e
+     */
+    private onSlotChange;
+    /**
+     * @protected
+     * Override for web component.
+     */
+    protected connectedCallback(): void;
+    /**
+     * @protected
+     * Override for web component.
+     */
+    protected disconnectedCallback(): void;
+    /**
+     * @protected
+     * Override for web component.
+     */
+    protected attributeChangedCallback(attribute: any, prev: any, value: any): void;
+    /**
+     * @param {'2d'|'webgl'|'webgl2'} [contextId]
+     * @param {CanvasRenderingContext2DSettings} [options]
+     */
+    getContext(contextId?: '2d' | 'webgl' | 'webgl2', options?: CanvasRenderingContext2DSettings): RenderingContext;
+}
+type SizingMode = "none" | "conatiner" | "viewport" | string;
+type ScalingMode = "noscale" | "scale" | "fill" | "fit" | "stretch";
+
+export { DisplayPort, DisplayScaling, FlexCanvas, FrameEvent, MODE_CENTER, MODE_FILL, MODE_FIT, MODE_NOSCALE, MODE_SCALE, MODE_STRETCH, ScalingMode, SizingMode };

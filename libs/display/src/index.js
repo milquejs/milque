@@ -1,1 +1,2 @@
-export * from './DisplayPort.js';
+export * from './DisplayPort';
+export * from './FlexCanvas';

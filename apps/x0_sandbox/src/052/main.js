@@ -4,6 +4,8 @@ import { run, useWhenSystemUpdate } from '../runner';
 
 import * as Game from './Game';
 
+if (!window.customElements.get('display-port')) DisplayPort.define();
+
 export async function main() {
     await run(Game, [
         DisplayProvider,

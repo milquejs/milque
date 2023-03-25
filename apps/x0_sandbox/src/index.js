@@ -1,4 +1,3 @@
-import { DisplayPort } from '@milque/display';
 import './reload.js';
 import './error.js';
 
@@ -8,11 +7,10 @@ import { main as m50 } from './050/main.js';
 import { main as m51 } from './051/main.js';
 import { main as m52 } from './052/main.js';
 import { main as m53 } from './053/main.js';
-
-DisplayPort.define();
+import { main as m54 } from './054/main.js';
 
 const TARGETS = [
-    m50, m51, m52, m53
+    m50, m51, m52, m53, m54
 ];
 
 window.addEventListener('DOMContentLoaded', () => main(TARGETS));
