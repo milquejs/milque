@@ -1,4 +1,4 @@
-import { AssetRef, ImageLoader } from '@milque/asset';
+import { AssetRef, ImageLoader, BMFontLoader } from '@milque/asset';
 
 import { AssetProvider, DisplayProvider } from './main';
 import { useContext } from './runner';
@@ -9,6 +9,13 @@ import { Tia } from './Tia';
 // @ts-ignore
 import STAR_PATH from './star.png';
 const StarImage = new AssetRef('star.png', ImageLoader, { imageType: 'png' }, STAR_PATH);
+
+// @ts-ignore
+import M5X7_FONT_PATH from './m5x7.fnt';
+const Font = new AssetRef('m5x7.fnt', BMFontLoader, {});
+// @ts-ignore
+import M5X7_IMAGE_PATH from './m5x7.png';
+const FontImage = new AssetRef('m5x7.png', ImageLoader, {});
 
 export const PROVIDERS = [
     GameProvider
