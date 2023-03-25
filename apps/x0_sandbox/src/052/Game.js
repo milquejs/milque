@@ -1,4 +1,3 @@
-import { Toaster as T } from '@milque/scene';
 import { ButtonBinding, KeyCodes } from '@milque/input';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
@@ -9,6 +8,7 @@ import { AssetManager, AssetRef, cacheAssetPackAsRaw, ImageLoader, preloadAssetR
 
 import { DialoguePrompt } from './DialoguePrompt';
 import { AnimatedText } from './AnimatedText';
+import { useContext } from '../runner';
 
 DialoguePrompt.define();
 
@@ -31,14 +31,14 @@ export const ASSETS = {
 };
 
 export async function load(m) {
-    const assets = T.useProvider(m, AssetProvider);
+    const assets = useContext(m, AssetProvider);
     await cacheAssetPackAsRaw(assets, 'res.pack');
     await preloadAssetRefs(assets, Object.values(ASSETS));
 }
 
 export function init(m) {
-    const { scene } = T.useProvider(m, GameProvider);
-    const { display } = T.useProvider(m, DisplayProvider);
+    const { scene } = useContext(m, GameProvider);
+    const { display } = useContext(m, DisplayProvider);
 
     let room = createRoom(scene);
 
@@ -61,10 +61,10 @@ export function init(m) {
 }
 
 export function update(m) {
-    const controls = T.useProvider(m, ControlsProvider);
+    const controls = useContext(m, ControlsProvider);
     controls.update();
 
-    const { scene, renderer, camera } = T.useProvider(m, GameProvider);
+    const { scene, renderer, camera } = useContext(m, GameProvider);
     renderer.render(scene, camera);
 }
 
@@ -74,7 +74,7 @@ function AssetProvider(m) {
 }
 
 function GameProvider(m) {
-    const { display } = T.useProvider(m, DisplayProvider);
+    const { display } = useContext(m, DisplayProvider);
 
     let renderer = new THREE.WebGLRenderer({ canvas: display.canvas });
     renderer.setSize(display.width, display.height);
@@ -98,8 +98,8 @@ function GameProvider(m) {
 }
 
 function ControlsProvider(m) {
-    let { display } = T.useProvider(m, DisplayProvider);
-    let { camera } = T.useProvider(m, GameProvider);
+    let { display } = useContext(m, DisplayProvider);
+    let { camera } = useContext(m, GameProvider);
     let orbitControls = new OrbitControls(camera, display);
     orbitControls.update();
     return orbitControls;

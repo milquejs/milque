@@ -3,7 +3,7 @@ import { InputPort } from '@milque/input';
 import { AssetManager } from '@milque/asset';
 import { EntityManager } from '@milque/scene';
 
-import { run, useWhenSystemUpdate } from './runner';
+import { run, useWhenSystemUpdate } from '../runner';
 
 //import * as Game from './hustle/HustleGame';
 import * as Game from './Game';

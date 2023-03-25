@@ -1,15 +1,15 @@
 import { DisplayPort } from '@milque/display';
 import { InputPort } from '@milque/input';
-import { Toaster as T } from '@milque/scene';
+import { run, useWhenSystemUpdate } from '../runner';
 
 import * as Game from './Game';
 
 export async function main() {
-    await T.toast({}, Game, [
+    await run(Game, [
         DisplayProvider,
         InputProvider,
         ...Game.PROVIDERS,
-    ]).start();
+    ]);
 }
 
 export function DisplayProvider(m) {
@@ -24,8 +24,7 @@ export function DisplayProvider(m) {
 export function InputProvider(m) {
     let input = InputPort.create({ for: 'display' });
     let context = input.getContext('axisbutton');
-    const topics = T.useProvider(m, T.TopicsProvider);
-    T.useSystemUpdate(m, topics, (e) => {
+    useWhenSystemUpdate(m, 0, (e) => {
         context.poll(e.detail.currentTime);
     });
     return {

@@ -1,6 +1,6 @@
 import { AnimationFrameLoop, Topic, TopicManager } from '@milque/scene';
 
-import { injectProviders, ejectProviders, getProviderState, getCurrentProvider, setCurrentProvider } from './Provider';
+import { injectProviders, ejectProviders, getProviderState, getCurrentProvider, setCurrentProvider, createOverrideProvider, hasProviderState } from './Provider';
 import { applyEffects, revertEffects, registerAfterEffect, registerEffect } from './Effect';
 import { getRunConfiguration, setRunConfiguration } from './RunConfiguration';
 
@@ -11,11 +11,11 @@ const SystemInit = new Topic('system.init');
 /** @type {Topic<null>} */
 const SystemDead = new Topic('system.dead');
 /**
- * @type {Topic<import('@milque/scene').AnimationFrameLoop>}
+ * @type {Topic<AnimationFrameLoop>}
  */
 const SystemUpdate = new Topic('system.update');
 /**
- * @type {Topic<import('@milque/scene').AnimationFrameLoop>}
+ * @type {Topic<AnimationFrameLoop>}
  */
 const SystemDraw = new Topic('system.draw');
 
@@ -166,7 +166,7 @@ export function useCurrentAnimationFrameDetail(m) {
 /**
  * @template M, T
  * @param {M} m 
- * @param {import('@milque/scene').Topic<T>} topic 
+ * @param {Topic<T>} topic 
  * @param {number} priority 
  * @param {import('@milque/scene').TopicCallback<T>} callback 
  */
@@ -199,7 +199,6 @@ export function useWhenSystemPreload(m, priority, callback) {
  * @param {import('@milque/scene').TopicCallback<null>} callback
  */
 export function useWhenSystemInit(m, priority, callback) {
-    console.log(getCurrentProvider(m));
     if (getCurrentProvider(m) === __RUNNER__) {
         throw new Error('Cannot use system topics from runner - use init() instead.');
     }
@@ -245,6 +244,22 @@ export function useWhenSystemDraw(m, priority, callback) {
     return useWhen(m, SystemDraw, priority, callback);
 }
 
+/**
+ * @template M, T
+ * @param {M} m 
+ * @param {import('./Provider').Provider<M, T>} provider
+ * @param {any} [defaultValue]
+ * @returns {T}
+ */
+export function useOptionalContext(m, provider, defaultValue = null) {
+    if (hasProviderState(m, provider)) {
+        return getProviderState(m, provider);
+    } else {
+        return defaultValue;
+    }
+}
+
 export const useContext = getProviderState;
 export const useEffect = registerEffect;
 export const useAfterEffect = registerAfterEffect;
+export const Override = createOverrideProvider;

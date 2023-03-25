@@ -29,9 +29,9 @@ declare class AssetManager {
     private defaults;
     /**
      * @param {string} uri
-     * @returns {object}
+     * @returns {any}
      */
-    get(uri: string): object;
+    get(uri: string): any;
     /**
      * @template T, S
      * @param {string} uri

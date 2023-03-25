@@ -1,6 +1,6 @@
 /**
  * @template M, T
- * @typedef {(m: M, [opts]: object) => T} Provider
+ * @typedef {(m: M) => T} Provider
  */
 
 /**
@@ -16,7 +16,7 @@
  * @param {Provider<M, T>} provider 
  * @returns {T}
  */
-export function useProvider(m, provider) {
+export function getProviderState(m, provider) {
     let state = resolveState(m);
     let handle = provider.name;
     if (handle in state.contexts) {
@@ -27,13 +27,34 @@ export function useProvider(m, provider) {
         } else {
             let current = getCurrentProvider(m);
             if (current.name === provider.name) {
-                throw new Error(`Cannot useProvider() on self during initialization!`);
+                throw new Error(`Cannot get provider state on self during initialization!`);
             } else {
                 throw new Error('This is not a provider.');
             }
         }
     }
     throw new Error(`Missing assigned dependent provider '${handle}' in context.`);
+}
+
+/**
+ * @template M, T
+ * @param {M} m 
+ * @param {Provider<M, T>} provider 
+ * @returns {boolean}
+ */
+export function hasProviderState(m, provider) {
+    let state = resolveState(m);
+    let handle = provider.name;
+    if (handle in state.contexts) {
+        /** @type {ProviderContext<M, T>} */
+        let { value } = state.contexts[handle];
+        if (value) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+    return false;
 }
 
 /**
@@ -54,6 +75,7 @@ export function injectProviders(m, providers) {
         state.current = provider;
         context.value = provider(m);
     }
+    state.current = null;
     return m;
 }
 
@@ -98,6 +120,33 @@ export function getCurrentProvider(m) {
         throw new Error('This is not a provider.');
     }
     return state.current;
+}
+
+/**
+ * @template M
+ * @param {M} m
+ * @param {Provider<?, ?>} provider
+ */
+export function setCurrentProvider(m, provider) {
+    let state = getStateIfExists(m);
+    if (!state) {
+        throw new Error('This is not a provider.');
+    }
+    state.current = provider;
+}
+
+/**
+ * @template M, T
+ * @param {import('./Provider').Provider<?, T>} target 
+ * @param {import('./Provider').Provider<M, T>} replacement 
+ * @returns {import('./Provider').Provider<M, T>}
+ */
+export function createOverrideProvider(target, replacement) {
+    let override = function(m) {
+        return replacement(m);
+    };
+    override.name = target.name;
+    return override;
 }
 
 const KEY = Symbol('providers');

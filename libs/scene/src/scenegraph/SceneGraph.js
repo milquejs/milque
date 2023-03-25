@@ -1,7 +1,7 @@
 const MAX_DEPTH_LEVEL = 100;
 
 /**
- * @typedef {Number} SceneNode
+ * @typedef {number} SceneNode
  *
  * @typedef SceneNodeInfo
  * @property {SceneNode} parent The parent node. If the node does not have a parent,
@@ -11,7 +11,7 @@ const MAX_DEPTH_LEVEL = 100;
  * @callback WalkCallback Called for each node, before traversing its children.
  * @param {SceneNode} sceneNode The current scene node.
  * @param {SceneGraph} sceneGraph The current scene graph.
- * @returns {WalkBackCallback|Boolean} If false, the walk will skip
+ * @returns {WalkBackCallback|boolean|void} If false, the walk will skip
  * the current node's children and all of its descendents. If a function,
  * it will be called after traversing down all of its children.
  *
@@ -51,7 +51,7 @@ export class SceneGraph {
    */
   createSceneNode(parentNode = undefined) {
     let sceneNode = this._nextAvailableSceneNodeId++;
-    let info = createSceneNodeInfo();
+    let info = createSceneNodeInfo(sceneNode);
     this.nodes[sceneNode] = info;
     attach(parentNode, sceneNode, this);
     return sceneNode;
@@ -60,7 +60,7 @@ export class SceneGraph {
   /**
    * Creates multiple scene nodes in the scene graph.
    *
-   * @param {Number} count The number of scene nodes to create.
+   * @param {number} count The number of scene nodes to create.
    * @param {SceneNode} [parentNode] The parent node for the created scene
    * nodes.
    * @returns {Array<SceneNode>} A list of created scene nodes.
@@ -181,16 +181,16 @@ export class SceneGraph {
    *
    * @param {WalkCallback} callback The function called for each node
    * in the graph, in ordered traversal from parent to child.
-   * @param {Object} [opts={}] Any additional options.
+   * @param {object} [opts] Any additional options.
    * @param {SceneNode|Array<SceneNode>} [opts.from] The parent node to
    * start walking from, inclusive. By default, it will start from the root
    * nodes.
-   * @param {WalkChildrenCallback} [opts.childfilter] The function called before
+   * @param {WalkChildrenCallback} [opts.childFilter] The function called before
    * walking through the children. This is usually used to determine the
    * visiting order.
    */
-  walk(callback, opts = {}) {
-    const { from = undefined, childFilter = undefined } = opts;
+  walk(callback, opts = undefined) {
+    const { from = undefined, childFilter = undefined } = opts || {};
 
     let fromNodes;
     if (!from) fromNodes = this.roots;
@@ -208,7 +208,7 @@ export class SceneGraph {
  * @param {SceneNode} key The scene node handle.
  * @returns {SceneNodeInfo} The scene node metadata.
  */
-function createSceneNodeInfo() {
+function createSceneNodeInfo(key) {
   return {
     parent: 0,
     children: [],
@@ -264,7 +264,7 @@ function detach(parentNode, childNode, sceneGraph) {
  *
  * @param {SceneGraph} sceneGraph The scene graph containing the nodes to be visited.
  * @param {SceneNode} parentNode The parent node to start walking from.
- * @param {Number} level The current call depth level. This is used to limit the call stack.
+ * @param {number} level The current call depth level. This is used to limit the call stack.
  * @param {WalkCallback} nodeCallback The function called on each visited node.
  * @param {WalkChildrenCallback} [filterCallback] The function called before
  * walking through the children. This is usually used to determine the visiting order.

@@ -1,6 +1,5 @@
-import { AssetRef } from '@milque/asset';
 import { ButtonBinding, KeyCodes } from '@milque/input';
-import { Toaster } from '@milque/scene';
+import { useContext, useCurrentAnimationFrameDetail } from '../runner/Runner.js';
 
 import { clearScreen, fillCircle, fillTriangle } from './Canvas2d.js';
 import { Canvas2dProvider, DisplayProvider, InputProvider } from './main.js';
@@ -18,7 +17,7 @@ let y = 0;
 export const name = 'Fun Game';
 
 export function init(m) {
-    let { axb } = Toaster.useProvider(m, InputProvider);
+    let { axb } = useContext(m, InputProvider);
     axb.bindBindings(Inputs);
 }
 
@@ -30,8 +29,8 @@ export function update(m) {
 }
 
 export function draw(m) {
-    let { display } = Toaster.useProvider(m, DisplayProvider);
-    let { ctx } = Toaster.useProvider(m, Canvas2dProvider);
+    let { display } = useContext(m, DisplayProvider);
+    let { ctx } = useContext(m, Canvas2dProvider);
     clearScreen(ctx, 0x000000);
     fillCircle(ctx, x, y, 16, 0xFFF000);
 
@@ -45,11 +44,11 @@ export function draw(m) {
 }
 
 function drawPlayer(m, x, y) {
-    let { ctx } = Toaster.useProvider(m, Canvas2dProvider);
-    let { detail } = Toaster.useProvider(m, Toaster.AnimationFrameLoopProvider);
+    let { ctx } = useContext(m, Canvas2dProvider);
+    let { currentTime } = useCurrentAnimationFrameDetail(m);
     ctx.resetTransform();
     ctx.translate(x, y);
-    ctx.rotate(detail.currentTime / 1000);
+    ctx.rotate(currentTime / 1000);
     fillTriangle(ctx, 0, 0, 30, 30, 0xFFFFFF);
     ctx.resetTransform();
 }

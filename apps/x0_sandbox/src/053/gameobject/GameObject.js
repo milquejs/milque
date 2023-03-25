@@ -8,8 +8,8 @@ export class GameObject {
     instantiate(ents, count = 1) {
         for(let i = 0; i < count; ++i) {
             let e = ents.create();
-            for(let system of this.systems) {
-                ents.attach(e, system);
+            for(let component of this.components) {
+                ents.attach(e, component);
             }
         }
     }

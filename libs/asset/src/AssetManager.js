@@ -18,7 +18,7 @@ export class AssetManager {
 
     /**
      * @param {string} uri 
-     * @returns {object}
+     * @returns {any}
      */
     get(uri) {
         const assets = /** @type {import('./AssetStore').AssetStore} */ (/** @type {unknown} */ (this));

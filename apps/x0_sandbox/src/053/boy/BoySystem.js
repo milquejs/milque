@@ -3,7 +3,7 @@ import { AssetRef, ImageLoader } from '@milque/asset';
 
 import { AssetProvider, EntityProvider, InputProvider } from '../main';
 import { GameProvider } from '../Game'
-import { useContext, useCurrentAnimationFrameDetail } from '../runner';
+import { useContext, useCurrentAnimationFrameDetail } from '../../runner';
 
 import { ButtonBinding, KeyCodes } from '@milque/input';
 
