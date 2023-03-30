@@ -41,6 +41,6 @@ export async function loadInputs() {
     /** @type {InputPort} */
     let inputPort = document.querySelector('input-port');
     let ctx = inputPort.getContext('axisbutton');
-    ctx.bindBindings(Object.values(INPUTS));
+    ctx.bindKeys(INPUTS);
     return ctx;
 }

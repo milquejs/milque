@@ -1,55 +1,29 @@
 export class InputBinding {
-  /** @returns {boolean} */
-  get polling() {
-    if (!this.ref) {
-      return false;
-    }
-    return this.ref.polling;
-  }
-
-  /** @returns {number} */
-  get value() {
-    if (!this.ref || this.disabled) {
-      return 0;
-    }
-    return this.ref.value;
-  }
-
   /**
    * @param {string} name
    */
   constructor(name) {
-    /** @protected */
     this.name = name;
-
-    /** @protected */
-    this.ref = null;
-
-    /** @protected */
-    this.disabled = false;
+    /** @type {import('../state/InputState').InputState} */
+    this.current = null;
   }
 
   /**
    * @abstract
-   * @param {import('../InputContext.js').InputContext} inputContext
+   * @param {import('../InputContext').InputContext} axb
    */
-  bindTo(inputContext) {
+  bindKeys(axb) {
     throw new Error('Unsupported operation.');
-  }
-
-  disable(force = true) {
-    this.disabled = force;
     return this;
   }
 
   /**
-   * @param {number} code
-   * @returns {number}
+   * @abstract
+   * @param {import('../InputContext').InputContext} axb
+   * @returns {import('../state/InputState').InputState}
    */
-  getState(code) {
-    if (!this.ref || this.disabled) {
-      return 0;
-    }
-    return this.ref.getState(code);
+  get(axb) {
+    throw new Error('Unsupported operation.');
+    return null;
   }
 }

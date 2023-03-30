@@ -2,7 +2,6 @@ import { build, context } from 'esbuild';
 import { NodeModulesPolyfillPlugin } from '@esbuild-plugins/node-modules-polyfill';
 import { copyPlugin } from '@sprout2000/esbuild-copy-plugin';
 import clear from 'esbuild-plugin-clear';
-
 import open from 'open';
 
 function createBuildOpts(production = true) {

@@ -18,14 +18,14 @@ export const name = 'Fun Game';
 
 export function init(m) {
     let { axb } = useContext(m, InputProvider);
-    axb.bindBindings(Inputs);
+    axb.bindKeys(Inputs);
 }
 
 export function update(m) {
-    if (Inputs.MoveLeft.down) x -= 1;
-    if (Inputs.MoveRight.down) x += 1;
-    if (Inputs.MoveUp.down) y -= 1;
-    if (Inputs.MoveDown.down) y += 1;
+    if (Inputs.MoveLeft.current.down) x -= 1;
+    if (Inputs.MoveRight.current.down) x += 1;
+    if (Inputs.MoveUp.current.down) y -= 1;
+    if (Inputs.MoveDown.current.down) y += 1;
 }
 
 export function draw(m) {

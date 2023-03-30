@@ -1,4 +1,4 @@
-import '@milque/display';
+import { DisplayPort } from '@milque/display';
 import '@milque/input';
 import '@milque/asset';
 import './error.js';
@@ -20,12 +20,11 @@ import * as Player from './Player.js';
 import { game } from './Game.js';
 
 /**
- * @typedef {import('@milque/display').DisplayPort} DisplayPort
  * @typedef {import('@milque/input').InputContext} InputContext
  * @typedef {ReturnType<import('./Game.js').game>} Game
  */
 
-
+DisplayPort.define();
 window.addEventListener('DOMContentLoaded', main);
 async function main() {
   const g = game();
@@ -70,7 +69,7 @@ async function start(game) {
     game.inputs.poll(now);
     musicLoop(musicCtx);
 
-    const worldSpeed = INPUTS.FastForward.down ? 30 : 1;
+    const worldSpeed = INPUTS.FastForward.current.down ? 30 : 1;
     deltaTime *= worldSpeed;
     now *= worldSpeed;
     game.deltaTime = deltaTime;

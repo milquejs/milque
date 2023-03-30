@@ -15,7 +15,7 @@ export async function main(game) {
   ctx.imageSmoothingEnabled = false;
 
   const inputs = game.inputs;
-  inputs.bindBindings(Object.values(MainControls));
+  inputs.bindKeys(MainControls);
 
   const width = 32;
   const height = 32;

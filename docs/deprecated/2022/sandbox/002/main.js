@@ -16,7 +16,7 @@ export async function main(game) {
   ctx.assets = game.assets;
 
   const inputs = game.inputs;
-  inputs.bindBindings(Object.values(PlayerInputs));
+  inputs.bindKeys(PlayerInputs);
 
   const room = new Room(display.width, display.height, [
     { x: 0, y: 0, object: Player },

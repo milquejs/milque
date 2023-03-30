@@ -1,31 +1,3 @@
-declare class InputBinding$1 {
-    /**
-     * @param {string} name
-     */
-    constructor(name: string);
-    /** @returns {boolean} */
-    get polling(): boolean;
-    /** @returns {number} */
-    get value(): number;
-    /** @protected */
-    protected name: string;
-    /** @protected */
-    protected ref: any;
-    /** @protected */
-    protected disabled: boolean;
-    /**
-     * @abstract
-     * @param {import('../InputContext.js').InputContext} inputContext
-     */
-    bindTo(inputContext: InputContext$1): void;
-    disable(force?: boolean): InputBinding$1;
-    /**
-     * @param {number} code
-     * @returns {number}
-     */
-    getState(code: number): number;
-}
-
 /**
  * @typedef {number} BindingIndex
  *
@@ -103,6 +75,27 @@ type InputReadOnly = {
     value: number;
     polling: boolean;
 };
+
+declare class InputBinding$1 {
+    /**
+     * @param {string} name
+     */
+    constructor(name: string);
+    name: string;
+    /** @type {import('../state/InputState').InputState} */
+    current: InputState$2;
+    /**
+     * @abstract
+     * @param {import('../InputContext').InputContext} axb
+     */
+    bindKeys(axb: InputContext$3): InputBinding$1;
+    /**
+     * @abstract
+     * @param {import('../InputContext').InputContext} axb
+     * @returns {import('../state/InputState').InputState}
+     */
+    get(axb: InputContext$3): InputState$2;
+}
 
 /**
  * A class that maps inputs to their respective key bindings.
@@ -588,7 +581,7 @@ declare class KeyboardDevice$1 extends InputDevice$1 {
  * @typedef InputContextEvent
  * @property {InputContextEventType} type
  */
-declare class InputContext$1 {
+declare class InputContext$3 {
     /**
      * @param {EventTarget} eventTarget
      * @param {object} [opts]
@@ -667,13 +660,9 @@ declare class InputContext$1 {
     /** @private */
     private onUnbind;
     /**
-     * @param {Array<InputBinding>|Record<string, InputBinding>} bindings
+     * @param {InputBinding|Array<InputBinding>|Record<string, InputBinding>} bindings
      */
-    bindBindings(bindings: Array<InputBinding> | Record<string, InputBinding>): void;
-    /**
-     * @param {InputBinding} binding
-     */
-    bindBinding(binding: InputBinding): void;
+    bindKeys(bindings: InputBinding | Array<InputBinding> | Record<string, InputBinding>): void;
     /**
      * @param {InputName} name
      * @param {DeviceName} device
@@ -820,7 +809,10 @@ declare class KeyCode$4 {
     override toString(): string;
 }
 
-/** @typedef {import('../keycode/KeyCode.js').KeyCode} KeyCode */
+/**
+ * @typedef {import('../keycode/KeyCode.js').KeyCode} KeyCode
+ * @typedef {import('../InputContext.js').InputContext} InputContext
+ */
 declare class AxisBinding extends InputBinding$1 {
     /**
      * @param {string} name
@@ -842,19 +834,23 @@ declare class AxisBinding extends InputBinding$1 {
      * @param {object} [opts]
      */
     constructor(name: string, keyCodes: KeyCode$3 | Array<KeyCode$3>, opts?: object);
-    /** @returns {number} */
-    get delta(): number;
-    /** @protected */
-    protected keyCodes: KeyCode$4[];
-    /** @protected */
-    protected opts: any;
+    keyCodes: KeyCode$4[];
+    opts: any;
+    /** @type {import('../state/AxisState').AxisState} */
+    current: AxisState;
     /**
      * @override
-     * @param {import('../InputContext.js').InputContext} inputContext
+     * @param {InputContext} axb
      */
-    override bindTo(inputContext: InputContext$1): AxisBinding;
+    override bindKeys(axb: InputContext$2): AxisBinding;
+    /**
+     * @override
+     * @param {InputContext} axb
+     */
+    override get(axb: InputContext$2): AxisState;
 }
 type KeyCode$3 = KeyCode$4;
+type InputContext$2 = InputContext$3;
 
 /**
  * @typedef {import('../keycode/KeyCode.js').KeyCode} KeyCode
@@ -881,28 +877,28 @@ declare class ButtonBinding extends InputBinding$1 {
      * @param {object} [opts]
      */
     constructor(name: string, keyCodes: KeyCode$2 | Array<KeyCode$2>, opts?: object);
-    /** @returns {boolean} */
-    get pressed(): boolean;
-    /** @returns {boolean} */
-    get repeated(): boolean;
-    /** @returns {boolean} */
-    get released(): boolean;
-    /** @returns {boolean} */
-    get down(): boolean;
-    /** @protected */
-    protected keyCodes: KeyCode$4[];
-    /** @protected */
-    protected opts: any;
+    keyCodes: KeyCode$4[];
+    opts: any;
+    /** @type {import('../state/ButtonState').ButtonState} */
+    current: ButtonState;
     /**
      * @override
-     * @param {InputContext} inputContext
+     * @param {InputContext} axb
      */
-    override bindTo(inputContext: InputContext): ButtonBinding;
+    override bindKeys(axb: InputContext$1): ButtonBinding;
+    /**
+     * @override
+     * @param {InputContext} axb
+     */
+    override get(axb: InputContext$1): ButtonState;
 }
 type KeyCode$2 = KeyCode$4;
-type InputContext = InputContext$1;
+type InputContext$1 = InputContext$3;
 
-/** @typedef {import('../keycode/KeyCode.js').KeyCode} KeyCode */
+/**
+ * @typedef {import('../keycode/KeyCode.js').KeyCode} KeyCode
+ * @typedef {import('../InputContext.js').InputContext} InputContext
+ */
 declare class AxisButtonBinding extends AxisBinding {
     /**
      * @param {string} name
@@ -918,16 +914,16 @@ declare class AxisButtonBinding extends AxisBinding {
      * @param {KeyCode} positiveKeyCode
      */
     constructor(name: string, negativeKeyCode: KeyCode$1, positiveKeyCode: KeyCode$1);
-    /** @protected */
-    protected negativeKeyCode: KeyCode$4;
-    /** @protected */
-    protected positiveKeyCode: KeyCode$4;
+    negativeKeyCode: KeyCode$4;
+    positiveKeyCode: KeyCode$4;
     /**
-     * @param {import('../InputContext.js').InputContext} inputContext
+     * @override
+     * @param {InputContext} axb
      */
-    bindTo(inputContext: InputContext$1): AxisButtonBinding;
+    override bindKeys(axb: InputContext): AxisButtonBinding;
 }
 type KeyCode$1 = KeyCode$4;
+type InputContext = InputContext$3;
 
 declare function from(device: any, code: any): KeyCode$4;
 declare function isKeyCode(object: any): boolean;
@@ -1256,7 +1252,7 @@ declare class InputPort extends HTMLElement {
      * @param {object} [options]
      * @returns {InputContext}
      */
-    getContext(contextId?: 'axisbutton', options?: object): InputContext$1;
+    getContext(contextId?: 'axisbutton', options?: object): InputContext$3;
     /** @private */
     private updateTable;
     /** @private */
@@ -1442,4 +1438,4 @@ type InputContextEventType = InputContextEventType$1;
 type InputContextEventListener = InputContextEventListener$1;
 type InputContextEvent = InputContextEvent$1;
 
-export { AutoPoller$1 as AutoPoller, AxisBinding, AxisBindingState, AxisButtonBinding, AxisReadOnly$1 as AxisReadOnly, AxisState, BindingIndex$2 as BindingIndex, BindingOptions$2 as BindingOptions, ButtonBinding, ButtonReadOnly$2 as ButtonReadOnly, ButtonState, DeviceInputAdapter$1 as DeviceInputAdapter, DeviceName, InputBinding$1 as InputBinding, InputBindings$2 as InputBindings, InputCode, InputContext$1 as InputContext, InputContextEvent, InputContextEventListener, InputContextEventType, InputDevice$1 as InputDevice, InputDeviceEvent, InputDeviceEventListener, InputName, InputPort, InputReadOnly, InputState$2 as InputState, KeyCode, KeyCodes, Keyboard, KeyboardDevice$1 as KeyboardDevice, Mouse, MouseDevice$1 as MouseDevice, OnPollCallback, Pollable, stringsToKeyCodes };
+export { AutoPoller$1 as AutoPoller, AxisBinding, AxisBindingState, AxisButtonBinding, AxisReadOnly$1 as AxisReadOnly, AxisState, BindingIndex$2 as BindingIndex, BindingOptions$2 as BindingOptions, ButtonBinding, ButtonReadOnly$2 as ButtonReadOnly, ButtonState, DeviceInputAdapter$1 as DeviceInputAdapter, DeviceName, InputBinding$1 as InputBinding, InputBindings$2 as InputBindings, InputCode, InputContext$3 as InputContext, InputContextEvent, InputContextEventListener, InputContextEventType, InputDevice$1 as InputDevice, InputDeviceEvent, InputDeviceEventListener, InputName, InputPort, InputReadOnly, InputState$2 as InputState, KeyCode, KeyCodes, Keyboard, KeyboardDevice$1 as KeyboardDevice, Mouse, MouseDevice$1 as MouseDevice, OnPollCallback, Pollable, stringsToKeyCodes };

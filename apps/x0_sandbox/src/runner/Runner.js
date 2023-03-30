@@ -22,7 +22,7 @@ const SystemDraw = new Topic('system.draw');
 /**
  * @template M
  * @param {import('./RunConfiguration').Runner<M>|((m: M) => Promise<void>|void)} handler
- * @param {import('./Provider').Provider<?, ?>[]} [dependencies]
+ * @param {Array<import('./Provider').Provider<?, ?>>} [dependencies]
  * @param {M} [initial]
  */
 export async function run(handler, dependencies = [], initial = undefined) {
@@ -30,7 +30,7 @@ export async function run(handler, dependencies = [], initial = undefined) {
     const state = initial || {};
     const providers = [
         __RUNNER__,
-        ...dependencies,
+        ...dependencies.flat(1_000),
         __END__,
     ];
     setRunConfiguration(state, runner, providers.slice(1, providers.length - 1));

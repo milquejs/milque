@@ -5,12 +5,14 @@ import './error.js';
 import * as Assets from './assets.js';
 import * as Starfield from './Starfield.js';
 import { AssetManager, preloadAssetRefs, cacheAssetPackAsRaw } from '@milque/asset';
+import { DisplayPort } from '@milque/display';
 
 /**
  * @typedef {import('@milque/display').DisplayPort} DisplayPort
  */
 
 /** @type {DisplayPort} */
+DisplayPort.define();
 const display = document.querySelector('#display');
 const canvas = display.canvas;
 const ctx = canvas.getContext('2d');

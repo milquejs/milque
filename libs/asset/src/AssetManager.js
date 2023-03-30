@@ -1,6 +1,11 @@
 import { cacheDefaultInStore, cacheInStore, clearInStore, getCurrentInStore, getDefaultInStore, getLoadedInStore, getLoadingInStore, hasInStore, isAssetCachedInStore, isAssetLoadingInStore, keysInStore, loadInStore, resetStore, unloadInStore } from './AssetStore.js';
 import { GlobExp } from './GlobExp.js';
 
+/**
+ * @template T, S
+ * @typedef {import('./AssetStore').AssetLoader<T, S>} AssetLoader
+ */
+
 export class AssetManager {
 
     /**
@@ -36,7 +41,7 @@ export class AssetManager {
      * @template T, S
      * @param {string} uri 
      * @param {string} filepath
-     * @param {import('./AssetStore').AssetLoader<T, S>} loader 
+     * @param {AssetLoader<T, S>} loader 
      * @param {S} opts 
      * @param {number} timeout 
      * @returns {Promise<T>}
@@ -71,7 +76,7 @@ export class AssetManager {
      * @template T, S
      * @param {string} uri 
      * @param {string} filepath
-     * @param {import('./AssetStore').AssetLoader<T, S>} loader 
+     * @param {AssetLoader<T, S>} loader 
      * @param {S} opts 
      * @param {number} timeout
      * @returns {Promise<T>}
@@ -90,7 +95,7 @@ export class AssetManager {
      * @template T, S
      * @param {string} uri 
      * @param {string} filepath
-     * @param {import('./AssetStore').AssetLoader<T, S>} loader 
+     * @param {AssetLoader<T, S>} loader 
      * @param {S} opts 
      * @param {number} timeout
      * @returns {Promise<T>}

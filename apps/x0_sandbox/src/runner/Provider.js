@@ -33,7 +33,7 @@ export function getProviderState(m, provider) {
             }
         }
     }
-    throw new Error(`Missing assigned dependent provider '${handle}' in context.`);
+    throw new Error(`Missing assigned dependent provider '${handle}' in context:\n ${Object.keys(state.contexts).join('\n')} <--\n`);
 }
 
 /**
@@ -145,7 +145,7 @@ export function createOverrideProvider(target, replacement) {
     let override = function(m) {
         return replacement(m);
     };
-    override.name = target.name;
+    Object.defineProperty(override, 'name', { value: target.name });
     return override;
 }
 

@@ -29,38 +29,6 @@ export class ButtonBinding extends InputBinding {
     return new ButtonBinding(name, keyCodes);
   }
 
-  /** @returns {boolean} */
-  get pressed() {
-    if (!this.ref || this.disabled) {
-      return false;
-    }
-    return this.ref.pressed;
-  }
-
-  /** @returns {boolean} */
-  get repeated() {
-    if (!this.ref || this.disabled) {
-      return false;
-    }
-    return this.ref.repeated;
-  }
-
-  /** @returns {boolean} */
-  get released() {
-    if (!this.ref || this.disabled) {
-      return false;
-    }
-    return this.ref.released;
-  }
-
-  /** @returns {boolean} */
-  get down() {
-    if (!this.ref || this.disabled) {
-      return false;
-    }
-    return this.ref.down;
-  }
-
   /**
    * @param {string} name
    * @param {KeyCode|Array<KeyCode>} keyCodes
@@ -68,24 +36,39 @@ export class ButtonBinding extends InputBinding {
    */
   constructor(name, keyCodes, opts = undefined) {
     super(name);
-
-    /** @protected */
+    
     this.keyCodes = Array.isArray(keyCodes) ? keyCodes : [keyCodes];
-    /** @protected */
     this.opts = opts;
+
+    /** @type {import('../state/ButtonState').ButtonState} */
+    this.current = null;
   }
 
   /**
    * @override
-   * @param {InputContext} inputContext
+   * @param {InputContext} axb
    */
-  bindTo(inputContext) {
+  bindKeys(axb) {
     let name = this.name;
     let opts = this.opts;
     for (let keyCode of this.keyCodes) {
-      inputContext.bindButton(name, keyCode.device, keyCode.code, opts);
+      axb.bindButton(name, keyCode.device, keyCode.code, opts);
     }
-    this.ref = inputContext.getButton(name);
+    this.current = axb.getButton(name);
     return this;
+  }
+
+  /**
+   * @override
+   * @param {InputContext} axb
+   */
+  get(axb) {
+    let name = this.name;
+    if (!axb.hasButton(name)) {
+      this.bindKeys(axb);
+    }
+    let result = axb.getButton(name);
+    this.current = result;
+    return result;
   }
 }

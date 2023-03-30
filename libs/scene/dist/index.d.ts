@@ -135,7 +135,7 @@ declare class FirstPersonCameraController {
 }
 
 /**
- * @typedef {Number} SceneNode
+ * @typedef {number} SceneNode
  *
  * @typedef SceneNodeInfo
  * @property {SceneNode} parent The parent node. If the node does not have a parent,
@@ -145,7 +145,7 @@ declare class FirstPersonCameraController {
  * @callback WalkCallback Called for each node, before traversing its children.
  * @param {SceneNode} sceneNode The current scene node.
  * @param {SceneGraph} sceneGraph The current scene graph.
- * @returns {WalkBackCallback|Boolean} If false, the walk will skip
+ * @returns {WalkBackCallback|boolean|void} If false, the walk will skip
  * the current node's children and all of its descendents. If a function,
  * it will be called after traversing down all of its children.
  *
@@ -179,7 +179,7 @@ declare class SceneGraph {
     /**
      * Creates multiple scene nodes in the scene graph.
      *
-     * @param {Number} count The number of scene nodes to create.
+     * @param {number} count The number of scene nodes to create.
      * @param {SceneNode} [parentNode] The parent node for the created scene
      * nodes.
      * @returns {Array<SceneNode>} A list of created scene nodes.
@@ -230,17 +230,17 @@ declare class SceneGraph {
      *
      * @param {WalkCallback} callback The function called for each node
      * in the graph, in ordered traversal from parent to child.
-     * @param {Object} [opts={}] Any additional options.
+     * @param {object} [opts] Any additional options.
      * @param {SceneNode|Array<SceneNode>} [opts.from] The parent node to
      * start walking from, inclusive. By default, it will start from the root
      * nodes.
-     * @param {WalkChildrenCallback} [opts.childfilter] The function called before
+     * @param {WalkChildrenCallback} [opts.childFilter] The function called before
      * walking through the children. This is usually used to determine the
      * visiting order.
      */
     walk(callback: WalkCallback, opts?: {
         from?: SceneNode | Array<SceneNode>;
-        childfilter?: WalkChildrenCallback;
+        childFilter?: WalkChildrenCallback;
     }): void;
 }
 type SceneNode = number;
@@ -258,7 +258,7 @@ type SceneNodeInfo = {
 /**
  * Called for each node, before traversing its children.
  */
-type WalkCallback = (sceneNode: SceneNode, sceneGraph: SceneGraph) => WalkBackCallback | boolean;
+type WalkCallback = (sceneNode: SceneNode, sceneGraph: SceneGraph) => WalkBackCallback | boolean | void;
 /**
  * Called if returned by {@link WalkCallback }, after
  * traversing the current node's children.
@@ -857,153 +857,4 @@ declare class AnimationFrameLoop {
 }
 type AnimationFrameLoopCallback = (frameDetail: AnimationFrameLoop) => void;
 
-/**
- * @template M, T
- * @typedef {(m: M, [opts]: object) => T} Provider
- */
-/**
- * @template M, T
- * @typedef ProviderContext
- * @property {Provider<M, T>} handle
- * @property {T} value
- */
-/**
- * @template M, T
- * @param {M} m
- * @param {Provider<M, T>} provider
- * @returns {T}
- */
-declare function useProvider<M, T>(m: M, provider: Provider<M, T>): T;
-type Provider<M, T> = (m: M, [opts]: object) => T;
-
-/**
- * @callback EffectHandler
- * @returns {AfterEffectHandler|Promise<AfterEffectHandler>|Promise<void>|void}
- */
-/**
- * @callback AfterEffectHandler
- * @returns {Promise<void>|void}
- */
-/**
- * @typedef EffectorContext
- * @property {Array<EffectHandler>} befores
- * @property {Array<AfterEffectHandler|void>} afters
- */
-/**
- * @template M
- * @param {M} m
- * @param {EffectHandler} handler
- */
-declare function useEffect<M>(m: M, handler: EffectHandler): void;
-type EffectHandler = () => AfterEffectHandler | Promise<AfterEffectHandler> | Promise<void> | void;
-type AfterEffectHandler = () => Promise<void> | void;
-
-/**
- * @template M
- * @param {M} m
- * @param {import('../topic/TopicManager').TopicManager} topics
- * @param {import('../topic/TopicManager').TopicCallback<import('../loop/AnimationFrameLoop').AnimationFrameLoop>} callback
- */
-declare function useSystemUpdate<M>(m: M, topics: TopicManager, callback: TopicCallback$1<AnimationFrameLoop>): void;
-
-/**
- * @template M, T
- * @param {M} m
- * @param {import('../topic/Topic').Topic<T>} topic
- * @param {number} priority
- * @param {import('../topic/Topic').TopicCallback<T>} callback
- */
-declare function useTopic<M, T>(m: M, topic: Topic$1<T>, priority: number, callback: TopicCallback$2<T>): void;
-/**
- * @template M
- * @param {M} m
- */
-declare function TopicsProvider<M>(m: M): TopicManager;
-
-/**
- * @template M
- * @typedef ToastHandler
- * @property {(m: M) => Promise<void>} [load]
- * @property {(m: M) => Promise<void>} [unload]
- * @property {(m: M) => Promise<void>} [main]
- * @property {(m: M) => void} init
- * @property {(m: M) => void} [dead]
- * @property {(m: M) => void} [update]
- * @property {(m: M) => void} [draw]
- */
-/**
- * @template M
- * @param {M} m
- * @param {ToastHandler<M>} handler
- */
-declare function toast<M>(m: M, handler: ToastHandler<M>, providers?: any[]): {
-    start(): Promise<any>;
-    stop(): Promise<any>;
-};
-/**
- * @template M
- * @param {M} m
- */
-declare function AnimationFrameLoopProvider<M>(m: M): AnimationFrameLoop;
-type ToastHandler<M> = {
-    load?: (m: M) => Promise<void>;
-    unload?: (m: M) => Promise<void>;
-    main?: (m: M) => Promise<void>;
-    init: (m: M) => void;
-    dead?: (m: M) => void;
-    update?: (m: M) => void;
-    draw?: (m: M) => void;
-};
-
-/**
- * @template M
- * @template {keyof WindowEventHandlersEventMap} K
- * @param {M} m
- * @param {keyof WindowEventMap} event
- * @param {(this: WindowEventHandlers, ev: WindowEventHandlersEventMap[K]) => any} listener
- */
-declare function useWindowEventListener<M, K extends keyof WindowEventHandlersEventMap>(m: M, event: keyof WindowEventMap, listener: (this: WindowEventHandlers, ev: WindowEventHandlersEventMap[K]) => any): void;
-/**
- * @template M
- * @template {keyof DocumentAndElementEventHandlersEventMap} K
- * @param {M} m
- * @param {keyof DocumentEventMap} event
- * @param {(this: DocumentAndElementEventHandlers, ev: DocumentAndElementEventHandlersEventMap[K]) => any} listener
- */
-declare function useDocumentEventListener<M, K extends keyof DocumentAndElementEventHandlersEventMap>(m: M, event: keyof DocumentEventMap, listener: (this: DocumentAndElementEventHandlers, ev: DocumentAndElementEventHandlersEventMap[K]) => any): void;
-/**
- * @template M
- * @template {keyof DocumentAndElementEventHandlersEventMap} K
- * @param {M} m
- * @param {HTMLElement} element
- * @param {keyof ElementEventMap} event
- * @param {(this: DocumentAndElementEventHandlers, ev: DocumentAndElementEventHandlersEventMap[K]) => any} listener
- */
-declare function useHTMLElementEventListener<M, K extends keyof DocumentAndElementEventHandlersEventMap>(m: M, element: HTMLElement, event: keyof ElementEventMap, listener: (this: DocumentAndElementEventHandlers, ev: DocumentAndElementEventHandlersEventMap[K]) => any): void;
-
-declare const index_AnimationFrameLoopProvider: typeof AnimationFrameLoopProvider;
-declare const index_TopicsProvider: typeof TopicsProvider;
-declare const index_toast: typeof toast;
-declare const index_useDocumentEventListener: typeof useDocumentEventListener;
-declare const index_useEffect: typeof useEffect;
-declare const index_useHTMLElementEventListener: typeof useHTMLElementEventListener;
-declare const index_useProvider: typeof useProvider;
-declare const index_useSystemUpdate: typeof useSystemUpdate;
-declare const index_useTopic: typeof useTopic;
-declare const index_useWindowEventListener: typeof useWindowEventListener;
-declare namespace index {
-  export {
-    index_AnimationFrameLoopProvider as AnimationFrameLoopProvider,
-    index_TopicsProvider as TopicsProvider,
-    index_toast as toast,
-    index_useDocumentEventListener as useDocumentEventListener,
-    index_useEffect as useEffect,
-    index_useHTMLElementEventListener as useHTMLElementEventListener,
-    index_useProvider as useProvider,
-    index_useSystemUpdate as useSystemUpdate,
-    index_useTopic as useTopic,
-    index_useWindowEventListener as useWindowEventListener,
-  };
-}
-
-export { AnimationFrameLoop, AnimationFrameLoopCallback, Camera, ComponentClass, ComponentClassMap, ComponentInstanceMap, ComponentName, EntityComponentChangedCallback, EntityId, EntityManager, EntityTemplate, FirstPersonCameraController, Not, OrthographicCamera, PerspectiveCamera, Query$1 as Query, QueryManager, SceneGraph, SceneNode, SceneNodeInfo, Selector, SelectorNot, index as Toaster, Topic$1 as Topic, TopicCallback, TopicManager, WalkBackCallback, WalkCallback, WalkChildrenCallback, isSelectorNot, lookAt, panTo, screenToWorldRay };
+export { AnimationFrameLoop, AnimationFrameLoopCallback, Camera, ComponentClass, ComponentClassMap, ComponentInstanceMap, ComponentName, EntityComponentChangedCallback, EntityId, EntityManager, EntityTemplate, FirstPersonCameraController, Not, OrthographicCamera, PerspectiveCamera, Query$1 as Query, QueryManager, SceneGraph, SceneNode, SceneNodeInfo, Selector, SelectorNot, Topic$1 as Topic, TopicCallback, TopicManager, WalkBackCallback, WalkCallback, WalkChildrenCallback, isSelectorNot, lookAt, panTo, screenToWorldRay };

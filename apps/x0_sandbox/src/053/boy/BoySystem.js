@@ -62,10 +62,10 @@ export async function preload(m) {
     await WorkImage.load(assets);
 
     const axb = useContext(m, InputProvider);
-    MoveLeft.bindTo(axb);
-    MoveRight.bindTo(axb);
-    MoveUp.bindTo(axb);
-    MoveDown.bindTo(axb);
+    MoveLeft.bindKeys(axb);
+    MoveRight.bindKeys(axb);
+    MoveUp.bindKeys(axb);
+    MoveDown.bindKeys(axb);
 }
 
 export function init(m) {

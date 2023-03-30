@@ -714,58 +714,30 @@ var KeyCodes = /*#__PURE__*/Object.freeze({
 });
 
 class InputBinding {
-  /** @returns {boolean} */
-  get polling() {
-    if (!this.ref) {
-      return false;
-    }
-    return this.ref.polling;
-  }
-
-  /** @returns {number} */
-  get value() {
-    if (!this.ref || this.disabled) {
-      return 0;
-    }
-    return this.ref.value;
-  }
-
   /**
    * @param {string} name
    */
   constructor(name) {
-    /** @protected */
     this.name = name;
-
-    /** @protected */
-    this.ref = null;
-
-    /** @protected */
-    this.disabled = false;
+    /** @type {import('../state/InputState').InputState} */
+    this.current = null;
   }
 
   /**
    * @abstract
-   * @param {import('../InputContext.js').InputContext} inputContext
+   * @param {import('../InputContext').InputContext} axb
    */
-  bindTo(inputContext) {
+  bindKeys(axb) {
     throw new Error('Unsupported operation.');
   }
 
-  disable(force = true) {
-    this.disabled = force;
-    return this;
-  }
-
   /**
-   * @param {number} code
-   * @returns {number}
+   * @abstract
+   * @param {import('../InputContext').InputContext} axb
+   * @returns {import('../state/InputState').InputState}
    */
-  getState(code) {
-    if (!this.ref || this.disabled) {
-      return 0;
-    }
-    return this.ref.getState(code);
+  get(axb) {
+    throw new Error('Unsupported operation.');
   }
 }
 
@@ -806,7 +778,10 @@ function camelToSnakeCase(str) {
     .toLowerCase();
 }
 
-/** @typedef {import('../keycode/KeyCode.js').KeyCode} KeyCode */
+/**
+ * @typedef {import('../keycode/KeyCode.js').KeyCode} KeyCode
+ * @typedef {import('../InputContext.js').InputContext} InputContext
+ */
 
 class AxisBinding extends InputBinding {
   /**
@@ -830,14 +805,6 @@ class AxisBinding extends InputBinding {
     return new AxisBinding(name, keyCodes);
   }
 
-  /** @returns {number} */
-  get delta() {
-    if (!this.ref || this.disabled) {
-      return 0;
-    }
-    return this.ref.delta;
-  }
-
   /**
    * @param {string} name
    * @param {KeyCode|Array<KeyCode>} keyCodes
@@ -845,25 +812,40 @@ class AxisBinding extends InputBinding {
    */
   constructor(name, keyCodes, opts = undefined) {
     super(name);
-
-    /** @protected */
+    
     this.keyCodes = Array.isArray(keyCodes) ? keyCodes : [keyCodes];
-    /** @protected */
     this.opts = opts;
+
+    /** @type {import('../state/AxisState').AxisState} */
+    this.current = null;
   }
 
   /**
    * @override
-   * @param {import('../InputContext.js').InputContext} inputContext
+   * @param {InputContext} axb
    */
-  bindTo(inputContext) {
+  bindKeys(axb) {
     let name = this.name;
     let opts = this.opts;
     for (let keyCode of this.keyCodes) {
-      inputContext.bindAxis(name, keyCode.device, keyCode.code, opts);
+      axb.bindAxis(name, keyCode.device, keyCode.code, opts);
     }
-    this.ref = inputContext.getAxis(name);
+    this.current = axb.getAxis(name);
     return this;
+  }
+
+  /**
+   * @override
+   * @param {InputContext} axb
+   */
+  get(axb) {
+    let name = this.name;
+    if (!axb.hasAxis(name)) {
+      this.bindKeys(axb);
+    }
+    let result = axb.getAxis(name);
+    this.current = result;
+    return result;
   }
 }
 
@@ -894,38 +876,6 @@ class ButtonBinding extends InputBinding {
     return new ButtonBinding(name, keyCodes);
   }
 
-  /** @returns {boolean} */
-  get pressed() {
-    if (!this.ref || this.disabled) {
-      return false;
-    }
-    return this.ref.pressed;
-  }
-
-  /** @returns {boolean} */
-  get repeated() {
-    if (!this.ref || this.disabled) {
-      return false;
-    }
-    return this.ref.repeated;
-  }
-
-  /** @returns {boolean} */
-  get released() {
-    if (!this.ref || this.disabled) {
-      return false;
-    }
-    return this.ref.released;
-  }
-
-  /** @returns {boolean} */
-  get down() {
-    if (!this.ref || this.disabled) {
-      return false;
-    }
-    return this.ref.down;
-  }
-
   /**
    * @param {string} name
    * @param {KeyCode|Array<KeyCode>} keyCodes
@@ -933,29 +883,47 @@ class ButtonBinding extends InputBinding {
    */
   constructor(name, keyCodes, opts = undefined) {
     super(name);
-
-    /** @protected */
+    
     this.keyCodes = Array.isArray(keyCodes) ? keyCodes : [keyCodes];
-    /** @protected */
     this.opts = opts;
+
+    /** @type {import('../state/ButtonState').ButtonState} */
+    this.current = null;
   }
 
   /**
    * @override
-   * @param {InputContext} inputContext
+   * @param {InputContext} axb
    */
-  bindTo(inputContext) {
+  bindKeys(axb) {
     let name = this.name;
     let opts = this.opts;
     for (let keyCode of this.keyCodes) {
-      inputContext.bindButton(name, keyCode.device, keyCode.code, opts);
+      axb.bindButton(name, keyCode.device, keyCode.code, opts);
     }
-    this.ref = inputContext.getButton(name);
+    this.current = axb.getButton(name);
     return this;
+  }
+
+  /**
+   * @override
+   * @param {InputContext} axb
+   */
+  get(axb) {
+    let name = this.name;
+    if (!axb.hasButton(name)) {
+      this.bindKeys(axb);
+    }
+    let result = axb.getButton(name);
+    this.current = result;
+    return result;
   }
 }
 
-/** @typedef {import('../keycode/KeyCode.js').KeyCode} KeyCode */
+/**
+ * @typedef {import('../keycode/KeyCode.js').KeyCode} KeyCode
+ * @typedef {import('../InputContext.js').InputContext} InputContext
+ */
 
 class AxisButtonBinding extends AxisBinding {
   /**
@@ -984,27 +952,26 @@ class AxisButtonBinding extends AxisBinding {
     if (negativeKeyCode.device !== positiveKeyCode.device) {
       throw new Error('Cannot create axis-button codes for different devices.');
     }
-
-    /** @protected */
+    
     this.negativeKeyCode = negativeKeyCode;
-    /** @protected */
     this.positiveKeyCode = positiveKeyCode;
   }
 
   /**
-   * @param {import('../InputContext.js').InputContext} inputContext
+   * @override
+   * @param {InputContext} axb
    */
-  bindTo(inputContext) {
+  bindKeys(axb) {
     let name = this.name;
     let negativeKeyCode = this.negativeKeyCode;
     let positiveKeyCode = this.positiveKeyCode;
-    inputContext.bindAxisButtons(
+    axb.bindAxisButtons(
       name,
       negativeKeyCode.device,
       negativeKeyCode.code,
       positiveKeyCode.code
     );
-    this.ref = inputContext.getAxis(name);
+    this.current = axb.getAxis(name);
     return this;
   }
 }
@@ -2205,22 +2172,21 @@ class InputContext {
   }
 
   /**
-   * @param {Array<InputBinding>|Record<string, InputBinding>} bindings
+   * @param {InputBinding|Array<InputBinding>|Record<string, InputBinding>} bindings
    */
-  bindBindings(bindings) {
-    if (!Array.isArray(bindings)) {
+  bindKeys(bindings) {
+    if (Array.isArray(bindings)) {
+      for(let binding of bindings) {
+        binding.bindKeys(this);
+      }
+    } else if (typeof bindings.bindKeys === 'function') {
+      bindings.bindKeys(this);
+    } else {
       bindings = Object.values(bindings);
+      for(let binding of bindings) {
+        binding.bindKeys(this);
+      }
     }
-    for (let binding of bindings) {
-      binding.bindTo(this);
-    }
-  }
-
-  /**
-   * @param {InputBinding} binding
-   */
-  bindBinding(binding) {
-    binding.bindTo(this);
   }
 
   /**

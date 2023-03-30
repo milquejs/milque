@@ -13,8 +13,12 @@ declare class GlobExp {
     test(string: string): boolean;
 }
 
-type AssetLoader<T, S extends unknown> = (src: string | ArrayBuffer, opts?: S) => Promise<T>;
+type AssetLoader$1<T, S extends unknown> = (src: string | ArrayBuffer, opts?: S) => Promise<T>;
 
+/**
+ * @template T, S
+ * @typedef {import('./AssetStore').AssetLoader<T, S>} AssetLoader
+ */
 declare class AssetManager {
     /**
      * @param {AssetManager} [parent]
@@ -36,7 +40,7 @@ declare class AssetManager {
      * @template T, S
      * @param {string} uri
      * @param {string} filepath
-     * @param {import('./AssetStore').AssetLoader<T, S>} loader
+     * @param {AssetLoader<T, S>} loader
      * @param {S} opts
      * @param {number} timeout
      * @returns {Promise<T>}
@@ -60,7 +64,7 @@ declare class AssetManager {
      * @template T, S
      * @param {string} uri
      * @param {string} filepath
-     * @param {import('./AssetStore').AssetLoader<T, S>} loader
+     * @param {AssetLoader<T, S>} loader
      * @param {S} opts
      * @param {number} timeout
      * @returns {Promise<T>}
@@ -70,7 +74,7 @@ declare class AssetManager {
      * @template T, S
      * @param {string} uri
      * @param {string} filepath
-     * @param {import('./AssetStore').AssetLoader<T, S>} loader
+     * @param {AssetLoader<T, S>} loader
      * @param {S} opts
      * @param {number} timeout
      * @returns {Promise<T>}
@@ -99,6 +103,7 @@ declare class AssetManager {
     keys(): string[];
     reset(): void;
 }
+type AssetLoader<T, S> = AssetLoader$1<T, S>;
 
 /** @template T, S */
 declare class AssetRef<T, S> {
@@ -109,9 +114,9 @@ declare class AssetRef<T, S> {
      * @param {string} [filepath]
      * @param {T|AssetRef<T>} [initial]
      */
-    constructor(uri: string, loader: AssetLoader<T, S>, opts?: S, filepath?: string, initial?: T | AssetRef<T, any>);
+    constructor(uri: string, loader: AssetLoader$1<T, S>, opts?: S, filepath?: string, initial?: T | AssetRef<T, any>);
     uri: string;
-    loader: AssetLoader<T, S>;
+    loader: AssetLoader$1<T, S>;
     opts: S;
     /** @private */
     private initial;
@@ -460,4 +465,4 @@ declare function AudioBufferLoader(src: ArrayBuffer | Uint8Array | string, opts:
     audioContext: AudioContext;
 }): Promise<AudioBuffer>;
 
-export { AssetManager, AssetRef, Atlas, AtlasLoader, AtlasSpriteData, AudioBufferLoader, BMFontChar, BMFontData, BMFontKerning, BMFontLoader, GlobExp, ImageLoader, MeshData, OBJLoader, TextLoader, cacheAssetPackAsRaw, loadAssetPack, preloadAssetRefs };
+export { AssetLoader, AssetManager, AssetRef, Atlas, AtlasLoader, AtlasSpriteData, AudioBufferLoader, BMFontChar, BMFontData, BMFontKerning, BMFontLoader, GlobExp, ImageLoader, MeshData, OBJLoader, TextLoader, cacheAssetPackAsRaw, loadAssetPack, preloadAssetRefs };

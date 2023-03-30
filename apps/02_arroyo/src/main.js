@@ -38,6 +38,7 @@ import {
 import { ASSETS } from './asset/Assets.js';
 import { loadAudio } from './asset/Audio.js';
 import { AssetManager, cacheAssetPackAsRaw } from '@milque/asset';
+import { DisplayPort } from '@milque/display';
 
 // TODO: Move the camera towards the placed block each time.
 // TODO: Regionize the block maps.
@@ -46,8 +47,9 @@ import { AssetManager, cacheAssetPackAsRaw } from '@milque/asset';
 // TODO: Trees? Plants?
 // TODO: Sunlight? Light map.
 
+DisplayPort.define();
+
 /**
- * @typedef {import('@milque/display').DisplayPort} DisplayPort
  * @typedef {import('@milque/display').FrameEvent} FrameEvent
  * @typedef {import('@milque/input').InputContext} InputContext
  */

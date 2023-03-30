@@ -4,11 +4,13 @@ import './error.js';
 
 import * as AcreWorld from './acreworld/main.js';
 import { AssetManager, cacheAssetPackAsRaw } from '@milque/asset';
+import { DisplayPort } from '@milque/display';
 
 /**
- * @typedef {import('@milque/display').DisplayPort} DisplayPort
  * @typedef {import('@milque/input').InputContext} InputContext
  */
+
+DisplayPort.define();
 
 window.addEventListener('DOMContentLoaded', main);
 async function main() {

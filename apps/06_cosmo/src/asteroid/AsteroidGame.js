@@ -104,12 +104,12 @@ export function AsteroidGame(m) {
             }
         }
 
-        this.player.up = MoveUp.value;
-        this.player.down = MoveDown.value;
-        this.player.left = MoveLeft.value;
-        this.player.right = MoveRight.value;
-        this.player.fire = Shoot.value;
-        if (Debug.released) {
+        this.player.up = MoveUp.current.value;
+        this.player.down = MoveDown.current.value;
+        this.player.left = MoveLeft.current.value;
+        this.player.right = MoveRight.current.value;
+        this.player.fire = Shoot.current.value;
+        if (Debug.current.released) {
             DEBUG.showCollision = !DEBUG.showCollision;
         }
     });

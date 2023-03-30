@@ -15,5 +15,5 @@ export const INPUTS = {
 
 /** @param {import('@milque/input').InputContext} inputContext */
 export function initInputs(inputContext) {
-  inputContext.bindBindings(Object.values(INPUTS));
+  inputContext.bindKeys(INPUTS);
 }

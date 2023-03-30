@@ -343,7 +343,7 @@ class FirstPersonCameraController {
 const MAX_DEPTH_LEVEL = 100;
 
 /**
- * @typedef {Number} SceneNode
+ * @typedef {number} SceneNode
  *
  * @typedef SceneNodeInfo
  * @property {SceneNode} parent The parent node. If the node does not have a parent,
@@ -353,7 +353,7 @@ const MAX_DEPTH_LEVEL = 100;
  * @callback WalkCallback Called for each node, before traversing its children.
  * @param {SceneNode} sceneNode The current scene node.
  * @param {SceneGraph} sceneGraph The current scene graph.
- * @returns {WalkBackCallback|Boolean} If false, the walk will skip
+ * @returns {WalkBackCallback|boolean|void} If false, the walk will skip
  * the current node's children and all of its descendents. If a function,
  * it will be called after traversing down all of its children.
  *
@@ -402,7 +402,7 @@ class SceneGraph {
   /**
    * Creates multiple scene nodes in the scene graph.
    *
-   * @param {Number} count The number of scene nodes to create.
+   * @param {number} count The number of scene nodes to create.
    * @param {SceneNode} [parentNode] The parent node for the created scene
    * nodes.
    * @returns {Array<SceneNode>} A list of created scene nodes.
@@ -523,16 +523,16 @@ class SceneGraph {
    *
    * @param {WalkCallback} callback The function called for each node
    * in the graph, in ordered traversal from parent to child.
-   * @param {Object} [opts={}] Any additional options.
+   * @param {object} [opts] Any additional options.
    * @param {SceneNode|Array<SceneNode>} [opts.from] The parent node to
    * start walking from, inclusive. By default, it will start from the root
    * nodes.
-   * @param {WalkChildrenCallback} [opts.childfilter] The function called before
+   * @param {WalkChildrenCallback} [opts.childFilter] The function called before
    * walking through the children. This is usually used to determine the
    * visiting order.
    */
-  walk(callback, opts = {}) {
-    const { from = undefined, childFilter = undefined } = opts;
+  walk(callback, opts = undefined) {
+    const { from = undefined, childFilter = undefined } = opts || {};
 
     let fromNodes;
     if (!from) fromNodes = this.roots;
@@ -550,7 +550,7 @@ class SceneGraph {
  * @param {SceneNode} key The scene node handle.
  * @returns {SceneNodeInfo} The scene node metadata.
  */
-function createSceneNodeInfo() {
+function createSceneNodeInfo(key) {
   return {
     parent: 0,
     children: [],
@@ -606,7 +606,7 @@ function detach(parentNode, childNode, sceneGraph) {
  *
  * @param {SceneGraph} sceneGraph The scene graph containing the nodes to be visited.
  * @param {SceneNode} parentNode The parent node to start walking from.
- * @param {Number} level The current call depth level. This is used to limit the call stack.
+ * @param {number} level The current call depth level. This is used to limit the call stack.
  * @param {WalkCallback} nodeCallback The function called on each visited node.
  * @param {WalkChildrenCallback} [filterCallback] The function called before
  * walking through the children. This is usually used to determine the visiting order.
@@ -1760,448 +1760,5 @@ class AnimationFrameLoop {
     }
 }
 
-/**
- * @template M, T
- * @typedef {(m: M, [opts]: object) => T} Provider
- */
-
-/**
- * @template M, T
- * @typedef ProviderContext
- * @property {Provider<M, T>} handle
- * @property {T} value
- */
-
-/**
- * @template M, T
- * @param {M} m 
- * @param {Provider<M, T>} provider 
- * @returns {T}
- */
-function useProvider(m, provider) {
-    let state = resolveState$1(m);
-    let handle = provider.name;
-    if (handle in state.contexts) {
-        /** @type {ProviderContext<M, T>} */
-        let { value } = state.contexts[handle];
-        if (value) {
-            return value;
-        } else {
-            let current = getCurrentProvider(m);
-            if (current.name === provider.name) {
-                throw new Error(`Cannot useProvider() on self during initialization!`);
-            } else {
-                throw new Error('This is not a provider.');
-            }
-        }
-    }
-    throw new Error(`Missing assigned dependent provider '${handle}' in context.`);
-}
-
-/**
- * @template M
- * @param {M} m 
- * @param {Array<Provider<?, ?>>} providers
- * @returns {M}
- */
-function injectProviders(m, providers) {
-    let state = resolveState$1(m);
-    for(let provider of providers) {
-        /** @type {ProviderContext<?, ?>} */
-        let context = {
-            handle: provider,
-            value: null,
-        };
-        state.contexts[provider.name] = context;
-        state.current = provider;
-        context.value = provider(m);
-    }
-    return m;
-}
-
-/**
- * @template M
- * @param {M} m 
- * @param {Array<Provider<?, ?>>} providers
- * @returns {M}
- */
-function ejectProviders(m, providers) {
-    let state = getStateIfExists$1(m);
-    if (!state) {
-        return m;
-    }
-    for(let provider of providers.slice().reverse()) {
-        let context = state.contexts[provider.name];
-        context.value = null;
-        delete state.contexts[provider.name];
-    }
-    return m;
-}
-
-/**
- * @template M
- * @param {M} m
- */
-function getCurrentProvider(m) {
-    let state = getStateIfExists$1(m);
-    if (!state) {
-        throw new Error('This is not a provider.');
-    }
-    return state.current;
-}
-
-const KEY$1 = Symbol('providers');
-
-function createState$1() {
-    return {
-        /** @type {Record<string, ProviderContext<?, ?>>} */
-        contexts: {},
-        /** @type {Provider<?, ?>} */
-        current: null,
-    };
-}
-
-/**
- * @param {object} target
- * @returns {ReturnType<createState>}
- */
-function resolveState$1(target) {
-    if (KEY$1 in target) {
-        return target[KEY$1];
-    }
-    return target[KEY$1] = createState$1();
-}
-
-/**
- * @param {object} target
- * @returns {ReturnType<createState>|null}
- */
-function getStateIfExists$1(target) {
-    if (KEY$1 in target) {
-        return target[KEY$1];
-    }
-    return null;
-}
-
-/**
- * @callback EffectHandler
- * @returns {AfterEffectHandler|Promise<AfterEffectHandler>|Promise<void>|void}
- */
-
-/**
- * @callback AfterEffectHandler
- * @returns {Promise<void>|void}
- */
-
-/**
- * @typedef EffectorContext
- * @property {Array<EffectHandler>} befores
- * @property {Array<AfterEffectHandler|void>} afters
- */
-
-/**
- * @template M
- * @param {M} m 
- * @param {EffectHandler} handler
- */
-function useEffect(m, handler) {
-    const provider = getCurrentProvider(m);
-    if (!provider) {
-        throw new Error('Not a provider.');
-    }
-    let state = resolveState(m);
-    let context = resolveContext(provider, state.contexts);
-    context.befores.push(handler);
-}
-
-/**
- * @template M
- * @param {M} m 
- * @param {Array<import('./ProviderHook').Provider<M, ?>>} providers 
- */
-async function applyEffects(m, providers) {
-    let state = resolveState(m);
-    for(let provider of providers) {
-        let context = resolveContext(provider, state.contexts);
-        let befores = context.befores.slice();
-        context.befores.length = 0;
-        let result = await Promise.all(befores.map(handler => handler && handler()));
-        context.afters.push(...result);
-    }
-    return m;
-}
-
-/**
- * @template M
- * @param {M} m 
- * @param {Array<import('./ProviderHook').Provider<M, ?>>} providers 
- */
-async function revertEffects(m, providers) {
-    let state = getStateIfExists(m);
-    if (!state) {
-        return m;
-    }
-    for(let provider of providers.slice().reverse()) {
-        let context = getContextIfExists(provider, state.contexts);
-        if (!context) {
-            throw new Error('Cannot revert context for non-existent provider.');
-        }
-        let afters = context.afters.slice();
-        context.afters.length = 0;
-        await Promise.all(afters.map(handler => handler && handler()));
-    }
-    return m;
-}
-
-const KEY = Symbol('effectors');
-
-function createState() {
-    return {
-        /** @type {Record<string, EffectorContext>} */
-        contexts: {},
-    };
-}
-
-/**
- * @param {object} target
- * @returns {ReturnType<createState>}
- */
-function resolveState(target) {
-    if (KEY in target) {
-        return target[KEY];
-    }
-    return target[KEY] = createState();
-}
-
-/**
- * @param {object} target
- * @returns {ReturnType<createState>|null}
- */
-function getStateIfExists(target) {
-    if (KEY in target) {
-        return target[KEY];
-    }
-    return null;
-}
-
-/**
- * @returns {EffectorContext}
- */
-function createContext() {
-    return {
-        befores: [],
-        afters: [],
-    };
-}
-
-/**
- * @param {import('./ProviderHook').Provider<?, ?>} provider
- * @param {ReturnType<createState>['contexts']} target
- * @returns {ReturnType<createContext>}
- */
-function resolveContext(provider, target) {
-    const key = provider.name;
-    if (key in target) {
-        return target[key];
-    }
-    return target[key] = createContext();
-}
-
-/**
- * @param {import('./ProviderHook').Provider<?, ?>} provider
- * @param {ReturnType<createState>['contexts']} target
- * @returns {ReturnType<createContext>|null}
- */
-function getContextIfExists(provider, target) {
-    const key = provider.name;
-    if (key in target) {
-        return target[key];
-    }
-    return null;
-}
-
-/**
- * @type {Topic<import('../loop/AnimationFrameLoop').AnimationFrameLoop>}
- */
-const SystemUpdateTopic = new Topic('main.update');
-
-/**
- * @template M
- * @param {M} m 
- * @param {import('../topic/TopicManager').TopicManager} topics 
- * @param {import('../topic/TopicManager').TopicCallback<import('../loop/AnimationFrameLoop').AnimationFrameLoop>} callback 
- */
-function useSystemUpdate(m, topics, callback) {
-    useEffect(m, () => {
-        SystemUpdateTopic.on(topics, 0, callback);
-        return () => {
-            SystemUpdateTopic.off(topics, callback);
-        };
-    });
-}
-
-/**
- * @template M, T
- * @param {M} m 
- * @param {import('../topic/Topic').Topic<T>} topic 
- * @param {number} priority 
- * @param {import('../topic/Topic').TopicCallback<T>} callback 
- */
-function useTopic(m, topic, priority, callback) {
-    const topics = useProvider(m, TopicsProvider);
-    useEffect(m, () => {
-        topic.on(topics, priority, callback);
-        return () => {
-            topic.off(topics, callback);
-        };
-    });
-}
-
-/**
- * @template M
- * @param {M} m
- */
-function TopicsProvider(m) {
-    const topics = new TopicManager();
-    useSystemUpdate(m, topics, () => {
-        topics.flush();
-    });
-    return topics;
-}
-
-/**
- * @template M
- * @typedef ToastHandler
- * @property {(m: M) => Promise<void>} [load]
- * @property {(m: M) => Promise<void>} [unload]
- * @property {(m: M) => Promise<void>} [main]
- * @property {(m: M) => void} init
- * @property {(m: M) => void} [dead]
- * @property {(m: M) => void} [update]
- * @property {(m: M) => void} [draw]
- */
-
-/**
- * @template M
- * @param {M} m
- * @param {ToastHandler<M>} handler
- */
-function toast(m, handler, providers = []) {
-    function GameSystem(m) {
-        const topics = useProvider(m, TopicsProvider);
-        useEffect(m, async () => {
-            if (handler.load) await handler.load(m);
-            if (handler.main) await handler.main(m);
-            if (handler.init) handler.init(m);
-            return async () => {
-                if (handler.dead) handler.dead(m);
-                if (handler.unload) await handler.unload(m);
-            };
-        });
-        useSystemUpdate(m, topics, () => {
-            if (handler.update) handler.update(m);
-            if (handler.draw) handler.draw(m);
-        });
-    }
-    const result = [
-        TopicsProvider,
-        AnimationFrameLoopProvider,
-        ...providers,
-        GameSystem,
-    ];
-    return {
-        async start() {
-            injectProviders(m, result);
-            await applyEffects(m, result);
-            return this;
-        },
-        async stop() {
-            await revertEffects(m, result);
-            ejectProviders(m, result);
-            return this;
-        },
-    }
-}
-
-/**
- * @template M
- * @param {M} m
- */
-function AnimationFrameLoopProvider(m) {
-    const topics = useProvider(m, TopicsProvider);
-    const loop = new AnimationFrameLoop((e) => {
-        SystemUpdateTopic.dispatchImmediately(topics, e);
-    });
-    useEffect(m, () => {
-        loop.start();
-    });
-    return loop;
-}
-
-/**
- * @template M
- * @template {keyof WindowEventHandlersEventMap} K
- * @param {M} m 
- * @param {keyof WindowEventMap} event
- * @param {(this: WindowEventHandlers, ev: WindowEventHandlersEventMap[K]) => any} listener
- */
-function useWindowEventListener(m, event, listener) {
-    useEffect(m, () => {
-        const root = window;
-        root.addEventListener(event, listener);
-        return () => {
-            root.removeEventListener(event, listener);
-        };
-    });
-}
-
-/**
- * @template M
- * @template {keyof DocumentAndElementEventHandlersEventMap} K
- * @param {M} m 
- * @param {keyof DocumentEventMap} event
- * @param {(this: DocumentAndElementEventHandlers, ev: DocumentAndElementEventHandlersEventMap[K]) => any} listener
- */
-function useDocumentEventListener(m, event, listener) {
-    useEffect(m, () => {
-        const root = window.document;
-        root.addEventListener(event, listener);
-        return () => {
-            root.removeEventListener(event, listener);
-        };
-    });
-}
-
-/**
- * @template M
- * @template {keyof DocumentAndElementEventHandlersEventMap} K
- * @param {M} m 
- * @param {HTMLElement} element
- * @param {keyof ElementEventMap} event
- * @param {(this: DocumentAndElementEventHandlers, ev: DocumentAndElementEventHandlersEventMap[K]) => any} listener
- */
-function useHTMLElementEventListener(m, element, event, listener) {
-    useEffect(m, () => {
-        element.addEventListener(event, listener);
-        return () => {
-            element.removeEventListener(event, listener);
-        };
-    });
-}
-
-var index = /*#__PURE__*/Object.freeze({
-  __proto__: null,
-  AnimationFrameLoopProvider: AnimationFrameLoopProvider,
-  TopicsProvider: TopicsProvider,
-  toast: toast,
-  useDocumentEventListener: useDocumentEventListener,
-  useEffect: useEffect,
-  useHTMLElementEventListener: useHTMLElementEventListener,
-  useProvider: useProvider,
-  useSystemUpdate: useSystemUpdate,
-  useTopic: useTopic,
-  useWindowEventListener: useWindowEventListener
-});
-
-export { AnimationFrameLoop, Camera, ComponentClass, EntityManager, EntityTemplate, FirstPersonCameraController, Not, OrthographicCamera, PerspectiveCamera, Query, QueryManager, SceneGraph, index as Toaster, Topic, TopicManager, isSelectorNot, lookAt, panTo, screenToWorldRay };
+export { AnimationFrameLoop, Camera, ComponentClass, EntityManager, EntityTemplate, FirstPersonCameraController, Not, OrthographicCamera, PerspectiveCamera, Query, QueryManager, SceneGraph, Topic, TopicManager, isSelectorNot, lookAt, panTo, screenToWorldRay };
 //# sourceMappingURL=milque-scene.esm.js.map

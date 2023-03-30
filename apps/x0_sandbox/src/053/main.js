@@ -1,19 +1,39 @@
 import { FlexCanvas } from '@milque/display';
 import { InputPort } from '@milque/input';
-import { AssetManager } from '@milque/asset';
-import { EntityManager } from '@milque/scene';
+import { AssetManager, ImageLoader } from '@milque/asset';
 
 import { run, useWhenSystemUpdate } from '../runner';
 
-import * as Game from './Game';
+// @ts-ignore
+import STAR_PATH from './star.png';
+
+import { newDefs } from '../room/Room';
+import { RoomSystem, RoomSystemOptions, RoomSystemProviders } from '../room/RoomSystem';
+import { EntityManager } from '@milque/scene';
+
+const loaders = {
+    image: ImageLoader,
+};
+const defs = newDefs()
+    .room('main')
+        .boundingRect(0, 0, 400, 300)
+        .addInstance('boy', 100, 100)
+        .addInstance('boy', 0, 0)
+        .build()
+    .asset('star.png').filepath(STAR_PATH).build()
+    .sprite('boy').image('star.png', 32, 32).addFrame(0, 0, 32, 32).build()
+    .object('boy').sprite('boy').build()
+    .build();
 
 export async function main() {
-    await run(Game, [
+    await run(() => {}, [
         CanvasProvider,
-        InputProvider,
-        AssetProvider,
         EntityProvider,
-        ...Game.PROVIDERS,
+        AssetProvider,
+        InputProvider,
+        RoomSystemOptions({ AssetProvider, EntityProvider, CanvasProvider, loaders, defs }),
+        RoomSystemProviders,
+        RoomSystem,
     ]);
 }
 
@@ -31,14 +51,12 @@ export function InputProvider(m) {
     return context;
 }
 
-export function AssetProvider(m) {
-    return new AssetManager();
-}
-
 export function EntityProvider(m) {
     let ents = new EntityManager();
-    useWhenSystemUpdate(m, -1, (e) => {
-        ents.flush();
-    });
+    useWhenSystemUpdate(m, -1, () => ents.flush());
     return ents;
+}
+
+export function AssetProvider(m) {
+    return new AssetManager();
 }

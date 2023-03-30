@@ -262,22 +262,21 @@ export class InputContext {
   }
 
   /**
-   * @param {Array<InputBinding>|Record<string, InputBinding>} bindings
+   * @param {InputBinding|Array<InputBinding>|Record<string, InputBinding>} bindings
    */
-  bindBindings(bindings) {
-    if (!Array.isArray(bindings)) {
+  bindKeys(bindings) {
+    if (Array.isArray(bindings)) {
+      for(let binding of bindings) {
+        binding.bindKeys(this);
+      }
+    } else if (typeof bindings.bindKeys === 'function') {
+      bindings.bindKeys(this);
+    } else {
       bindings = Object.values(bindings);
+      for(let binding of bindings) {
+        binding.bindKeys(this);
+      }
     }
-    for (let binding of bindings) {
-      binding.bindTo(this);
-    }
-  }
-
-  /**
-   * @param {InputBinding} binding
-   */
-  bindBinding(binding) {
-    binding.bindTo(this);
   }
 
   /**

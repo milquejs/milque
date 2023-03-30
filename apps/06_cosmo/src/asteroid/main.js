@@ -101,7 +101,7 @@ export function InputPortProvider(m) {
   /** @type {InputPort} */
   const inputs = document.querySelector('#inputs');
   const ctx = inputs.getContext('axisbutton');
-  ctx.bindBindings(Object.values(Inputs));
+  ctx.bindKeys(Inputs);
   useTopic(m, EarlyUpdateEvent, 0, ({ currentTime: now }) => {
     ctx.poll(now);
   });

@@ -2,7 +2,10 @@ import { from } from '../keycode/KeyCodes.js';
 import { InputBinding } from './InputBinding.js';
 import { stringsToKeyCodes } from '../keycode/KeyCodeHelper.js';
 
-/** @typedef {import('../keycode/KeyCode.js').KeyCode} KeyCode */
+/**
+ * @typedef {import('../keycode/KeyCode.js').KeyCode} KeyCode
+ * @typedef {import('../InputContext.js').InputContext} InputContext
+ */
 
 export class AxisBinding extends InputBinding {
   /**
@@ -26,14 +29,6 @@ export class AxisBinding extends InputBinding {
     return new AxisBinding(name, keyCodes);
   }
 
-  /** @returns {number} */
-  get delta() {
-    if (!this.ref || this.disabled) {
-      return 0;
-    }
-    return this.ref.delta;
-  }
-
   /**
    * @param {string} name
    * @param {KeyCode|Array<KeyCode>} keyCodes
@@ -41,24 +36,39 @@ export class AxisBinding extends InputBinding {
    */
   constructor(name, keyCodes, opts = undefined) {
     super(name);
-
-    /** @protected */
+    
     this.keyCodes = Array.isArray(keyCodes) ? keyCodes : [keyCodes];
-    /** @protected */
     this.opts = opts;
+
+    /** @type {import('../state/AxisState').AxisState} */
+    this.current = null;
   }
 
   /**
    * @override
-   * @param {import('../InputContext.js').InputContext} inputContext
+   * @param {InputContext} axb
    */
-  bindTo(inputContext) {
+  bindKeys(axb) {
     let name = this.name;
     let opts = this.opts;
     for (let keyCode of this.keyCodes) {
-      inputContext.bindAxis(name, keyCode.device, keyCode.code, opts);
+      axb.bindAxis(name, keyCode.device, keyCode.code, opts);
     }
-    this.ref = inputContext.getAxis(name);
+    this.current = axb.getAxis(name);
     return this;
+  }
+
+  /**
+   * @override
+   * @param {InputContext} axb
+   */
+  get(axb) {
+    let name = this.name;
+    if (!axb.hasAxis(name)) {
+      this.bindKeys(axb);
+    }
+    let result = axb.getAxis(name);
+    this.current = result;
+    return result;
   }
 }

@@ -1,7 +1,10 @@
 import { from } from '../keycode/KeyCodes.js';
 import { AxisBinding } from './AxisBinding.js';
 
-/** @typedef {import('../keycode/KeyCode.js').KeyCode} KeyCode */
+/**
+ * @typedef {import('../keycode/KeyCode.js').KeyCode} KeyCode
+ * @typedef {import('../InputContext.js').InputContext} InputContext
+ */
 
 export class AxisButtonBinding extends AxisBinding {
   /**
@@ -30,27 +33,26 @@ export class AxisButtonBinding extends AxisBinding {
     if (negativeKeyCode.device !== positiveKeyCode.device) {
       throw new Error('Cannot create axis-button codes for different devices.');
     }
-
-    /** @protected */
+    
     this.negativeKeyCode = negativeKeyCode;
-    /** @protected */
     this.positiveKeyCode = positiveKeyCode;
   }
 
   /**
-   * @param {import('../InputContext.js').InputContext} inputContext
+   * @override
+   * @param {InputContext} axb
    */
-  bindTo(inputContext) {
+  bindKeys(axb) {
     let name = this.name;
     let negativeKeyCode = this.negativeKeyCode;
     let positiveKeyCode = this.positiveKeyCode;
-    inputContext.bindAxisButtons(
+    axb.bindAxisButtons(
       name,
       negativeKeyCode.device,
       negativeKeyCode.code,
       positiveKeyCode.code
     );
-    this.ref = inputContext.getAxis(name);
+    this.current = axb.getAxis(name);
     return this;
   }
 }

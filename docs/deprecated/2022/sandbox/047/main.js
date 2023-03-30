@@ -97,7 +97,7 @@ export async function main(game) {
 
   async function load() {
     console.log('Loading...');
-    inputs.bindBindings(Object.values(Inputs));
+    inputs.bindKeys(Inputs);
     Assets.loadAssetRefs(Object.values(Assets), assets);
     console.log('...loading complete!');
   }

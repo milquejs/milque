@@ -9,9 +9,11 @@ import * as MainScene from './MainScene.js';
 import * as MainRender from './MainRender.js';
 
 import { attach } from './MinesControls.js';
+import { DisplayPort } from '@milque/display';
+
+DisplayPort.define();
 
 /**
- * @typedef {import('@milque/display').DisplayPort} DisplayPort
  * @typedef {import('@milque/input').InputContext} InputContext
  */
 

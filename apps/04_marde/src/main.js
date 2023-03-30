@@ -1,4 +1,4 @@
-import '@milque/display';
+import { DisplayPort } from '@milque/display';
 import '@milque/input';
 import './error.js';
 
@@ -7,10 +7,10 @@ import * as DialogueBox from './DialogueBox.js';
 import * as TaxiMeter from './TaxiMeter.js';
 
 /**
- * @typedef {import('@milque/display').DisplayPort} DisplayPort
  * @typedef {import('@milque/input').InputContext} InputContext
  */
 
+DisplayPort.define();
 window.addEventListener('DOMContentLoaded', main);
 async function main() {
   /** @type {import('@milque/display').DisplayPort}  */

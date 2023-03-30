@@ -85,22 +85,22 @@ export function CursorSystem(m) {
         }
 
         let slideTime = 300;
-        if (cursor.gravityX > 0 && INPUTS.MoveRight.down) {
+        if (cursor.gravityX > 0 && INPUTS.MoveRight.current.down) {
             if (timer < slideTime) {
                 dx = 1;
                 timer = slideTime;
             }
-        } else if (cursor.gravityX < 0 && INPUTS.MoveLeft.down) {
+        } else if (cursor.gravityX < 0 && INPUTS.MoveLeft.current.down) {
             if (timer < slideTime) {
                 dx = -1;
                 timer = slideTime;
             }
-        } else if (cursor.gravityY > 0 && INPUTS.MoveDown.down) {
+        } else if (cursor.gravityY > 0 && INPUTS.MoveDown.current.down) {
             if (timer < slideTime) {
                 dy = 1;
                 timer = slideTime;
             }
-        } else if (cursor.gravityY < 0 && INPUTS.MoveUp.down) {
+        } else if (cursor.gravityY < 0 && INPUTS.MoveUp.current.down) {
             if (timer < slideTime) {
                 dy = -1;
                 timer = slideTime;

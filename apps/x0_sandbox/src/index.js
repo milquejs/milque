@@ -15,7 +15,7 @@ const TARGETS = [
 
 window.addEventListener('DOMContentLoaded', () => main(TARGETS));
 async function main(ms) {
-    const { m = 0 } = Util.getURLParameters();
+    const { m = TARGETS.length - 1 } = Util.getURLParameters();
     const i = Math.max(0, Math.min(m, TARGETS.length));
     const mFunc = ms[i];
     if (!mFunc) {

@@ -6,7 +6,7 @@ export class Tia {
 
     constructor() {
         // NOTE: Offset canvas for pixel-perfect rendering.
-        this.projectionMatrix = mat4.fromTranslation(mat4.create(), vec3.fromValues(-0.5, -0.5, 0));
+        this.projectionMatrix = mat4.fromTranslation(mat4.create(), vec3.fromValues(0, 0, 0));
         this.viewMatrix = mat4.create();
         this.position = vec3.create();
         this.rotation = quat.create();
@@ -19,6 +19,7 @@ export class Tia {
 
     /**
      * @param {CanvasRenderingContext2D} ctx 
+     * @param {number} color 
      */
     cls(ctx, color = undefined) {
         this.matBegin(ctx);
@@ -214,7 +215,7 @@ export class Tia {
         let dh = flipY ? -1 : 1;
         ctx.translate(x + dx, y + dy);
         ctx.scale(dw, dh);
-        ctx.drawImage(spriteImage, u, v, s, t, 0, 0, w, h);
+        ctx.drawImage(spriteImage, u, v, s - u, t - v, 0, 0, w, h);
         this.matEnd(ctx);
     }
 
@@ -237,8 +238,10 @@ export class Tia {
     mat(x, y, scaleX, scaleY, radians) {
         this.position[0] = x;
         this.position[1] = y;
+        this.position[2] = 0;
         this.scaling[0] = scaleX;
         this.scaling[1] = scaleY;
+        this.scaling[2] = 1;
         quat.fromEuler(this.rotation, 0, 0, radians);
         this.matUpdate();
     }
@@ -250,6 +253,7 @@ export class Tia {
     matPos(x, y) {
         this.position[0] = x;
         this.position[1] = y;
+        this.position[2] = 0;
         this.matUpdate();
     }
 
@@ -260,6 +264,7 @@ export class Tia {
     matScale(scaleX, scaleY) {
         this.scaling[0] = scaleX;
         this.scaling[1] = scaleY;
+        this.scaling[2] = 1;
         this.matUpdate();
     }
 
@@ -278,6 +283,7 @@ export class Tia {
         vec3.set(this.scaling, 1, 1, 1);
         this.transformStack.push(this.transformMatrix);
         this.transformMatrix = mat4.create();
+        this.matUpdate();
     }
 
     pop() {
@@ -286,12 +292,12 @@ export class Tia {
             mat4.getRotation(this.rotation, result);
             mat4.getScaling(this.scaling, result);
             mat4.getTranslation(this.position, result);
-        } else {
-            quat.identity(this.rotation);
-            vec3.set(this.position, 0, 0, 0);
-            vec3.set(this.scaling, 1, 1, 1);
         }
+        quat.identity(this.rotation);
+        vec3.set(this.position, 0, 0, 0);
+        vec3.set(this.scaling, 1, 1, 1);
         mat4.fromRotationTranslationScale(this.transformMatrix, this.rotation, this.position, this.scaling);
+        this.matUpdate();
     }
 
     /**
@@ -316,12 +322,13 @@ export class Tia {
      * @private
      */
     matUpdate() {
+        // TODO: This doesn't apply sub transformations right...
         let out = mat4.create();
         mat4.mul(out, this.projectionMatrix, this.viewMatrix);
         let length = this.transformStack.length;
         for(let i = length - 1; i >= 0; --i) {
             let transform = this.transformStack[i];
-            mat4.mul(out, out, transform);
+            mat4.mul(out, transform, out);
         }
         mat4.fromRotationTranslationScale(this.transformMatrix, this.rotation, this.position, this.scaling);
         mat4.mul(out, out, this.transformMatrix);
