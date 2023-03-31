@@ -5,9 +5,9 @@ import { ComponentClass, EntityManager, Query } from '@milque/scene';
 import { Random } from '@milque/random';
 
 import { Tia } from '../tia/Tia';
-import { run, useContext, useCurrentAnimationFrameDetail, useWhenSystemUpdate } from '../runner';
+import { useContext, useCurrentAnimationFrameDetail, useWhenSystemUpdate } from '../runner';
 
-import BunnyImage from './bunny';
+import BunnyImage from './BunnyDefs';
 import CarrotImage from './carrot';
 import CarrotBitten1Image from './carrot_bitten_1';
 import CarrotBitten2Image from './carrot_bitten_2';

@@ -7,58 +7,20 @@ import { RoomSystem, RoomSystemOptions, RoomSystemProviders, useRoom } from '../
 import { run, useContext, useWhenSystemInit, useWhenSystemUpdate } from '../runner';
 import { newDefs } from '../room/Room';
 
-// @ts-ignore
-import BUNNY_PATH from './bunny.png';
-// @ts-ignore
-import CARROT_PATH from './carrot.png';
-// @ts-ignore
-import CARROT_BITTEN_1_PATH from './carrot_bitten_1.png';
-// @ts-ignore
-import CARROT_BITTEN_2_PATH from './carrot_bitten_2.png';
-// @ts-ignore
-import GROUND_PATH from './ground.png';
-// @ts-ignore
-import STONE_PATH from './stone.png';
-// @ts-ignore
-import GRASS_PATH from './grass.png';
+import BunnyDefs from './BunnyDefs';
+import CarrotDefs from './CarrotDefs';
+import { GroundDefs, GrassDefs, StoneDefs } from './GroundDefs';
 
 const LOADERS = {
     image: ImageLoader,
 };
+
 const DEFS = newDefs()
-    .asset('bunny.png').filepath(BUNNY_PATH).build()
-    .asset('carrot.png').filepath(CARROT_PATH).build()
-    .asset('carrot_bitten_1.png').filepath(CARROT_BITTEN_1_PATH).build()
-    .asset('carrot_bitten_2.png').filepath(CARROT_BITTEN_2_PATH).build()
-    .asset('ground.png').filepath(GROUND_PATH).build()
-    .asset('stone.png').filepath(STONE_PATH).build()
-    .asset('grass.png').filepath(GRASS_PATH).build()
-    .sprite('sp_bunny')
-        .image('bunny.png', 64, 64)
-        .origin(32, 32)
-        .frameSpeed(10)
-        .addFrames(0, 0, 64, 64, 3)
-        .build()
-    .sprite('sp_bunny_eyes')
-        .image('bunny.png', 64, 64)
-        .origin(32, 32)
-        .frameSpeed(10)
-        .addFrames(64 * 3, 0, 64 * 4, 64, 2)
-        .build()
-    .sprite('sp_carrot').image('carrot.png', 8, 32).build()
-    .sprite('sp_carrot_bitten_1').image('carrot_bitten_1.png', 8, 32).build()
-    .sprite('sp_carrot_bitton_2').image('carrot_bitten_2.png', 8, 32).build()
-    .sprite('sp_ground').image('ground.png', 32, 32).build()
-    .sprite('sp_stone').image('stone.png', 8, 8).build()
-    .sprite('sp_grass').image('grass.png', 16, 16).build()
-    .object('obj_bunny')
-        .sprite('sp_bunny')
-        .addChild('obj_bunny_eyes')
-        .build()
-    .object('obj_bunny_eyes').sprite('sp_bunny_eyes').build()
-    .object('obj_ground').sprite('sp_ground').build()
-    .object('obj_stone').sprite('sp_stone').build()
-    .object('obj_grass').sprite('sp_grass').build()
+    .fromJSON(BunnyDefs)
+    .fromJSON(CarrotDefs)
+    .fromJSON(GroundDefs)
+    .fromJSON(StoneDefs)
+    .fromJSON(GrassDefs)
     .room('rm_main')
         .boundingRect(0, 0, 400, 300)
         .addInstance('obj_bunny', 64, 64)
