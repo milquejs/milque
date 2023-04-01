@@ -133,6 +133,8 @@ export class RoomBuilder {
         /** @private */
         this._boundingRect = undefined;
         /** @private */
+        this._background = undefined;
+        /** @private */
         this._views = [];
         /** @private */
         this._instances = [];
@@ -149,6 +151,13 @@ export class RoomBuilder {
         return this;
     }
 
+    /**
+     * @param {number} color
+     */
+    background(color) {
+        this._background = color;
+        return this;
+    }
 
     /**
      * @param {string} name 
@@ -194,16 +203,18 @@ export class RoomBuilder {
 
     reset() {
         this._boundingRect = undefined;
+        this._background = undefined;
         this._views = [];
         this._instances = [];
     }
 
     build() {
         let boundingRect = this._boundingRect || createBoundingRect(0, 0, 0, 0);
+        let background = this._background || 0x000000;
         let views = this._views;
         let instances = this._instances;
         this.reset();
-        let result = createRoomDef(this.roomName, boundingRect, views, instances);
+        let result = createRoomDef(this.roomName, boundingRect, background, views, instances);
         // @ts-ignore
         this.parentBuilder.rooms[this.roomName] = result;
         return this.parentBuilder;

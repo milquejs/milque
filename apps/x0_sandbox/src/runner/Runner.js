@@ -1,6 +1,6 @@
 import { AnimationFrameLoop, Topic, TopicManager } from '@milque/scene';
 
-import { injectProviders, ejectProviders, getProviderState, getCurrentProvider, setCurrentProvider, createOverrideProvider, hasProviderState } from './Provider';
+import { injectProviders, ejectProviders, getProviderState, getCurrentProvider, setCurrentProvider, createOverrideProvider, hasProviderState, createAugmentProvider } from './Provider';
 import { applyEffects, revertEffects, registerAfterEffect, registerEffect } from './Effect';
 import { getRunConfiguration, setRunConfiguration } from './RunConfiguration';
 
@@ -263,3 +263,4 @@ export const useContext = getProviderState;
 export const useEffect = registerEffect;
 export const useAfterEffect = registerAfterEffect;
 export const Override = createOverrideProvider;
+export const Augment = createAugmentProvider;

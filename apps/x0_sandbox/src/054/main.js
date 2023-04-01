@@ -1,117 +1,126 @@
-import { AssetManager } from '@milque/asset';
+import { AssetManager, ImageLoader } from '@milque/asset';
 import { FlexCanvas } from '@milque/display';
-import { ButtonBinding, InputContext, KeyCodes } from '@milque/input';
-import { ComponentClass, EntityManager, Query } from '@milque/scene';
-import { Random } from '@milque/random';
+import { ButtonBinding, InputPort, KeyCodes } from '@milque/input';
+import { EntityManager } from '@milque/scene';
 
-import { Tia } from '../tia/Tia';
-import { useContext, useCurrentAnimationFrameDetail, useWhenSystemUpdate } from '../runner';
+import { RoomSystem, RoomSystemOptions, RoomSystemProviders, useRoom } from '../room/RoomSystem';
+import { run, useContext, useWhenSystemInit, useWhenSystemUpdate } from '../runner';
+import { newDefs } from '../room/Room';
 
-import { main as BunnyRoom } from './BunnyRoom';
+import BunnyDefs from './BunnyDefs';
+import CarrotDefs from './CarrotDefs';
+import { GroundDefs, GrassDefs, StoneDefs, HovelDefs } from './GroundDefs';
+import FontDefs from './FontDefs';
+import PantsDef from './PantsDef';
 
-export async function main() {
-    await BunnyRoom();
-}
-
-const BunnyComponent = new ComponentClass('bunny', () => ({
-    x: 0,
-    y: 0,
-    dx: 0,
-    dy: 0,
-}));
-const BunnyQuery = new Query(BunnyComponent);
-
-const GrassComponent = new ComponentClass('grass', () => ({
-    x: 0,
-    y: 0,
-    index: 0,
-}));
-const GrassQuery = new Query(GrassComponent);
-
-const game = {
-    async preload(m) {
-    },
-    init(m) {
-        let ents = useContext(m, EntityProvider);
-        let e = ents.create();
-        ents.attach(e, BunnyComponent);
-        
-        for(let i = 0; i < 5; ++i) {
-            let entity = ents.create();
-            let grass = ents.attach(entity, GrassComponent);
-            grass.x = Random.rangeInt(40, 300);
-            grass.y = Random.rangeInt(80, 120);
-            grass.index = Random.rangeInt(0, 4);
-        }
-    },
-    update(m) {
-    },
-    draw(m) {
-        let { currentTime } = useCurrentAnimationFrameDetail(m);
-        let assets = useContext(m, AssetProvider);
-        let ctx = useContext(m, CanvasContextProvider);
-        let tia = useContext(m, CanvasTiaProvider);
-        let ents = useContext(m, EntityProvider);
-
-        tia.cls(ctx, 0xFFFFFF);
-        tia.camera(0, 0, ctx.canvas.width, ctx.canvas.height);
-
-        let index = Math.floor((currentTime / 1000) % 3);
-        tia.push();
-        tia.matPos(32, 100);
-        if (index === 0) {
-            tia.spr(ctx, CarrotImage.get(assets), Math.floor((currentTime / 100) % 3), 0, 0, 8, 32);
-        } else if (index === 1) {
-            tia.spr(ctx, CarrotBitten1Image.get(assets), Math.floor((currentTime / 100) % 3), 0, 0, 8, 32);
-        } else if (index === 2) {
-            tia.spr(ctx, CarrotBitten2Image.get(assets), Math.floor((currentTime / 100) % 3), 0, 0, 8, 32);
-        }
-
-        tia.pop();
-
-        tia.spr(ctx, CarrotImage.get(assets), Math.floor((currentTime / 100) % 3), 100, 16, 8, 32);
-        
-        if (index === 0) {
-            tia.spr(ctx, CarrotImage.get(assets), Math.floor((currentTime / 100) % 3), 0, 0, 8, 32);
-        } else if (index === 1) {
-            tia.spr(ctx, CarrotBitten1Image.get(assets), Math.floor((currentTime / 100) % 3), 0, 0, 8, 32);
-        } else if (index === 2) {
-            tia.spr(ctx, CarrotBitten2Image.get(assets), Math.floor((currentTime / 100) % 3), 0, 0, 8, 32);
-        }
-    }
+const LOADERS = {
+    image: ImageLoader,
 };
 
-export function InputProvider(m) {
-    let canvas = useContext(m, CanvasProvider);
-    let inputs = new InputContext(canvas);
-    useWhenSystemUpdate(m, -1, (e) => {
-        inputs.poll(e.detail.currentTime);
+const DEFS = newDefs()
+    .fromJSON(BunnyDefs)
+    .fromJSON(CarrotDefs)
+    .fromJSON(GroundDefs)
+    .fromJSON(StoneDefs)
+    .fromJSON(GrassDefs)
+    .fromJSON(HovelDefs)
+    .fromJSON(FontDefs)
+    .fromJSON(PantsDef)
+    .room('rm_main')
+        .background(0xFFFFFF)
+        .boundingRect(0, 0, 400, 300)
+        .addInstance('obj_ground', 16, 24)
+        .addInstance('obj_ground', 28, 18)
+        .addInstance('obj_ground', 42, 22, -1)
+        .addInstance('obj_stone', 8, 27)
+        .addInstance('obj_stone', 4, 28)
+        .addInstance('obj_stone', 70, 22)
+        .addInstance('obj_grass', 100, 50)
+        .addInstance('obj_grass', 100, 50)
+        .addInstance('obj_font', 200, 20)
+        .addInstance('obj_carrot', 50, 50)
+        .addInstance('obj_carrot_bitten', 60, 50)
+        .addInstance('obj_carrot_bitten', 40, 80)
+        .addInstance('obj_hovel', 100, 100)
+        .addInstance('obj_hovel_occupied', 200, 100)
+        .addInstance('obj_hovel', 150, 40)
+        .addInstance('obj_bunny_occupied', 150, 40)
+        .addInstance('obj_hovel', 240, 60)
+        .addInstance('obj_pants', 64, 64)
+        .addInstance('obj_bunny_seated', 240, 60)
+        .addInstance('obj_bunny', 64, 64)
+        .build()
+    .build();
+
+export async function main() {
+    await run(() => {}, [
+        CanvasProvider,
+        EntityProvider,
+        AssetProvider,
+        InputProvider,
+        RoomSystemOptions({ AssetProvider, EntityProvider, CanvasProvider, loaders: LOADERS, defs: DEFS }),
+        RoomSystemProviders,
+        RoomSystem,
+        BunnySystem,
+    ]);
+}
+
+const MOVE_LEFT = new ButtonBinding('move.left', [KeyCodes.ARROW_LEFT, KeyCodes.KEY_A]);
+const MOVE_RIGHT = new ButtonBinding('move.right', [KeyCodes.ARROW_RIGHT, KeyCodes.KEY_D]);
+const MOVE_UP = new ButtonBinding('move.up', [KeyCodes.ARROW_UP, KeyCodes.KEY_W]);
+const MOVE_DOWN = new ButtonBinding('move.down', [KeyCodes.ARROW_DOWN, KeyCodes.KEY_S]);
+
+function BunnySystem(m) {
+    let room = useRoom(m);
+    let inputs = useContext(m, InputProvider);
+
+    useWhenSystemInit(m, 0, () => {
+        MOVE_LEFT.bindKeys(inputs);
+        MOVE_RIGHT.bindKeys(inputs);
+        MOVE_UP.bindKeys(inputs);
+        MOVE_DOWN.bindKeys(inputs);
     });
-    return inputs;
+
+    useWhenSystemUpdate(m, 0, () => {
+        for(let bunny of room.findAll('obj_bunny')) {
+            if (MOVE_LEFT.current.down) {
+                bunny.x -= 1;
+                bunny.scaleX = 1;
+            }
+            if (MOVE_RIGHT.current.down) {
+                bunny.x += 1;
+                bunny.scaleX = -1;
+            }
+            if (MOVE_DOWN.current.down) {
+                bunny.y += 1;
+            }
+            if (MOVE_UP.current.down) {
+                bunny.y -= 1;
+            }
+        }
+    });
+}
+
+export function CanvasProvider(m) {
+    let flexCanvas = FlexCanvas.create({ id: 'canvas', sizing: 'viewport' });
+    return flexCanvas;
+}
+
+export function InputProvider(m) {
+    let input = InputPort.create({ for: 'canvas' });
+    let context = input.getContext('axisbutton');
+    useWhenSystemUpdate(m, 0, (e) => {
+        context.poll(e.detail.currentTime);
+    });
+    return context;
 }
 
 export function EntityProvider(m) {
     let ents = new EntityManager();
-    useWhenSystemUpdate(m, -1, () => {
-        ents.flush();
-    });
+    useWhenSystemUpdate(m, -1, () => ents.flush());
     return ents;
 }
 
-export function AssetProvider() {
+export function AssetProvider(m) {
     return new AssetManager();
-}
-
-export function CanvasProvider() {
-    return FlexCanvas.create({ sizing: 'viewport' });
-}
-
-export function CanvasContextProvider(m) {
-    let canvas = useContext(m, CanvasProvider);
-    let context = /** @type {CanvasRenderingContext2D} */ (canvas.getContext('2d'));
-    return context;
-}
-
-export function CanvasTiaProvider() {
-    return new Tia();
 }

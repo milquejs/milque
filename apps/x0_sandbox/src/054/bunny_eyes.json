@@ -1,0 +1,20 @@
+{
+    "image": {
+        "uri": "bunny",
+        "filepath": "./bunny.png",
+        "loader": "image",
+        "opts": { "imageType": "png" }
+    },
+    "width": 64,
+    "height": 64,
+    "originX": 32,
+    "originY": 32,
+    "frameCount": 1,
+    "frames": [
+        [0, 0, 64, 64]
+    ],
+    "initial": {
+        "frameSpeed": 10,
+        "spriteIndex": 0
+    }
+}

@@ -26,13 +26,15 @@
 /**
  * @param {string} name 
  * @param {BoundingRect} boundingRect 
+ * @param {number} background
  * @param {Array<ViewDef>} views 
  * @param {Array<InstanceDef>} instances
  */
-export function createRoomDef(name, boundingRect, views, instances) {
+export function createRoomDef(name, boundingRect, background, views, instances) {
     return {
         name,
         boundingRect,
+        background,
         views,
         instances,
     };

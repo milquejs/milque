@@ -117,7 +117,7 @@ export function getProviders(m) {
 export function getCurrentProvider(m) {
     let state = getStateIfExists(m);
     if (!state) {
-        throw new Error('This is not a provider.');
+        throw new Error('This is not in a valid provider context.');
     }
     return state.current;
 }
@@ -130,7 +130,7 @@ export function getCurrentProvider(m) {
 export function setCurrentProvider(m, provider) {
     let state = getStateIfExists(m);
     if (!state) {
-        throw new Error('This is not a provider.');
+        throw new Error('This is not in a valid provider context.');
     }
     state.current = provider;
 }
@@ -138,7 +138,7 @@ export function setCurrentProvider(m, provider) {
 /**
  * @template M, T
  * @param {import('./Provider').Provider<?, T>} target 
- * @param {import('./Provider').Provider<M, T>} replacement 
+ * @param {import('./Provider').Provider<M, T>} replacement
  * @returns {import('./Provider').Provider<M, T>}
  */
 export function createOverrideProvider(target, replacement) {
@@ -147,6 +147,21 @@ export function createOverrideProvider(target, replacement) {
     };
     Object.defineProperty(override, 'name', { value: target.name });
     return override;
+}
+
+/**
+ * @template M, T
+ * @param {import('./Provider').Provider<?, T>} target 
+ * @param {(m: M, parent: T) => T} augment
+ * @returns {import('./Provider').Provider<M, T>}
+ */
+export function createAugmentProvider(target, augment) {
+    let augmentation = function(m) {
+        let parent = target(m);
+        return augment(m, parent);
+    };
+    Object.defineProperty(augmentation, 'name', { value: target.name });
+    return augmentation;
 }
 
 const KEY = Symbol('providers');

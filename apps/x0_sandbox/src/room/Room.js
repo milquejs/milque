@@ -297,9 +297,8 @@ class RoomInstance {
      */
     draw(ctx) {
         let tia = this.tia;
-        // TODO: Rooms should have background color (and images?)
-        tia.cls(ctx, 0xFFFFFF);
-        tia.matPos(64, 64);
+        let roomDef = this.room;
+        tia.cls(ctx, roomDef.background);
         // Traverse the scene graph to build world and local transforms
         SceneGraph.walk(this.sceneGraph, (node, graph) => {
             let inst = this.ents.get(node, this.componentClass);
@@ -322,7 +321,6 @@ class RoomInstance {
                 throw new Error(`Cannot use asset '${assetDef.name}' not yet loaded.`);
             }
             tia.push();
-            // Scaling doesn't quite work yet...
             tia.mat(inst.x, inst.y, inst.scaleX, inst.scaleY, inst.rotation);
             let frame = spriteDef.frames[inst.spriteIndex % spriteDef.length];
             tia.sprUV(
@@ -340,16 +338,5 @@ class RoomInstance {
                 tia.pop();
             };
         });
-
-        for(let [_, inst] of this.componentQuery.findAll(this.ents)) {
-            if (!inst.visible) {
-                // Not visible. Don't draw.
-                continue;
-            }
-            if (!inst.sprite) {
-                // No sprite. It's invisible.
-                continue;
-            }
-        }
     }
 }
