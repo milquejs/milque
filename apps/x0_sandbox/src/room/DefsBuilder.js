@@ -317,6 +317,8 @@ export class SpriteBuilder {
         this._frameSpeed = undefined;
         /** @private */
         this._frames = [];
+        /** @private */
+        this._originCentered = false;
     }
 
     /**
@@ -331,9 +333,15 @@ export class SpriteBuilder {
         return this;
     }
 
+    centered() {
+        this._originCentered = true;
+        return this;
+    }
+
     origin(x, y) {
         this._originX = x;
         this._originY = y;
+        this._originCentered = false;
         return this;
     }
 
@@ -356,7 +364,7 @@ export class SpriteBuilder {
         let dx = s - u;
         let dy = t - v;
         for (let i = 0; i < frameCount; ++i) {
-            let x = i * dx;
+            let x = (i % rowLength) * dx;
             let y = Math.floor(i / rowLength) * dy;
             this.addFrame(u + x, v + y, s + x, t + y);
         }
@@ -382,6 +390,7 @@ export class SpriteBuilder {
         if (typeof height !== 'undefined') this._height = height;
         if (typeof originX !== 'undefined') this._originX = originX;
         if (typeof originY !== 'undefined') this._originY = originY;
+        if (typeof originX !== 'undefined' || typeof originY !== 'undefined') this._originCentered = false;
         if (typeof mask !== 'undefined') this._mask = mask;
         if (typeof frameSpeed !== 'undefined') this._frameSpeed = frameSpeed;
         if (typeof frames !== 'undefined') this._frames = frames;
@@ -394,6 +403,7 @@ export class SpriteBuilder {
         this._height = undefined;
         this._originX = undefined;
         this._originY = undefined;
+        this._originCentered = false;
         this._mask = undefined;
         this._frameSpeed = undefined;
         this._frames = [];
@@ -403,8 +413,8 @@ export class SpriteBuilder {
         let image = this._image || null;
         let imageWidth = this._width || 0;
         let imageHeight = this._height || 0;
-        let originX = this._originX || 0;
-        let originY = this._originY || 0;
+        let originX = this._originX || (this._originCentered ? imageWidth / 2 : 0);
+        let originY = this._originY || (this._originCentered ? imageHeight / 2 : 0);
         let mask = this._mask || createMaskDef('aabb', createBoundingRect(0, 0, 0, 0));
         let frameSpeed = this._frameSpeed || 0;
         let frames = this._frames;

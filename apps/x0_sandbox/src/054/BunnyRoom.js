@@ -9,7 +9,8 @@ import { newDefs } from '../room/Room';
 
 import BunnyDefs from './BunnyDefs';
 import CarrotDefs from './CarrotDefs';
-import { GroundDefs, GrassDefs, StoneDefs } from './GroundDefs';
+import { GroundDefs, GrassDefs, StoneDefs, HovelDefs } from './GroundDefs';
+import FontDefs from './FontDefs';
 
 const LOADERS = {
     image: ImageLoader,
@@ -21,13 +22,29 @@ const DEFS = newDefs()
     .fromJSON(GroundDefs)
     .fromJSON(StoneDefs)
     .fromJSON(GrassDefs)
+    .fromJSON(HovelDefs)
+    .fromJSON(FontDefs)
     .room('rm_main')
         .boundingRect(0, 0, 400, 300)
+        .addInstance('obj_ground', 16, 24)
+        .addInstance('obj_ground', 28, 18)
+        .addInstance('obj_ground', 42, 22, -1)
+        .addInstance('obj_stone', 8, 27)
+        .addInstance('obj_stone', 4, 28)
+        .addInstance('obj_stone', 70, 22)
+        .addInstance('obj_grass', 100, 50)
+        .addInstance('obj_grass', 100, 50)
+        .addInstance('obj_font', 200, 20)
+        .addInstance('obj_carrot', 50, 50)
+        .addInstance('obj_carrot_bitten', 60, 50)
+        .addInstance('obj_carrot_bitten', 40, 80)
+        .addInstance('obj_hovel', 100, 100)
+        .addInstance('obj_hovel_occupied', 200, 100)
+        .addInstance('obj_hovel', 150, 40)
+        .addInstance('obj_bunny_occupied', 150, 40)
+        .addInstance('obj_hovel', 240, 60)
+        .addInstance('obj_bunny_seated', 240, 60)
         .addInstance('obj_bunny', 64, 64)
-        .addInstance('obj_ground', 64, 14)
-        .addInstance('obj_ground', 100, 14)
-        .addInstance('obj_grass', 100, 50)
-        .addInstance('obj_grass', 100, 50)
         .build()
     .build();
 

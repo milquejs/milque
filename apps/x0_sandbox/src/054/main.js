@@ -7,33 +7,10 @@ import { Random } from '@milque/random';
 import { Tia } from '../tia/Tia';
 import { useContext, useCurrentAnimationFrameDetail, useWhenSystemUpdate } from '../runner';
 
-import BunnyImage from './BunnyDefs';
-import CarrotImage from './carrot';
-import CarrotBitten1Image from './carrot_bitten_1';
-import CarrotBitten2Image from './carrot_bitten_2';
-import GroundImage from './ground';
-import StoneImage from './stone';
-import GrassImage from './grass';
-
 import { main as BunnyRoom } from './BunnyRoom';
-
-const MOVE_LEFT = new ButtonBinding('move.left', [KeyCodes.ARROW_LEFT, KeyCodes.KEY_A]);
-const MOVE_RIGHT = new ButtonBinding('move.right', [KeyCodes.ARROW_RIGHT, KeyCodes.KEY_D]);
-const MOVE_UP = new ButtonBinding('move.up', [KeyCodes.ARROW_UP, KeyCodes.KEY_W]);
-const MOVE_DOWN = new ButtonBinding('move.down', [KeyCodes.ARROW_DOWN, KeyCodes.KEY_S]);
 
 export async function main() {
     await BunnyRoom();
-    /*
-    await run(game, [
-        AssetProvider,
-        CanvasProvider,
-        CanvasContextProvider,
-        CanvasTiaProvider,
-        EntityProvider,
-        InputProvider,
-    ]);
-    */
 }
 
 const BunnyComponent = new ComponentClass('bunny', () => ({
@@ -53,19 +30,6 @@ const GrassQuery = new Query(GrassComponent);
 
 const game = {
     async preload(m) {
-        let assets = useContext(m, AssetProvider);
-        await BunnyImage.load(assets);
-        await CarrotImage.load(assets);
-        await CarrotBitten1Image.load(assets);
-        await CarrotBitten2Image.load(assets);
-        await GroundImage.load(assets);
-        await StoneImage.load(assets);
-        await GrassImage.load(assets);
-        let inputs = useContext(m, InputProvider);
-        MOVE_LEFT.bindKeys(inputs);
-        MOVE_RIGHT.bindKeys(inputs);
-        MOVE_UP.bindKeys(inputs);
-        MOVE_DOWN.bindKeys(inputs);
     },
     init(m) {
         let ents = useContext(m, EntityProvider);
@@ -81,33 +45,6 @@ const game = {
         }
     },
     update(m) {
-        let inputs = useContext(m, InputProvider);
-        let ents = useContext(m, EntityProvider);
-
-        if (MOVE_LEFT.current.down) {
-            for(let [e, bunny] of BunnyQuery.findAll(ents)) {
-                bunny.x -= 1;
-                bunny.dx = -1;
-            }
-        }
-        if (MOVE_RIGHT.current.down) {
-            for(let [e, bunny] of BunnyQuery.findAll(ents)) {
-                bunny.x += 1;
-                bunny.dx = 1;
-            }
-        }
-        if (MOVE_DOWN.current.down) {
-            for(let [e, bunny] of BunnyQuery.findAll(ents)) {
-                bunny.y += 1;
-                bunny.dy = 1;
-            }
-        }
-        if (MOVE_UP.current.down) {
-            for(let [e, bunny] of BunnyQuery.findAll(ents)) {
-                bunny.y -= 1;
-                bunny.dy = -1;
-            }
-        }
     },
     draw(m) {
         let { currentTime } = useCurrentAnimationFrameDetail(m);
@@ -129,33 +66,10 @@ const game = {
         } else if (index === 2) {
             tia.spr(ctx, CarrotBitten2Image.get(assets), Math.floor((currentTime / 100) % 3), 0, 0, 8, 32);
         }
-        tia.spr(ctx, GroundImage.get(assets), 0, -16, 8, 32, 32);
-        tia.spr(ctx, GroundImage.get(assets), 0, 12, 10, 32, 32);
-        tia.spr(ctx, GroundImage.get(assets), 0, 48, 6, 32, 32, true);
-
-        tia.spr(ctx, StoneImage.get(assets), 0, -8, 11, 8, 8);
-        tia.spr(ctx, StoneImage.get(assets), 1, -12, 12, 8, 8);
-        tia.spr(ctx, StoneImage.get(assets), 0, 54, 6, 8, 8);
 
         tia.pop();
 
         tia.spr(ctx, CarrotImage.get(assets), Math.floor((currentTime / 100) % 3), 100, 16, 8, 32);
-
-        for(let [e, grass] of GrassQuery.findAll(ents)) {
-            tia.push();
-            tia.matPos(grass.x, grass.y);
-            tia.spr(ctx, GrassImage.get(assets), grass.index, 0, 0, 16, 16);
-            tia.pop();
-        }
-
-        for(let [e, bunny] of BunnyQuery.findAll(ents)) {
-            tia.push();
-            tia.matPos(bunny.x, bunny.y);
-            let facingX = bunny.dx > 0;
-            tia.spr(ctx, BunnyImage.get(assets), Math.floor((currentTime / 100) % 3), 0, 0, 64, 64, facingX);
-            tia.spr(ctx, BunnyImage.get(assets), 3 + Math.floor((currentTime / 100) % 2), 0, 0, 64, 64, facingX);
-            tia.pop();
-        }
         
         if (index === 0) {
             tia.spr(ctx, CarrotImage.get(assets), Math.floor((currentTime / 100) % 3), 0, 0, 8, 32);
