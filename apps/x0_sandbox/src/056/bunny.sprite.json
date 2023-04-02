@@ -1,0 +1,32 @@
+{
+    "image": "bunny.png",
+    "width": 64,
+    "height": 64,
+    "originX": 32,
+    "originY": 32,
+    "frames": [
+        [
+            0,
+            0,
+            64,
+            64
+        ],
+        [
+            64,
+            0,
+            128,
+            64
+        ],
+        [
+            128,
+            0,
+            192,
+            64
+        ]
+    ],
+    "frameCount": 3,
+    "initial": {
+        "frameSpeed": 10,
+        "spriteIndex": 0
+    }
+}

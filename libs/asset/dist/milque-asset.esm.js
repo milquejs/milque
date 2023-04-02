@@ -400,7 +400,7 @@ class AssetManager {
         if (def) {
             return def;
         }
-        return null;
+        throw new Error(`Asset '${uri}' not found.`);
     }
 
     /**
@@ -724,7 +724,9 @@ async function AtlasLoader(src, opts = { onprogress: undefined }) {
     const arrayBuffer = await response.arrayBuffer();
     return AtlasLoader(arrayBuffer, opts);
   } else if (!(src instanceof ArrayBuffer || ArrayBuffer.isView(src))) {
-    throw new Error('Cannot load from source - must be an array buffer or fetchable url.');
+    throw new Error(
+      `Cannot load from source - must be an ArrayBuffer or fetchable url, but got instead: ${src}`
+    );
   }
   /** @type {ArrayBuffer} */
   const arrayBuffer = src;
@@ -896,7 +898,7 @@ async function BMFontLoader(src) {
     return BMFontLoader(arrayBuffer);
   } else if (!(src instanceof ArrayBuffer || ArrayBuffer.isView(src))) {
     throw new Error(
-      'Cannot load from source - must be ' + 'an array buffer or fetchable url'
+      `Cannot load from source - must be an ArrayBuffer or fetchable url, but got instead: ${src}`
     );
   }
   /** @type {ArrayBuffer} */
@@ -1003,7 +1005,7 @@ async function ImageLoader(src, opts = undefined) {
     return ImageLoader(arrayBuffer, { ...opts, imageType });
   } else if (!(src instanceof ArrayBuffer || ArrayBuffer.isView(src))) {
     throw new Error(
-      'Cannot load from source - must be ' + 'an array buffer or fetchable url'
+      `Cannot load from source - must be an ArrayBuffer or fetchable url, but got instead: ${src}`
     );
   }
   /** @type {ArrayBuffer} */
@@ -1044,7 +1046,7 @@ async function OBJLoader(src) {
     return OBJLoader(arrayBuffer);
   } else if (!(src instanceof ArrayBuffer || ArrayBuffer.isView(src))) {
     throw new Error(
-      'Cannot load from source - must be ' + 'an array buffer or fetchable url'
+      `Cannot load from source - must be an ArrayBuffer or fetchable url, but got instead: ${src}`
     );
   }
   /** @type {ArrayBuffer} */
@@ -1304,16 +1306,36 @@ async function AudioBufferLoader(src, opts) {
     return AudioBufferLoader(arrayBuffer, { audioContext });
   } else if (!(src instanceof ArrayBuffer || ArrayBuffer.isView(src))) {
     throw new Error(
-      'Cannot load from source - must be ' + 'an array buffer or fetchable url'
+      `Cannot load from source - must be an ArrayBuffer or fetchable url, but got instead: ${src}`
     );
   }
   /** @type {ArrayBuffer} */
   const arrayBuffer = src;
   let audioArrayBuffer = new ArrayBuffer(arrayBuffer.byteLength);
+  // @ts-ignore
   new Uint8Array(audioArrayBuffer).set(arrayBuffer);
   let audioBuffer = await audioContext.decodeAudioData(audioArrayBuffer);
   return audioBuffer;
 }
 
-export { AssetManager, AssetRef, AtlasLoader, AudioBufferLoader, BMFontLoader, GlobExp, ImageLoader, OBJLoader, TextLoader, cacheAssetPackAsRaw, loadAssetPack, preloadAssetRefs };
+/**
+ * @param {string|ArrayBuffer} src
+ * @returns {Promise<object>}
+ */
+async function JSONLoader(src) {
+    if (typeof src === 'string') {
+        const response = await fetch(src);
+        const arrayBuffer = await response.arrayBuffer();
+        return JSONLoader(arrayBuffer);
+    } else if (!(src instanceof ArrayBuffer || ArrayBuffer.isView(src))) {
+        throw new Error(
+            `Cannot load from source - must be an ArrayBuffer or fetchable url, but got instead: ${src}`
+        );
+    }
+    /** @type {ArrayBuffer} */
+    const arrayBuffer = src;
+    return JSON.parse(new TextDecoder().decode(arrayBuffer));
+}
+
+export { AssetManager, AssetRef, AtlasLoader, AudioBufferLoader, BMFontLoader, GlobExp, ImageLoader, JSONLoader, OBJLoader, TextLoader, cacheAssetPackAsRaw, loadAssetPack, preloadAssetRefs };
 //# sourceMappingURL=milque-asset.esm.js.map

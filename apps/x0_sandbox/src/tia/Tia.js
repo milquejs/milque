@@ -301,7 +301,6 @@ export class Tia {
     }
 
     /**
-     * @private
      * @param {CanvasRenderingContext2D} ctx 
      */
     matBegin(ctx) {
@@ -310,7 +309,6 @@ export class Tia {
     }
 
     /**
-     * @private
      * @param {CanvasRenderingContext2D} ctx 
      */
     matEnd(ctx) {

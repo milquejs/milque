@@ -20,7 +20,7 @@ export async function ImageLoader(src, opts = undefined) {
     return ImageLoader(arrayBuffer, { ...opts, imageType });
   } else if (!(src instanceof ArrayBuffer || ArrayBuffer.isView(src))) {
     throw new Error(
-      'Cannot load from source - must be ' + 'an array buffer or fetchable url'
+      `Cannot load from source - must be an ArrayBuffer or fetchable url, but got instead: ${src}`
     );
   }
   /** @type {ArrayBuffer} */

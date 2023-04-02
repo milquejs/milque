@@ -12,12 +12,13 @@ export async function AudioBufferLoader(src, opts) {
     return AudioBufferLoader(arrayBuffer, { audioContext });
   } else if (!(src instanceof ArrayBuffer || ArrayBuffer.isView(src))) {
     throw new Error(
-      'Cannot load from source - must be ' + 'an array buffer or fetchable url'
+      `Cannot load from source - must be an ArrayBuffer or fetchable url, but got instead: ${src}`
     );
   }
   /** @type {ArrayBuffer} */
   const arrayBuffer = src;
   let audioArrayBuffer = new ArrayBuffer(arrayBuffer.byteLength);
+  // @ts-ignore
   new Uint8Array(audioArrayBuffer).set(arrayBuffer);
   let audioBuffer = await audioContext.decodeAudioData(audioArrayBuffer);
   return audioBuffer;

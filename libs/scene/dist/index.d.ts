@@ -276,7 +276,7 @@ type WalkChildrenCallback = (childNodes: Array<SceneNode>, parentNode: SceneNode
 declare class ComponentClass<T> {
     /**
      * @param {string} name
-     * @param {() => T} newCallback
+     * @param {() => T} [newCallback]
      * @param {(component: T) => void} [deleteCallback]
      */
     constructor(name: string, newCallback?: () => T, deleteCallback?: (component: T) => void);

@@ -465,4 +465,10 @@ declare function AudioBufferLoader(src: ArrayBuffer | Uint8Array | string, opts:
     audioContext: AudioContext;
 }): Promise<AudioBuffer>;
 
-export { AssetLoader, AssetManager, AssetRef, Atlas, AtlasLoader, AtlasSpriteData, AudioBufferLoader, BMFontChar, BMFontData, BMFontKerning, BMFontLoader, GlobExp, ImageLoader, MeshData, OBJLoader, TextLoader, cacheAssetPackAsRaw, loadAssetPack, preloadAssetRefs };
+/**
+ * @param {string|ArrayBuffer} src
+ * @returns {Promise<object>}
+ */
+declare function JSONLoader(src: string | ArrayBuffer): Promise<object>;
+
+export { AssetLoader, AssetManager, AssetRef, Atlas, AtlasLoader, AtlasSpriteData, AudioBufferLoader, BMFontChar, BMFontData, BMFontKerning, BMFontLoader, GlobExp, ImageLoader, JSONLoader, MeshData, OBJLoader, TextLoader, cacheAssetPackAsRaw, loadAssetPack, preloadAssetRefs };

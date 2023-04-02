@@ -224,13 +224,13 @@ export const SpriteProviders = {
     },
 };
 
-const SpriteComponent = new ComponentClass('sprite', () => ({
+export const SpriteComponent = new ComponentClass('sprite', () => ({
     spriteName: null,
     spriteIndex: 0,
     frameSpeed: 0,
     frameDelta: 0,
 }));
-const SpriteQuery = new Query(SpriteComponent);
+export const SpriteQuery = new Query(SpriteComponent);
 
 /**
  * @param {SpriteImageManager} imageManager 

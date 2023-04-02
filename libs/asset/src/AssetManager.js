@@ -34,7 +34,7 @@ export class AssetManager {
         if (def) {
             return def;
         }
-        return null;
+        throw new Error(`Asset '${uri}' not found.`);
     }
 
     /**

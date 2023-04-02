@@ -4,7 +4,7 @@
 export class ComponentClass {
     /**
      * @param {string} name 
-     * @param {() => T} newCallback
+     * @param {() => T} [newCallback]
      * @param {(component: T) => void} [deleteCallback] 
      */
     constructor(name, newCallback = () => null, deleteCallback = () => {}) {

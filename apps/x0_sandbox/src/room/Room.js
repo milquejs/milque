@@ -155,7 +155,6 @@ class RoomInstance {
         this.defs = defs;
 
         this.sceneGraph = SceneGraph.create();
-
         this.tia = new Tia();
 
         this.componentClass = new ComponentClass(`${roomName}:instance`, () => new ObjectInstance(this));
@@ -163,6 +162,9 @@ class RoomInstance {
 
         /** @type {Record<string, { component: ComponentClass<?>, query: Query<?> }>} */
         this.objectComponentClasses = {};
+
+        this.prevViewIndex = -1;
+        this.viewIndex = 0;
     }
 
     get room() {
@@ -265,9 +267,6 @@ class RoomInstance {
             const { x = 0, y = 0, scaleX = 1, scaleY = 1, rotation = 0 } = instance.transform;
             this.instantiate(instance.object, x, y, scaleX, scaleY, rotation);
         }
-        for(let view of def.views) {
-            // TODO: Add views :)
-        }
     }
 
     /**
@@ -298,7 +297,12 @@ class RoomInstance {
     draw(ctx) {
         let tia = this.tia;
         let roomDef = this.room;
+        let currentView = this.room.views[this.viewIndex];
+        ctx.canvas.width = currentView.width;
+        ctx.canvas.height = currentView.height;
         tia.cls(ctx, roomDef.background);
+        tia.camera(currentView.offsetX, currentView.offsetY, currentView.width, currentView.height);
+
         // Traverse the scene graph to build world and local transforms
         SceneGraph.walk(this.sceneGraph, (node, graph) => {
             let inst = this.ents.get(node, this.componentClass);
