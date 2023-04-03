@@ -1,4 +1,4 @@
-import { AssetManager, AssetRef, ImageLoader } from '@milque/asset';
+import { AssetRef, ImageLoader } from '@milque/asset';
 
 import { ObjectDef } from '../room2/object';
 import { SpriteDef, SpriteDefLoader } from '../room2/sprite';
@@ -27,26 +27,3 @@ export const objBunny              = new AssetRef('obj_bunny', async () => Objec
 export const objBunnyOccupied      = new AssetRef('obj_bunny_occupied', async () => ObjectDef.fromJSON({ sprite: spBunnyOccupied.uri }));
 export const objBunnySeatedEyes    = new AssetRef('obj_bunny_seated_eyes', async () => ObjectDef.fromJSON({ sprite: spBunnySeatedEyes.uri }));
 export const objBunnySeated        = new AssetRef('obj_bunny_seated', async () => ObjectDef.fromJSON({ sprite: spBunnySeated.uri, children: [objBunnySeatedEyes.uri] }));
-
-const REFS = [
-    imgBunny,
-    imgBunnyOccupied,
-    imgBunnySeated,
-    spBunny,
-    spBunnyEyes,
-    spBunnyOccupied,
-    spBunnySeated,
-    spBunnySeatedEyes,
-    objBunnyEyes,
-    objBunny,
-    objBunnyOccupied,
-    objBunnySeatedEyes,
-    objBunnySeated,
-];
-
-/**
- * @param {AssetManager} assets 
- */
-export async function loadBunnyAssets(assets) {
-    await Promise.all(REFS.map(ref => ref.load(assets)));
-}

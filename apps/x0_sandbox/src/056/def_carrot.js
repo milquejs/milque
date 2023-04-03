@@ -1,4 +1,4 @@
-import { AssetManager, AssetRef, ImageLoader } from '@milque/asset';
+import { AssetRef, ImageLoader } from '@milque/asset';
 
 import { ObjectDef } from '../room2/object';
 import { SpriteDef } from '../room2/sprite';
@@ -21,22 +21,3 @@ export const spCarrotBitten2     = new AssetRef('sp_carrot_bitten_2', async () =
 export const objCarrot           = new AssetRef('obj_carrot', async () => ObjectDef.create(spCarrot.uri));
 export const objCarrotBitten1    = new AssetRef('obj_carrot_bitten_1', async () => ObjectDef.create(spCarrotBitten1.uri));
 export const objCarrotBitten2    = new AssetRef('obj_carrot_bitten_2', async () => ObjectDef.create(spCarrotBitten2.uri));
-
-const REFS = [
-    imgCarrot,
-    imgCarrotBitten1,
-    imgCarrotBitten2,
-    spCarrot,
-    spCarrotBitten1,
-    spCarrotBitten2,
-    objCarrot,
-    objCarrotBitten1,
-    objCarrotBitten2,
-];
-
-/**
- * @param {AssetManager} assets 
- */
-export async function loadCarrotAssets(assets) {
-    await Promise.all(REFS.map(ref => ref.load(assets)));
-}

@@ -1,4 +1,4 @@
-import { AssetManager, AssetRef, ImageLoader } from '@milque/asset';
+import { AssetRef, ImageLoader } from '@milque/asset';
 
 import { ObjectDef } from '../room2/object';
 import { SpriteDef } from '../room2/sprite';
@@ -31,28 +31,3 @@ export const objGrass            = new AssetRef('obj_grass', async () => ObjectD
 export const objStone            = new AssetRef('obj_stone', async () => ObjectDef.create(spStone.uri));
 export const objHovel            = new AssetRef('obj_hovel', async () => ObjectDef.create(spHovel.uri));
 export const objHovelOccupied    = new AssetRef('obj_hovel_occupied', async () => ObjectDef.create(spHovelOccupied.uri));
-
-const REFS = [
-    imgGround,
-    imgGrass,
-    imgStone,
-    imgHovel,
-    imgHovelOccupied,
-    spGround,
-    spGrass,
-    spStone,
-    spHovel,
-    spHovelOccupied,
-    objGround,
-    objGrass,
-    objStone,
-    objHovel,
-    objHovelOccupied,
-];
-
-/**
- * @param {AssetManager} assets 
- */
-export async function loadGroundAssets(assets) {
-    await Promise.all(REFS.map(ref => ref.load(assets)));
-}

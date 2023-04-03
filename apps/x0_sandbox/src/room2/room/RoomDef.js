@@ -177,6 +177,16 @@ export function getObjectTag(room, objectName) {
  */
 export function* findAllByObject(ents, room, objectName) {
     for(let result of room.objectQueries[objectName].query.findAll(ents)) {
-        yield /** @type {[import('@milque/scene').EntityId, import('../object/ObjectDef').ObjectInstance, import('../sprite/SpriteDef').SpriteInstance]} */ (result);
+        yield /** @type {[import('@milque/scene').EntityId, import('../object/ObjectDef').ObjectInstance]} */ (result);
     }
+}
+
+/**
+ * @param {EntityManager} ents
+ * @param {RoomInstance} room 
+ * @param {string} objectName 
+ */
+export function findAnyByObject(ents, room, objectName) {
+    let result = room.objectQueries[objectName].query.findAny(ents);
+    return /** @type {[import('@milque/scene').EntityId, import('../object/ObjectDef').ObjectInstance]} */ (result);
 }

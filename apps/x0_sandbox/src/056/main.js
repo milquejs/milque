@@ -1,16 +1,19 @@
 import { ButtonBinding, KeyCodes } from '@milque/input';
-import { getSpriteDef } from '../room2/Defs';
+import { AssetRef } from '@milque/asset';
+import { lerp } from '@milque/util';
+
+import { getObjectDef, getSpriteDef } from '../room2/Defs';
 import { ObjectDef } from '../room2/object';
 import { RoomDef } from '../room2/room';
 import { SpriteDef } from '../room2/sprite';
 import { run, useContext, useCurrentAnimationFrameDetail } from '../runner';
-import { AssetProvider, DEPS, EntityProvider, InputProvider, RenderingProvider, SceneGraphProvider } from './Providers';
+import { AssetProvider, CanvasProvider, DEPS, EntityProvider, InputProvider, RenderingProvider, SceneGraphProvider } from './Providers';
 
-import { loadBunnyAssets } from './BunnyDefs';
-import { loadCarrotAssets } from './CarrotDefs';
-import { loadGroundAssets } from './GroundDefs';
-import { loadPantsAssets } from './PantsDef';
-import { loadFontAssets } from './FontDefs';
+import * as defBunny from './def_bunny';
+import * as defCarrot from './def_carrot';
+import * as defFont from './def_font';
+import * as defGround from './def_ground';
+import * as defPants from './def_pants';
 
 export async function main() {
     await run(Game, [
@@ -67,14 +70,20 @@ function Bunny(m) {
 }
 */
 
+let objCamera = new AssetRef('obj_camera', async () => ObjectDef.create(null));
+
 const Game = {
     async preload(m) {
         let assets = useContext(m, AssetProvider);
-        await loadBunnyAssets(assets);
-        await loadCarrotAssets(assets);
-        await loadGroundAssets(assets);
-        await loadFontAssets(assets);
-        await loadPantsAssets(assets);
+        await Promise.all([
+            ...Object.values(defBunny),
+            ...Object.values(defCarrot),
+            ...Object.values(defFont),
+            ...Object.values(defGround),
+            ...Object.values(defPants),
+            objCamera,
+        ].map(ref => ref.load(assets)));
+
         let axb = useContext(m, InputProvider);
         for(let input of INPUTS) {
             input.bindKeys(axb);
@@ -108,9 +117,11 @@ const Game = {
         spawn('obj_hovel', 150, 40);
         spawn('obj_bunny_occupied', 150, 40);
         spawn('obj_hovel', 240, 60);
-        // spawn('obj_pants', 64, 64);
+        spawn('obj_pants', -64, -64);
         spawn('obj_bunny_seated', 240, 60);
         spawn('obj_bunny', 64, 64);
+
+        spawn('obj_camera', 0, 0);
         // Fire create event.
     },
     update(m) {
@@ -124,6 +135,7 @@ const Game = {
             // Fire update event.
         }
 
+        // Update bunny
         let room = useRoom(m);
         let axb = useContext(m, InputProvider);
         let dt = deltaTime / 60;
@@ -137,24 +149,37 @@ const Game = {
                 bunny.scaleX = -Math.sign(dx);
             }
         }
+
+        // Update camera
+        let [_, bunny] = RoomDef.findAnyByObject(ents, room, 'obj_bunny');
+        let cameraSpeed = 0.03;
+        for(let [_, camera] of RoomDef.findAllByObject(ents, room, 'obj_camera')) {
+            camera.x = lerp(camera.x, bunny.x, cameraSpeed);
+            camera.y = lerp(camera.y, bunny.y, cameraSpeed);
+        }
     },
     draw(m) {
         let ents = useContext(m, EntityProvider);
         let sceneGraph = useContext(m, SceneGraphProvider);
         let { ctx, tia } = useContext(m, RenderingProvider);
         let assets = useContext(m, AssetProvider);
+        let canvas = useContext(m, CanvasProvider);
         let room = useRoom(m);
 
         tia.cls(ctx, room.background);
+        for(let [_, camera] of RoomDef.findAllByObject(ents, room, 'obj_camera')) {
+            tia.camera(camera.x - canvas.width / 2, camera.y - canvas.height / 2);
+        }
         ObjectDef.walkSceneGraph(ents, sceneGraph, (instance) => {
-            if (!instance) {
-                return;
-            }
             if (!instance.visible) {
                 return;
             }
+            let objectDef = getObjectDef(assets, instance.objectName);
+            if (!objectDef.sprite) {
+                return;
+            }
+            let spriteDef = getSpriteDef(assets, objectDef.sprite);
             let sprite = SpriteDef.getInstance(ents, instance.objectId);
-            let spriteDef = getSpriteDef(assets, sprite.spriteName);
             let image = assets.get(spriteDef.image);
             tia.mat(instance.x, instance.y, instance.scaleX, instance.scaleY, instance.rotation);
             tia.push();

@@ -224,7 +224,7 @@ export class Tia {
      * @param {number} y 
      */
     camera(x, y, w, h) {
-        mat4.fromTranslation(this.viewMatrix, vec3.fromValues(x, y, 0));
+        mat4.fromTranslation(this.viewMatrix, vec3.fromValues(-x, -y, 0));
         this.matUpdate();
     }
 
@@ -322,7 +322,6 @@ export class Tia {
     matUpdate() {
         // TODO: This doesn't apply sub transformations right...
         let out = mat4.create();
-        mat4.mul(out, this.projectionMatrix, this.viewMatrix);
         let length = this.transformStack.length;
         for(let i = length - 1; i >= 0; --i) {
             let transform = this.transformStack[i];
@@ -330,6 +329,8 @@ export class Tia {
         }
         mat4.fromRotationTranslationScale(this.transformMatrix, this.rotation, this.position, this.scaling);
         mat4.mul(out, out, this.transformMatrix);
+        mat4.mul(out, this.viewMatrix, out);
+        mat4.mul(out, this.projectionMatrix, out);
         this.worldDOMMatrix.a = out[0]; // m11
         this.worldDOMMatrix.b = out[1]; // m12
         this.worldDOMMatrix.c = out[4]; // m21
