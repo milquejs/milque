@@ -1,10 +1,16 @@
-import { AssetRef, ImageLoader } from '@milque/asset';
+import { ButtonBinding, KeyCodes } from '@milque/input';
 import { getSpriteDef } from '../room2/Defs';
 import { ObjectDef } from '../room2/object';
 import { RoomDef } from '../room2/room';
-import { SpriteDef, SpriteDefLoader } from '../room2/sprite';
+import { SpriteDef } from '../room2/sprite';
 import { run, useContext, useCurrentAnimationFrameDetail } from '../runner';
 import { AssetProvider, DEPS, EntityProvider, InputProvider, RenderingProvider, SceneGraphProvider } from './Providers';
+
+import { loadBunnyAssets } from './BunnyDefs';
+import { loadCarrotAssets } from './CarrotDefs';
+import { loadGroundAssets } from './GroundDefs';
+import { loadPantsAssets } from './PantsDef';
+import { loadFontAssets } from './FontDefs';
 
 export async function main() {
     await run(Game, [
@@ -12,27 +18,6 @@ export async function main() {
         RoomProvider,
     ]);
 }
-
-//@ts-ignore
-import BUNNY_IMAGE_PATH from '../054/bunny.png';
-//@ts-ignore
-import BUNNY_SPRITE_PATH from '../056/bunny.sprite.json';
-import { Query } from '@milque/scene';
-import { ButtonBinding, KeyCodes } from '@milque/input';
-
-const BunnyImage            = new AssetRef('bunny.png', ImageLoader, undefined, BUNNY_IMAGE_PATH);
-const BunnySpriteDef        = new AssetRef('sp_bunny', SpriteDefLoader, undefined, BUNNY_SPRITE_PATH);
-const BunnyEyesSpriteDef    = new AssetRef('sp_bunny_eyes', async () => SpriteDef.fromSpriteSheet('bunny.png', 64, 64, 0, 0, 5, 1, 3, 5));
-const BunnyObjectDef        = new AssetRef('obj_bunny', async () => ObjectDef.fromJSON({ sprite: 'sp_bunny', children: ['obj_bunny_eyes'] }));
-const BunnyEyesObjectDef    = new AssetRef('obj_bunny_eyes', async () => ObjectDef.fromJSON({ sprite: 'sp_bunny_eyes' }));
-const ASSETS = [
-    BunnyImage,
-    BunnySpriteDef,
-    BunnyEyesSpriteDef,
-    BunnyObjectDef,
-    BunnyEyesObjectDef,
-];
-
 
 const MoveLeft = new ButtonBinding('move.left',
     [KeyCodes.ARROW_LEFT, KeyCodes.KEY_A]);
@@ -60,6 +45,7 @@ function RoomProvider(m) {
     return RoomDef.newInstance(ents, sceneGraph, assets, RoomDef.fromJSON({ initial: { background: 0xFFFFFF }}), 'rm_main');
 }
 
+/*
 function Bunny(m) {
     let def = useObjectDef(m, 'obj_bunny');
     let s = null;
@@ -79,13 +65,16 @@ function Bunny(m) {
 
     });
 }
+*/
 
 const Game = {
     async preload(m) {
         let assets = useContext(m, AssetProvider);
-        for(let asset of ASSETS) {
-            await asset.load(assets);
-        }
+        await loadBunnyAssets(assets);
+        await loadCarrotAssets(assets);
+        await loadGroundAssets(assets);
+        await loadFontAssets(assets);
+        await loadPantsAssets(assets);
         let axb = useContext(m, InputProvider);
         for(let input of INPUTS) {
             input.bindKeys(axb);
@@ -96,7 +85,33 @@ const Game = {
         let sceneGraph = useContext(m, SceneGraphProvider);
         let assets = useContext(m, AssetProvider);
         let room = useRoom(m);
-        RoomDef.spawn(ents, sceneGraph, assets, room, 'obj_bunny', 64, 64);
+
+        function spawn(objectName, x, y) {
+            RoomDef.spawn(ents, sceneGraph, assets, room, objectName, x, y);
+        }
+        
+        spawn('obj_bunny', 64, 64);
+        spawn('obj_ground', 16, 24);
+        spawn('obj_ground', 28, 18);
+        spawn('obj_ground', 42, 22);
+        spawn('obj_stone', 8, 27);
+        spawn('obj_stone', 4, 28);
+        spawn('obj_stone', 70, 22);
+        spawn('obj_grass', 100, 50);
+        spawn('obj_grass', 100, 50);
+        spawn('obj_font', 200, 20);
+        spawn('obj_carrot', 50, 50);
+        spawn('obj_carrot_bitten_1', 60, 50);
+        spawn('obj_carrot_bitten_2', 40, 80);
+        spawn('obj_hovel', 100, 100);
+        spawn('obj_hovel_occupied', 200, 100);
+        spawn('obj_hovel', 150, 40);
+        spawn('obj_bunny_occupied', 150, 40);
+        spawn('obj_hovel', 240, 60);
+        // spawn('obj_pants', 64, 64);
+        spawn('obj_bunny_seated', 240, 60);
+        spawn('obj_bunny', 64, 64);
+        // Fire create event.
     },
     update(m) {
         let ents = useContext(m, EntityProvider);
@@ -106,15 +121,18 @@ const Game = {
         for(let [_, sprite] of SpriteDef.SpriteQuery.findAll(ents)) {
             let spriteDef = getSpriteDef(assets, sprite.spriteName);
             SpriteDef.updateInstance(deltaTime, sprite, spriteDef);
+            // Fire update event.
         }
 
         let room = useRoom(m);
         let axb = useContext(m, InputProvider);
+        let dt = deltaTime / 60;
+        let speed = 8;
         let dx = MoveRight.get(axb).value - MoveLeft.get(axb).value;
         let dy = MoveDown.get(axb).value - MoveUp.get(axb).value;
         for(let [_, bunny] of RoomDef.findAllByObject(ents, room, 'obj_bunny')) {
-            bunny.x += dx;
-            bunny.y += dy;
+            bunny.x += dx * speed * dt;
+            bunny.y += dy * speed * dt;
             if (dx !== 0) {
                 bunny.scaleX = -Math.sign(dx);
             }
@@ -125,8 +143,9 @@ const Game = {
         let sceneGraph = useContext(m, SceneGraphProvider);
         let { ctx, tia } = useContext(m, RenderingProvider);
         let assets = useContext(m, AssetProvider);
+        let room = useRoom(m);
 
-        tia.cls(ctx, 0xFFFFFF);
+        tia.cls(ctx, room.background);
         ObjectDef.walkSceneGraph(ents, sceneGraph, (instance) => {
             if (!instance) {
                 return;
@@ -142,6 +161,7 @@ const Game = {
             tia.matBegin(ctx);
             SpriteDef.drawInstance(ctx, sprite, spriteDef, image);
             tia.matEnd(ctx);
+            // Fire draw event.
             return () => {
                 tia.pop();
             };

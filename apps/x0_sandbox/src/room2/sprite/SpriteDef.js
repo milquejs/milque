@@ -14,7 +14,7 @@ import { ComponentClass, EntityManager, Query } from '@milque/scene';
  * @param {number} height
  * @param {Array<SpriteFrame>} frames
  */
-export function create(image, width, height, frames = [[0, 0, width, height]]) {
+export function create(image, width, height, frames = [[0, 0, width, height]], frameSpeed = frames.length > 0 ? 1 : 0) {
     return {
         image,
         width,
@@ -24,7 +24,7 @@ export function create(image, width, height, frames = [[0, 0, width, height]]) {
         frames,
         frameCount: frames.length,
         initial: {
-            frameSpeed: frames.length > 0 ? 1 : 0,
+            frameSpeed,
             spriteIndex: 0,
         },
     };
@@ -68,7 +68,7 @@ export function fromJSON(json) {
  * @param {number} [fromIndex]
  * @param {number} [toIndex]
  */
-export function fromSpriteSheet(image, width, height, offsetX, offsetY, cols, rows, fromIndex = 0, toIndex = cols * rows) {
+export function fromSpriteSheet(image, width, height, offsetX, offsetY, cols, rows, fromIndex = 0, toIndex = cols * rows, frameSpeed = undefined) {
     let frames = [];
     for (let i = fromIndex; i < toIndex; ++i) {
         let x = (i % cols) * width;
@@ -77,7 +77,7 @@ export function fromSpriteSheet(image, width, height, offsetX, offsetY, cols, ro
         let frame = [offsetX + x, offsetY + y, offsetX + width + x, offsetY + height + y];
         frames.push(frame);
     }
-    return create(image, width, height, frames);
+    return create(image, width, height, frames, frameSpeed);
 }
 
 export const SpriteComponent = new ComponentClass('sprite', () => createSpriteInstance(null, 0, 0, 0));

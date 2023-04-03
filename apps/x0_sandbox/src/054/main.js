@@ -82,21 +82,23 @@ function BunnySystem(m) {
         MOVE_DOWN.bindKeys(inputs);
     });
 
-    useWhenSystemUpdate(m, 0, () => {
+    useWhenSystemUpdate(m, 0, ({ detail: { deltaTime }}) => {
+        let dt = deltaTime / 60;
+        let speed = 8;
         for(let bunny of room.findAll('obj_bunny')) {
             if (MOVE_LEFT.current.down) {
-                bunny.x -= 1;
+                bunny.x -= speed * dt;
                 bunny.scaleX = 1;
             }
             if (MOVE_RIGHT.current.down) {
-                bunny.x += 1;
+                bunny.x += speed * dt;
                 bunny.scaleX = -1;
             }
             if (MOVE_DOWN.current.down) {
-                bunny.y += 1;
+                bunny.y += speed * dt;
             }
             if (MOVE_UP.current.down) {
-                bunny.y -= 1;
+                bunny.y -= speed * dt;
             }
         }
     });

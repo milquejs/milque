@@ -334,7 +334,7 @@ export class Tia {
         this.worldDOMMatrix.b = out[1]; // m12
         this.worldDOMMatrix.c = out[4]; // m21
         this.worldDOMMatrix.d = out[5]; // m22
-        this.worldDOMMatrix.e = out[12]; // m41
-        this.worldDOMMatrix.f = out[13]; // m42
+        this.worldDOMMatrix.e = Math.round(out[12]); // m41
+        this.worldDOMMatrix.f = Math.round(out[13]); // m42
     }
 }

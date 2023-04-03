@@ -13,7 +13,8 @@ function createBuildOpts(production = true) {
         sourcemap: production,
         outdir,
         loader: {
-            '.png': 'file'
+            '.png': 'file',
+            '.json': 'file',
         },
         define: {
             'window.IS_PRODUCTION': String(Boolean(production)),
