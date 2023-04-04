@@ -16,13 +16,16 @@ import * as defFont from './def_font';
 import * as defGround from './def_ground';
 import * as defPants from './def_pants';
 import { AsyncTopic, Topic } from '@milque/scene';
+import { ObjectTopicRegistry, TitleSystem } from './obj_title';
 
 export async function main() {
     await run(Game, [
         ...DEPS,
         RoomProvider,
+        ObjectTopicRegistry,
         CameraSystem,
         BunnySystem,
+        TitleSystem,
     ]);
 }
 
@@ -52,18 +55,15 @@ function Bunny(m) {
 
 export const Preload = new AsyncTopic('game.preload');
 export const Init = new Topic('game.init');
+export const PostInit = new Topic('game.postinit');
 
 /** @type {Topic<import('@milque/scene').AnimationFrameDetail>} */
 export const PreUpdate = new Topic('game.preupdate');
-/** @type {Topic<import('@milque/scene').AnimationFrameDetail>} */
-export const Update = new Topic('game.update');
 /** @type {Topic<import('@milque/scene').AnimationFrameDetail>} */
 export const PostUpdate = new Topic('game.postupdate');
 
 /** @type {Topic<import('@milque/scene').AnimationFrameDetail>} */
 export const PreDraw = new Topic('tia.predraw');
-/** @type {Topic<import('@milque/scene').AnimationFrameDetail>} */
-export const Draw = new Topic('tia.draw');
 /** @type {Topic<import('@milque/scene').AnimationFrameDetail>} */
 export const PostDraw = new Topic('tia.postdraw');
 
@@ -80,6 +80,7 @@ const Game = {
         await Preload.dispatchImmediately(topics);
     },
     init(m) {
+        let ents = useContext(m, EntityProvider);
         let topics = useCurrentTopics(m);
         let spawn = useSpawner(m);
         
@@ -114,6 +115,8 @@ const Game = {
         spawn('obj_bunny_seated', 240, 60);
 
         Init.dispatchImmediately(topics);
+        ents.flush();
+        PostInit.dispatchImmediately(topics);
         // Fire create event.
     },
     update(m) {
@@ -121,16 +124,21 @@ const Game = {
         let assets = useContext(m, AssetProvider);
         let frameDetail = useCurrentAnimationFrameDetail(m);
         let topics = useCurrentTopics(m);
+        let objectTopicRegistry = useContext(m, ObjectTopicRegistry);
 
         PreUpdate.dispatchImmediately(topics, frameDetail);
         for(let [_, sprite] of SpriteDef.SpriteQuery.findAll(ents)) {
             let spriteDef = getSpriteDef(assets, sprite.spriteName);
             SpriteDef.updateInstance(frameDetail.deltaTime, sprite, spriteDef);
         }
-        for(let [_, object] of ObjectDef.ObjectQuery.findAll(ents)) {
-            updateObject(object);
+        for(let [_, instance] of ObjectDef.ObjectQuery.findAll(ents)) {
+            if (objectTopicRegistry.has(instance.objectName)) {
+                let { update } = objectTopicRegistry.get(instance.objectName);
+                for(let topic of update) {
+                    topic.dispatchImmediately(topics, instance);
+                }
+            }
         }
-        Update.dispatchImmediately(topics, frameDetail);
         PostUpdate.dispatchImmediately(topics, frameDetail);
     },
     draw(m) {
@@ -141,6 +149,7 @@ const Game = {
         let frameDetail = useCurrentAnimationFrameDetail(m);
         let topics = useCurrentTopics(m);
         let room = useContext(m, RoomProvider);
+        let objectTopicRegistry = useContext(m, ObjectTopicRegistry);
 
         tia.cls(ctx, room.background);
         PreDraw.dispatchImmediately(topics, frameDetail);
@@ -158,11 +167,16 @@ const Game = {
             let image = assets.get(spriteDef.image);
             tia.mat(instance.x, instance.y, instance.scaleX, instance.scaleY, instance.rotation);
             tia.push();
-            tia.matBegin(ctx);
-            SpriteDef.drawInstance(ctx, sprite, spriteDef, image);
-            tia.matEnd(ctx);
-            // Draw
-            Draw.dispatchImmediately(topics, frameDetail);
+            if (objectTopicRegistry.has(instance.objectName)) {
+                let { draw } = objectTopicRegistry.get(instance.objectName);
+                for(let topic of draw) {
+                    topic.dispatchImmediately(topics, instance);
+                }
+            } else {
+                tia.matBegin(ctx);
+                SpriteDef.drawInstance(ctx, sprite, spriteDef, image);
+                tia.matEnd(ctx);
+            }
             return () => {
                 tia.pop();
             };
@@ -171,12 +185,3 @@ const Game = {
         PostDraw.dispatchImmediately(topics, frameDetail);
     }
 };
-
-function updateObject(object) {
-    // let topic = getUpdateTopicForObject(object);
-    // topic.dispatchImmediately(topics, object);
-}
-
-function drawObject(ctx) {
-
-}

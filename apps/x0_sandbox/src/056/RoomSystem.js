@@ -15,7 +15,7 @@ export function useSpawner(m) {
     let assets = useContext(m, AssetProvider);
     let room = useContext(m, RoomProvider);
     return function spawn(objectName, x, y) {
-        RoomDef.spawn(ents, sceneGraph, assets, room, objectName, x, y);
+        return RoomDef.spawn(ents, sceneGraph, assets, room, objectName, x, y);
     };
 }
 

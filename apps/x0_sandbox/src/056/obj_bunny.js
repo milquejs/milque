@@ -5,7 +5,7 @@ import { AssetProvider, EntityProvider, InputProvider, SceneGraphProvider } from
 import { RoomDef } from '../room2/room';
 import { ObjectDef } from '../room2/object';
 import { RoomProvider, useSpawner } from './RoomSystem';
-import { Init, Preload, Update } from './main';
+import { Init, PostUpdate, Preload } from './main';
 
 import * as defBunny from './def_bunny';
 import { ButtonBinding, KeyCodes } from '@milque/input';
@@ -41,7 +41,7 @@ export function BunnySystem(m) {
         spawn('obj_bunny', 64, 64);
     });
 
-    useWhen(m, Update, 0, (frameDetail) => {
+    useWhen(m, PostUpdate, 0, (frameDetail) => {
         let dt = frameDetail.deltaTime / 60;
         let speed = 8;
         let dx = MoveRight.get(axb).value - MoveLeft.get(axb).value;
