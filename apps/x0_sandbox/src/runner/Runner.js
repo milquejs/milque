@@ -1,15 +1,12 @@
-import { AnimationFrameLoop, Topic, TopicManager } from '@milque/scene';
+import { AsyncTopic, AnimationFrameLoop, Topic, TopicManager } from '@milque/scene';
 
 import { injectProviders, ejectProviders, getProviderState, getCurrentProvider, setCurrentProvider, createOverrideProvider, hasProviderState, createAugmentProvider } from './Provider';
 import { applyEffects, revertEffects, registerAfterEffect, registerEffect } from './Effect';
 import { getRunConfiguration, setRunConfiguration } from './RunConfiguration';
 
-const SystemPreload = new Topic('system.preload');
-
-/** @type {Topic<null>} */
+const SystemPreload = new AsyncTopic('system.preload');
 const SystemInit = new Topic('system.init');
-/** @type {Topic<null>} */
-const SystemDead = new Topic('system.dead');
+const SystemDead = new AsyncTopic('system.dead');
 /**
  * @type {Topic<AnimationFrameLoop>}
  */
@@ -77,13 +74,13 @@ function __RUNNER__(m) {
     });
 
     registerEffect(m, async () => {
-        await SystemPreload.dispatchImmediatelyAndWait(topics, null);
+        await SystemPreload.dispatchImmediately(topics, null);
         SystemInit.dispatchImmediately(topics, null);
         setCurrentProvider(m, __RUNNER__);
         if (runner.main) await runner.main(m);
         setCurrentProvider(m, null);
         return async () => {
-            await SystemDead.dispatchImmediatelyAndWait(topics, null);
+            await SystemDead.dispatchImmediately(topics, null);
         };
     });
 
@@ -180,6 +177,21 @@ export function useWhen(m, topic, priority, callback) {
 }
 
 /**
+ * @template M, T
+ * @param {M} m 
+ * @param {AsyncTopic<T>} asyncTopic 
+ * @param {number} priority 
+ * @param {import('@milque/scene').AsyncTopicCallback<T>} asyncCallback
+ */
+export function useWhenAsync(m, asyncTopic, priority, asyncCallback) {
+    const { topics } = useCurrentRunner(m);
+    asyncTopic.on(topics, priority, asyncCallback);
+    registerAfterEffect(m, () => {
+        asyncTopic.off(topics, asyncCallback);
+    });
+}
+
+/**
  * @template M
  * @param {M} m
  * @param {number} priority
@@ -189,7 +201,7 @@ export function useWhenSystemPreload(m, priority, callback) {
     if (getCurrentProvider(m) === __RUNNER__) {
         throw new Error('Cannot use system topics from runner - use preload() instead.');
     }
-    return useWhen(m, SystemPreload, priority, /** @type {?} */ (callback));
+    return useWhenAsync(m, SystemPreload, priority, /** @type {?} */ (callback));
 }
 
 /**
@@ -209,13 +221,13 @@ export function useWhenSystemInit(m, priority, callback) {
  * @template M
  * @param {M} m
  * @param {number} priority
- * @param {import('@milque/scene').TopicCallback<null>} callback
+ * @param {import('@milque/scene').AsyncTopicCallback<null>} callback
  */
 export function useWhenSystemDead(m, priority, callback) {
     if (getCurrentProvider(m) === __RUNNER__) {
         throw new Error('Cannot use system topics from runner - use dead() instead.');
     }
-    return useWhen(m, SystemDead, priority, callback);
+    return useWhenAsync(m, SystemDead, priority, callback);
 }
 
 /**
@@ -264,3 +276,7 @@ export const useEffect = registerEffect;
 export const useAfterEffect = registerAfterEffect;
 export const Override = createOverrideProvider;
 export const Augment = createAugmentProvider;
+export function useCurrentTopics(m) {
+    const { topics } = useCurrentRunner(m);
+    return topics;
+}

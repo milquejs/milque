@@ -1365,14 +1365,6 @@ class Topic {
 
     /**
      * @param {TopicManager} topicManager
-     * @param {T} attachment
-     */
-    async dispatchImmediatelyAndWait(topicManager, attachment) {
-        await topicManager.dispatchImmediatelyAndWait(this, attachment);
-    }
-
-    /**
-     * @param {TopicManager} topicManager
      * @param {number} priority
      * @param {TopicCallback<T>} callback
      */
@@ -1709,7 +1701,86 @@ class TopicManager {
     }
 }
 
-/** @typedef {(frameDetail: AnimationFrameLoop) => void} AnimationFrameLoopCallback */
+/** @typedef {import('./TopicManager').TopicManager} TopicManager */
+
+/**
+ * @template T
+ * @typedef {(attachment: T) => Promise<void>} AsyncTopicCallback<T>
+ */
+
+/** @template T */
+class AsyncTopic extends Topic {
+
+    /**
+     * @param {string} name 
+     */
+    constructor(name) {
+        super(name);
+    }
+
+    /**
+     * @override
+     * @param {TopicManager} topicManager
+     * @param {T} attachment
+     */
+    async dispatch(topicManager, attachment) {
+        throw new Error('Not yet implemented');
+    }
+
+    /**
+     * @override
+     * @param {TopicManager} topicManager
+     * @param {T} attachment
+     */
+    async dispatchImmediately(topicManager, attachment) {
+        // @ts-ignore
+        await topicManager.dispatchImmediatelyAndWait(this, attachment);
+    }
+
+    /**
+     * @override
+     * @param {TopicManager} topicManager
+     * @param {number} priority
+     * @param {AsyncTopicCallback<T>} callback
+     */
+    // @ts-ignore
+    on(topicManager, priority, callback) {
+        // @ts-ignore
+        return super.on(topicManager, priority, callback);
+    }
+
+    /**
+     * @override
+     * @param {TopicManager} topicManager
+     * @param {AsyncTopicCallback<T>} callback
+     */
+    // @ts-ignore
+    off(topicManager, callback) {
+        // @ts-ignore
+        return super.off(topicManager, callback);
+    }
+
+    /**
+     * @override
+     * @param {TopicManager} topicManager
+     * @param {number} priority
+     * @param {AsyncTopicCallback<T>} callback
+     */
+    // @ts-ignore
+    once(topicManager, priority, callback) {
+        // @ts-ignore
+        return super.once(topicManager, priority, callback);
+    }
+}
+
+/**
+ * @typedef {(frameDetail: AnimationFrameLoop) => void} AnimationFrameLoopCallback
+ * 
+ * @typedef AnimationFrameDetail
+ * @property {number} prevTime
+ * @property {number} currentTime
+ * @property {number} deltaTime
+ */
 
 class AnimationFrameLoop {
     
@@ -1723,6 +1794,7 @@ class AnimationFrameLoop {
 
         /** @type {ReturnType<requestAnimationFrame>} */
         this.handle = 0;
+        /** @type {AnimationFrameDetail} */
         this.detail = {
             prevTime: -1,
             currentTime: -1,
@@ -1760,5 +1832,5 @@ class AnimationFrameLoop {
     }
 }
 
-export { AnimationFrameLoop, Camera, ComponentClass, EntityManager, EntityTemplate, FirstPersonCameraController, Not, OrthographicCamera, PerspectiveCamera, Query, QueryManager, SceneGraph, Topic, TopicManager, isSelectorNot, lookAt, panTo, screenToWorldRay };
+export { AnimationFrameLoop, AsyncTopic, Camera, ComponentClass, EntityManager, EntityTemplate, FirstPersonCameraController, Not, OrthographicCamera, PerspectiveCamera, Query, QueryManager, SceneGraph, Topic, TopicManager, isSelectorNot, lookAt, panTo, screenToWorldRay };
 //# sourceMappingURL=milque-scene.esm.js.map

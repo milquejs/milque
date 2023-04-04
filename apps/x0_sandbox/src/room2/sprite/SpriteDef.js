@@ -106,8 +106,7 @@ function createSpriteInstance(spriteName, spriteId, spriteIndex, frameSpeed) {
  * @param {SpriteDef} spriteDef
  * @param {string} spriteName
  */
-export function newInstance(ents, spriteDef, spriteName) {
-    let spriteId = ents.create();
+export function newInstance(ents, spriteDef, spriteName, spriteId = ents.create()) {
     let sprite = createSpriteInstance(spriteName, spriteId, spriteDef.initial.spriteIndex, spriteDef.initial.frameSpeed);
     ents.attach(spriteId, SpriteComponent, sprite);
     return sprite;

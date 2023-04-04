@@ -35,14 +35,6 @@ export class Topic {
 
     /**
      * @param {TopicManager} topicManager
-     * @param {T} attachment
-     */
-    async dispatchImmediatelyAndWait(topicManager, attachment) {
-        await topicManager.dispatchImmediatelyAndWait(this, attachment);
-    }
-
-    /**
-     * @param {TopicManager} topicManager
      * @param {number} priority
      * @param {TopicCallback<T>} callback
      */

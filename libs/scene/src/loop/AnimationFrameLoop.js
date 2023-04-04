@@ -1,4 +1,11 @@
-/** @typedef {(frameDetail: AnimationFrameLoop) => void} AnimationFrameLoopCallback */
+/**
+ * @typedef {(frameDetail: AnimationFrameLoop) => void} AnimationFrameLoopCallback
+ * 
+ * @typedef AnimationFrameDetail
+ * @property {number} prevTime
+ * @property {number} currentTime
+ * @property {number} deltaTime
+ */
 
 export class AnimationFrameLoop {
     
@@ -12,6 +19,7 @@ export class AnimationFrameLoop {
 
         /** @type {ReturnType<requestAnimationFrame>} */
         this.handle = 0;
+        /** @type {AnimationFrameDetail} */
         this.detail = {
             prevTime: -1,
             currentTime: -1,

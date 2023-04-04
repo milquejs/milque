@@ -645,51 +645,46 @@ declare class Topic$1<T> {
      * @param {TopicManager} topicManager
      * @param {T} attachment
      */
-    dispatch(topicManager: TopicManager$1, attachment: T): void;
+    dispatch(topicManager: TopicManager$2, attachment: T): void;
     /**
      * @param {TopicManager} topicManager
      * @param {T} attachment
      */
-    dispatchImmediately(topicManager: TopicManager$1, attachment: T): void;
-    /**
-     * @param {TopicManager} topicManager
-     * @param {T} attachment
-     */
-    dispatchImmediatelyAndWait(topicManager: TopicManager$1, attachment: T): Promise<void>;
+    dispatchImmediately(topicManager: TopicManager$2, attachment: T): void;
     /**
      * @param {TopicManager} topicManager
      * @param {number} priority
      * @param {TopicCallback<T>} callback
      */
-    on(topicManager: TopicManager$1, priority: number, callback: TopicCallback$2<T>): Topic$1<T>;
+    on(topicManager: TopicManager$2, priority: number, callback: TopicCallback$2<T>): Topic$1<T>;
     /**
      * @param {TopicManager} topicManager
      * @param {TopicCallback<T>} callback
      */
-    off(topicManager: TopicManager$1, callback: TopicCallback$2<T>): Topic$1<T>;
+    off(topicManager: TopicManager$2, callback: TopicCallback$2<T>): Topic$1<T>;
     /**
      * @param {TopicManager} topicManager
      * @param {number} priority
      * @param {TopicCallback<T>} callback
      */
-    once(topicManager: TopicManager$1, priority: number, callback: TopicCallback$2<T>): Topic$1<T>;
+    once(topicManager: TopicManager$2, priority: number, callback: TopicCallback$2<T>): Topic$1<T>;
     /**
      * @param {TopicManager} topicManager
      * @param {number} amount
      */
-    poll(topicManager: TopicManager$1, amount: number): Generator<T, void, unknown>;
+    poll(topicManager: TopicManager$2, amount: number): Generator<T, void, unknown>;
     /**
      * @param {TopicManager} topicManager
      * @param {number} amount
      */
-    retain(topicManager: TopicManager$1, amount: number): void;
+    retain(topicManager: TopicManager$2, amount: number): void;
     /**
      * @param {TopicManager} topicManager
      * @param {number} amount
      */
-    pollAndRetain(topicManager: TopicManager$1, amount: number): Generator<T, void, unknown>;
+    pollAndRetain(topicManager: TopicManager$2, amount: number): Generator<T, void, unknown>;
 }
-type TopicManager$1 = TopicManager;
+type TopicManager$2 = TopicManager$1;
 /**
  * <T>
  */
@@ -699,7 +694,7 @@ type TopicCallback$2<T> = TopicCallback$1<T>;
  * A manager for topic states. You should call `flush()` regularly to
  * process dispatched events or use `dispatchImmediately()`.
  */
-declare class TopicManager {
+declare class TopicManager$1 {
     /**
      * @protected
      * @type {Record<string, Array<object>>}
@@ -825,12 +820,69 @@ type TopicCallbackEntry<T> = {
     priority: number;
 };
 
+/** @typedef {import('./TopicManager').TopicManager} TopicManager */
+/**
+ * @template T
+ * @typedef {(attachment: T) => Promise<void>} AsyncTopicCallback<T>
+ */
+/** @template T */
+declare class AsyncTopic<T> extends Topic$1<any> {
+    /**
+     * @override
+     * @param {TopicManager} topicManager
+     * @param {T} attachment
+     */
+    override dispatch(topicManager: TopicManager, attachment: T): Promise<void>;
+    /**
+     * @override
+     * @param {TopicManager} topicManager
+     * @param {T} attachment
+     */
+    override dispatchImmediately(topicManager: TopicManager, attachment: T): Promise<void>;
+    /**
+     * @override
+     * @param {TopicManager} topicManager
+     * @param {number} priority
+     * @param {AsyncTopicCallback<T>} callback
+     */
+    override on(topicManager: TopicManager, priority: number, callback: AsyncTopicCallback$1<T>): AsyncTopic<T>;
+    /**
+     * @override
+     * @param {TopicManager} topicManager
+     * @param {AsyncTopicCallback<T>} callback
+     */
+    override off(topicManager: TopicManager, callback: AsyncTopicCallback$1<T>): AsyncTopic<T>;
+    /**
+     * @override
+     * @param {TopicManager} topicManager
+     * @param {number} priority
+     * @param {AsyncTopicCallback<T>} callback
+     */
+    override once(topicManager: TopicManager, priority: number, callback: AsyncTopicCallback$1<T>): AsyncTopic<T>;
+}
+type TopicManager = TopicManager$1;
+/**
+ * <T>
+ */
+type AsyncTopicCallback$1<T> = (attachment: T) => Promise<void>;
+
 /**
  * <T>
  */
 type TopicCallback<T> = TopicCallback$1<T>;
+/**
+ * <T>
+ */
+type AsyncTopicCallback<T> = AsyncTopicCallback$1<T>;
 
-/** @typedef {(frameDetail: AnimationFrameLoop) => void} AnimationFrameLoopCallback */
+/**
+ * @typedef {(frameDetail: AnimationFrameLoop) => void} AnimationFrameLoopCallback
+ *
+ * @typedef AnimationFrameDetail
+ * @property {number} prevTime
+ * @property {number} currentTime
+ * @property {number} deltaTime
+ */
 declare class AnimationFrameLoop {
     /**
      * @param {AnimationFrameLoopCallback} callback
@@ -842,11 +894,8 @@ declare class AnimationFrameLoop {
     });
     /** @type {ReturnType<requestAnimationFrame>} */
     handle: ReturnType<typeof requestAnimationFrame>;
-    detail: {
-        prevTime: number;
-        currentTime: number;
-        deltaTime: number;
-    };
+    /** @type {AnimationFrameDetail} */
+    detail: AnimationFrameDetail;
     /** @protected */
     protected animationFrameHandler: Window;
     /** @protected */
@@ -856,5 +905,10 @@ declare class AnimationFrameLoop {
     cancel(): AnimationFrameLoop;
 }
 type AnimationFrameLoopCallback = (frameDetail: AnimationFrameLoop) => void;
+type AnimationFrameDetail = {
+    prevTime: number;
+    currentTime: number;
+    deltaTime: number;
+};
 
-export { AnimationFrameLoop, AnimationFrameLoopCallback, Camera, ComponentClass, ComponentClassMap, ComponentInstanceMap, ComponentName, EntityComponentChangedCallback, EntityId, EntityManager, EntityTemplate, FirstPersonCameraController, Not, OrthographicCamera, PerspectiveCamera, Query$1 as Query, QueryManager, SceneGraph, SceneNode, SceneNodeInfo, Selector, SelectorNot, Topic$1 as Topic, TopicCallback, TopicManager, WalkBackCallback, WalkCallback, WalkChildrenCallback, isSelectorNot, lookAt, panTo, screenToWorldRay };
+export { AnimationFrameDetail, AnimationFrameLoop, AnimationFrameLoopCallback, AsyncTopic, AsyncTopicCallback, Camera, ComponentClass, ComponentClassMap, ComponentInstanceMap, ComponentName, EntityComponentChangedCallback, EntityId, EntityManager, EntityTemplate, FirstPersonCameraController, Not, OrthographicCamera, PerspectiveCamera, Query$1 as Query, QueryManager, SceneGraph, SceneNode, SceneNodeInfo, Selector, SelectorNot, Topic$1 as Topic, TopicCallback, TopicManager$1 as TopicManager, WalkBackCallback, WalkCallback, WalkChildrenCallback, isSelectorNot, lookAt, panTo, screenToWorldRay };

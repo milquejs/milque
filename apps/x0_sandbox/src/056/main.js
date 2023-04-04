@@ -1,52 +1,32 @@
-import { ButtonBinding, KeyCodes } from '@milque/input';
 import { AssetRef } from '@milque/asset';
-import { lerp } from '@milque/util';
+import { Random } from '@milque/random';
 
 import { getObjectDef, getSpriteDef } from '../room2/Defs';
 import { ObjectDef } from '../room2/object';
-import { RoomDef } from '../room2/room';
 import { SpriteDef } from '../room2/sprite';
-import { run, useContext, useCurrentAnimationFrameDetail } from '../runner';
-import { AssetProvider, CanvasProvider, DEPS, EntityProvider, InputProvider, RenderingProvider, SceneGraphProvider } from './Providers';
+import { run, useContext, useCurrentAnimationFrameDetail, useCurrentTopics } from '../runner';
+import { AssetProvider, DEPS, EntityProvider, RenderingProvider, SceneGraphProvider } from './Providers';
 
-import * as defBunny from './def_bunny';
+import { RoomProvider, useSpawner } from './RoomSystem';
+import { CameraSystem } from './obj_camera';
+import { BunnySystem } from './obj_bunny';
+
 import * as defCarrot from './def_carrot';
 import * as defFont from './def_font';
 import * as defGround from './def_ground';
 import * as defPants from './def_pants';
+import { AsyncTopic, Topic } from '@milque/scene';
 
 export async function main() {
     await run(Game, [
         ...DEPS,
         RoomProvider,
+        CameraSystem,
+        BunnySystem,
     ]);
 }
 
-const MoveLeft = new ButtonBinding('move.left',
-    [KeyCodes.ARROW_LEFT, KeyCodes.KEY_A]);
-const MoveRight = new ButtonBinding('move.right',
-    [KeyCodes.ARROW_RIGHT, KeyCodes.KEY_D]);
-const MoveUp = new ButtonBinding('move.up',
-    [KeyCodes.ARROW_UP, KeyCodes.KEY_W]);
-const MoveDown = new ButtonBinding('move.down',
-    [KeyCodes.ARROW_DOWN, KeyCodes.KEY_S]);
-const INPUTS = [
-    MoveLeft,
-    MoveRight,
-    MoveUp,
-    MoveDown,
-];
-
-function useRoom(m) {
-    return useContext(m, RoomProvider);
-}
-
-function RoomProvider(m) {
-    let ents = useContext(m, EntityProvider);
-    let sceneGraph = useContext(m, SceneGraphProvider);
-    let assets = useContext(m, AssetProvider);
-    return RoomDef.newInstance(ents, sceneGraph, assets, RoomDef.fromJSON({ initial: { background: 0xFFFFFF }}), 'rm_main');
-}
+// Why hooks? Encapsulate logic.
 
 /*
 function Bunny(m) {
@@ -70,36 +50,49 @@ function Bunny(m) {
 }
 */
 
-let objCamera = new AssetRef('obj_camera', async () => ObjectDef.create(null));
+export const Preload = new AsyncTopic('game.preload');
+export const Init = new Topic('game.init');
+
+/** @type {Topic<import('@milque/scene').AnimationFrameDetail>} */
+export const PreUpdate = new Topic('game.preupdate');
+/** @type {Topic<import('@milque/scene').AnimationFrameDetail>} */
+export const Update = new Topic('game.update');
+/** @type {Topic<import('@milque/scene').AnimationFrameDetail>} */
+export const PostUpdate = new Topic('game.postupdate');
+
+/** @type {Topic<import('@milque/scene').AnimationFrameDetail>} */
+export const PreDraw = new Topic('tia.predraw');
+/** @type {Topic<import('@milque/scene').AnimationFrameDetail>} */
+export const Draw = new Topic('tia.draw');
+/** @type {Topic<import('@milque/scene').AnimationFrameDetail>} */
+export const PostDraw = new Topic('tia.postdraw');
 
 const Game = {
     async preload(m) {
         let assets = useContext(m, AssetProvider);
+        let topics = useCurrentTopics(m);
         await Promise.all([
-            ...Object.values(defBunny),
             ...Object.values(defCarrot),
             ...Object.values(defFont),
             ...Object.values(defGround),
             ...Object.values(defPants),
-            objCamera,
-        ].map(ref => ref.load(assets)));
-
-        let axb = useContext(m, InputProvider);
-        for(let input of INPUTS) {
-            input.bindKeys(axb);
-        }
+        ].map(ref => ref instanceof AssetRef && ref.load(assets)));
+        await Preload.dispatchImmediately(topics);
     },
     init(m) {
-        let ents = useContext(m, EntityProvider);
-        let sceneGraph = useContext(m, SceneGraphProvider);
-        let assets = useContext(m, AssetProvider);
-        let room = useRoom(m);
-
-        function spawn(objectName, x, y) {
-            RoomDef.spawn(ents, sceneGraph, assets, room, objectName, x, y);
-        }
+        let topics = useCurrentTopics(m);
+        let spawn = useSpawner(m);
         
-        spawn('obj_bunny', 64, 64);
+        let minX = -100;
+        let maxX = 100;
+        spawn('obj_tuft', Random.rangeInt(minX, maxX), Random.rangeInt(minX, maxX));
+        spawn('obj_tuft', Random.rangeInt(minX, maxX), Random.rangeInt(minX, maxX));
+        spawn('obj_tuft', Random.rangeInt(minX, maxX), Random.rangeInt(minX, maxX));
+        spawn('obj_tuft', Random.rangeInt(minX, maxX), Random.rangeInt(minX, maxX));
+        spawn('obj_tuft', Random.rangeInt(minX, maxX), Random.rangeInt(minX, maxX));
+        spawn('obj_tuft', Random.rangeInt(minX, maxX), Random.rangeInt(minX, maxX));
+        spawn('obj_tuft', Random.rangeInt(minX, maxX), Random.rangeInt(minX, maxX));
+        
         spawn('obj_ground', 16, 24);
         spawn('obj_ground', 28, 18);
         spawn('obj_ground', 42, 22);
@@ -119,57 +112,39 @@ const Game = {
         spawn('obj_hovel', 240, 60);
         spawn('obj_pants', -64, -64);
         spawn('obj_bunny_seated', 240, 60);
-        spawn('obj_bunny', 64, 64);
 
-        spawn('obj_camera', 0, 0);
+        Init.dispatchImmediately(topics);
         // Fire create event.
     },
     update(m) {
         let ents = useContext(m, EntityProvider);
         let assets = useContext(m, AssetProvider);
-        let { deltaTime } = useCurrentAnimationFrameDetail(m);
+        let frameDetail = useCurrentAnimationFrameDetail(m);
+        let topics = useCurrentTopics(m);
 
+        PreUpdate.dispatchImmediately(topics, frameDetail);
         for(let [_, sprite] of SpriteDef.SpriteQuery.findAll(ents)) {
             let spriteDef = getSpriteDef(assets, sprite.spriteName);
-            SpriteDef.updateInstance(deltaTime, sprite, spriteDef);
-            // Fire update event.
+            SpriteDef.updateInstance(frameDetail.deltaTime, sprite, spriteDef);
         }
-
-        // Update bunny
-        let room = useRoom(m);
-        let axb = useContext(m, InputProvider);
-        let dt = deltaTime / 60;
-        let speed = 8;
-        let dx = MoveRight.get(axb).value - MoveLeft.get(axb).value;
-        let dy = MoveDown.get(axb).value - MoveUp.get(axb).value;
-        for(let [_, bunny] of RoomDef.findAllByObject(ents, room, 'obj_bunny')) {
-            bunny.x += dx * speed * dt;
-            bunny.y += dy * speed * dt;
-            if (dx !== 0) {
-                bunny.scaleX = -Math.sign(dx);
-            }
+        for(let [_, object] of ObjectDef.ObjectQuery.findAll(ents)) {
+            updateObject(object);
         }
-
-        // Update camera
-        let [_, bunny] = RoomDef.findAnyByObject(ents, room, 'obj_bunny');
-        let cameraSpeed = 0.03;
-        for(let [_, camera] of RoomDef.findAllByObject(ents, room, 'obj_camera')) {
-            camera.x = lerp(camera.x, bunny.x, cameraSpeed);
-            camera.y = lerp(camera.y, bunny.y, cameraSpeed);
-        }
+        Update.dispatchImmediately(topics, frameDetail);
+        PostUpdate.dispatchImmediately(topics, frameDetail);
     },
     draw(m) {
         let ents = useContext(m, EntityProvider);
         let sceneGraph = useContext(m, SceneGraphProvider);
         let { ctx, tia } = useContext(m, RenderingProvider);
         let assets = useContext(m, AssetProvider);
-        let canvas = useContext(m, CanvasProvider);
-        let room = useRoom(m);
+        let frameDetail = useCurrentAnimationFrameDetail(m);
+        let topics = useCurrentTopics(m);
+        let room = useContext(m, RoomProvider);
 
         tia.cls(ctx, room.background);
-        for(let [_, camera] of RoomDef.findAllByObject(ents, room, 'obj_camera')) {
-            tia.camera(camera.x - canvas.width / 2, camera.y - canvas.height / 2);
-        }
+        PreDraw.dispatchImmediately(topics, frameDetail);
+        // PreDraw
         ObjectDef.walkSceneGraph(ents, sceneGraph, (instance) => {
             if (!instance.visible) {
                 return;
@@ -178,18 +153,30 @@ const Game = {
             if (!objectDef.sprite) {
                 return;
             }
-            let spriteDef = getSpriteDef(assets, objectDef.sprite);
             let sprite = SpriteDef.getInstance(ents, instance.objectId);
+            let spriteDef = getSpriteDef(assets, sprite.spriteName);
             let image = assets.get(spriteDef.image);
             tia.mat(instance.x, instance.y, instance.scaleX, instance.scaleY, instance.rotation);
             tia.push();
             tia.matBegin(ctx);
             SpriteDef.drawInstance(ctx, sprite, spriteDef, image);
             tia.matEnd(ctx);
-            // Fire draw event.
+            // Draw
+            Draw.dispatchImmediately(topics, frameDetail);
             return () => {
                 tia.pop();
             };
         });
+        // PostDraw
+        PostDraw.dispatchImmediately(topics, frameDetail);
     }
 };
+
+function updateObject(object) {
+    // let topic = getUpdateTopicForObject(object);
+    // topic.dispatchImmediately(topics, object);
+}
+
+function drawObject(ctx) {
+
+}

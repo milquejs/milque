@@ -90,14 +90,10 @@ function createObjectInstance(objectName, objectId, x, y, scaleX, scaleY, rotati
  * @param {string} objectName 
  * @returns {ObjectInstance}
  */
-export function newInstance(ents, sceneGraph, assets, objectDef, objectName) {
-    let objectId = 0;
+export function newInstance(ents, sceneGraph, assets, objectDef, objectName, objectId = ents.create()) {
     if (objectDef.sprite) {
         let spriteDef = getSpriteDef(assets, objectDef.sprite);
-        let sprite = SpriteDef.newInstance(ents, spriteDef, objectDef.sprite);
-        objectId = sprite.spriteId;
-    } else {
-        objectId = ents.create();
+        SpriteDef.newInstance(ents, spriteDef, objectDef.sprite, objectId);
     }
     let object = createObjectInstance(
         objectName, objectId,
@@ -112,6 +108,17 @@ export function newInstance(ents, sceneGraph, assets, objectDef, objectName) {
         SceneGraph.parent(sceneGraph, child.objectId, objectId);
     }
     return object;
+}
+
+/**
+ * @param {EntityManager} ents 
+ * @param {AssetManager} assets 
+ * @param {import('@milque/scene').EntityId} objectId 
+ * @param {string} spriteName 
+ */
+export function changeSprite(ents, assets, objectId, spriteName) {
+    let spriteDef = getSpriteDef(assets, spriteName);
+    SpriteDef.newInstance(ents, spriteDef, spriteName, objectId);
 }
 
 /**
