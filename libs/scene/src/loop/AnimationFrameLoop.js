@@ -36,6 +36,10 @@ export class AnimationFrameLoop {
         this.start = this.start.bind(this);
         this.cancel = this.cancel.bind(this);
     }
+
+    get running() {
+        return this.handle !== 0;
+    }
     
     next(now = performance.now()) {
         this.handle = this.animationFrameHandler.requestAnimationFrame(this.next);

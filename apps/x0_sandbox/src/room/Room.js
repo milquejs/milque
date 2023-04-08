@@ -160,7 +160,7 @@ class RoomInstance {
         this.componentClass = new ComponentClass(`${roomName}:instance`, () => new ObjectInstance(this));
         this.componentQuery = new Query(this.componentClass);
 
-        /** @type {Record<string, { component: ComponentClass<?>, query: Query<?> }>} */
+        /** @type {Record<string, { component: ComponentClass<?>, query: Query }>} */
         this.objectComponentClasses = {};
 
         this.prevViewIndex = -1;
@@ -245,7 +245,7 @@ class RoomInstance {
     findAll(objectName) {
         if (objectName in this.objectComponentClasses) {
             let result = [];
-            for(let [_, inst] of this.objectComponentClasses[objectName].query.findAll(this.ents)) {
+            for(let inst of this.objectComponentClasses[objectName].query.findComponents(this.ents, this.componentClass)) {
                 result.push(inst);
             }
             return /** @type {Array<ObjectInstance>} */ (result);
@@ -273,7 +273,7 @@ class RoomInstance {
      * @param {number} deltaTime 
      */
     step(deltaTime) {
-        for(let [_, inst] of this.componentQuery.findAll(this.ents)) {
+        for(let inst of this.componentQuery.findComponents(this.ents, this.componentClass)) {
             if (!inst.sprite) {
                 // No sprite. Not animated.
                 continue;

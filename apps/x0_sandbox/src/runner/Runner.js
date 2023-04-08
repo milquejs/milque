@@ -6,7 +6,7 @@ import { getRunConfiguration, setRunConfiguration } from './RunConfiguration';
 
 const SystemPreload = new AsyncTopic('system.preload');
 const SystemInit = new Topic('system.init');
-const SystemDead = new AsyncTopic('system.dead');
+const SystemDead = new Topic('system.dead');
 /**
  * @type {Topic<AnimationFrameLoop>}
  */
@@ -221,13 +221,13 @@ export function useWhenSystemInit(m, priority, callback) {
  * @template M
  * @param {M} m
  * @param {number} priority
- * @param {import('@milque/scene').AsyncTopicCallback<null>} callback
+ * @param {import('@milque/scene').TopicCallback<null>} callback
  */
 export function useWhenSystemDead(m, priority, callback) {
     if (getCurrentProvider(m) === __RUNNER__) {
         throw new Error('Cannot use system topics from runner - use dead() instead.');
     }
-    return useWhenAsync(m, SystemDead, priority, callback);
+    return useWhen(m, SystemDead, priority, callback);
 }
 
 /**

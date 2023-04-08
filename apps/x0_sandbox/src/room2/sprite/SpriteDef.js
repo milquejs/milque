@@ -84,7 +84,6 @@ export const SpriteComponent = new ComponentClass('sprite', () => createSpriteIn
 export const SpriteQuery = new Query(SpriteComponent);
 
 /**
- * 
  * @param {string} spriteName 
  * @param {import('@milque/scene').EntityId} spriteId 
  * @param {number} spriteIndex 
@@ -142,19 +141,19 @@ export function updateInstance(deltaTime, sprite, def) {
 
 /**
  * @param {CanvasRenderingContext2D} ctx 
- * @param {SpriteInstance} sprite 
- * @param {SpriteDef} def 
+ * @param {number} spriteIndex
+ * @param {SpriteDef} spriteDef 
  * @param {CanvasImageSource} image
  */
-export function drawInstance(ctx, sprite, def, image) {
-    let frame = def.frames[sprite.spriteIndex % def.frameCount];
+export function drawInstance(ctx, spriteIndex, spriteDef, image) {
+    let frame = spriteDef.frames[spriteIndex % spriteDef.frameCount];
     ctx.drawImage(
         image,
         frame[0], frame[1],
         frame[2] - frame[0],
         frame[3] - frame[1],
-        -def.originX,
-        -def.originY,
-        def.width,
-        def.height);
+        -spriteDef.originX,
+        -spriteDef.originY,
+        spriteDef.width,
+        spriteDef.height);
 }

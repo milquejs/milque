@@ -12,7 +12,7 @@ export class ObjectManager {
     constructor() {
         /** @type {Record<string, ComponentClass<ObjectInstance>>} */
         this.tags = {};
-        /** @type {Record<string, Query<?>>} */
+        /** @type {Record<string, Query>} */
         this.queries = {};
     }
 
@@ -31,8 +31,8 @@ export class ObjectManager {
      * @param {string} objectName
      */
     findAny(ents, objectName) {
-        let [_, inst, tag] = this.queries[objectName].findAny(ents);
-        return inst;
+        let { value } = this.queries[objectName].findComponents(ents, ObjectComponent).next();
+        return value;
     }
 
     /**
@@ -40,7 +40,7 @@ export class ObjectManager {
      * @param {string} objectName
      */
     *findAll(ents, objectName) {
-        for(let [_, inst, tag] of this.queries[objectName].findAll(ents)) {
+        for(let inst of this.queries[objectName].findComponents(ents, ObjectComponent)) {
             yield /** @type {ObjectInstance} */ (inst);
         }
     }

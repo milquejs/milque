@@ -17,7 +17,6 @@ import { getSpriteDef } from '../room2/Defs';
  * - ObjectTopicRegistry should own update and draw calls.
  */
 
-
 export const objTitle = new AssetRef('obj_title', async () => {
     let def = ObjectDef.create('sp_font');
     // def.initial.spriteIndex = 'space';

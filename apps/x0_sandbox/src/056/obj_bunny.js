@@ -9,6 +9,7 @@ import { Init, PostUpdate, Preload } from './main';
 
 import * as defBunny from './def_bunny';
 import { ButtonBinding, KeyCodes } from '@milque/input';
+import { SpriteDef } from '../room2/sprite';
 
 export const MoveLeft = new ButtonBinding('move.left',
     [KeyCodes.ARROW_LEFT, KeyCodes.KEY_A]);
@@ -53,13 +54,27 @@ export function BunnySystem(m) {
                 bunny.scaleX = -Math.sign(dx);
             }
             if (MoveCrouch.get(axb).pressed) {
-                ObjectDef.changeSprite(ents, assets, entityId, 'sp_bunny_seated');
+                let sprite = SpriteDef.getInstance(ents, bunny.spriteId);
+                sprite.spriteIndex = 0;
+                sprite.frameDelta = 0;
+                sprite.spriteName = 'sp_bunny_seated';
                 let [childId] = ObjectDef.getInstanceChildIds(sceneGraph, entityId);
-                ObjectDef.changeSprite(ents, assets, childId, 'sp_bunny_seated_eyes');
+                let child = ObjectDef.getInstance(ents, childId);
+                let childSprite = SpriteDef.getInstance(ents, child.spriteId);
+                childSprite.spriteIndex = 0;
+                childSprite.frameDelta = 0;
+                childSprite.spriteName = 'sp_bunny_seated_eyes';
             } else if (MoveCrouch.get(axb).released) {
-                ObjectDef.changeSprite(ents, assets, entityId, 'sp_bunny');
+                let sprite = SpriteDef.getInstance(ents, bunny.spriteId);
+                sprite.spriteIndex = 0;
+                sprite.frameDelta = 0;
+                sprite.spriteName = 'sp_bunny';
                 let [childId] = ObjectDef.getInstanceChildIds(sceneGraph, entityId);
-                ObjectDef.changeSprite(ents, assets, childId, 'sp_bunny_eyes');
+                let child = ObjectDef.getInstance(ents, childId);
+                let childSprite = SpriteDef.getInstance(ents, child.spriteId);
+                childSprite.spriteIndex = 0;
+                childSprite.frameDelta = 0;
+                childSprite.spriteName = 'sp_bunny_eyes';
             }
         }
     });

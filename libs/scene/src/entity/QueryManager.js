@@ -2,11 +2,7 @@ import { ComponentClass } from './ComponentClass';
 
 /** @typedef {import('./EntityManager').EntityManager} EntityManager */
 /** @typedef {import('./EntityManager').EntityId} EntityId */
-
-/**
- * @template T
- * @typedef {import('./Query').Query<T>} Query<T>
- */
+/** @typedef {import('./Query').Query} Query */
 
 export class QueryManager {
 
@@ -18,7 +14,7 @@ export class QueryManager {
         this.cachedResults = {};
         /**
          * @private
-         * @type {Record<string, Query<?>>}
+         * @type {Record<string, Query>}
          */
         this.keyQueryMapping = {};
 
@@ -46,19 +42,19 @@ export class QueryManager {
                     if (i >= 0) {
                         entities.splice(i, 1);
                     }
-                } else if (query.hasSelector(added) && query.test(entityManager, entityId)) {
+                } else if (query.hasSelector(added) && this.test(entityManager, entityId, query.selectors)) {
                     let i = entities.indexOf(entityId);
                     if (i < 0) {
                         entities.push(entityId);
                     }
                 }
             } else if (removed) {
-                if (query.hasSelector(Not(removed)) && query.test(entityManager, entityId)) {
+                if (query.hasSelector(Not(removed)) && this.test(entityManager, entityId, query.selectors)) {
                     let i = entities.indexOf(entityId);
                     if (i < 0) {
                         entities.push(entityId);
                     }
-                } else if (query.hasSelector(removed) && query.test(entityManager, entityId)) {
+                } else if (query.hasSelector(removed) && this.test(entityManager, entityId, query.selectors)) {
                     let i = entities.indexOf(entityId);
                     if (i >= 0) {
                         entities.splice(i, 1);
@@ -69,22 +65,51 @@ export class QueryManager {
     }
 
     /**
-     * @param {EntityManager} entityManager
-     * @param {Query<?>} query 
-     * @returns {EntityId}
+     * @protected
+     * @param {EntityManager} entityManager 
+     * @param {EntityId} entityId
+     * @param {Array<ComponentClass<?>>} selectors
      */
-    findAny(entityManager, query) {
-        let result = this.findAll(entityManager, query);
-        if (result.length <= 0) {
-            return null;
-        } else {
-            return result[Math.floor(Math.random() * result.length)];
+    test(entityManager, entityId, selectors) {
+        for(let selector of selectors) {
+            if (isSelectorNot(selector)) {
+                const componentClass = /** @type {SelectorNot<?>} */ (/** @type {unknown} */ (selector)).value;
+                if (entityManager.exists(entityId, componentClass)) {
+                    return false;
+                }
+            } else {
+                const componentClass = /** @type {ComponentClass<?>} */ (/** @type {unknown} */ (selector));
+                if (!entityManager.exists(entityId, componentClass)) {
+                    return false;
+                }
+            }
         }
+        return true;
+    }
+
+    /**
+     * @protected
+     * @param {Array<EntityId>} out
+     * @param {EntityManager} entityManager 
+     * @param {Array<ComponentClass<?>>} selectors
+     */
+    hydrate(out, entityManager, selectors) {
+        if (selectors.length <= 0) {
+            out.length = 0;
+            return out;
+        }
+        let entities = entityManager.entityIds();
+        for(let entityId of entities) {
+            if (this.test(entityManager, entityId, selectors)) {
+                out.push(entityId);
+            }
+        }
+        return out;
     }
 
     /**
      * @param {EntityManager} entityManager
-     * @param {Query<?>} query
+     * @param {Query} query
      * @returns {Array<EntityId>}
      */
     findAll(entityManager, query) {
@@ -94,7 +119,7 @@ export class QueryManager {
             result = [];
             this.keyQueryMapping[queryKey] = query;
             this.cachedResults[queryKey] = result;
-            query.hydrate(entityManager, result);
+            this.hydrate(result, entityManager, query.selectors);
         } else {
             result = this.cachedResults[queryKey];
         }
@@ -103,7 +128,7 @@ export class QueryManager {
 
     /**
      * @param {EntityManager} entityManager
-     * @param {Query<?>} query 
+     * @param {Query} query 
      */
     count(entityManager, query) {
         let result = this.findAll(entityManager, query);
@@ -111,7 +136,7 @@ export class QueryManager {
     }
 
     /**
-     * @param {Query<?>} query
+     * @param {Query} query
      */
     clear(query) {
         const queryKey = query.key;

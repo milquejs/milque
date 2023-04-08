@@ -14,25 +14,17 @@ import { isSelectorNot } from './QueryManager';
  * @typedef {import('./QueryManager').SelectorNot<T>} SelectorNot<T>
  */
 
-/**
- * @template T
- * @typedef {import('./EntityTemplate').ComponentInstancesOf<T>} ComponentInstancesOf<T>
- */
-
-/**
- * @template {ComponentClass<any>[]} T
- */
 export class Query {
 
     /**
-     * @param {T} selectors 
+     * @param {...ComponentClass<?>} selectors 
      */
     constructor(...selectors) {
         if (selectors.length <= 0) {
             throw new Error('Must have at least 1 selector for query.');
         }
         this.selectors = selectors;
-        this.key = selectors.map(s => isSelectorNot(s) ? `!${s.name}` : s.name).sort().join('&');
+        this.key = computeSelectorKey(selectors);
     }
 
     /**
@@ -45,45 +37,6 @@ export class Query {
             return this.selectors.findIndex(v => v.name === selector.name) >= 0;
         }
     }
-
-    /**
-     * @param {EntityManager} entityManager 
-     * @param {EntityId} entityId
-     */
-    test(entityManager, entityId) {
-        for(let selector of this.selectors) {
-            if (isSelectorNot(selector)) {
-                const componentClass = /** @type {SelectorNot<?>} */ (/** @type {unknown} */ (selector)).value;
-                if (entityManager.exists(entityId, componentClass)) {
-                    return false;
-                }
-            } else {
-                const componentClass = /** @type {ComponentClass<?>} */ (/** @type {unknown} */ (selector));
-                if (!entityManager.exists(entityId, componentClass)) {
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
-
-    /**
-     * @param {EntityManager} entityManager
-     * @param {Array<EntityId>} result 
-     */
-    hydrate(entityManager, result) {
-        if (this.selectors.length <= 0) {
-            result.length = 0;
-            return result;
-        }
-        let entities = entityManager.entityIds();
-        for(let entityId of entities) {
-            if (this.test(entityManager, entityId)) {
-                result.push(entityId);
-            }
-        }
-        return result;
-    }
     
     /**
      * @param {EntityManager} entityManager 
@@ -92,55 +45,38 @@ export class Query {
     count(entityManager) {
         return entityManager.queries.count(entityManager, this);
     }
-
+    
     /**
      * @param {EntityManager} entityManager 
-     * @returns {[EntityId, ...ComponentInstancesOf<T>]}
+     * @returns {Generator<EntityId>}
      */
-    findAny(entityManager) {
+    *findEntityIds(entityManager) {
         const queryManager = entityManager.queries;
-        let result = /** @type {[EntityId, ...ComponentInstancesOf<T>]} */ (new Array(this.selectors.length + 1));
-        let entityId = queryManager.findAny(entityManager, this);
-        if (entityId === null) {
-            return result.fill(undefined);
+        for(let entityId of queryManager.findAll(entityManager, this)) {
+            yield entityId;
         }
-        computeResult(result, entityManager, entityId, this.selectors);
-        return result;
     }
-
+    
     /**
+     * @template T
      * @param {EntityManager} entityManager 
-     * @returns {Generator<[EntityId, ...ComponentInstancesOf<T>]>}
+     * @param {ComponentClass<T>} componentClass
+     * @returns {Generator<T>}
      */
-    *findAll(entityManager) {
+    *findComponents(entityManager, componentClass) {
+        if (this.selectors.indexOf(componentClass) < 0) {
+            throw new Error(`Cannot find component for class '${componentClass.name}' not in query.`);
+        }
         const queryManager = entityManager.queries;
-        let result = /** @type {[EntityId, ...ComponentInstancesOf<T>]} */ (new Array(this.selectors.length + 1));
-        let entities = queryManager.findAll(entityManager, this);
-        for(let entityId of entities) {
-            computeResult(result, entityManager, entityId, this.selectors);
-            yield result;
+        for(let entityId of queryManager.findAll(entityManager, this)) {
+            yield entityManager.get(entityId, componentClass);
         }
     }
 }
 
 /**
- * @template {ComponentClass<any>[]} T
- * @param {[EntityId, ...ComponentInstancesOf<T>]} out
- * @param {EntityManager} entityManager  
- * @param {EntityId} entityId
- * @param {T} selectors
- * @returns {[EntityId, ...ComponentInstancesOf<T>]}
+ * @param {Array<ComponentClass<?>>} selectors
  */
-function computeResult(out, entityManager, entityId, selectors) {
-    out[0] = entityId;
-    let i = 1;
-    for(let selector of selectors) {
-        if (isSelectorNot(selector)) {
-            out[i] = null;
-        } else {
-            out[i] = entityManager.get(entityId, selector);
-        }
-        ++i;
-    }
-    return out;
+function computeSelectorKey(selectors) {
+    return selectors.map(s => isSelectorNot(s) ? `!${s.name}` : s.name).sort().join('&');
 }

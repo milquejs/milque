@@ -660,11 +660,6 @@ class ComponentClass {
 /** @typedef {import('./EntityManager').EntityManager} EntityManager */
 /** @typedef {import('./EntityManager').EntityId} EntityId */
 
-/**
- * @template T
- * @typedef {import('./Query').Query<T>} Query<T>
- */
-
 class QueryManager {
 
     constructor() {
@@ -675,7 +670,7 @@ class QueryManager {
         this.cachedResults = {};
         /**
          * @private
-         * @type {Record<string, Query<?>>}
+         * @type {Record<string, import('./Query').Query<?>>}
          */
         this.keyQueryMapping = {};
 
@@ -703,19 +698,19 @@ class QueryManager {
                     if (i >= 0) {
                         entities.splice(i, 1);
                     }
-                } else if (query.hasSelector(added) && query.test(entityManager, entityId)) {
+                } else if (query.hasSelector(added) && this.test(entityManager, entityId, query.selectors)) {
                     let i = entities.indexOf(entityId);
                     if (i < 0) {
                         entities.push(entityId);
                     }
                 }
             } else if (removed) {
-                if (query.hasSelector(Not(removed)) && query.test(entityManager, entityId)) {
+                if (query.hasSelector(Not(removed)) && this.test(entityManager, entityId, query.selectors)) {
                     let i = entities.indexOf(entityId);
                     if (i < 0) {
                         entities.push(entityId);
                     }
-                } else if (query.hasSelector(removed) && query.test(entityManager, entityId)) {
+                } else if (query.hasSelector(removed) && this.test(entityManager, entityId, query.selectors)) {
                     let i = entities.indexOf(entityId);
                     if (i >= 0) {
                         entities.splice(i, 1);
@@ -726,22 +721,51 @@ class QueryManager {
     }
 
     /**
-     * @param {EntityManager} entityManager
-     * @param {Query<?>} query 
-     * @returns {EntityId}
+     * @protected
+     * @param {EntityManager} entityManager 
+     * @param {EntityId} entityId
+     * @param {Array<ComponentClass<?>>} selectors
      */
-    findAny(entityManager, query) {
-        let result = this.findAll(entityManager, query);
-        if (result.length <= 0) {
-            return null;
-        } else {
-            return result[Math.floor(Math.random() * result.length)];
+    test(entityManager, entityId, selectors) {
+        for(let selector of selectors) {
+            if (isSelectorNot(selector)) {
+                const componentClass = /** @type {SelectorNot<?>} */ (/** @type {unknown} */ (selector)).value;
+                if (entityManager.exists(entityId, componentClass)) {
+                    return false;
+                }
+            } else {
+                const componentClass = /** @type {ComponentClass<?>} */ (/** @type {unknown} */ (selector));
+                if (!entityManager.exists(entityId, componentClass)) {
+                    return false;
+                }
+            }
         }
+        return true;
+    }
+
+    /**
+     * @protected
+     * @param {Array<EntityId>} out
+     * @param {EntityManager} entityManager 
+     * @param {Array<ComponentClass<?>>} selectors
+     */
+    hydrate(out, entityManager, selectors) {
+        if (selectors.length <= 0) {
+            out.length = 0;
+            return out;
+        }
+        let entities = entityManager.entityIds();
+        for(let entityId of entities) {
+            if (this.test(entityManager, entityId, selectors)) {
+                out.push(entityId);
+            }
+        }
+        return out;
     }
 
     /**
      * @param {EntityManager} entityManager
-     * @param {Query<?>} query
+     * @param {import('./Query').Query<?>} query
      * @returns {Array<EntityId>}
      */
     findAll(entityManager, query) {
@@ -751,7 +775,7 @@ class QueryManager {
             result = [];
             this.keyQueryMapping[queryKey] = query;
             this.cachedResults[queryKey] = result;
-            query.hydrate(entityManager, result);
+            this.hydrate(result, entityManager, query.selectors);
         } else {
             result = this.cachedResults[queryKey];
         }
@@ -760,7 +784,7 @@ class QueryManager {
 
     /**
      * @param {EntityManager} entityManager
-     * @param {Query<?>} query 
+     * @param {import('./Query').Query<?>} query 
      */
     count(entityManager, query) {
         let result = this.findAll(entityManager, query);
@@ -768,7 +792,7 @@ class QueryManager {
     }
 
     /**
-     * @param {Query<?>} query
+     * @param {import('./Query').Query<?>} query
      */
     clear(query) {
         const queryKey = query.key;
@@ -1106,7 +1130,7 @@ class EntityManager {
         let result = new Set();
         for (let instanceMap of Object.values(this.components)) {
             for(let entityId of Object.keys(instanceMap)) {
-                result.add(entityId);
+                result.add(Number(entityId));
             }
         }
         return result;
@@ -1144,50 +1168,6 @@ class EntityManager {
 /** @typedef {import('./EntityManager').EntityId} EntityId */
 
 /**
- * @template {ComponentClass<any>[]} T
- * @typedef {{[K in keyof T]: T[K] extends ComponentClass<infer V> ? V : never}} ComponentInstancesOf<T>
- */
-
-/**
- * @template {ComponentClass<any>[]} T
- */
-class EntityTemplate {
-    /**
-     * @param {T} componentClasses 
-     */
-    constructor(...componentClasses) {
-        /** @private */
-        this.componentClasses = componentClasses;
-    }
-
-    /**
-     * @param {EntityManager} entityManager
-     * @returns {[EntityId, ...ComponentInstancesOf<T>]}
-     */
-    create(entityManager) {
-        let entityId = entityManager.create();
-        let result = /** @type {[EntityId, ...ComponentInstancesOf<T>]} */ (/** @type {unknown} */ ([entityId]));
-        for (let componentClass of this.componentClasses) {
-            let instance = entityManager.attach(entityId, componentClass);
-            result.push(instance);
-        }
-        return result;
-    }
-
-    /**
-     * @param {EntityManager} entityManager 
-     * @param {EntityId} entityId 
-     */
-    destroy(entityManager, entityId) {
-        for (let componentClass of this.componentClasses) {
-            entityManager.detach(entityId, componentClass);
-        }
-    }
-}
-
-/** @typedef {import('./EntityManager').EntityId} EntityId */
-
-/**
  * @template T
  * @typedef {import('./QueryManager').Selector<T>} Selector<T>
  */
@@ -1197,25 +1177,17 @@ class EntityTemplate {
  * @typedef {import('./QueryManager').SelectorNot<T>} SelectorNot<T>
  */
 
-/**
- * @template T
- * @typedef {import('./EntityTemplate').ComponentInstancesOf<T>} ComponentInstancesOf<T>
- */
-
-/**
- * @template {ComponentClass<any>[]} T
- */
 class Query {
 
     /**
-     * @param {T} selectors 
+     * @param {...ComponentClass<?>} selectors 
      */
     constructor(...selectors) {
         if (selectors.length <= 0) {
             throw new Error('Must have at least 1 selector for query.');
         }
         this.selectors = selectors;
-        this.key = selectors.map(s => isSelectorNot(s) ? `!${s.name}` : s.name).sort().join('&');
+        this.key = computeSelectorKey(selectors);
     }
 
     /**
@@ -1228,45 +1200,6 @@ class Query {
             return this.selectors.findIndex(v => v.name === selector.name) >= 0;
         }
     }
-
-    /**
-     * @param {EntityManager} entityManager 
-     * @param {EntityId} entityId
-     */
-    test(entityManager, entityId) {
-        for(let selector of this.selectors) {
-            if (isSelectorNot(selector)) {
-                const componentClass = /** @type {SelectorNot<?>} */ (/** @type {unknown} */ (selector)).value;
-                if (entityManager.exists(entityId, componentClass)) {
-                    return false;
-                }
-            } else {
-                const componentClass = /** @type {ComponentClass<?>} */ (/** @type {unknown} */ (selector));
-                if (!entityManager.exists(entityId, componentClass)) {
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
-
-    /**
-     * @param {EntityManager} entityManager
-     * @param {Array<EntityId>} result 
-     */
-    hydrate(entityManager, result) {
-        if (this.selectors.length <= 0) {
-            result.length = 0;
-            return result;
-        }
-        let entities = entityManager.entityIds();
-        for(let entityId of entities) {
-            if (this.test(entityManager, entityId)) {
-                result.push(entityId);
-            }
-        }
-        return result;
-    }
     
     /**
      * @param {EntityManager} entityManager 
@@ -1275,55 +1208,144 @@ class Query {
     count(entityManager) {
         return entityManager.queries.count(entityManager, this);
     }
-
+    
     /**
      * @param {EntityManager} entityManager 
-     * @returns {[EntityId, ...ComponentInstancesOf<T>]}
+     * @returns {Generator<EntityId>}
      */
-    findAny(entityManager) {
+    *findEntityIds(entityManager) {
         const queryManager = entityManager.queries;
-        let result = /** @type {[EntityId, ...ComponentInstancesOf<T>]} */ (new Array(this.selectors.length + 1));
-        let entityId = queryManager.findAny(entityManager, this);
-        if (entityId === null) {
-            return result.fill(undefined);
+        for(let entityId of queryManager.findAll(entityManager, this)) {
+            yield entityId;
         }
-        computeResult(result, entityManager, entityId, this.selectors);
-        return result;
     }
-
+    
     /**
+     * @template T
      * @param {EntityManager} entityManager 
-     * @returns {Generator<[EntityId, ...ComponentInstancesOf<T>]>}
+     * @param {ComponentClass<T>} componentClass
+     * @returns {Generator<T>}
      */
-    *findAll(entityManager) {
+    *findComponents(entityManager, componentClass) {
+        if (this.selectors.indexOf(componentClass) < 0) {
+            throw new Error(`Cannot find component for class '${componentClass.name}' not in query.`);
+        }
         const queryManager = entityManager.queries;
-        let result = /** @type {[EntityId, ...ComponentInstancesOf<T>]} */ (new Array(this.selectors.length + 1));
-        let entities = queryManager.findAll(entityManager, this);
-        for(let entityId of entities) {
-            computeResult(result, entityManager, entityId, this.selectors);
-            yield result;
+        for(let entityId of queryManager.findAll(entityManager, this)) {
+            yield entityManager.get(entityId, componentClass);
         }
     }
 }
 
 /**
- * @template {ComponentClass<any>[]} T
- * @param {[EntityId, ...ComponentInstancesOf<T>]} out
- * @param {EntityManager} entityManager  
- * @param {EntityId} entityId
- * @param {T} selectors
- * @returns {[EntityId, ...ComponentInstancesOf<T>]}
+ * @param {Array<ComponentClass<?>>} selectors
  */
-function computeResult(out, entityManager, entityId, selectors) {
-    out[0] = entityId;
-    let i = 1;
-    for(let selector of selectors) {
-        if (isSelectorNot(selector)) {
-            out[i] = null;
-        } else {
-            out[i] = entityManager.get(entityId, selector);
+function computeSelectorKey(selectors) {
+    return selectors.map(s => isSelectorNot(s) ? `!${s.name}` : s.name).sort().join('&');
+}
+
+/**
+ * @typedef {Record<string, ComponentClass<any>>} ArchetypeComponentMap
+ */
+
+/**
+ * @template {ArchetypeComponentMap} T
+ * @typedef {{[K in keyof T]: T[K] extends ComponentClass<infer V> ? V : never}} ArchetypeComponentInstancesOf<T>
+ */
+
+/**
+ * @template {ArchetypeComponentMap} T
+ */
+class Archetype extends Query {
+
+    /**
+     * @param {T} componentMap 
+     */
+    constructor(componentMap) {
+        super(...Object.values(componentMap));
+        /** @private */
+        this.componentClasses = componentMap;
+    }
+
+    /**
+     * @param {EntityManager} ents 
+     * @returns {ArchetypeComponentInstancesOf<T>}
+     */
+    create(ents) {
+        let entityId = ents.create();
+        let result = {};
+        for(let [key, componentClass] of Object.entries(this.componentClasses)) {
+            let instance = ents.attach(entityId, componentClass);
+            result[key] = instance;
         }
-        ++i;
+        return /** @type {ArchetypeComponentInstancesOf<T>} */ (result);
+    }
+
+    /**
+     * @param {EntityManager} ents 
+     * @param {import('./EntityManager').EntityId} entityId 
+     */
+    destroy(ents, entityId) {
+        for (let componentClass of Object.values(this.componentClasses)) {
+            ents.detach(entityId, componentClass);
+        }
+    }
+
+    /**
+     * @param {EntityManager} ents 
+     * @param {import('./EntityManager').EntityId} entityId
+     * @returns {ArchetypeComponentInstancesOf<T>}
+     */
+    find(ents, entityId) {
+        if (entityId === null) {
+            return /** @type {ArchetypeComponentInstancesOf<T>} */ ({});
+        }
+        return computeResult({}, ents, entityId, this.componentClasses);
+    }
+
+    /**
+     * @param {EntityManager} ents 
+     * @returns {ArchetypeComponentInstancesOf<T>}
+     */
+    findAny(ents) {
+        const queryManager = ents.queries;
+        let entities = queryManager.findAll(ents, this);
+        if (entities.length <= 0) {
+            return /** @type {ArchetypeComponentInstancesOf<T>} */ ({});
+        }
+        let entityId = entities[Math.floor(Math.random() * entities.length)];
+        return computeResult({}, ents, entityId, this.componentClasses);
+    }
+
+    /**
+     * @param {EntityManager} ents 
+     * @returns {Generator<ArchetypeComponentInstancesOf<T>>}
+     */
+    *findAll(ents) {
+        const queryManager = ents.queries;
+        let result = {};
+        let entities = queryManager.findAll(ents, this);
+        for(let entityId of entities) {
+            yield computeResult(result, ents, entityId, this.componentClasses);
+        }
+    }
+}
+
+/**
+ * @template T
+ * @param {object} out 
+ * @param {EntityManager} ents 
+ * @param {import('./EntityManager').EntityId} entityId 
+ * @param {T} componentClasses
+ * @returns {ArchetypeComponentInstancesOf<T>}
+ */
+function computeResult(out, ents, entityId, componentClasses) {
+    for(let [key, componentClass] of Object.entries(componentClasses)) {
+        if (isSelectorNot(componentClass)) {
+            out[key] = null;
+        } else {
+            out[key] = ents.get(entityId, componentClass);
+        }
     }
     return out;
 }
@@ -1724,6 +1746,7 @@ class AsyncTopic extends Topic {
      * @param {T} attachment
      */
     async dispatch(topicManager, attachment) {
+        // TODO: Topics don't really support async yet. 1. No result processing. 2. TopicManager doesn't really care.
         throw new Error('Not yet implemented');
     }
 
@@ -1811,6 +1834,10 @@ class AnimationFrameLoop {
         this.start = this.start.bind(this);
         this.cancel = this.cancel.bind(this);
     }
+
+    get running() {
+        return this.handle !== 0;
+    }
     
     next(now = performance.now()) {
         this.handle = this.animationFrameHandler.requestAnimationFrame(this.next);
@@ -1832,5 +1859,5 @@ class AnimationFrameLoop {
     }
 }
 
-export { AnimationFrameLoop, AsyncTopic, Camera, ComponentClass, EntityManager, EntityTemplate, FirstPersonCameraController, Not, OrthographicCamera, PerspectiveCamera, Query, QueryManager, SceneGraph, Topic, TopicManager, isSelectorNot, lookAt, panTo, screenToWorldRay };
+export { AnimationFrameLoop, Archetype, AsyncTopic, Camera, ComponentClass, EntityManager, FirstPersonCameraController, Not, OrthographicCamera, PerspectiveCamera, Query, QueryManager, SceneGraph, Topic, TopicManager, isSelectorNot, lookAt, panTo, screenToWorldRay };
 //# sourceMappingURL=milque-scene.esm.js.map

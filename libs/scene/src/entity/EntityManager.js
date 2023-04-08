@@ -291,7 +291,7 @@ export class EntityManager {
         let result = new Set();
         for (let instanceMap of Object.values(this.components)) {
             for(let entityId of Object.keys(instanceMap)) {
-                result.add(entityId);
+                result.add(Number(entityId));
             }
         }
         return result;

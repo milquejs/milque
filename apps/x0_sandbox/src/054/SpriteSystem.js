@@ -284,7 +284,7 @@ export function SpriteSystem(m) {
 
     useWhenSystemUpdate(m, 0, () => {
         // Animate sprites.
-        for(let [_, sprite] of SpriteQuery.findAll(ents)) {
+        for(let sprite of SpriteQuery.findComponents(ents, SpriteComponent)) {
             let def = sprs.get(sprite.spriteName);
             if (sprite.frameSpeed === 0) {
                 continue;

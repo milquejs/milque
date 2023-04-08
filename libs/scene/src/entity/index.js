@@ -1,6 +1,6 @@
 export * from './EntityManager';
 export * from './ComponentClass';
-export { EntityTemplate } from './EntityTemplate';
+export * from './Archetype';
 export { QueryManager, Not, isSelectorNot } from './QueryManager';
 export { Query } from './Query';
 

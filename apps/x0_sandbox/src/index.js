@@ -10,9 +10,10 @@ import { main as m53 } from './053/main.js';
 import { main as m54 } from './054/main.js';
 import { main as m55 } from './055/main.js';
 import { main as m56 } from './056/main.js';
+import { main as m57 } from './057/main.js';
 
 const TARGETS = [
-    m50, m51, m52, m53, m54, m55, m56
+    m50, m51, m52, m53, m54, m55, m56, m57
 ];
 
 window.addEventListener('DOMContentLoaded', () => main(TARGETS));

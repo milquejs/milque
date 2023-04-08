@@ -24,7 +24,7 @@ export function attachSprite(ents, entityId, spriteName, assets) {
  * @param {number} deltaTime 
  */
 export function updateSprites(ents, assets, deltaTime) {
-    for(let [_, sprite] of SpriteQuery.findAll(ents)) {
+    for(let sprite of SpriteQuery.findComponents(ents, SpriteComponent)) {
         /** @type {import('./SpriteDef').SpriteDef} */
         let def = assets.get(sprite.spriteName);
         updateSprite(sprite, def, deltaTime);
@@ -37,7 +37,7 @@ export function updateSprites(ents, assets, deltaTime) {
  * @param {AssetManager} assets 
  */
 export function drawSprites(ctx, ents, assets) {
-    for(let [_, sprite] of SpriteQuery.findAll(ents)) {
+    for(let sprite of SpriteQuery.findComponents(ents, SpriteComponent)) {
         /** @type {import('./SpriteDef').SpriteDef} */
         let def = assets.get(sprite.spriteName);
         /** @type {HTMLImageElement} */

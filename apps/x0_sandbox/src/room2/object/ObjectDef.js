@@ -57,12 +57,13 @@ export function fromJSON(json) {
     return result;
 }
 
-export const ObjectComponent = new ComponentClass('object', () => createObjectInstance(null, 0, 0, 0, 1, 1, 0, false));
+export const ObjectComponent = new ComponentClass('object', () => createObjectInstance(null, 0, 0, 0, 0, 1, 1, 0, false));
 export const ObjectQuery = new Query(ObjectComponent);
 
 /**
  * @param {string} objectName 
  * @param {import('@milque/scene').EntityId} objectId 
+ * @param {import('@milque/scene').EntityId} spriteId
  * @param {number} x 
  * @param {number} y 
  * @param {number} scaleX 
@@ -70,10 +71,11 @@ export const ObjectQuery = new Query(ObjectComponent);
  * @param {number} rotation 
  * @param {boolean} visible
  */
-function createObjectInstance(objectName, objectId, x, y, scaleX, scaleY, rotation, visible) {
+function createObjectInstance(objectName, objectId, spriteId, x, y, scaleX, scaleY, rotation, visible) {
     return {
         objectName,
         objectId,
+        spriteId,
         x, y,
         scaleX,
         scaleY,
@@ -91,12 +93,14 @@ function createObjectInstance(objectName, objectId, x, y, scaleX, scaleY, rotati
  * @returns {ObjectInstance}
  */
 export function newInstance(ents, sceneGraph, assets, objectDef, objectName, objectId = ents.create()) {
+    let spriteId = 0;
     if (objectDef.sprite) {
         let spriteDef = getSpriteDef(assets, objectDef.sprite);
-        SpriteDef.newInstance(ents, spriteDef, objectDef.sprite, objectId);
+        let sprite = SpriteDef.newInstance(ents, spriteDef, objectDef.sprite);
+        spriteId = sprite.spriteId;
     }
     let object = createObjectInstance(
-        objectName, objectId,
+        objectName, objectId, spriteId,
         objectDef.initial.offsetX, objectDef.initial.offsetY,
         objectDef.initial.scaleX, objectDef.initial.scaleY,
         objectDef.initial.rotation, objectDef.initial.visible);
@@ -108,17 +112,6 @@ export function newInstance(ents, sceneGraph, assets, objectDef, objectName, obj
         SceneGraph.parent(sceneGraph, child.objectId, objectId);
     }
     return object;
-}
-
-/**
- * @param {EntityManager} ents 
- * @param {AssetManager} assets 
- * @param {import('@milque/scene').EntityId} objectId 
- * @param {string} spriteName 
- */
-export function changeSprite(ents, assets, objectId, spriteName) {
-    let spriteDef = getSpriteDef(assets, spriteName);
-    SpriteDef.newInstance(ents, spriteDef, spriteName, objectId);
 }
 
 /**

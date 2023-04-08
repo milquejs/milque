@@ -174,7 +174,7 @@ const Game = {
                 }
             } else {
                 tia.matBegin(ctx);
-                SpriteDef.drawInstance(ctx, sprite, spriteDef, image);
+                SpriteDef.drawInstance(ctx, sprite.spriteIndex, spriteDef, image);
                 tia.matEnd(ctx);
             }
             return () => {
@@ -185,3 +185,5 @@ const Game = {
         PostDraw.dispatchImmediately(topics, frameDetail);
     }
 };
+
+// Only write things I care about in the same file.

@@ -285,101 +285,6 @@ declare class ComponentClass<T> {
     delete: (component: T) => void;
 }
 
-/** @typedef {import('./EntityManager').EntityId} EntityId */
-/**
- * @template {ComponentClass<any>[]} T
- * @typedef {{[K in keyof T]: T[K] extends ComponentClass<infer V> ? V : never}} ComponentInstancesOf<T>
- */
-/**
- * @template {ComponentClass<any>[]} T
- */
-declare class EntityTemplate<T extends ComponentClass<any>[]> {
-    /**
-     * @param {T} componentClasses
-     */
-    constructor(...componentClasses: T);
-    /** @private */
-    private componentClasses;
-    /**
-     * @param {EntityManager} entityManager
-     * @returns {[EntityId, ...ComponentInstancesOf<T>]}
-     */
-    create(entityManager: EntityManager): [number, ...ComponentInstancesOf$1<T>];
-    /**
-     * @param {EntityManager} entityManager
-     * @param {EntityId} entityId
-     */
-    destroy(entityManager: EntityManager, entityId: EntityId$3): void;
-}
-type EntityId$3 = EntityId;
-/**
- * <T>
- */
-type ComponentInstancesOf$1<T extends ComponentClass<any>[]> = { [K in keyof T]: T[K] extends ComponentClass<infer V> ? V : never; };
-
-/** @typedef {import('./EntityManager').EntityId} EntityId */
-/**
- * @template T
- * @typedef {import('./QueryManager').Selector<T>} Selector<T>
- */
-/**
- * @template T
- * @typedef {import('./QueryManager').SelectorNot<T>} SelectorNot<T>
- */
-/**
- * @template T
- * @typedef {import('./EntityTemplate').ComponentInstancesOf<T>} ComponentInstancesOf<T>
- */
-/**
- * @template {ComponentClass<any>[]} T
- */
-declare class Query$1<T extends ComponentClass<any>[]> {
-    /**
-     * @param {T} selectors
-     */
-    constructor(...selectors: T);
-    selectors: T;
-    key: string;
-    /**
-     * @param {Selector<?>} selector
-     */
-    hasSelector(selector: Selector$2<unknown>): boolean;
-    /**
-     * @param {EntityManager} entityManager
-     * @param {EntityId} entityId
-     */
-    test(entityManager: EntityManager, entityId: EntityId$2): boolean;
-    /**
-     * @param {EntityManager} entityManager
-     * @param {Array<EntityId>} result
-     */
-    hydrate(entityManager: EntityManager, result: Array<EntityId$2>): number[];
-    /**
-     * @param {EntityManager} entityManager
-     * @returns {number}
-     */
-    count(entityManager: EntityManager): number;
-    /**
-     * @param {EntityManager} entityManager
-     * @returns {[EntityId, ...ComponentInstancesOf<T>]}
-     */
-    findAny(entityManager: EntityManager): [EntityId$2, ...ComponentInstancesOf<T>];
-    /**
-     * @param {EntityManager} entityManager
-     * @returns {Generator<[EntityId, ...ComponentInstancesOf<T>]>}
-     */
-    findAll(entityManager: EntityManager): Generator<[EntityId$2, ...ComponentInstancesOf<T>]>;
-}
-type EntityId$2 = EntityId;
-/**
- * <T>
- */
-type Selector$2<T> = Selector$1<T>;
-/**
- * <T>
- */
-type ComponentInstancesOf<T> = ComponentInstancesOf$1<T>;
-
 /**
  * @template T
  * @typedef {SelectorNot<T>|ComponentClass<T>} Selector<T>
@@ -400,19 +305,15 @@ declare function Not<T>(componentClass: ComponentClass<T>): ComponentClass<T>;
 declare function isSelectorNot(selector: any): boolean;
 /** @typedef {import('./EntityManager').EntityManager} EntityManager */
 /** @typedef {import('./EntityManager').EntityId} EntityId */
-/**
- * @template T
- * @typedef {import('./Query').Query<T>} Query<T>
- */
 declare class QueryManager {
     /**
      * @protected
      * @type {Record<string, Array<EntityId>>}
      */
-    protected cachedResults: Record<string, Array<EntityId$1>>;
+    protected cachedResults: Record<string, Array<EntityId$2>>;
     /**
      * @private
-     * @type {Record<string, Query<?>>}
+     * @type {Record<string, import('./Query').Query<?>>}
      */
     private keyQueryMapping;
     /**
@@ -422,34 +323,42 @@ declare class QueryManager {
      * @param {ComponentClass<?>} removed
      * @param {boolean} dead
      */
-    onEntityComponentChanged(entityManager: EntityManager$1, entityId: EntityId$1, added: ComponentClass<unknown>, removed: ComponentClass<unknown>, dead: boolean): void;
+    onEntityComponentChanged(entityManager: EntityManager$1, entityId: EntityId$2, added: ComponentClass<unknown>, removed: ComponentClass<unknown>, dead: boolean): void;
     /**
+     * @protected
      * @param {EntityManager} entityManager
-     * @param {Query<?>} query
-     * @returns {EntityId}
+     * @param {EntityId} entityId
+     * @param {Array<ComponentClass<?>>} selectors
      */
-    findAny(entityManager: EntityManager$1, query: Query<unknown>): EntityId$1;
+    protected test(entityManager: EntityManager$1, entityId: EntityId$2, selectors: Array<ComponentClass<unknown>>): boolean;
+    /**
+     * @protected
+     * @param {Array<EntityId>} out
+     * @param {EntityManager} entityManager
+     * @param {Array<ComponentClass<?>>} selectors
+     */
+    protected hydrate(out: Array<EntityId$2>, entityManager: EntityManager$1, selectors: Array<ComponentClass<unknown>>): number[];
     /**
      * @param {EntityManager} entityManager
-     * @param {Query<?>} query
+     * @param {import('./Query').Query<?>} query
      * @returns {Array<EntityId>}
      */
-    findAll(entityManager: EntityManager$1, query: Query<unknown>): Array<EntityId$1>;
+    findAll(entityManager: EntityManager$1, query: any): Array<EntityId$2>;
     /**
      * @param {EntityManager} entityManager
-     * @param {Query<?>} query
+     * @param {import('./Query').Query<?>} query
      */
-    count(entityManager: EntityManager$1, query: Query<unknown>): number;
+    count(entityManager: EntityManager$1, query: any): number;
     /**
-     * @param {Query<?>} query
+     * @param {import('./Query').Query<?>} query
      */
-    clear(query: Query<unknown>): void;
+    clear(query: any): void;
     reset(): void;
 }
 /**
  * <T>
  */
-type Selector$1<T> = SelectorNot$1<T> | ComponentClass<T>;
+type Selector$2<T> = SelectorNot$1<T> | ComponentClass<T>;
 /**
  * <T>
  */
@@ -459,11 +368,7 @@ type SelectorNot$1<T> = {
     value: ComponentClass<T>;
 };
 type EntityManager$1 = EntityManager;
-type EntityId$1 = EntityId;
-/**
- * <T>
- */
-type Query<T> = Query$1<T>;
+type EntityId$2 = EntityId$1;
 
 /**
  * @template T
@@ -510,7 +415,7 @@ declare class EntityManager {
      * @param {ComponentClass<?>} detached
      * @param {boolean} dead
      */
-    protected entityComponentChangedCallback(entityId: EntityId, attached: ComponentClass<unknown>, detached: ComponentClass<unknown>, dead: boolean): void;
+    protected entityComponentChangedCallback(entityId: EntityId$1, attached: ComponentClass<unknown>, detached: ComponentClass<unknown>, dead: boolean): void;
     /**
      * @param {'change'} event
      * @param {EntityComponentChangedCallback} callback
@@ -525,18 +430,18 @@ declare class EntityManager {
     /**
      * @returns {EntityId}
      */
-    create(): EntityId;
+    create(): EntityId$1;
     /**
      * @param {EntityId} entityId
      */
-    destroy(entityId: EntityId): void;
+    destroy(entityId: EntityId$1): void;
     /**
      * Whether the entity exists with all provided component classes.
      *
      * @param {EntityId} entityId
      * @param {...ComponentClass<?>} componentClasses
      */
-    exists(entityId: EntityId, ...componentClasses: ComponentClass<unknown>[]): boolean;
+    exists(entityId: EntityId$1, ...componentClasses: ComponentClass<unknown>[]): boolean;
     /**
      * @template T
      * @param {EntityId} entityId
@@ -544,7 +449,7 @@ declare class EntityManager {
      * @param {T} [instance]
      * @returns {T}
      */
-    attach<T>(entityId: EntityId, componentClass: ComponentClass<T>, instance?: T): T;
+    attach<T>(entityId: EntityId$1, componentClass: ComponentClass<T>, instance?: T): T;
     /**
      * @template T
      * @param {EntityId} entityId
@@ -552,19 +457,19 @@ declare class EntityManager {
      * @param {T} [instance]
      * @returns {T}
      */
-    attachImmediately<T_1>(entityId: EntityId, componentClass: ComponentClass<T_1>, instance?: T_1): T_1;
+    attachImmediately<T_1>(entityId: EntityId$1, componentClass: ComponentClass<T_1>, instance?: T_1): T_1;
     /**
      * @template T
      * @param {EntityId} entityId
      * @param {ComponentClass<T>} componentClass
      */
-    detach<T_2>(entityId: EntityId, componentClass: ComponentClass<T_2>): void;
+    detach<T_2>(entityId: EntityId$1, componentClass: ComponentClass<T_2>): void;
     /**
      * @template T
      * @param {EntityId} entityId
      * @param {ComponentClass<T>} componentClass
      */
-    detachImmediately<T_3>(entityId: EntityId, componentClass: ComponentClass<T_3>): void;
+    detachImmediately<T_3>(entityId: EntityId$1, componentClass: ComponentClass<T_3>): void;
     /**
      * @param {ComponentClass<?>} componentClass
      */
@@ -579,7 +484,7 @@ declare class EntityManager {
      * @param {ComponentClass<T>} componentClass
      * @returns {T}
      */
-    get<T_4>(entityId: EntityId, componentClass: ComponentClass<T_4>): T_4;
+    get<T_4>(entityId: EntityId$1, componentClass: ComponentClass<T_4>): T_4;
     /**
      * @param {ComponentClass<?>} componentClass
      * @returns {number}
@@ -603,7 +508,7 @@ declare class EntityManager {
      */
     protected mapOf<T_6>(componentClass: ComponentClass<T_6>): ComponentInstanceMap<T_6>;
     /** @returns {Set<EntityId>} */
-    entityIds(): Set<EntityId>;
+    entityIds(): Set<EntityId$1>;
     /** @returns {Array<ComponentClass<?>>} */
     componentClasses(): Array<ComponentClass<unknown>>;
     reset(): void;
@@ -613,14 +518,108 @@ declare class EntityManager {
  */
 type ComponentInstanceMap<T> = Record<number, T>;
 type ComponentClassMap = Record<string, ComponentInstanceMap<unknown>>;
-type EntityId = number;
+type EntityId$1 = number;
 type ComponentName = string;
-type EntityComponentChangedCallback$1 = (entityManager: EntityManager, entityId: EntityId, attached: ComponentClass<unknown>, detached: ComponentClass<unknown>, dead: boolean) => any;
+type EntityComponentChangedCallback$1 = (entityManager: EntityManager, entityId: EntityId$1, attached: ComponentClass<unknown>, detached: ComponentClass<unknown>, dead: boolean) => any;
+
+/** @typedef {import('./EntityManager').EntityId} EntityId */
+/**
+ * @template T
+ * @typedef {import('./QueryManager').Selector<T>} Selector<T>
+ */
+/**
+ * @template T
+ * @typedef {import('./QueryManager').SelectorNot<T>} SelectorNot<T>
+ */
+declare class Query {
+    /**
+     * @param {...ComponentClass<?>} selectors
+     */
+    constructor(...selectors: ComponentClass<unknown>[]);
+    selectors: ComponentClass<any>[];
+    key: string;
+    /**
+     * @param {Selector<?>} selector
+     */
+    hasSelector(selector: Selector$1<unknown>): boolean;
+    /**
+     * @param {EntityManager} entityManager
+     * @returns {number}
+     */
+    count(entityManager: EntityManager): number;
+    /**
+     * @param {EntityManager} entityManager
+     * @returns {Generator<EntityId>}
+     */
+    findEntityIds(entityManager: EntityManager): Generator<EntityId>;
+    /**
+     * @template T
+     * @param {EntityManager} entityManager
+     * @param {ComponentClass<T>} componentClass
+     * @returns {Generator<T>}
+     */
+    findComponents<T>(entityManager: EntityManager, componentClass: ComponentClass<T>): Generator<T, any, any>;
+}
+type EntityId = EntityId$1;
+/**
+ * <T>
+ */
+type Selector$1<T> = Selector$2<T>;
+
+/**
+ * @typedef {Record<string, ComponentClass<any>>} ArchetypeComponentMap
+ */
+/**
+ * @template {ArchetypeComponentMap} T
+ * @typedef {{[K in keyof T]: T[K] extends ComponentClass<infer V> ? V : never}} ArchetypeComponentInstancesOf<T>
+ */
+/**
+ * @template {ArchetypeComponentMap} T
+ */
+declare class Archetype<T extends ArchetypeComponentMap> extends Query {
+    /**
+     * @param {T} componentMap
+     */
+    constructor(componentMap: T);
+    /** @private */
+    private componentClasses;
+    /**
+     * @param {EntityManager} ents
+     * @returns {ArchetypeComponentInstancesOf<T>}
+     */
+    create(ents: EntityManager): ArchetypeComponentInstancesOf<T>;
+    /**
+     * @param {EntityManager} ents
+     * @param {import('./EntityManager').EntityId} entityId
+     */
+    destroy(ents: EntityManager, entityId: EntityId$1): void;
+    /**
+     * @param {EntityManager} ents
+     * @param {import('./EntityManager').EntityId} entityId
+     * @returns {ArchetypeComponentInstancesOf<T>}
+     */
+    find(ents: EntityManager, entityId: EntityId$1): ArchetypeComponentInstancesOf<T>;
+    /**
+     * @param {EntityManager} ents
+     * @returns {ArchetypeComponentInstancesOf<T>}
+     */
+    findAny(ents: EntityManager): ArchetypeComponentInstancesOf<T>;
+    /**
+     * @param {EntityManager} ents
+     * @returns {Generator<ArchetypeComponentInstancesOf<T>>}
+     */
+    findAll(ents: EntityManager): Generator<ArchetypeComponentInstancesOf<T>, any, any>;
+}
+type ArchetypeComponentMap = Record<string, ComponentClass<any>>;
+/**
+ * <T>
+ */
+type ArchetypeComponentInstancesOf<T extends ArchetypeComponentMap> = { [K in keyof T]: T[K] extends ComponentClass<infer V> ? V : never; };
 
 /**
  * <T>
  */
-type Selector<T> = Selector$1<T>;
+type Selector<T> = Selector$2<T>;
 /**
  * <T>
  */
@@ -903,6 +902,7 @@ declare class AnimationFrameLoop {
     next(now?: number): void;
     start(): AnimationFrameLoop;
     cancel(): AnimationFrameLoop;
+    get running(): boolean;
 }
 type AnimationFrameLoopCallback = (frameDetail: AnimationFrameLoop) => void;
 type AnimationFrameDetail = {
@@ -911,4 +911,4 @@ type AnimationFrameDetail = {
     deltaTime: number;
 };
 
-export { AnimationFrameDetail, AnimationFrameLoop, AnimationFrameLoopCallback, AsyncTopic, AsyncTopicCallback, Camera, ComponentClass, ComponentClassMap, ComponentInstanceMap, ComponentName, EntityComponentChangedCallback, EntityId, EntityManager, EntityTemplate, FirstPersonCameraController, Not, OrthographicCamera, PerspectiveCamera, Query$1 as Query, QueryManager, SceneGraph, SceneNode, SceneNodeInfo, Selector, SelectorNot, Topic$1 as Topic, TopicCallback, TopicManager$1 as TopicManager, WalkBackCallback, WalkCallback, WalkChildrenCallback, isSelectorNot, lookAt, panTo, screenToWorldRay };
+export { AnimationFrameDetail, AnimationFrameLoop, AnimationFrameLoopCallback, Archetype, ArchetypeComponentInstancesOf, ArchetypeComponentMap, AsyncTopic, AsyncTopicCallback, Camera, ComponentClass, ComponentClassMap, ComponentInstanceMap, ComponentName, EntityComponentChangedCallback, EntityId$1 as EntityId, EntityManager, FirstPersonCameraController, Not, OrthographicCamera, PerspectiveCamera, Query, QueryManager, SceneGraph, SceneNode, SceneNodeInfo, Selector, SelectorNot, Topic$1 as Topic, TopicCallback, TopicManager$1 as TopicManager, WalkBackCallback, WalkCallback, WalkChildrenCallback, isSelectorNot, lookAt, panTo, screenToWorldRay };

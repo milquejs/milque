@@ -76,10 +76,10 @@ export function init(m) {
 export function update(m) {
     const { deltaTime } = useCurrentAnimationFrameDetail(m);
     const ents = useContext(m, EntityProvider);
-    let dx = MoveRight.value - MoveLeft.value;
-    let dy = MoveDown.value - MoveUp.value;
+    let dx = MoveRight.current.value - MoveLeft.current.value;
+    let dy = MoveDown.current.value - MoveUp.current.value;
     let sx = Math.sign(dx);
-    let [_, boy] = BoyQuery.findAny(ents);
+    let { value: boy } = BoyQuery.findComponents(ents, BoyClass).next();
     boy.x += dx;
     boy.y += dy;
     if (sx !== 0) {
@@ -94,7 +94,7 @@ export function draw(m) {
     const assets = useContext(m, AssetProvider);
     const ents = useContext(m, EntityProvider);
     const { currentTime } = useCurrentAnimationFrameDetail(m);
-    for(let [_, boy] of BoyQuery.findAll(ents)) {
+    for(let boy of BoyQuery.findComponents(ents, BoyClass)) {
         tia.spr(ctx, WorkImage.get(assets), Math.floor(currentTime / 100) % 6, boy.x, boy.y, 32, 32, boy.facing > 0);
         if (boy.spriteIndex < 19) {
             tia.spr(ctx, Eyes1Image.get(assets), 0, boy.x, boy.y, 32, 32, boy.facing > 0);

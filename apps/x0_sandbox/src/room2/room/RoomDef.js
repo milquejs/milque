@@ -2,7 +2,6 @@ import { ComponentClass, EntityManager, Query } from '@milque/scene';
 import { ObjectDef } from '../object';
 import { AssetManager } from '@milque/asset';
 import { getObjectDef } from '../Defs';
-import { SpriteDef } from '../sprite';
 
 /** @module RoomDef */
 
@@ -87,7 +86,7 @@ function createRoomInstance(roomName, roomId, background) {
         roomName,
         roomId,
         roomTag: new ComponentClass(`room:${roomName}`),
-        /** @type {Record<string, { tag: ComponentClass<null>, query: Query<?> }>} */
+        /** @type {Record<string, { tag: ComponentClass<null>, query: Query }>} */
         objectQueries: {},
         background,
     };
@@ -176,8 +175,8 @@ export function getObjectTag(room, objectName) {
  * @param {string} objectName 
  */
 export function* findAllByObject(ents, room, objectName) {
-    for(let result of room.objectQueries[objectName].query.findAll(ents)) {
-        yield /** @type {[import('@milque/scene').EntityId, import('../object/ObjectDef').ObjectInstance]} */ (result);
+    for(let result of room.objectQueries[objectName].query.findComponents(ents, ObjectDef.ObjectComponent)) {
+        yield result;
     }
 }
 
@@ -187,6 +186,6 @@ export function* findAllByObject(ents, room, objectName) {
  * @param {string} objectName 
  */
 export function findAnyByObject(ents, room, objectName) {
-    let result = room.objectQueries[objectName].query.findAny(ents);
-    return /** @type {[import('@milque/scene').EntityId, import('../object/ObjectDef').ObjectInstance]} */ (result);
+    let { value } = room.objectQueries[objectName].query.findComponents(ents, ObjectDef.ObjectComponent).next();
+    return value;
 }
