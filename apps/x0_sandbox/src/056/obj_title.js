@@ -90,14 +90,14 @@ export function TitleSystem(m) {
     let frames = stringToFrameIndex(title);
 
     useWhen(m, object.ObjectInit, 0, (self) => {
-        let sprite = SpriteDef.getInstance(ents, self.objectId);
+        let sprite = SpriteDef.getInstance(ents, self.spriteId);
         sprite.frameSpeed = 0;
         sprite.frameDelta = 0;
         sprite.spriteIndex = 1;
     });
 
     useWhen(m, object.ObjectDraw, 0, (self) => {
-        let sprite = SpriteDef.getInstance(ents, self.objectId);
+        let sprite = SpriteDef.getInstance(ents, self.spriteId);
         let spriteDef = getSpriteDef(assets, sprite.spriteName);
         let image = assets.get(spriteDef.image);
         let x = 0;
@@ -106,7 +106,7 @@ export function TitleSystem(m) {
             tia.matPos(x, 0);
             tia.push();
             tia.matBegin(ctx);
-            SpriteDef.drawInstance(ctx, sprite, spriteDef, image);
+            SpriteDef.drawInstance(ctx, sprite.spriteIndex, spriteDef, image);
             tia.matEnd(ctx);
             tia.pop();
             x += 14;

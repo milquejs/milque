@@ -1,1 +1,1 @@
-export * from './SceneGraph.js';
+export * as SceneGraph from './SceneGraph';

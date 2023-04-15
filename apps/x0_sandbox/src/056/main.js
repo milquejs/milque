@@ -127,11 +127,11 @@ const Game = {
         let objectTopicRegistry = useContext(m, ObjectTopicRegistry);
 
         PreUpdate.dispatchImmediately(topics, frameDetail);
-        for(let [_, sprite] of SpriteDef.SpriteQuery.findAll(ents)) {
+        for(let sprite of SpriteDef.SpriteQuery.findComponents(ents, SpriteDef.SpriteComponent)) {
             let spriteDef = getSpriteDef(assets, sprite.spriteName);
             SpriteDef.updateInstance(frameDetail.deltaTime, sprite, spriteDef);
         }
-        for(let [_, instance] of ObjectDef.ObjectQuery.findAll(ents)) {
+        for(let instance of ObjectDef.ObjectQuery.findComponents(ents, ObjectDef.ObjectComponent)) {
             if (objectTopicRegistry.has(instance.objectName)) {
                 let { update } = objectTopicRegistry.get(instance.objectName);
                 for(let topic of update) {
@@ -162,7 +162,7 @@ const Game = {
             if (!objectDef.sprite) {
                 return;
             }
-            let sprite = SpriteDef.getInstance(ents, instance.objectId);
+            let sprite = SpriteDef.getInstance(ents, instance.spriteId);
             let spriteDef = getSpriteDef(assets, sprite.spriteName);
             let image = assets.get(spriteDef.image);
             tia.mat(instance.x, instance.y, instance.scaleX, instance.scaleY, instance.rotation);

@@ -1,8 +1,7 @@
 import { ComponentClass, Query } from '@milque/scene';
-import { RunModule, RunStepTopic, Runner, install, using, when } from '../runner2';
-import { AppModule, CanvasProvider, EntityProvider, InputProvider, RenderingProvider, SceneGraphProvider } from './Providers';
+import { RunModule, Runner, install, using, useFrameEffect } from '../runner2';
+import { AppModule, CanvasProvider, EntityProvider, InputProvider, RenderingProvider } from './Providers';
 import { AxisBinding, ButtonBinding, KeyCodes } from '@milque/input';
-import { SceneGraph } from '../room2/scenegraph';
 
 export async function main() {
     const m = {};
@@ -50,7 +49,7 @@ function GameSystem(m) {
     masks.newMask(cxm2, cyM2, cxM2, cyM3);
     masks.newMask(cxM2, cyM2, cxM3, cyM3);
 
-    when(m, RunStepTopic, 0, () => {
+    useFrameEffect(m, 0, () => {
         tia.cls(ctx);
         tia.line(ctx, cxm2, cym3, cxm2, cyM3, 0xFFFFFF);
         tia.line(ctx, cxM2, cym3, cxM2, cyM3, 0xFFFFFF);

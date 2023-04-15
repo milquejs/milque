@@ -1,6 +1,7 @@
-import { ComponentClass, EntityManager, Query } from '@milque/scene';
-import { ObjectDef } from '../object';
+import { ComponentClass, EntityManager, Query, SceneGraph } from '@milque/scene';
 import { AssetManager } from '@milque/asset';
+
+import { ObjectDef } from '../object';
 import { getObjectDef } from '../Defs';
 
 /** @module RoomDef */
@@ -122,7 +123,7 @@ export function getInstance(ents, roomId) {
 
 /**
  * @param {EntityManager} ents 
- * @param {import('../scenegraph/SceneGraph').SceneGraph} sceneGraph 
+ * @param {SceneGraph} sceneGraph 
  * @param {AssetManager} assets 
  * @param {RoomInstance} room 
  * @param {string} objectName 

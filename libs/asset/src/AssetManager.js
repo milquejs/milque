@@ -141,6 +141,7 @@ export class AssetManager {
      * @param {string} uri 
      */
     loading(uri) {
+        // TODO: This can be whenLoaded().
         const assets = /** @type {import('./AssetStore').AssetStore} */ (/** @type {unknown} */ (this));
         if (isAssetLoadingInStore(assets, uri)) {
             return getLoadingInStore(assets, uri);

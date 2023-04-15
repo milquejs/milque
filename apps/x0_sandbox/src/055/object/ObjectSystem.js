@@ -1,8 +1,7 @@
 import { AssetManager } from '@milque/asset';
-import { ComponentClass, EntityManager, Query } from '@milque/scene';
+import { ComponentClass, EntityManager, Query, SceneGraph } from '@milque/scene';
 
 import { ObjectInstance } from './Object';
-import { SceneGraph } from '../../room';
 import { attachSprite } from '../sprite/SpriteSystem';
 
 export const ObjectComponent = new ComponentClass('object', () => new ObjectInstance(null));
@@ -49,7 +48,7 @@ export class ObjectManager {
 /**
  * @param {EntityManager} ents
  * @param {AssetManager} assets
- * @param {import('../room/SceneGraph').SceneGraph} sceneGraph
+ * @param {SceneGraph} sceneGraph
  * @param {ObjectManager} objectManager
  * @param {string} objectName 
  */

@@ -47,7 +47,7 @@ export function BunnySystem(m) {
         let speed = 8;
         let dx = MoveRight.get(axb).value - MoveLeft.get(axb).value;
         let dy = MoveDown.get(axb).value - MoveUp.get(axb).value;
-        for(let [entityId, bunny] of RoomDef.findAllByObject(ents, room, 'obj_bunny')) {
+        for(let bunny of RoomDef.findAllByObject(ents, room, 'obj_bunny')) {
             bunny.x += dx * speed * dt;
             bunny.y += dy * speed * dt;
             if (dx !== 0) {
@@ -58,7 +58,7 @@ export function BunnySystem(m) {
                 sprite.spriteIndex = 0;
                 sprite.frameDelta = 0;
                 sprite.spriteName = 'sp_bunny_seated';
-                let [childId] = ObjectDef.getInstanceChildIds(sceneGraph, entityId);
+                let [childId] = ObjectDef.getInstanceChildIds(sceneGraph, bunny.objectId);
                 let child = ObjectDef.getInstance(ents, childId);
                 let childSprite = SpriteDef.getInstance(ents, child.spriteId);
                 childSprite.spriteIndex = 0;
@@ -69,7 +69,7 @@ export function BunnySystem(m) {
                 sprite.spriteIndex = 0;
                 sprite.frameDelta = 0;
                 sprite.spriteName = 'sp_bunny';
-                let [childId] = ObjectDef.getInstanceChildIds(sceneGraph, entityId);
+                let [childId] = ObjectDef.getInstanceChildIds(sceneGraph, bunny.objectId);
                 let child = ObjectDef.getInstance(ents, childId);
                 let childSprite = SpriteDef.getInstance(ents, child.spriteId);
                 childSprite.spriteIndex = 0;

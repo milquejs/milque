@@ -18,12 +18,11 @@ import { isSelectorNot } from './QueryManager';
 export class Archetype extends Query {
 
     /**
-     * @param {T} componentMap 
+     * @param {T} components 
      */
-    constructor(componentMap) {
-        super(...Object.values(componentMap));
-        /** @private */
-        this.componentClasses = componentMap;
+    constructor(components) {
+        super(...Object.values(components));
+        this.components = components;
     }
 
     /**
@@ -33,7 +32,7 @@ export class Archetype extends Query {
     create(ents) {
         let entityId = ents.create();
         let result = {};
-        for(let [key, componentClass] of Object.entries(this.componentClasses)) {
+        for(let [key, componentClass] of Object.entries(this.components)) {
             let instance = ents.attach(entityId, componentClass);
             result[key] = instance;
         }
@@ -45,7 +44,7 @@ export class Archetype extends Query {
      * @param {import('./EntityManager').EntityId} entityId 
      */
     destroy(ents, entityId) {
-        for (let componentClass of Object.values(this.componentClasses)) {
+        for (let componentClass of Object.values(this.components)) {
             ents.detach(entityId, componentClass);
         }
     }
@@ -59,7 +58,7 @@ export class Archetype extends Query {
         if (entityId === null) {
             return /** @type {ArchetypeComponentInstancesOf<T>} */ ({});
         }
-        return computeResult({}, ents, entityId, this.componentClasses);
+        return computeResult({}, ents, entityId, this.components);
     }
 
     /**
@@ -73,7 +72,7 @@ export class Archetype extends Query {
             return /** @type {ArchetypeComponentInstancesOf<T>} */ ({});
         }
         let entityId = entities[Math.floor(Math.random() * entities.length)];
-        return computeResult({}, ents, entityId, this.componentClasses);
+        return computeResult({}, ents, entityId, this.components);
     }
 
     /**
@@ -85,7 +84,7 @@ export class Archetype extends Query {
         let result = {};
         let entities = queryManager.findAll(ents, this);
         for(let entityId of entities) {
-            yield computeResult(result, ents, entityId, this.componentClasses);
+            yield computeResult(result, ents, entityId, this.components);
         }
     }
 }

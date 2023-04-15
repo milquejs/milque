@@ -28,16 +28,16 @@ export function CameraSystem(m) {
     });
 
     useWhen(m, PreDraw, 0, () => {
-        for(let [_, camera] of RoomDef.findAllByObject(ents, room, objCamera.uri)) {
+        for(let camera of RoomDef.findAllByObject(ents, room, objCamera.uri)) {
             tia.camera(camera.x - canvas.width / 2, camera.y - canvas.height / 2);
         }
     });
     
     useWhen(m, PostUpdate, 0, () => {
         // Update camera
-        let [_, bunny] = RoomDef.findAnyByObject(ents, room, 'obj_bunny');
+        let bunny = RoomDef.findAnyByObject(ents, room, 'obj_bunny');
         let cameraSpeed = 0.03;
-        for(let [_, camera] of RoomDef.findAllByObject(ents, room, objCamera.uri)) {
+        for(let camera of RoomDef.findAllByObject(ents, room, objCamera.uri)) {
             camera.x = lerp(camera.x, bunny.x, cameraSpeed);
             camera.y = lerp(camera.y, bunny.y, cameraSpeed);
         }

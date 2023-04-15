@@ -134,141 +134,31 @@ declare class FirstPersonCameraController {
     apply(viewMatrix: any): any;
 }
 
-/**
- * @typedef {number} SceneNode
- *
- * @typedef SceneNodeInfo
- * @property {SceneNode} parent The parent node. If the node does not have a parent,
- * it will be 0.
- * @property {Array<SceneNode>} children The list of child nodes.
- *
- * @callback WalkCallback Called for each node, before traversing its children.
- * @param {SceneNode} sceneNode The current scene node.
- * @param {SceneGraph} sceneGraph The current scene graph.
- * @returns {WalkBackCallback|boolean|void} If false, the walk will skip
- * the current node's children and all of its descendents. If a function,
- * it will be called after traversing down all of its children.
- *
- * @callback WalkBackCallback Called if returned by {@link WalkCallback}, after
- * traversing the current node's children.
- * @param {SceneNode} sceneNode The current scene node.
- * @param {SceneGraph} sceneGraph The current scene graph.
- *
- * @callback WalkChildrenCallback Called for each level of children, before
- * traversing them. This is usually used to determine visit order.
- * @param {Array<SceneNode>} childNodes A list of child nodes to be visited.
- * @param {SceneNode} parentNode The current parent node of these children.
- * @param {SceneGraph} sceneGraph The current scene graph.
- * @returns {Array<SceneNode>} The list of children to traverse for this parent.
- */
-/**
- * A tree-like graph of nodes with n-children.
- */
-declare class SceneGraph {
-    nodes: {};
-    roots: any[];
-    _nextAvailableSceneNodeId: number;
-    /**
-     * Creates a scene node in the scene graph.
-     *
-     * @param {SceneNode} [parentNode] The parent node for the created scene
-     * node.
-     * @returns {SceneNode} The created scene node.
-     */
-    createSceneNode(parentNode?: SceneNode): SceneNode;
-    /**
-     * Creates multiple scene nodes in the scene graph.
-     *
-     * @param {number} count The number of scene nodes to create.
-     * @param {SceneNode} [parentNode] The parent node for the created scene
-     * nodes.
-     * @returns {Array<SceneNode>} A list of created scene nodes.
-     */
-    createSceneNodes(count: number, parentNode?: SceneNode): Array<SceneNode>;
-    /**
-     * Deletes a scene node from the scene graph, along with all
-     * of its descendents.
-     *
-     * @param {SceneNode} sceneNode The scene node to remove.
-     */
-    deleteSceneNode(sceneNode: SceneNode): void;
-    /**
-     * Deletes all given scene nodes from the scene graph, along with all
-     * of their descendents.
-     *
-     * @param {Array<SceneNode>} sceneNodes A list of scene nodes to remove.
-     */
-    deleteSceneNodes(sceneNodes: Array<SceneNode>): void;
-    /**
-     * Get the scene node's info.
-     *
-     * @param {SceneNode} sceneNode The scene node to get info for.
-     * @returns {SceneNodeInfo} The info for the given scene node.
-     */
-    getSceneNodeInfo(sceneNode: SceneNode): SceneNodeInfo;
-    /**
-     * Changes the parent of the scene node with the new parent node in
-     * the graph.
-     *
-     * @param {SceneNode} sceneNode The target scene node to change.
-     * @param {SceneNode} parentNode The scene node to set as the parent.
-     */
-    parentSceneNode(sceneNode: SceneNode, parentNode: SceneNode): void;
-    /**
-     * Replaces the scene node with the new replacement node in the graph,
-     * inheriting its parent and children.
-     *
-     * @param {SceneNode} sceneNode The target scene node to replace.
-     * @param {SceneNode} replacementNode The scene node to replace with. If falsey,
-     * it will remove the target scene node and the target's parent will adopt
-     * its grandchildren. If the target did not have parents, the grandchildren will
-     * become root nodes in the graph.
-     */
-    replaceSceneNode(sceneNode: SceneNode, replacementNode: SceneNode): void;
-    /**
-     * Walks through every child node in the graph.
-     *
-     * @param {WalkCallback} callback The function called for each node
-     * in the graph, in ordered traversal from parent to child.
-     * @param {object} [opts] Any additional options.
-     * @param {SceneNode|Array<SceneNode>} [opts.from] The parent node to
-     * start walking from, inclusive. By default, it will start from the root
-     * nodes.
-     * @param {WalkChildrenCallback} [opts.childFilter] The function called before
-     * walking through the children. This is usually used to determine the
-     * visiting order.
-     */
-    walk(callback: WalkCallback, opts?: {
-        from?: SceneNode | Array<SceneNode>;
-        childFilter?: WalkChildrenCallback;
-    }): void;
-}
 type SceneNode = number;
-type SceneNodeInfo = {
-    /**
-     * The parent node. If the node does not have a parent,
-     * it will be 0.
-     */
-    parent: SceneNode;
-    /**
-     * The list of child nodes.
-     */
-    children: Array<SceneNode>;
+
+declare function WalkCallback(node: SceneNode, graph: SceneGraph): WalkBackCallback|boolean|void
+declare function WalkBackCallback(node: SceneNode, graph: SceneGraph): void
+declare function WalkChildrenCallback(children: Array<SceneNode>, parent: SceneNode, graph: SceneGraph): Array<SceneNode>
+
+type SceneGraph = {
+    roots: Array<SceneNode>,
+    parents: Record<string, SceneNode>,
+    children: Record<string, Array<SceneNode>>,
 };
-/**
- * Called for each node, before traversing its children.
- */
-type WalkCallback = (sceneNode: SceneNode, sceneGraph: SceneGraph) => WalkBackCallback | boolean | void;
-/**
- * Called if returned by {@link WalkCallback }, after
- * traversing the current node's children.
- */
-type WalkBackCallback = (sceneNode: SceneNode, sceneGraph: SceneGraph) => any;
-/**
- * Called for each level of children, before
- * traversing them. This is usually used to determine visit order.
- */
-type WalkChildrenCallback = (childNodes: Array<SceneNode>, parentNode: SceneNode, sceneGraph: SceneGraph) => Array<SceneNode>;
+
+declare module SceneGraph {
+    export function create(): SceneGraph
+    export function clone(a: SceneGraph): SceneGraph
+    export function add(out: SceneGraph, node: SceneNode, parentNode?: SceneNode)
+    export function has(graph: SceneGraph, node: SceneNode)
+    export function parent(out: SceneGraph, childNode: SceneNode, parentNode: SceneNode)
+    export function prune(out: SceneGraph, targetNode: SceneNode)
+    export function replace(out: SceneGraph, targetNode: SceneNode, replacementNode: SceneNode)
+    export function walk(graph: SceneGraph, callback: WalkCallback, opts?: { from?: SceneNode|Array<SceneNode>, childFilter?: WalkChildrenCallback })
+    export function getRoots(graph: SceneGraph): Array<SceneNode>
+    export function getParent(graph: SceneGraph, node: SceneNode): SceneNode
+    export function getChildren(graph: SceneGraph, node: SceneNode): Array<SceneNode>
+}
 
 /**
  * @template T
@@ -284,6 +174,50 @@ declare class ComponentClass<T> {
     new: () => T;
     delete: (component: T) => void;
 }
+
+/** @typedef {import('./EntityManager').EntityId} EntityId */
+/**
+ * @template T
+ * @typedef {import('./QueryManager').Selector<T>} Selector<T>
+ */
+/**
+ * @template T
+ * @typedef {import('./QueryManager').SelectorNot<T>} SelectorNot<T>
+ */
+declare class Query$1 {
+    /**
+     * @param {...ComponentClass<?>} selectors
+     */
+    constructor(...selectors: ComponentClass<unknown>[]);
+    selectors: ComponentClass<any>[];
+    key: string;
+    /**
+     * @param {Selector<?>} selector
+     */
+    hasSelector(selector: Selector$2<unknown>): boolean;
+    /**
+     * @param {EntityManager} entityManager
+     * @returns {number}
+     */
+    count(entityManager: EntityManager): number;
+    /**
+     * @param {EntityManager} entityManager
+     * @returns {Generator<EntityId>}
+     */
+    findEntityIds(entityManager: EntityManager): Generator<EntityId$2>;
+    /**
+     * @template T
+     * @param {EntityManager} entityManager
+     * @param {ComponentClass<T>} componentClass
+     * @returns {Generator<T>}
+     */
+    findComponents<T>(entityManager: EntityManager, componentClass: ComponentClass<T>): Generator<T, any, any>;
+}
+type EntityId$2 = EntityId;
+/**
+ * <T>
+ */
+type Selector$2<T> = Selector$1<T>;
 
 /**
  * @template T
@@ -305,15 +239,16 @@ declare function Not<T>(componentClass: ComponentClass<T>): ComponentClass<T>;
 declare function isSelectorNot(selector: any): boolean;
 /** @typedef {import('./EntityManager').EntityManager} EntityManager */
 /** @typedef {import('./EntityManager').EntityId} EntityId */
+/** @typedef {import('./Query').Query} Query */
 declare class QueryManager {
     /**
      * @protected
      * @type {Record<string, Array<EntityId>>}
      */
-    protected cachedResults: Record<string, Array<EntityId$2>>;
+    protected cachedResults: Record<string, Array<EntityId$1>>;
     /**
      * @private
-     * @type {Record<string, import('./Query').Query<?>>}
+     * @type {Record<string, Query>}
      */
     private keyQueryMapping;
     /**
@@ -323,42 +258,42 @@ declare class QueryManager {
      * @param {ComponentClass<?>} removed
      * @param {boolean} dead
      */
-    onEntityComponentChanged(entityManager: EntityManager$1, entityId: EntityId$2, added: ComponentClass<unknown>, removed: ComponentClass<unknown>, dead: boolean): void;
+    onEntityComponentChanged(entityManager: EntityManager$1, entityId: EntityId$1, added: ComponentClass<unknown>, removed: ComponentClass<unknown>, dead: boolean): void;
     /**
      * @protected
      * @param {EntityManager} entityManager
      * @param {EntityId} entityId
      * @param {Array<ComponentClass<?>>} selectors
      */
-    protected test(entityManager: EntityManager$1, entityId: EntityId$2, selectors: Array<ComponentClass<unknown>>): boolean;
+    protected test(entityManager: EntityManager$1, entityId: EntityId$1, selectors: Array<ComponentClass<unknown>>): boolean;
     /**
      * @protected
      * @param {Array<EntityId>} out
      * @param {EntityManager} entityManager
      * @param {Array<ComponentClass<?>>} selectors
      */
-    protected hydrate(out: Array<EntityId$2>, entityManager: EntityManager$1, selectors: Array<ComponentClass<unknown>>): number[];
+    protected hydrate(out: Array<EntityId$1>, entityManager: EntityManager$1, selectors: Array<ComponentClass<unknown>>): number[];
     /**
      * @param {EntityManager} entityManager
-     * @param {import('./Query').Query<?>} query
+     * @param {Query} query
      * @returns {Array<EntityId>}
      */
-    findAll(entityManager: EntityManager$1, query: any): Array<EntityId$2>;
+    findAll(entityManager: EntityManager$1, query: Query): Array<EntityId$1>;
     /**
      * @param {EntityManager} entityManager
-     * @param {import('./Query').Query<?>} query
+     * @param {Query} query
      */
-    count(entityManager: EntityManager$1, query: any): number;
+    count(entityManager: EntityManager$1, query: Query): number;
     /**
-     * @param {import('./Query').Query<?>} query
+     * @param {Query} query
      */
-    clear(query: any): void;
+    clear(query: Query): void;
     reset(): void;
 }
 /**
  * <T>
  */
-type Selector$2<T> = SelectorNot$1<T> | ComponentClass<T>;
+type Selector$1<T> = SelectorNot$1<T> | ComponentClass<T>;
 /**
  * <T>
  */
@@ -368,7 +303,8 @@ type SelectorNot$1<T> = {
     value: ComponentClass<T>;
 };
 type EntityManager$1 = EntityManager;
-type EntityId$2 = EntityId$1;
+type EntityId$1 = EntityId;
+type Query = Query$1;
 
 /**
  * @template T
@@ -415,7 +351,7 @@ declare class EntityManager {
      * @param {ComponentClass<?>} detached
      * @param {boolean} dead
      */
-    protected entityComponentChangedCallback(entityId: EntityId$1, attached: ComponentClass<unknown>, detached: ComponentClass<unknown>, dead: boolean): void;
+    protected entityComponentChangedCallback(entityId: EntityId, attached: ComponentClass<unknown>, detached: ComponentClass<unknown>, dead: boolean): void;
     /**
      * @param {'change'} event
      * @param {EntityComponentChangedCallback} callback
@@ -430,18 +366,18 @@ declare class EntityManager {
     /**
      * @returns {EntityId}
      */
-    create(): EntityId$1;
+    create(): EntityId;
     /**
      * @param {EntityId} entityId
      */
-    destroy(entityId: EntityId$1): void;
+    destroy(entityId: EntityId): void;
     /**
      * Whether the entity exists with all provided component classes.
      *
      * @param {EntityId} entityId
      * @param {...ComponentClass<?>} componentClasses
      */
-    exists(entityId: EntityId$1, ...componentClasses: ComponentClass<unknown>[]): boolean;
+    exists(entityId: EntityId, ...componentClasses: ComponentClass<unknown>[]): boolean;
     /**
      * @template T
      * @param {EntityId} entityId
@@ -449,7 +385,7 @@ declare class EntityManager {
      * @param {T} [instance]
      * @returns {T}
      */
-    attach<T>(entityId: EntityId$1, componentClass: ComponentClass<T>, instance?: T): T;
+    attach<T>(entityId: EntityId, componentClass: ComponentClass<T>, instance?: T): T;
     /**
      * @template T
      * @param {EntityId} entityId
@@ -457,19 +393,19 @@ declare class EntityManager {
      * @param {T} [instance]
      * @returns {T}
      */
-    attachImmediately<T_1>(entityId: EntityId$1, componentClass: ComponentClass<T_1>, instance?: T_1): T_1;
+    attachImmediately<T_1>(entityId: EntityId, componentClass: ComponentClass<T_1>, instance?: T_1): T_1;
     /**
      * @template T
      * @param {EntityId} entityId
      * @param {ComponentClass<T>} componentClass
      */
-    detach<T_2>(entityId: EntityId$1, componentClass: ComponentClass<T_2>): void;
+    detach<T_2>(entityId: EntityId, componentClass: ComponentClass<T_2>): void;
     /**
      * @template T
      * @param {EntityId} entityId
      * @param {ComponentClass<T>} componentClass
      */
-    detachImmediately<T_3>(entityId: EntityId$1, componentClass: ComponentClass<T_3>): void;
+    detachImmediately<T_3>(entityId: EntityId, componentClass: ComponentClass<T_3>): void;
     /**
      * @param {ComponentClass<?>} componentClass
      */
@@ -484,7 +420,7 @@ declare class EntityManager {
      * @param {ComponentClass<T>} componentClass
      * @returns {T}
      */
-    get<T_4>(entityId: EntityId$1, componentClass: ComponentClass<T_4>): T_4;
+    get<T_4>(entityId: EntityId, componentClass: ComponentClass<T_4>): T_4;
     /**
      * @param {ComponentClass<?>} componentClass
      * @returns {number}
@@ -508,7 +444,7 @@ declare class EntityManager {
      */
     protected mapOf<T_6>(componentClass: ComponentClass<T_6>): ComponentInstanceMap<T_6>;
     /** @returns {Set<EntityId>} */
-    entityIds(): Set<EntityId$1>;
+    entityIds(): Set<EntityId>;
     /** @returns {Array<ComponentClass<?>>} */
     componentClasses(): Array<ComponentClass<unknown>>;
     reset(): void;
@@ -518,53 +454,9 @@ declare class EntityManager {
  */
 type ComponentInstanceMap<T> = Record<number, T>;
 type ComponentClassMap = Record<string, ComponentInstanceMap<unknown>>;
-type EntityId$1 = number;
+type EntityId = number;
 type ComponentName = string;
-type EntityComponentChangedCallback$1 = (entityManager: EntityManager, entityId: EntityId$1, attached: ComponentClass<unknown>, detached: ComponentClass<unknown>, dead: boolean) => any;
-
-/** @typedef {import('./EntityManager').EntityId} EntityId */
-/**
- * @template T
- * @typedef {import('./QueryManager').Selector<T>} Selector<T>
- */
-/**
- * @template T
- * @typedef {import('./QueryManager').SelectorNot<T>} SelectorNot<T>
- */
-declare class Query {
-    /**
-     * @param {...ComponentClass<?>} selectors
-     */
-    constructor(...selectors: ComponentClass<unknown>[]);
-    selectors: ComponentClass<any>[];
-    key: string;
-    /**
-     * @param {Selector<?>} selector
-     */
-    hasSelector(selector: Selector$1<unknown>): boolean;
-    /**
-     * @param {EntityManager} entityManager
-     * @returns {number}
-     */
-    count(entityManager: EntityManager): number;
-    /**
-     * @param {EntityManager} entityManager
-     * @returns {Generator<EntityId>}
-     */
-    findEntityIds(entityManager: EntityManager): Generator<EntityId>;
-    /**
-     * @template T
-     * @param {EntityManager} entityManager
-     * @param {ComponentClass<T>} componentClass
-     * @returns {Generator<T>}
-     */
-    findComponents<T>(entityManager: EntityManager, componentClass: ComponentClass<T>): Generator<T, any, any>;
-}
-type EntityId = EntityId$1;
-/**
- * <T>
- */
-type Selector$1<T> = Selector$2<T>;
+type EntityComponentChangedCallback$1 = (entityManager: EntityManager, entityId: EntityId, attached: ComponentClass<unknown>, detached: ComponentClass<unknown>, dead: boolean) => any;
 
 /**
  * @typedef {Record<string, ComponentClass<any>>} ArchetypeComponentMap
@@ -576,13 +468,12 @@ type Selector$1<T> = Selector$2<T>;
 /**
  * @template {ArchetypeComponentMap} T
  */
-declare class Archetype<T extends ArchetypeComponentMap> extends Query {
+declare class Archetype<T extends ArchetypeComponentMap> extends Query$1 {
     /**
-     * @param {T} componentMap
+     * @param {T} components
      */
-    constructor(componentMap: T);
-    /** @private */
-    private componentClasses;
+    constructor(components: T);
+    components: T;
     /**
      * @param {EntityManager} ents
      * @returns {ArchetypeComponentInstancesOf<T>}
@@ -592,13 +483,13 @@ declare class Archetype<T extends ArchetypeComponentMap> extends Query {
      * @param {EntityManager} ents
      * @param {import('./EntityManager').EntityId} entityId
      */
-    destroy(ents: EntityManager, entityId: EntityId$1): void;
+    destroy(ents: EntityManager, entityId: EntityId): void;
     /**
      * @param {EntityManager} ents
      * @param {import('./EntityManager').EntityId} entityId
      * @returns {ArchetypeComponentInstancesOf<T>}
      */
-    find(ents: EntityManager, entityId: EntityId$1): ArchetypeComponentInstancesOf<T>;
+    find(ents: EntityManager, entityId: EntityId): ArchetypeComponentInstancesOf<T>;
     /**
      * @param {EntityManager} ents
      * @returns {ArchetypeComponentInstancesOf<T>}
@@ -619,7 +510,7 @@ type ArchetypeComponentInstancesOf<T extends ArchetypeComponentMap> = { [K in ke
 /**
  * <T>
  */
-type Selector<T> = Selector$2<T>;
+type Selector<T> = Selector$1<T>;
 /**
  * <T>
  */
@@ -911,4 +802,4 @@ type AnimationFrameDetail = {
     deltaTime: number;
 };
 
-export { AnimationFrameDetail, AnimationFrameLoop, AnimationFrameLoopCallback, Archetype, ArchetypeComponentInstancesOf, ArchetypeComponentMap, AsyncTopic, AsyncTopicCallback, Camera, ComponentClass, ComponentClassMap, ComponentInstanceMap, ComponentName, EntityComponentChangedCallback, EntityId$1 as EntityId, EntityManager, FirstPersonCameraController, Not, OrthographicCamera, PerspectiveCamera, Query, QueryManager, SceneGraph, SceneNode, SceneNodeInfo, Selector, SelectorNot, Topic$1 as Topic, TopicCallback, TopicManager$1 as TopicManager, WalkBackCallback, WalkCallback, WalkChildrenCallback, isSelectorNot, lookAt, panTo, screenToWorldRay };
+export { AnimationFrameDetail, AnimationFrameLoop, AnimationFrameLoopCallback, Archetype, ArchetypeComponentInstancesOf, ArchetypeComponentMap, AsyncTopic, AsyncTopicCallback, Camera, ComponentClass, ComponentClassMap, ComponentInstanceMap, ComponentName, EntityComponentChangedCallback, EntityId, EntityManager, FirstPersonCameraController, Not, OrthographicCamera, PerspectiveCamera, Query$1 as Query, QueryManager, SceneGraph, SceneNode, Selector, SelectorNot, Topic$1 as Topic, TopicCallback, TopicManager$1 as TopicManager, isSelectorNot, lookAt, panTo, screenToWorldRay };

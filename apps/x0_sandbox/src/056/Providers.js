@@ -1,11 +1,10 @@
 import { FlexCanvas } from '@milque/display';
-import { EntityManager } from '@milque/scene';
+import { EntityManager, SceneGraph } from '@milque/scene';
 import { InputContext } from '@milque/input';
 import { AssetManager } from '@milque/asset';
 
 import { useContext, useWhenSystemUpdate } from '../runner';
 import { Tia } from '../tia/Tia';
-import { SceneGraph } from '../room2/scenegraph';
 
 export const DEPS = [
     CanvasProvider,

@@ -6,14 +6,23 @@ export class Tia {
 
     constructor() {
         // NOTE: Offset canvas for pixel-perfect rendering.
+        /** @private */
         this.projectionMatrix = mat4.fromTranslation(mat4.create(), vec3.fromValues(0, 0, 0));
+        /** @private */
         this.viewMatrix = mat4.create();
+        /** @private */
         this.position = vec3.create();
+        /** @private */
         this.rotation = quat.create();
+        /** @private */
         this.scaling = vec3.fromValues(1, 1, 1);
+        /** @private */
         this.transformMatrix = mat4.create();
+        /** @private */
         this.transformStack = [];
+        /** @private */
         this.oldDOMMatrix = null;
+        /** @private */
         this.worldDOMMatrix = new DOMMatrix();
     }
 
@@ -298,6 +307,10 @@ export class Tia {
         vec3.set(this.scaling, 1, 1, 1);
         mat4.fromRotationTranslationScale(this.transformMatrix, this.rotation, this.position, this.scaling);
         this.matUpdate();
+    }
+
+    getCurrentMatrix() {
+        return this.worldDOMMatrix;
     }
 
     /**

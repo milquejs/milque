@@ -345,11 +345,6 @@ const MAX_DEPTH_LEVEL = 100;
 /**
  * @typedef {number} SceneNode
  *
- * @typedef SceneNodeInfo
- * @property {SceneNode} parent The parent node. If the node does not have a parent,
- * it will be 0.
- * @property {Array<SceneNode>} children The list of child nodes.
- *
  * @callback WalkCallback Called for each node, before traversing its children.
  * @param {SceneNode} sceneNode The current scene node.
  * @param {SceneGraph} sceneGraph The current scene graph.
@@ -371,240 +366,243 @@ const MAX_DEPTH_LEVEL = 100;
  */
 
 /**
- * A tree-like graph of nodes with n-children.
+ * @typedef {ReturnType<create>} SceneGraph
  */
-class SceneGraph {
-  /**
-   * Constructs an empty scene graph.
-   */
-  constructor() {
-    this.nodes = {};
-    this.roots = [];
 
-    this._nextAvailableSceneNodeId = 1;
-  }
+function create() {
+    return {
+        /** @type {Array<SceneNode>} */
+        roots: [],
+        /** @type {Record<string, SceneNode>} */
+        parents: {},
+        /** @type {Record<string, Array<SceneNode>>} */
+        children: {},
+    };
+}
 
-  /**
-   * Creates a scene node in the scene graph.
-   *
-   * @param {SceneNode} [parentNode] The parent node for the created scene
-   * node.
-   * @returns {SceneNode} The created scene node.
-   */
-  createSceneNode(parentNode = undefined) {
-    let sceneNode = this._nextAvailableSceneNodeId++;
-    let info = createSceneNodeInfo();
-    this.nodes[sceneNode] = info;
-    attach(parentNode, sceneNode, this);
-    return sceneNode;
-  }
+/**
+ * @param {SceneGraph} a 
+ */
+function clone(a) {
+    return {
+        roots: a.roots.slice(),
+        parents: {
+            ...a.parents,
+        },
+        children: Object.fromEntries(Object.entries(a.children)
+            .map(([k, v]) => [k, v.slice()])),
+    };
+}
 
-  /**
-   * Creates multiple scene nodes in the scene graph.
-   *
-   * @param {number} count The number of scene nodes to create.
-   * @param {SceneNode} [parentNode] The parent node for the created scene
-   * nodes.
-   * @returns {Array<SceneNode>} A list of created scene nodes.
-   */
-  createSceneNodes(count, parentNode = undefined) {
-    let result = [];
-    for (let i = 0; i < count; ++i) {
-      result.push(this.createSceneNode(parentNode));
+/**
+ * @param {SceneGraph} out 
+ * @param {SceneNode} node 
+ * @param {SceneNode} parentNode 
+ */
+function add(out, node, parentNode = 0) {
+    attach(out, node, parentNode);
+}
+
+/**
+ * @param {SceneGraph} graph 
+ * @param {SceneNode} node 
+ */
+function has(graph, node) {
+    return node in graph.parents;
+}
+
+/**
+ * @param {SceneGraph} out 
+ * @param {SceneNode} childNode 
+ * @param {SceneNode} parentNode 
+ */
+function parent(out, childNode, parentNode) {
+    detach(out, childNode, getParent(out, childNode));
+    attach(out, childNode, parentNode);
+}
+
+/**
+ * @param {SceneGraph} out 
+ * @param {SceneNode} targetNode 
+ */
+function prune(out, targetNode) {
+    if (!(targetNode in out.parents)) {
+        throw new Error('Cannot delete non-existant scene node for scene graph.');
     }
-    return result;
-  }
+    let parentNode = getParent(out, targetNode);
+    detach(out, targetNode, parentNode);
+    walkImpl(out, targetNode, 0, walkDeleteCallback);
+}
 
-  /**
-   * Deletes a scene node from the scene graph, along with all
-   * of its descendents.
-   *
-   * @param {SceneNode} sceneNode The scene node to remove.
-   */
-  deleteSceneNode(sceneNode) {
-    if (sceneNode in this.nodes) {
-      let info = this.nodes[sceneNode];
-      detach(info.parent, sceneNode, this);
-      walkImpl(this, sceneNode, 0, walkDeleteCallback);
-    } else {
-      throw new Error('Cannot delete non-existant scene node for scene graph.');
-    }
-  }
-
-  /**
-   * Deletes all given scene nodes from the scene graph, along with all
-   * of their descendents.
-   *
-   * @param {Array<SceneNode>} sceneNodes A list of scene nodes to remove.
-   */
-  deleteSceneNodes(sceneNodes) {
-    for (let sceneNode of sceneNodes) {
-      this.deleteSceneNode(sceneNode);
-    }
-  }
-
-  /**
-   * Get the scene node's info.
-   *
-   * @param {SceneNode} sceneNode The scene node to get info for.
-   * @returns {SceneNodeInfo} The info for the given scene node.
-   */
-  getSceneNodeInfo(sceneNode) {
-    return this.nodes[sceneNode];
-  }
-
-  /**
-   * Changes the parent of the scene node with the new parent node in
-   * the graph.
-   *
-   * @param {SceneNode} sceneNode The target scene node to change.
-   * @param {SceneNode} parentNode The scene node to set as the parent.
-   */
-  parentSceneNode(sceneNode, parentNode) {
-    let info = this.nodes[sceneNode];
-    detach(info.parent, sceneNode, this);
-    attach(parentNode, sceneNode, this);
-  }
-
-  /**
-   * Replaces the scene node with the new replacement node in the graph,
-   * inheriting its parent and children.
-   *
-   * @param {SceneNode} sceneNode The target scene node to replace.
-   * @param {SceneNode} replacementNode The scene node to replace with. If falsey,
-   * it will remove the target scene node and the target's parent will adopt
-   * its grandchildren. If the target did not have parents, the grandchildren will
-   * become root nodes in the graph.
-   */
-  replaceSceneNode(sceneNode, replacementNode) {
-    let info = this.nodes[sceneNode];
-    let parentNode = info.parent;
-    let grandChildren = info.children.slice();
+/**
+ * @param {SceneGraph} out 
+ * @param {SceneNode} targetNode 
+ * @param {SceneNode} replacementNode 
+ */
+function replace(out, targetNode, replacementNode) {
+    let parentNode = getParent(out, targetNode);
+    let grandChildren = getChildren(out, targetNode).slice();
 
     // Remove the target node from graph
-    detach(parentNode, sceneNode, this);
+    detach(out, targetNode, parentNode);
 
     // Begin grafting the grandchildren by removing them...
-    info.children.length = 0;
+    clearChildren(out, targetNode);
 
     if (replacementNode) {
       // Reattach all grandchildren to new replacement node.
-      let replacementInfo = this.nodes[replacementNode];
-      let replacementParent = replacementInfo.parent;
+      let replacementParentId = getParent(out, replacementNode);
+      let replacementChildren = getChildren(out, replacementNode);
 
       // Remove replacement node from previous parent
-      detach(replacementParent, replacementNode, this);
+      detach(this, replacementNode, replacementParentId);
 
       // ...and graft them back.
-      replacementInfo.children.push(...grandChildren);
+      replacementChildren.push(...grandChildren);
 
       // And reattach target parent to new child.
-      attach(parentNode, replacementNode, this);
+      attach(this, replacementNode, parentNode);
     } else {
       // Reattach all grandchildren to target parent...
       if (parentNode) {
         //...as regular children.
-        let parentInfo = this.nodes[parentNode];
-        parentInfo.children.push(...grandChildren);
+        let parentChildren = getChildren(out, parentNode);
+        parentChildren.push(...grandChildren);
       } else {
         //...as root children.
-        this.roots.push(...grandChildren);
+        getRoots(out).push(...grandChildren);
       }
     }
 
     // ...and repair their parent relations.
     for (let childNode of grandChildren) {
-      this.nodes[childNode].parent = parentNode;
+        setParent(out, childNode, parentNode);
     }
-  }
+}
 
-  /**
-   * Walks through every child node in the graph.
-   *
-   * @param {WalkCallback} callback The function called for each node
-   * in the graph, in ordered traversal from parent to child.
-   * @param {object} [opts] Any additional options.
-   * @param {SceneNode|Array<SceneNode>} [opts.from] The parent node to
-   * start walking from, inclusive. By default, it will start from the root
-   * nodes.
-   * @param {WalkChildrenCallback} [opts.childFilter] The function called before
-   * walking through the children. This is usually used to determine the
-   * visiting order.
-   */
-  walk(callback, opts = undefined) {
+/**
+ * Walks through every child node in the graph.
+ *
+ * @param {WalkCallback} callback The function called for each node
+ * in the graph, in ordered traversal from parent to child.
+ * @param {object} [opts] Any additional options.
+ * @param {SceneNode|Array<SceneNode>} [opts.from] The parent node to
+ * start walking from, inclusive. By default, it will start from the root
+ * nodes.
+ * @param {WalkChildrenCallback} [opts.childFilter] The function called before
+ * walking through the children. This is usually used to determine the
+ * visiting order.
+ */
+function walk(graph, callback, opts = undefined) {
     const { from = undefined, childFilter = undefined } = opts || {};
 
     let fromNodes;
-    if (!from) fromNodes = this.roots;
+    if (!from) fromNodes = getRoots(graph);
     else if (!Array.isArray(from)) fromNodes = [from];
     else fromNodes = from;
 
     if (childFilter) fromNodes = childFilter(fromNodes, 0, this);
     for (let fromNode of fromNodes) {
-      walkImpl(this, fromNode, 0, callback, childFilter);
+        walkImpl(graph, fromNode, 0, callback, childFilter);
     }
-  }
 }
 
 /**
- * @param {SceneNode} key The scene node handle.
- * @returns {SceneNodeInfo} The scene node metadata.
+ * @param {SceneGraph} graph
  */
-function createSceneNodeInfo(key) {
-  return {
-    parent: 0,
-    children: [],
-  };
+function getRoots(graph) {
+    return graph.roots;
 }
 
 /**
- * Attaches a child node to a parent in the scene graph. If parentNode is
- * null, then it will attach as a root node.
+ * @param {SceneGraph} graph 
+ * @param {SceneNode} node
+ */
+function getParent(graph, node) {
+    return graph.parents[node];
+}
+
+/**
+ * @param {SceneGraph} graph 
+ * @param {SceneNode} node 
+ * @param {SceneNode} parentNode 
+ */
+function setParent(graph, node, parentNode) {
+    graph.parents[node] = parentNode;
+}
+
+/**
+ * @param {SceneGraph} graph
+ * @param {SceneNode} node
+ */
+function getChildren(graph, node) {
+    if (node in graph.children) {
+        return graph.children[node];
+    } else {
+        let result = [];
+        graph.children[node] = result;
+        return result;
+    }
+}
+
+/**
+ * @param {SceneGraph} out 
+ * @param {SceneNode} node
+ */
+function clearChildren(out, node) {
+    if (node in out) {
+        out.children[node].length = 0;
+        delete out.children[node];
+    }
+}
+
+/**
+ * Attaches a child node to a parent in the scene graph.
+ * If no parentNode, then it will attach as a root node.
  *
- * @param {SceneNode} parentNode The parent node to attach to. Can be null.
- * @param {SceneNode} childNode The child node to attach from.
- * @param {SceneGraph} sceneGraph The scene graph to attach in.
+ * @param {SceneGraph} out The scene graph to attach in.
+ * @param {number} childNode The child node to attach from.
+ * @param {number} parentNode The parent node to attach to. Can be 0 for null.
  */
-function attach(parentNode, childNode, sceneGraph) {
-  if (parentNode) {
-    // Has new parent; attach to parent. It is now in the graph.
-    sceneGraph.nodes[parentNode].children.push(childNode);
-    sceneGraph.nodes[childNode].parent = parentNode;
-  } else {
-    // No parent; move to root. It is now in the graph.
-    sceneGraph.roots.push(childNode);
-    sceneGraph.nodes[childNode].parent = 0;
-  }
+function attach(out, childNode, parentNode) {
+    if (parentNode) {
+        // Has new parent; attach to parent. It is now in the graph.
+        getChildren(out, parentNode).push(childNode);
+        setParent(out, childNode, parentNode);
+    } else {
+        // No parent; move to root. It is now in the graph.
+        getRoots(out).push(childNode);
+        setParent(out, childNode, 0);
+    }
 }
 
 /**
- * Detaches a child node from its parent in the scene graph. If parentNode is
- * null, then it will detach as a root node.
+ * Detaches a child node from its parent in the scene graph.
+ * If has no parentNode, then it will detach as a root node.
  *
- * @param {SceneNode} parentNode The parent node to attach to. Can be null.
- * @param {SceneNode} childNode The child node to attach from.
- * @param {SceneGraph} sceneGraph The scene graph to attach in.
+ * @param {SceneGraph} out The scene graph attached to.
+ * @param {number} childNode The child node to detach.
+ * @param {number} parentNode The parent node attached to. Could be 0 for none.
  */
-function detach(parentNode, childNode, sceneGraph) {
-  if (parentNode) {
-    // Has parent; detach from parent. It is now a free node.
-    let children = sceneGraph.nodes[parentNode].children;
-    let childIndex = children.indexOf(childNode);
-    children.splice(childIndex, 1);
-    sceneGraph.nodes[childNode].parentNode = 0;
-  } else {
-    // No parent; remove from root. It is now a free node.
-    let roots = sceneGraph.roots;
-    let rootIndex = roots.indexOf(childNode);
-    roots.splice(rootIndex, 1);
-    sceneGraph.nodes[childNode].parentNode = 0;
-  }
+function detach(out, childNode, parentNode) {
+    if (parentNode) {
+        // Has parent; detach from parent. It is now a free node.
+        let children = getChildren(out, parentNode);
+        let childIndex = children.indexOf(childNode);
+        children.splice(childIndex, 1);
+    } else {
+        // No parent; remove from root. It is now a free node.
+        let roots = getRoots(out);
+        let rootIndex = roots.indexOf(childNode);
+        roots.splice(rootIndex, 1);
+    }
+    setParent(out, childNode, 0);
 }
 
 /**
  * Walk down from the parent and through all its descendents.
  *
- * @param {SceneGraph} sceneGraph The scene graph containing the nodes to be visited.
+ * @param {SceneGraph} graph The scene graph containing the nodes to be visited.
  * @param {SceneNode} parentNode The parent node to start walking from.
  * @param {number} level The current call depth level. This is used to limit the call stack.
  * @param {WalkCallback} nodeCallback The function called on each visited node.
@@ -612,34 +610,49 @@ function detach(parentNode, childNode, sceneGraph) {
  * walking through the children. This is usually used to determine the visiting order.
  */
 function walkImpl(
-  sceneGraph,
-  parentNode,
-  level,
-  nodeCallback,
-  filterCallback = undefined
-) {
-  if (level >= MAX_DEPTH_LEVEL) return;
+    graph,
+    parentNode,
+    level,
+    nodeCallback,
+    filterCallback = undefined) {
+    if (level >= MAX_DEPTH_LEVEL) return;
 
-  let result = nodeCallback(parentNode, sceneGraph);
-  if (result === false) return;
+    let result = nodeCallback(parentNode, graph);
+    if (result === false) return;
 
-  let parentInfo = sceneGraph.nodes[parentNode];
-  let nextNodes = filterCallback
-    ? filterCallback(parentInfo.children, parentNode, sceneGraph)
-    : parentInfo.children;
+    let children = getChildren(graph, parentNode);
+    let nextNodes = filterCallback
+        ? filterCallback(children, parentNode, graph)
+        : children;
 
-  for (let childNode of nextNodes) {
-    walkImpl(sceneGraph, childNode, level + 1, nodeCallback, filterCallback);
-  }
+    for (let childNode of nextNodes) {
+        walkImpl(graph, childNode, level + 1, nodeCallback, filterCallback);
+    }
 
-  if (typeof result === 'function') {
-    result(parentNode, sceneGraph);
-  }
+    if (typeof result === 'function') {
+        result(parentNode, graph);
+    }
 }
 
-function walkDeleteCallback(sceneNode, sceneGraph) {
-  delete sceneGraph.nodes[sceneNode];
+function walkDeleteCallback(sceneNode, out) {
+    delete out.parents[sceneNode];
+    delete out.children[sceneNode];
 }
+
+var SceneGraph = /*#__PURE__*/Object.freeze({
+  __proto__: null,
+  add: add,
+  clone: clone,
+  create: create,
+  getChildren: getChildren,
+  getParent: getParent,
+  getRoots: getRoots,
+  has: has,
+  parent: parent,
+  prune: prune,
+  replace: replace,
+  walk: walk
+});
 
 /**
  * @template T
@@ -659,6 +672,7 @@ class ComponentClass {
 
 /** @typedef {import('./EntityManager').EntityManager} EntityManager */
 /** @typedef {import('./EntityManager').EntityId} EntityId */
+/** @typedef {import('./Query').Query} Query */
 
 class QueryManager {
 
@@ -670,7 +684,7 @@ class QueryManager {
         this.cachedResults = {};
         /**
          * @private
-         * @type {Record<string, import('./Query').Query<?>>}
+         * @type {Record<string, Query>}
          */
         this.keyQueryMapping = {};
 
@@ -765,7 +779,7 @@ class QueryManager {
 
     /**
      * @param {EntityManager} entityManager
-     * @param {import('./Query').Query<?>} query
+     * @param {Query} query
      * @returns {Array<EntityId>}
      */
     findAll(entityManager, query) {
@@ -784,7 +798,7 @@ class QueryManager {
 
     /**
      * @param {EntityManager} entityManager
-     * @param {import('./Query').Query<?>} query 
+     * @param {Query} query 
      */
     count(entityManager, query) {
         let result = this.findAll(entityManager, query);
@@ -792,7 +806,7 @@ class QueryManager {
     }
 
     /**
-     * @param {import('./Query').Query<?>} query
+     * @param {Query} query
      */
     clear(query) {
         const queryKey = query.key;
@@ -1259,12 +1273,11 @@ function computeSelectorKey(selectors) {
 class Archetype extends Query {
 
     /**
-     * @param {T} componentMap 
+     * @param {T} components 
      */
-    constructor(componentMap) {
-        super(...Object.values(componentMap));
-        /** @private */
-        this.componentClasses = componentMap;
+    constructor(components) {
+        super(...Object.values(components));
+        this.components = components;
     }
 
     /**
@@ -1274,7 +1287,7 @@ class Archetype extends Query {
     create(ents) {
         let entityId = ents.create();
         let result = {};
-        for(let [key, componentClass] of Object.entries(this.componentClasses)) {
+        for(let [key, componentClass] of Object.entries(this.components)) {
             let instance = ents.attach(entityId, componentClass);
             result[key] = instance;
         }
@@ -1286,7 +1299,7 @@ class Archetype extends Query {
      * @param {import('./EntityManager').EntityId} entityId 
      */
     destroy(ents, entityId) {
-        for (let componentClass of Object.values(this.componentClasses)) {
+        for (let componentClass of Object.values(this.components)) {
             ents.detach(entityId, componentClass);
         }
     }
@@ -1300,7 +1313,7 @@ class Archetype extends Query {
         if (entityId === null) {
             return /** @type {ArchetypeComponentInstancesOf<T>} */ ({});
         }
-        return computeResult({}, ents, entityId, this.componentClasses);
+        return computeResult({}, ents, entityId, this.components);
     }
 
     /**
@@ -1314,7 +1327,7 @@ class Archetype extends Query {
             return /** @type {ArchetypeComponentInstancesOf<T>} */ ({});
         }
         let entityId = entities[Math.floor(Math.random() * entities.length)];
-        return computeResult({}, ents, entityId, this.componentClasses);
+        return computeResult({}, ents, entityId, this.components);
     }
 
     /**
@@ -1326,7 +1339,7 @@ class Archetype extends Query {
         let result = {};
         let entities = queryManager.findAll(ents, this);
         for(let entityId of entities) {
-            yield computeResult(result, ents, entityId, this.componentClasses);
+            yield computeResult(result, ents, entityId, this.components);
         }
     }
 }

@@ -1,7 +1,6 @@
-import { ComponentClass, EntityManager, Query } from '@milque/scene';
+import { ComponentClass, EntityManager, Query, SceneGraph } from '@milque/scene';
 import { AssetManager } from '@milque/asset';
 import { getObjectDef, getSpriteDef } from '../Defs';
-import { SceneGraph } from '../scenegraph';
 import { SpriteDef } from '../sprite';
 
 /** @module ObjectDef */
@@ -86,7 +85,7 @@ function createObjectInstance(objectName, objectId, spriteId, x, y, scaleX, scal
 
 /**
  * @param {EntityManager} ents
- * @param {import('../scenegraph/SceneGraph').SceneGraph} sceneGraph
+ * @param {SceneGraph} sceneGraph
  * @param {AssetManager} assets
  * @param {ObjectDef} objectDef
  * @param {string} objectName 
@@ -123,7 +122,7 @@ export function getInstance(ents, objectId) {
 }
 
 /**
- * @param {import('../scenegraph/SceneGraph').SceneGraph} sceneGraph
+ * @param {SceneGraph} sceneGraph
  * @param {import('@milque/scene').EntityId} objectId
  * @param {import('@milque/scene').EntityId} parentId
  */
@@ -132,7 +131,7 @@ export function setInstanceParentId(sceneGraph, objectId, parentId) {
 }
 
 /**
- * @param {import('../scenegraph/SceneGraph').SceneGraph} sceneGraph
+ * @param {SceneGraph} sceneGraph
  * @param {import('@milque/scene').EntityId} objectId
  * @returns {import('@milque/scene').EntityId}
  */
@@ -141,7 +140,7 @@ export function getInstanceParentId(sceneGraph, objectId) {
 }
 
 /**
- * @param {import('../scenegraph/SceneGraph').SceneGraph} sceneGraph
+ * @param {SceneGraph} sceneGraph
  * @param {import('@milque/scene').EntityId} objectId
  * @returns {Array<import('@milque/scene').EntityId>}
  */
@@ -151,7 +150,7 @@ export function getInstanceChildIds(sceneGraph, objectId) {
 
 /**
  * @param {EntityManager} ents
- * @param {import('../scenegraph/SceneGraph').SceneGraph} sceneGraph
+ * @param {SceneGraph} sceneGraph
  * @param {(instance: ObjectInstance) => (() => void)|void} callback 
  */
 export function walkSceneGraph(ents, sceneGraph, callback) {
