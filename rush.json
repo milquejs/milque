@@ -416,6 +416,11 @@
       "reviewCategory": "production"
     },
     {
+      "packageName": "boulevard",
+      "projectFolder": "apps/07_boulevard",
+      "reviewCategory": "production"
+    },
+    {
       "packageName": "sandbox",
       "projectFolder": "apps/x0_sandbox",
       "reviewCategory": "production"

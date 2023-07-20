@@ -1,0 +1,32 @@
+{
+    "name": "boulevard",
+    "version": "1.0.0",
+    "description": "A game of an expanding boulevard.",
+    "type": "module",
+    "browser": "public/main.js",
+    "author": "Andrew Kuo",
+    "license": "MIT",
+    "keywords": [
+      "milque"
+    ],
+    "scripts": {
+      "start": "node build.js --dev",
+      "dev": "node build.js --dev",
+      "build": "node build.js --prod"
+    },
+    "devDependencies": {
+      "@milque/toolkit": "workspace:*",
+      "esbuild": "~0.18.14",
+      "open": "~9.1.0"
+    },
+    "dependencies": {
+      "@milque/asset": "workspace:*",
+      "@milque/display": "workspace:*",
+      "@milque/random": "workspace:*",
+      "@milque/input": "workspace:*",
+      "@milque/scene": "workspace:*",
+      "@milque/mogli": "workspace:*",
+      "@milque/util": "workspace:*",
+      "gl-matrix": "~3.4.3"
+    }
+  }

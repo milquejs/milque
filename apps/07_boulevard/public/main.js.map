@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../src/main.js"],
+  "sourcesContent": ["\nif (!window.IS_PRODUCTION) {\n    new EventSource('/esbuild').addEventListener('change', () => location.reload());\n}\n"],
+  "mappings": "MACK,OAAO,eACR,IAAI,YAAY,UAAU,EAAE,iBAAiB,SAAU,IAAM,SAAS,OAAO,CAAC",
+  "names": []
+}
