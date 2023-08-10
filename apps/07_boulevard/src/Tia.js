@@ -134,13 +134,14 @@ export class Tia {
     trig(ctx, x, y, dw, dh, angle, color) {
         this.matBegin(ctx);
         ctx.fillStyle = HEX.toCSSColor(color);
+        ctx.translate(x, y);
         ctx.rotate(angle);
         ctx.beginPath();
         let dy = dh / 2;
         let dx = dw / 2;
-        ctx.moveTo(x + dx, y);
-        ctx.lineTo(x - dx, y - dy);
-        ctx.lineTo(x - dx, y + dy);
+        ctx.moveTo(dx, 0);
+        ctx.lineTo(-dx, -dy);
+        ctx.lineTo(-dx, dy);
         ctx.fill();
         this.matEnd(ctx);
     }
@@ -157,13 +158,14 @@ export class Tia {
     trigFill(ctx, x, y, dw, dh, angle, color) {
         this.matBegin(ctx);
         ctx.fillStyle = HEX.toCSSColor(color);
+        ctx.translate(x, y);
         ctx.rotate(angle);
         ctx.beginPath();
         let dy = dh / 2;
         let dx = dw / 2;
-        ctx.moveTo(x + dx, y);
-        ctx.lineTo(x - dx, y - dy);
-        ctx.lineTo(x - dx, y + dy);
+        ctx.moveTo(dx, 0);
+        ctx.lineTo(-dx, -dy);
+        ctx.lineTo(-dx, dy);
         ctx.fill();
         this.matEnd(ctx);
     }
@@ -186,7 +188,7 @@ export class Tia {
 
     /**
      * @param {CanvasRenderingContext2D} ctx 
-     * @param {CanvasImageSource} spriteImage
+     * @param {Exclude<CanvasImageSource, VideoFrame>} spriteImage
      * @param {number} spriteIndex 
      * @param {number} x 
      * @param {number} y 
@@ -204,7 +206,7 @@ export class Tia {
 
     /**
      * @param {CanvasRenderingContext2D} ctx 
-     * @param {CanvasImageSource} spriteImage
+     * @param {Exclude<CanvasImageSource, VideoFrame>} spriteImage
      * @param {number} u
      * @param {number} v
      * @param {number} s

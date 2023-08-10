@@ -2,6 +2,36 @@ import * as esbuild from 'esbuild';
 import fs from 'fs/promises';
 import path from 'path';
 import open from 'open';
+import alias from 'esbuild-plugin-alias';
+import { fileURLToPath } from 'url';
+import { NodeModulesPolyfillPlugin } from '@esbuild-plugins/node-modules-polyfill';
+
+// @ts-ignore
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+function getDefine(isProduction) {
+    return {
+        // TODO: For esbuild watch-mode.
+        'window.IS_PRODUCTION': isProduction ? 'true' : 'false',
+        // TODO: https://github.com/micromatch/picomatch/pull/73
+        'process.platform': JSON.stringify('browser'),
+    };
+}
+
+function getPlugins(sourcePath) {
+    return [
+        alias({ '@': sourcePath }),
+        // TODO: https://github.com/micromatch/picomatch/pull/73
+        NodeModulesPolyfillPlugin(),
+    ];
+}
+
+function getLoader() {
+    return {
+        '.png': 'file',
+    };
+}
 
 async function main(args) {
     const devMode = args.includes('--dev');
@@ -10,6 +40,7 @@ async function main(args) {
     const entryPoints = [
         './src/main.js',
     ];
+    const sourcePath = path.dirname(path.join(__dirname, entryPoints[0]));
     const outputDir = 'out';
     const publicDir = 'public';
 
@@ -21,9 +52,9 @@ async function main(args) {
             entryPoints,
             bundle: true,
             outdir: outputDir,
-            define: {
-                'window.IS_PRODUCTION': 'false',
-            }
+            define: getDefine(false),
+            plugins: getPlugins(sourcePath),
+            loader: getLoader(),
         });
         await ctx.watch();
         const server = await ctx.serve({
@@ -47,9 +78,9 @@ async function main(args) {
             minify: true,
             sourcemap: true,
             outdir: publicDir,
-            define: {
-                'window.IS_PRODUCTION': 'true',
-            }
+            define: getDefine(true),
+            plugins: getPlugins(sourcePath),
+            loader: getLoader(),
         });
         console.log('Completed build.');
         return;
