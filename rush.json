@@ -16,7 +16,7 @@
    * path segment in the "$schema" field for all your Rush config files.  This will ensure
    * correct error-underlining and tab-completion for editors such as VS Code.
    */
-  "rushVersion": "5.90.0",
+  "rushVersion": "5.101.0",
 
   /**
    * The next field selects which package manager should be installed and determines its version.
@@ -42,7 +42,7 @@
    * LTS schedule: https://nodejs.org/en/about/releases/
    * LTS versions: https://nodejs.org/en/download/releases/
    */
-  "nodeSupportedVersionRange": ">=12.13.0 <13.0.0 || >=14.15.0 <15.0.0 || >=16.13.0 <17.0.0",
+  "nodeSupportedVersionRange": ">=14.15.0 <15.0.0 || >=16.13.0 <17.0.0 || >=18.15.0 <19.0.0",
 
   /**
    * If the version check above fails, Rush will display a message showing the current
@@ -332,93 +332,9 @@
    * 3. It's useful to have a centralized inventory of all projects and their important metadata.
    */
   "projects": [
-    // #milque-dev!tools
     {
-      "packageName": "milque-dev",
-      "projectFolder": "tools/milque-dev",
-      "reviewCategory": "tools"
-    },
-    // #milque-dev!libs
-    {
-      "packageName": "@milque/toolkit",
-      "projectFolder": "libs/toolkit",
-      "reviewCategory": "production"
-    },
-    {
-      "packageName": "@milque/util",
-      "projectFolder": "libs/util",
-      "reviewCategory": "production"
-    },
-    {
-      "packageName": "@milque/asset",
-      "projectFolder": "libs/asset",
-      "reviewCategory": "production"
-    },
-    {
-      "packageName": "@milque/scene",
-      "projectFolder": "libs/scene",
-      "reviewCategory": "production"
-    },
-    {
-      "packageName": "@milque/random",
-      "projectFolder": "libs/random",
-      "reviewCategory": "production"
-    },
-    {
-      "packageName": "@milque/mogli",
-      "projectFolder": "libs/mogli",
-      "reviewCategory": "production"
-    },
-    {
-      "packageName": "@milque/display",
-      "projectFolder": "libs/display",
-      "reviewCategory": "production"
-    },
-    {
-      "packageName": "@milque/input",
-      "projectFolder": "libs/input",
-      "reviewCategory": "production"
-    },
-    // #milque-dev!apps
-    {
-      "packageName": "asteroids",
-      "projectFolder": "apps/00_asteroids",
-      "reviewCategory": "production"
-    },
-    {
-      "packageName": "mines",
-      "projectFolder": "apps/01_mines",
-      "reviewCategory": "production"
-    },
-    {
-      "packageName": "arroyo",
-      "projectFolder": "apps/02_arroyo",
-      "reviewCategory": "production"
-    },
-    {
-      "packageName": "laneworld",
-      "projectFolder": "apps/03_laneworld",
-      "reviewCategory": "production"
-    },
-    {
-      "packageName": "marde",
-      "projectFolder": "apps/04_marde",
-      "reviewCategory": "production"
-    },
-    {
-      "packageName": "moonsea",
-      "projectFolder": "apps/05_moonsea",
-      "reviewCategory": "production"
-    },
-    {
-      "packageName": "cosmo",
-      "projectFolder": "apps/06_cosmo",
-      "reviewCategory": "production"
-    },
-    {
-      "packageName": "sandbox",
-      "projectFolder": "apps/x0_sandbox",
-      "reviewCategory": "production"
+      "packageName": "@milquejs/display",
+      "projectFolder": "libs/display"
     }
     // {
     //   /**

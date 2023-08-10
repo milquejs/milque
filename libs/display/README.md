@@ -1,3 +1,3 @@
 # Display
 
-A useful canvas to draw things to. It automatically handles resizes.
+A flexible canvas to draw things to. It automatically handles resizes.

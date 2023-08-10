@@ -1,31 +1,39 @@
 {
-  "name": "@milque/display",
-  "version": "1.0.0",
-  "description": "A resizeable canvas to draw things to.",
-  "main": "dist/milque-display.cjs.js",
-  "module": "dist/milque-display.esm.js",
-  "types": "dist/index.d.ts",
-  "exports": {
-    ".": {
-      "require": "./dist/milque-display.cjs.js",
-      "import": "./dist/milque-display.esm.js"
-    },
-    "./package.json": "./package.json"
+  "name": "@milquejs/display",
+  "version": "0.0.1",
+  "description": "A flexible canvas to draw things to.",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/milquejs/milque.git"
   },
-  "globals": {
-    "@milque/display": "milque.display"
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com/"
   },
+  "main": "dist/cjs/index.js",
+  "module": "dist/esm/index.js",
+  "types": "dist/types/index.d.ts",
+  "files": [
+    "dist",
+    "package.json"
+  ],
   "scripts": {
-    "build": "milque-dev build"
+    "build": "rollup -c"
   },
   "keywords": [
     "milque",
     "display",
     "canvas"
   ],
-  "author": "Andrew Kuo <andrewbkuo@gmail.com>",
+  "author": "Andrew Kuo <andykuo1@duck.com>",
   "license": "MIT",
   "devDependencies": {
-    "milque-dev": "workspace:*"
+    "rollup": "~3.28.0",
+    "@rollup/plugin-commonjs": "~25.0.3",
+    "@rollup/plugin-terser": "~0.4.3",
+    "@rollup/plugin-node-resolve": "~15.1.0",
+    "rollup-plugin-delete": "~2.0.0",
+    "rollup-plugin-dts": "~5.3.1",
+    "typescript": "~5.1.6"
   }
 }
