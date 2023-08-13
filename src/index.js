@@ -1,6 +1,6 @@
 export * from './asset';
 export * from './display';
-export * from './experimental';
+export * as Experimental from './experimental';
 export * from './input';
 export * from './mogli';
 export * from './random';

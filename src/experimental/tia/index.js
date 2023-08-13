@@ -1,3 +1,1 @@
-export function experiment() {
-  console.log('test');
-}
+export * from './Tia.js';
