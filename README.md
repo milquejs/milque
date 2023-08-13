@@ -1,5 +1,6 @@
 # milque.js
 
-A rapid game prototyping library.
+A rapid-prototyping game library
 
+## Resources
 https://ttf2fnt.com/
