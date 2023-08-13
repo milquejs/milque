@@ -89,7 +89,7 @@ const SIZING_NONE = 'none';
 /**
  * Sizes to 100% of parent container.
  */
-const SIZING_CONTAINER = 'conatiner';
+const SIZING_CONTAINER = 'container';
 /**
  * Sizes to 100% of viewport.
  */
@@ -140,7 +140,9 @@ export class FlexCanvas extends HTMLElement {
       window.customElements.define('flex-canvas', FlexCanvas);
     }
     let result = new FlexCanvas();
-    result.id = id;
+    if (typeof id !== 'undefined') {
+      result.id = id;
+    }
     result.scaling = scaling;
     result.sizing = sizing;
     result.width = width;

@@ -1,3 +1,4 @@
+import path from 'path';
 import nodeResolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
 import terser from '@rollup/plugin-terser';
@@ -6,21 +7,21 @@ import del from 'rollup-plugin-delete';
 import { dts } from 'rollup-plugin-dts';
 import nodePolyfills from 'rollup-plugin-polyfill-node';
 import { string } from 'rollup-plugin-string';
-
 const pkg = JSON.parse(fs.readFileSync('./package.json'));
+
 const GLOBAL_PARENT_NAME = 'Milque';
 const INPUT_FILE = './src/index.js';
 
 /**
  * @returns {import('rollup').RollupOptions}
  */
-function umd() {
+function umd(globalName, inputPath, outputPath = '') {
   return {
-    input: [INPUT_FILE],
+    input: [inputPath],
     output: {
-      file: `dist/${toPosixKebab(pkg.name)}.min.js`,
+      file: path.join('dist', outputPath, `${toPosixKebab(pkg.name)}.min.js`),
       format: 'umd',
-      name: GLOBAL_PARENT_NAME,
+      name: globalName,
       esModule: false,
       exports: 'named',
       sourcemap: true,
@@ -32,7 +33,7 @@ function umd() {
       'gl-matrix'
     ],
     plugins: [
-      del({ targets: 'dist/*' }),
+      del({ targets: path.join('dist', outputPath, '*') }),
       commonjs(),
       nodeResolve(),
       // TODO: https://github.com/micromatch/picomatch/pull/73
@@ -48,18 +49,18 @@ function umd() {
 /**
  * @returns {import('rollup').RollupOptions}
  */
-function esm_cjs() {
+function esm_cjs(inputPath, outputPath = '') {
   return {
-    input: [INPUT_FILE],
+    input: [inputPath],
     output: [
       {
-        dir: 'dist/esm',
+        dir: path.join('dist/esm', outputPath),
         format: 'esm',
         exports: 'named',
         sourcemap: true,
       },
       {
-        dir: 'dist/cjs',
+        dir: path.join('dist/cjs', outputPath),
         format: 'cjs',
         exports: 'named',
         sourcemap: true,
@@ -81,11 +82,11 @@ function esm_cjs() {
 }
 
 /** @type {import('rollup').RollupOptions} */
-function ts() {
+function ts(inputPath, outputPath = '') {
   return {
-    input: [INPUT_FILE],
+    input: [inputPath],
     output: {
-      file: 'dist/types/index.d.ts',
+      file: path.join('dist/types', outputPath, 'index.d.ts'),
       format: 'es',
     },
     external: [
@@ -107,4 +108,8 @@ function toPosixKebab(str) {
 }
 
 /** @type {import('rollup').RollupOptions} */
-export default [umd(), esm_cjs(), ts()];
+export default [
+  umd(GLOBAL_PARENT_NAME, INPUT_FILE),
+  esm_cjs(INPUT_FILE),
+  ts(INPUT_FILE),
+];
