@@ -1,5 +1,5 @@
 {
-  "name": "milque",
+  "name": "@milquejs/milque",
   "version": "0.0.1",
   "description": "A rapid-prototyping game library",
   "type": "module",
