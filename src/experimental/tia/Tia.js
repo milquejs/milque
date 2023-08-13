@@ -199,7 +199,7 @@ export class Tia {
         let dx = Math.floor(Number(spriteImage.width) / w);
         let u = (spriteIndex % dx) * w;
         let v = (Math.floor(spriteIndex / dx)) * h;
-        this.sprUV(ctx, spriteImage, u, v, w, h, x, y, w, h, flipX, flipY);
+        this.sprUV(ctx, spriteImage, u, v, u + w, v + h, x, y, w, h, flipX, flipY);
     }
 
     /**
