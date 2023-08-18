@@ -12,6 +12,13 @@ import { isSelectorNot } from './QueryManager';
  * @typedef {{[K in keyof T]: T[K] extends ComponentClass<infer V> ? V : never}} ArchetypeComponentInstancesOf<T>
  */
 
+/** @typedef {{ entityId: import('./EntityManager').EntityId }} ArchetypeEntityId */
+
+/**
+ * @template {ArchetypeComponentMap} T
+ * @typedef {ArchetypeComponentInstancesOf<T> & ArchetypeEntityId} ArchetypeResult
+ */
+
 /**
  * @template {ArchetypeComponentMap} T
  */
@@ -26,16 +33,18 @@ export class Archetype extends Query {
 
   /**
    * @param {EntityManager} ents
-   * @returns {ArchetypeComponentInstancesOf<T>}
+   * @returns {ArchetypeResult<T>}
    */
   create(ents) {
     let entityId = ents.create();
+    /** @type {Record<string, any>} */
     let result = {};
     for (let [key, componentClass] of Object.entries(this.components)) {
       let instance = ents.attach(entityId, componentClass);
       result[key] = instance;
     }
-    return /** @type {ArchetypeComponentInstancesOf<T>} */ (result);
+    result.entityId = entityId;
+    return /** @type {ArchetypeResult<T>} */ (result);
   }
 
   /**
@@ -51,24 +60,24 @@ export class Archetype extends Query {
   /**
    * @param {EntityManager} ents
    * @param {import('./EntityManager').EntityId} entityId
-   * @returns {ArchetypeComponentInstancesOf<T>}
+   * @returns {ArchetypeResult<T>}
    */
   find(ents, entityId) {
     if (entityId === null) {
-      return /** @type {ArchetypeComponentInstancesOf<T>} */ ({});
+      return /** @type {ArchetypeResult<T>} */ ({});
     }
     return computeResult({}, ents, entityId, this.components);
   }
 
   /**
    * @param {EntityManager} ents
-   * @returns {ArchetypeComponentInstancesOf<T>}
+   * @returns {ArchetypeResult<T>}
    */
   findAny(ents) {
     const queryManager = ents.queries;
     let entities = queryManager.findAll(ents, this);
     if (entities.length <= 0) {
-      return /** @type {ArchetypeComponentInstancesOf<T>} */ ({});
+      return /** @type {ArchetypeResult<T>} */ ({});
     }
     let entityId = entities[Math.floor(Math.random() * entities.length)];
     return computeResult({}, ents, entityId, this.components);
@@ -76,7 +85,7 @@ export class Archetype extends Query {
 
   /**
    * @param {EntityManager} ents
-   * @returns {Generator<ArchetypeComponentInstancesOf<T>>}
+   * @returns {Generator<ArchetypeResult<T>>}
    */
   *findAll(ents) {
     const queryManager = ents.queries;
@@ -89,12 +98,12 @@ export class Archetype extends Query {
 }
 
 /**
- * @template T
- * @param {object} out
+ * @template {object} T
+ * @param {Record<string, any>} out
  * @param {EntityManager} ents
  * @param {import('./EntityManager').EntityId} entityId
  * @param {T} componentClasses
- * @returns {ArchetypeComponentInstancesOf<T>}
+ * @returns {ArchetypeResult<T>}
  */
 function computeResult(out, ents, entityId, componentClasses) {
   for (let [key, componentClass] of Object.entries(componentClasses)) {
@@ -104,5 +113,6 @@ function computeResult(out, ents, entityId, componentClasses) {
       out[key] = ents.get(entityId, componentClass);
     }
   }
-  return out;
+  out.entityId = entityId;
+  return /** @type {ArchetypeResult<?>} */ (out);
 }
