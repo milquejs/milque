@@ -2,16 +2,19 @@ import { AssetManager } from './AssetManager';
 
 const DEFAULT_TIMEOUT = 5000;
 
-/** @template T, S */
+/**
+ * @template T
+ * @template {object} S
+ */
 export class AssetRef {
   /**
    * @param {string} uri
    * @param {import('./AssetStore').AssetLoader<T, S>} loader
-   * @param {S} [opts]
+   * @param {S} opts
    * @param {string} [filepath]
-   * @param {T|AssetRef<T>} [initial]
+   * @param {T|AssetRef<T, S>|null} [initial]
    */
-  constructor(uri, loader, opts = undefined, filepath = uri, initial = null) {
+  constructor(uri, loader, opts, filepath = uri, initial = null) {
     this.uri = uri;
     this.loader = loader;
     this.opts = opts;
@@ -21,9 +24,9 @@ export class AssetRef {
     /** @private */
     this.filepath = filepath;
 
-    /** @type {AssetManager} */
+    /** @type {AssetManager|null} */
     this.source = null;
-    /** @type {T} */
+    /** @type {T|null} */
     this.current = null;
   }
 
