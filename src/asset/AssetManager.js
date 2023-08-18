@@ -17,7 +17,8 @@ import {
 import { GlobExp } from './GlobExp.js';
 
 /**
- * @template T, S
+ * @template T
+ * @template {object} S
  * @typedef {import('./AssetStore.js').AssetLoader<T, S>} AssetLoader
  */
 
@@ -25,7 +26,7 @@ export class AssetManager {
   /**
    * @param {AssetManager} [parent]
    */
-  constructor(parent = null) {
+  constructor(parent) {
     this.parent = parent;
     /** @private */
     this.store = {};
@@ -54,7 +55,8 @@ export class AssetManager {
   }
 
   /**
-   * @template T, S
+   * @template T
+   * @template {object} S
    * @param {string} uri
    * @param {string} filepath
    * @param {AssetLoader<T, S>} loader
@@ -95,7 +97,8 @@ export class AssetManager {
   }
 
   /**
-   * @template T, S
+   * @template T
+   * @template {object} S
    * @param {string} uri
    * @param {string} filepath
    * @param {AssetLoader<T, S>} loader
@@ -108,15 +111,16 @@ export class AssetManager {
       /** @type {unknown} */ (this)
     );
     if (isAssetCachedInStore(assets, uri)) {
-      return getCurrentInStore(assets, uri);
+      return /** @type {T} */ (getCurrentInStore(assets, uri));
     } else if (isAssetLoadingInStore(assets, uri)) {
-      return await getLoadedInStore(assets, uri, timeout);
+      return /** @type {T} */ (await getLoadedInStore(assets, uri, timeout));
     }
     return await loadInStore(assets, uri, filepath, loader, opts, timeout);
   }
 
   /**
-   * @template T, S
+   * @template T
+   * @template {object} S
    * @param {string} uri
    * @param {string} filepath
    * @param {AssetLoader<T, S>} loader

@@ -1,5 +1,5 @@
-import { EntityManager } from './EntityManager';
 import { ComponentClass } from './ComponentClass';
+import { EntityManager } from './EntityManager';
 import { Query } from './Query';
 import { isSelectorNot } from './QueryManager';
 

@@ -44,7 +44,7 @@ export function downloadImageFromSVG(filename, filetype, svg, width, height) {
       }
       break;
     default:
-      throw new Error('Unknown file type \'' + filetype + '\'');
+      throw new Error("Unknown file type '" + filetype + "'");
   }
 }
 
