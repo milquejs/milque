@@ -1,10 +1,5 @@
 /**
  * @typedef {(frameDetail: AnimationFrameLoop) => void} AnimationFrameLoopCallback
- *
- * @typedef AnimationFrameDetail
- * @property {number} prevTime
- * @property {number} currentTime
- * @property {number} deltaTime
  */
 
 export class AnimationFrameLoop {
@@ -18,12 +13,7 @@ export class AnimationFrameLoop {
 
     /** @type {ReturnType<requestAnimationFrame>} */
     this.handle = 0;
-    /** @type {AnimationFrameDetail} */
-    this.detail = {
-      prevTime: -1,
-      currentTime: -1,
-      deltaTime: 0,
-    };
+    this.detail = new AnimationFrameDetail();
 
     /** @protected */
     this.animationFrameHandler = animationFrameHandler;
@@ -58,4 +48,10 @@ export class AnimationFrameLoop {
     this.animationFrameHandler.cancelAnimationFrame(this.handle);
     return this;
   }
+}
+
+export class AnimationFrameDetail {
+  prevTime = -1;
+  currentTime = -1;
+  deltaTime = 0;
 }

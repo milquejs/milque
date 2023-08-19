@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## v0.0.3
+- Added AnimationFrameDetail
+- Fixed FlexCanvas default to never stretch
+
 ## v0.0.2
 - Fixed Tia.spr() uv-st offset
 - Added entityId to Archetypes
