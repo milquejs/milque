@@ -251,8 +251,10 @@ export class Tia {
   /**
    * @param {number} x
    * @param {number} y
+   * @param {number} w
+   * @param {number} h
    */
-  camera(x, y) {
+  camera(x, y, w, h) {
     // TODO: Add w, h too.
     mat4.fromTranslation(this.viewMatrix, vec3.fromValues(-x, -y, 0));
     this.matUpdate();

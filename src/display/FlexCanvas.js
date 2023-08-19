@@ -274,10 +274,6 @@ export class FlexCanvas extends HTMLElement {
     this.onSlotChange = this.onSlotChange.bind(this);
 
     if (typeof opts !== 'undefined') {
-      if (!window.customElements.get('flex-canvas')) {
-        window.customElements.define('flex-canvas', constructor);
-      }
-
       const hasFixedWidthOrHeight =
         typeof opts.width !== 'undefined' || typeof opts.height !== 'undefined';
       const hasFixedAspectRatio = typeof opts.aspectRatio !== 'undefined';
@@ -296,11 +292,9 @@ export class FlexCanvas extends HTMLElement {
                 ` aspect ratio '${ar}' - expected width to be ${expectedWidth} but was ${width}.`,
             );
           }
-          if (!opts.forceScaling) {
-            this.scaling = SCALING_SCALE;
-          }
-        } else if (!opts.forceScaling) {
-          this.scaling = SCALING_STRETCH;
+        }
+        if (!opts.forceScaling) {
+          this.scaling = SCALING_SCALE;
         }
       } else if (hasFixedAspectRatio) {
         let ar = Number(opts.aspectRatio);
