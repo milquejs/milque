@@ -18,6 +18,7 @@
     "package.json"
   ],
   "scripts": {
+    "prepublishOnly": "npm run build",
     "build": "rollup -c",
     "lint": "npx eslint ./src/",
     "format": "prettier ./src/ --write"
