@@ -50,8 +50,7 @@ const SCALING_NOSCALE = 'noscale';
  * canvas resolution to fit the viewport dimensions.
  * In other words, the canvas pixel size remains
  * constant, but the number of pixels in the canvas
- * will increase or decrease to compensate. This is
- * the default scaling mode.
+ * will increase or decrease to compensate.
  */
 const SCALING_FIT = 'fit';
 /**
@@ -62,7 +61,7 @@ const SCALING_FIT = 'fit';
  * in order to preserve the canvas pixel count. In
  * other words, the number of pixels in the canvas
  * remain constant but appear larger or smaller to
- * compensate.
+ * compensate. This is the default scaling mode.
  */
 const SCALING_SCALE = 'scale';
 /**
@@ -107,7 +106,7 @@ const DEFAULT_WIDTH = 300;
 const DEFAULT_HEIGHT = 150;
 
 /**
- * @typedef {SIZING_NONE|SIZING_CONTAINER|SIZING_VIEWPORT|string} SizingMode
+ * @typedef {SIZING_NONE|SIZING_CONTAINER|SIZING_VIEWPORT} SizingMode
  */
 
 /**
@@ -118,39 +117,6 @@ const DEFAULT_HEIGHT = 150;
  * A canvas wrapper to scale and stretch with respect to the aspect ratio to fill the viewport or container.
  */
 export class FlexCanvas extends HTMLElement {
-  /**
-   * @param {object} [opts]
-   * @param {HTMLElement} [opts.root]
-   * @param {string} [opts.id]
-   * @param {ScalingMode} [opts.scaling]
-   * @param {SizingMode} [opts.sizing]
-   * @param {number} [opts.width]
-   * @param {number} [opts.height]
-   */
-  static create(opts = {}) {
-    const {
-      root = document.body,
-      id = undefined,
-      scaling = SCALING_SCALE,
-      sizing = SIZING_CONTAINER,
-      width = DEFAULT_WIDTH,
-      height = DEFAULT_HEIGHT,
-    } = opts || {};
-    if (!window.customElements.get('flex-canvas')) {
-      window.customElements.define('flex-canvas', FlexCanvas);
-    }
-    let result = new FlexCanvas();
-    if (typeof id !== 'undefined') {
-      result.id = id;
-    }
-    result.scaling = scaling;
-    result.sizing = sizing;
-    result.width = width;
-    result.height = height;
-    root.appendChild(result);
-    return result;
-  }
-
   static define(customElements = window.customElements) {
     customElements.define('flex-canvas', this);
   }
@@ -172,11 +138,11 @@ export class FlexCanvas extends HTMLElement {
   }
 
   /**
+   * Override web component behavior.
    * @protected
-   * Override for web component.
    */
   static get observedAttributes() {
-    return ['sizing', 'width', 'height', 'resize-delay'];
+    return ['sizing', 'width', 'height'];
   }
 
   /**
@@ -214,17 +180,6 @@ export class FlexCanvas extends HTMLElement {
   }
 
   /**
-   * @returns {number}
-   */
-  get resizeDelay() {
-    return this._resizeDelay;
-  }
-
-  set resizeDelay(value) {
-    this.setAttribute('resize-delay', String(value));
-  }
-
-  /**
    * The canvas width in pixels. This determines the aspect ratio and canvas buffer size.
    * @returns {number}
    */
@@ -238,6 +193,7 @@ export class FlexCanvas extends HTMLElement {
 
   /**
    * The canvas height in pixels. This determines the aspect ratio and canvas buffer size.
+   * @returns {number}
    */
   get height() {
     return this._height;
@@ -251,28 +207,48 @@ export class FlexCanvas extends HTMLElement {
     return this.canvasElement;
   }
 
-  constructor() {
+  /**
+   * @param {object} [opts]
+   * @param {HTMLElement} [opts.root]
+   * @param {SizingMode} [opts.sizing]
+   * @param {number} [opts.width]
+   * @param {number} [opts.height]
+   * @param {number} [opts.aspectRatio]
+   * @param {ScalingMode} [opts.forceScaling]
+   */
+  constructor(opts = undefined) {
     super();
     const shadowRoot = this.attachShadow({ mode: 'open' });
-    shadowRoot.appendChild(
-      this.constructor[Symbol.for('templateNode')].content.cloneNode(true),
+    const constructor = /** @type {typeof FlexCanvas} */ (this.constructor);
+    const templateNode = /** @type {HTMLTemplateElement} */ (
+      // @ts-ignore
+      constructor[Symbol.for('templateNode')]
     );
-    shadowRoot.appendChild(
-      this.constructor[Symbol.for('styleNode')].cloneNode(true),
+    const styleNode = /** @type {HTMLStyleElement} */ (
+      // @ts-ignore
+      constructor[Symbol.for('styleNode')]
     );
+    shadowRoot.appendChild(templateNode.content.cloneNode(true));
+    shadowRoot.appendChild(styleNode.cloneNode(true));
 
-    /** @private */
+    /**
+     * @private
+     * @type {SizingMode}
+     */
     this._sizing = 'none';
     /** @private */
     this._width = DEFAULT_WIDTH;
     /** @private */
     this._height = DEFAULT_HEIGHT;
-    /** @private */
-    this._resizeDelay = 0;
 
     /** @private */
     this.animationFrameHandle = 0;
 
+    /**
+     * @private
+     * @readonly
+     */
+    this.resizeDelay = 0;
     /** @private */
     this.resizeTimeoutHandle = 0;
     /** @private */
@@ -281,8 +257,13 @@ export class FlexCanvas extends HTMLElement {
     this.resizeCanvasHeight = 0;
 
     /** @private */
-    this.canvasSlotElement = shadowRoot.querySelector('slot');
-    /** @private */
+    this.canvasSlotElement = /** @type {HTMLSlotElement} */ (
+      shadowRoot.querySelector('slot')
+    );
+    /**
+     * @private
+     * @type {HTMLCanvasElement|null}
+     */
     this.canvasElement = null;
 
     /** @private */
@@ -291,18 +272,76 @@ export class FlexCanvas extends HTMLElement {
     this.onAnimationFrame = this.onAnimationFrame.bind(this);
     /** @private */
     this.onSlotChange = this.onSlotChange.bind(this);
+
+    if (typeof opts !== 'undefined') {
+      if (!window.customElements.get('flex-canvas')) {
+        window.customElements.define('flex-canvas', constructor);
+      }
+
+      const hasFixedWidthOrHeight =
+        typeof opts.width !== 'undefined' || typeof opts.height !== 'undefined';
+      const hasFixedAspectRatio = typeof opts.aspectRatio !== 'undefined';
+      if (hasFixedWidthOrHeight) {
+        let width = Math.round(Number(opts.width));
+        let height = Math.round(Number(opts.height));
+        this.width = width;
+        this.height = height;
+        if (hasFixedAspectRatio) {
+          // Verify the numbers match.
+          let ar = Number(opts.aspectRatio);
+          let expectedWidth = Math.round(height * ar);
+          if (expectedWidth !== width) {
+            throw new Error(
+              'Flex canvas width and height dimensions did not match given' +
+                ` aspect ratio '${ar}' - expected width to be ${expectedWidth} but was ${width}.`,
+            );
+          }
+          if (!opts.forceScaling) {
+            this.scaling = SCALING_SCALE;
+          }
+        } else if (!opts.forceScaling) {
+          this.scaling = SCALING_STRETCH;
+        }
+      } else if (hasFixedAspectRatio) {
+        let ar = Number(opts.aspectRatio);
+        let height = DEFAULT_HEIGHT;
+        let expectedWidth = height * ar;
+        this.width = expectedWidth;
+        this.height = height;
+        if (!opts.forceScaling) {
+          this.scaling = SCALING_FIT;
+        }
+      } else if (!opts.forceScaling) {
+        this.scaling = SCALING_FILL;
+      }
+
+      if (opts.forceScaling) {
+        this.scaling = opts.forceScaling;
+      }
+
+      if (opts.sizing) {
+        this.sizing = opts.sizing;
+      } else if (!hasFixedAspectRatio) {
+        this.sizing = SIZING_NONE;
+      } else {
+        this.sizing = SIZING_CONTAINER;
+      }
+
+      if (opts.root) {
+        opts.root.appendChild(this);
+      }
+    }
   }
 
   /**
+   * Override web component behavior.
    * @protected
-   * Override for web component.
    */
   connectedCallback() {
     upgradeProperty(this, 'scaling');
     upgradeProperty(this, 'sizing');
     upgradeProperty(this, 'width');
     upgradeProperty(this, 'height');
-    upgradeProperty(this, 'resize-delay');
 
     // Scaling mode
     if (!this.hasAttribute('scaling')) {
@@ -317,50 +356,53 @@ export class FlexCanvas extends HTMLElement {
     this.animationFrameHandle = requestAnimationFrame(this.onAnimationFrame);
     this.canvasSlotElement.addEventListener('slotchange', this.onSlotChange);
     if (!this.canvasElement) {
-      this.setCanvasElement(this.canvasSlotElement.querySelector('canvas'));
+      let canvas = /** @type {HTMLCanvasElement} */ (
+        this.canvasSlotElement.querySelector('canvas')
+      );
+      this.setCanvasElement(canvas);
     }
   }
 
   /**
+   * Override web component behavior.
    * @protected
-   * Override for web component.
    */
   disconnectedCallback() {
     cancelAnimationFrame(this.animationFrameHandle);
-    this.animationFrameHandle = null;
+    this.animationFrameHandle = 0;
     this.canvasSlotElement.removeEventListener('slotchange', this.onSlotChange);
   }
 
   /**
+   * Override web component behavior.
    * @protected
-   * Override for web component.
+   * @param {string} attribute
+   * @param {string} prev
+   * @param {string} value
    */
   attributeChangedCallback(attribute, prev, value) {
     switch (attribute) {
       case 'sizing':
-        {
-          this._sizing = String(value);
-          switch (this._sizing) {
-            case 'none':
-              this.style.removeProperty('width');
-              this.style.removeProperty('height');
-              break;
-            case 'container':
-              this.style.setProperty('width', '100%');
-              this.style.setProperty('height', '100%');
-              break;
-            case 'viewport':
-              this.style.setProperty('width', '100vw');
-              this.style.setProperty('height', '100vh');
-              break;
-            default:
-              let [x, y] = this._sizing.split(' ');
-              if (x && y) {
-                this.style.setProperty('width', x);
-                this.style.setProperty('height', y);
-              }
-              break;
-          }
+        switch (value) {
+          case 'none':
+            this._sizing = 'none';
+            this.style.removeProperty('width');
+            this.style.removeProperty('height');
+            break;
+          case 'container':
+            this._sizing = 'container';
+            this.style.setProperty('width', '100%');
+            this.style.setProperty('height', '100%');
+            break;
+          case 'viewport':
+            this._sizing = 'viewport';
+            this.style.setProperty('width', '100vw');
+            this.style.setProperty('height', '100vh');
+            break;
+          default:
+            // NOTE: This is not a known sizing value, but store it anyways.
+            // @ts-ignore
+            this._sizing = String(value);
         }
         break;
       case 'width':
@@ -374,9 +416,6 @@ export class FlexCanvas extends HTMLElement {
         if (this.canvasElement) {
           this.canvasElement.height = this._height;
         }
-        break;
-      case 'resize-delay':
-        this._resizeDelay = Number(value);
         break;
     }
   }
@@ -399,11 +438,11 @@ export class FlexCanvas extends HTMLElement {
     this.resizeCanvasWidth = this.clientWidth;
     this.resizeCanvasHeight = this.clientHeight;
 
-    if (this._resizeDelay > 0) {
+    if (this.resizeDelay > 0) {
       if (!this.resizeTimeoutHandle) {
         this.resizeTimeoutHandle = window.setTimeout(
           this.onResize,
-          this._resizeDelay,
+          this.resizeDelay,
         );
       }
     } else {
@@ -414,7 +453,7 @@ export class FlexCanvas extends HTMLElement {
   /** @private */
   onResize() {
     window.clearTimeout(this.resizeTimeoutHandle);
-    this.resizeTimeoutHandle = null;
+    this.resizeTimeoutHandle = 0;
 
     const canvas = this.canvasElement;
     if (!canvas) {
@@ -530,14 +569,44 @@ export class FlexCanvas extends HTMLElement {
   }
 
   /**
-   * @param {'2d'|'webgl'|'webgl2'} [contextId]
-   * @param {CanvasRenderingContext2DSettings} [options]
+   * @template {keyof GetRenderingContext} T
+   * @param {T} contextId
+   * @param {GetRenderingContextOptions[T]} [options]
+   * @returns {GetRenderingContext[T]}
    */
-  getContext(contextId = '2d', options = undefined) {
-    return this.canvasElement.getContext(contextId, options);
+  getContext(contextId, options = undefined) {
+    let result = this.canvasElement?.getContext(contextId, options);
+    if (result && contextId === '2d') {
+      // NOTE: Disable smoothing for pixel-perfect rendering.
+      /** @type {CanvasRenderingContext2D} */ (
+        result
+      ).imageSmoothingEnabled = false;
+    }
+    return /** @type {GetRenderingContext[T]} */ (result);
   }
 }
 
+/**
+ * @typedef {'2d'|'webgl'|'webgl2'|'bitmaprenderer'} ContextId
+ * @typedef {{
+ *  '2d': CanvasRenderingContext2D,
+ *  'webgl': WebGLRenderingContext,
+ *  'webgl2': WebGL2RenderingContext,
+ *  'bitmaprenderer': ImageBitmapRenderingContext
+ * }} GetRenderingContext
+ * @typedef {{
+ *  '2d': CanvasRenderingContext2DSettings,
+ *  'webgl': WebGLContextAttributes,
+ *  'webgl2': WebGLContextAttributes,
+ *  'bitmaprenderer': ImageBitmapRenderingContextSettings
+ * }} GetRenderingContextOptions
+ */
+
+/**
+ * @template {HTMLElement} T
+ * @param {T} element
+ * @param {keyof T} propertyName
+ */
 function upgradeProperty(element, propertyName) {
   if (Object.prototype.hasOwnProperty.call(element, propertyName)) {
     let value = element[propertyName];

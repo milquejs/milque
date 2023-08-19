@@ -7,7 +7,10 @@ import { Topic } from './Topic';
  * @typedef {(attachment: T) => Promise<void>} AsyncTopicCallback<T>
  */
 
-/** @template T */
+/**
+ * @template T
+ * @extends Topic<T>
+ */
 export class AsyncTopic extends Topic {
   /**
    * @param {string} name

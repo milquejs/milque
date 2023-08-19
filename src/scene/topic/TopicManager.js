@@ -64,7 +64,7 @@ export class TopicManager {
    * @param {object} [opts]
    * @param {number} [opts.priority]
    */
-  addEventListener(topic, callback, opts = undefined) {
+  addEventListener(topic, callback, opts = {}) {
     const { priority = 0 } = opts;
     let callbacks = this.callbacksOf(topic);
     callbacks.push({
