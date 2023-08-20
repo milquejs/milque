@@ -73,7 +73,7 @@ export async function cacheAssetPackAsRaw(assets, url, callback = undefined) {
  * This is the same as calling `await AssetRef.load()` for each ref.
  *
  * @param {AssetManager} assets
- * @param {Array<AssetRef<?, ?>>} refs
+ * @param {Array<AssetRef<any, any>>} refs
  * @param {number} [timeout]
  */
 export async function preloadAssetRefs(assets, refs, timeout = 5000) {

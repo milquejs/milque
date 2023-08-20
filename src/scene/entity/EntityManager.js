@@ -7,7 +7,7 @@ import { QueryManager } from './QueryManager';
  */
 
 /**
- * @typedef {Record<string, ComponentInstanceMap<?>>} ComponentClassMap
+ * @typedef {Record<string, ComponentInstanceMap<any>>} ComponentClassMap
  * @typedef {number} EntityId
  * @typedef {string} ComponentName
  */
@@ -16,8 +16,8 @@ import { QueryManager } from './QueryManager';
  * @callback EntityComponentChangedCallback
  * @param {EntityManager} entityManager
  * @param {EntityId} entityId
- * @param {ComponentClass<?>} attached
- * @param {ComponentClass<?>} detached
+ * @param {ComponentClass<any>} attached
+ * @param {ComponentClass<any>} detached
  * @param {boolean} dead
  */
 
@@ -28,7 +28,10 @@ export class EntityManager {
      * @type {ComponentClassMap}
      */
     this.components = {};
-    /** @private */
+    /**
+     * @private
+     * @type {Record<string, ComponentClass<any>>}
+     */
     this.nameClassMapping = {};
     /**
      * @private
@@ -40,7 +43,10 @@ export class EntityManager {
      * @type {Array<[string, ...any]>}
      */
     this.queue = [];
-    /** @private */
+    /**
+     * @private
+     * @type {Array<Function>}
+     */
     this.listeners = [];
     this.queries = new QueryManager();
   }
@@ -48,8 +54,8 @@ export class EntityManager {
   /**
    * @protected
    * @param {EntityId} entityId
-   * @param {ComponentClass<?>} attached
-   * @param {ComponentClass<?>} detached
+   * @param {ComponentClass<any>|null} attached
+   * @param {ComponentClass<any>|null} detached
    * @param {boolean} dead
    */
   entityComponentChangedCallback(entityId, attached, detached, dead) {
@@ -90,7 +96,11 @@ export class EntityManager {
 
   flush() {
     while (this.queue.length > 0) {
-      let [type, ...args] = this.queue.shift();
+      let next = this.queue.shift();
+      if (!next) {
+        break;
+      }
+      let [type, ...args] = next;
       switch (type) {
         case 'attach':
           {
@@ -147,7 +157,7 @@ export class EntityManager {
    * Whether the entity exists with all provided component classes.
    *
    * @param {EntityId} entityId
-   * @param {...ComponentClass<?>} componentClasses
+   * @param {...ComponentClass<any>} componentClasses
    */
   exists(entityId, ...componentClasses) {
     if (componentClasses.length > 0) {
@@ -223,7 +233,7 @@ export class EntityManager {
   }
 
   /**
-   * @param {ComponentClass<?>} componentClass
+   * @param {ComponentClass<any>} componentClass
    */
   clear(componentClass) {
     this.queue.push(['clear', componentClass]);
@@ -260,11 +270,11 @@ export class EntityManager {
    * @returns {T}
    */
   get(entityId, componentClass) {
-    return this.mapOf(componentClass)[entityId] || null;
+    return this.mapOf(componentClass)[entityId];
   }
 
   /**
-   * @param {ComponentClass<?>} componentClass
+   * @param {ComponentClass<any>} componentClass
    * @returns {number}
    */
   count(componentClass) {
@@ -272,7 +282,7 @@ export class EntityManager {
   }
 
   /**
-   * @param {ComponentClass<?>} componentClass
+   * @param {ComponentClass<any>} componentClass
    */
   keysOf(componentClass) {
     return Object.keys(this.mapOf(componentClass)).map(Number);
@@ -318,7 +328,7 @@ export class EntityManager {
     return result;
   }
 
-  /** @returns {Array<ComponentClass<?>>} */
+  /** @returns {Array<ComponentClass<any>>} */
   componentClasses() {
     return Object.values(this.nameClassMapping);
   }

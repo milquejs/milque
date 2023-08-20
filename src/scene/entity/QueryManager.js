@@ -23,8 +23,8 @@ export class QueryManager {
   /**
    * @param {EntityManager} entityManager
    * @param {EntityId} entityId
-   * @param {ComponentClass<?>} added
-   * @param {ComponentClass<?>} removed
+   * @param {ComponentClass<any>|null} added
+   * @param {ComponentClass<any>|null} removed
    * @param {boolean} dead
    */
   onEntityComponentChanged(entityManager, entityId, added, removed, dead) {
@@ -76,19 +76,19 @@ export class QueryManager {
    * @protected
    * @param {EntityManager} entityManager
    * @param {EntityId} entityId
-   * @param {Array<ComponentClass<?>>} selectors
+   * @param {Array<ComponentClass<any>>} selectors
    */
   test(entityManager, entityId, selectors) {
     for (let selector of selectors) {
       if (isSelectorNot(selector)) {
-        const componentClass = /** @type {SelectorNot<?>} */ (
+        const componentClass = /** @type {SelectorNot<any>} */ (
           /** @type {unknown} */ (selector)
         ).value;
         if (entityManager.exists(entityId, componentClass)) {
           return false;
         }
       } else {
-        const componentClass = /** @type {ComponentClass<?>} */ (
+        const componentClass = /** @type {ComponentClass<any>} */ (
           /** @type {unknown} */ (selector)
         );
         if (!entityManager.exists(entityId, componentClass)) {
@@ -103,7 +103,7 @@ export class QueryManager {
    * @protected
    * @param {Array<EntityId>} out
    * @param {EntityManager} entityManager
-   * @param {Array<ComponentClass<?>>} selectors
+   * @param {Array<ComponentClass<any>>} selectors
    */
   hydrate(out, entityManager, selectors) {
     if (selectors.length <= 0) {
@@ -126,6 +126,7 @@ export class QueryManager {
    */
   findAll(entityManager, query) {
     const queryKey = query.key;
+    /** @type {Array<EntityId>} */
     let result;
     if (!(queryKey in this.keyQueryMapping)) {
       result = [];
@@ -192,6 +193,9 @@ export function Not(componentClass) {
   };
 }
 
+/**
+ * @param {any} selector
+ */
 export function isSelectorNot(selector) {
   return 'type' in selector && selector.type === 'not';
 }

@@ -3,6 +3,7 @@
 ## v0.0.3
 - Added AnimationFrameDetail
 - Fixed FlexCanvas default to never stretch
+- Fix unknown to any typing
 
 ## v0.0.2
 - Fixed Tia.spr() uv-st offset

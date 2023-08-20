@@ -114,5 +114,5 @@ function computeResult(out, ents, entityId, componentClasses) {
     }
   }
   out.entityId = entityId;
-  return /** @type {ArchetypeResult<?>} */ (out);
+  return /** @type {ArchetypeResult<any>} */ (out);
 }

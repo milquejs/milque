@@ -16,7 +16,7 @@ import { isSelectorNot } from './QueryManager';
 
 export class Query {
   /**
-   * @param {...ComponentClass<?>} selectors
+   * @param {...ComponentClass<any>} selectors
    */
   constructor(...selectors) {
     if (selectors.length <= 0) {
@@ -27,7 +27,7 @@ export class Query {
   }
 
   /**
-   * @param {Selector<?>} selector
+   * @param {Selector<any>} selector
    */
   hasSelector(selector) {
     if (isSelectorNot(selector)) {
@@ -80,7 +80,7 @@ export class Query {
 }
 
 /**
- * @param {Array<ComponentClass<?>>} selectors
+ * @param {Array<ComponentClass<any>>} selectors
  */
 function computeSelectorKey(selectors) {
   return selectors

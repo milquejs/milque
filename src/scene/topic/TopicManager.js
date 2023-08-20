@@ -42,7 +42,7 @@ export class TopicManager {
     this.cachedOut = {};
     /**
      * @protected
-     * @type {Record<string, Array<TopicCallbackEntry<?>>>}
+     * @type {Record<string, Array<TopicCallbackEntry<any>>>}
      */
     this.callbacks = {};
     /**
@@ -52,7 +52,7 @@ export class TopicManager {
     this.maxRetains = {};
     /**
      * @private
-     * @type {Record<string, Topic<?>>}
+     * @type {Record<string, Topic<any>>}
      */
     this.nameTopicMapping = {};
   }
@@ -88,7 +88,7 @@ export class TopicManager {
   }
 
   /**
-   * @param {Topic<?>} topic
+   * @param {Topic<any>} topic
    */
   countEventListeners(topic) {
     return this.callbacksOf(topic).length;
@@ -139,7 +139,7 @@ export class TopicManager {
   }
 
   /**
-   * @param {Topic<?>} topic
+   * @param {Topic<any>} topic
    */
   count(topic) {
     let outgoing = this.outgoingOf(topic);
@@ -160,7 +160,7 @@ export class TopicManager {
   }
 
   /**
-   * @param {Topic<?>} topic
+   * @param {Topic<any>} topic
    * @param {number} amount
    */
   retain(topic, amount) {
@@ -194,14 +194,14 @@ export class TopicManager {
   }
 
   /**
-   * @param {Topic<?>} topic
+   * @param {Topic<any>} topic
    */
   getPendingRetainCount(topic) {
     return this.maxRetains[topic.name] || 0;
   }
 
   /**
-   * @param {Topic<?>} topic
+   * @param {Topic<any>} topic
    */
   getPendingFlushCount(topic) {
     let incoming = this.incomingOf(topic);
