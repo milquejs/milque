@@ -2,8 +2,9 @@
 
 ## v0.0.3
 - Added AnimationFrameDetail
+- Changed callback to initialize on AnimationFrameLoop.start() instead of constructor()
 - Fixed FlexCanvas default to never stretch
-- Fix unknown to any typing
+- Fixed unknown to any typing
 
 ## v0.0.2
 - Fixed Tia.spr() uv-st offset
