@@ -1,0 +1,1 @@
+export { camelToSnakeCase } from './StringCase';
