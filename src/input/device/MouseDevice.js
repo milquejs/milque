@@ -1,8 +1,4 @@
-import { InputDevice } from './InputDevice.js';
-
-/**
- * @typedef {import('./InputDevice.js').InputDeviceEvent} InputDeviceEvent
- */
+import { InputDevice, InputDeviceEvent } from './InputDevice.js';
 
 const DEFAULT_LINE_PIXELS = 10;
 const DEFAULT_PAGE_PIXELS = 100;
@@ -24,80 +20,32 @@ const DEFAULT_PAGE_PIXELS = 100;
  * - Button4 (back button)
  */
 export class MouseDevice extends InputDevice {
-  /** @override */
-  static isAxis(keyCode) {
-    return (
-      keyCode === 'PosX' ||
-      keyCode === 'PosY' ||
-      keyCode === 'WheelX' ||
-      keyCode === 'WheelY' ||
-      keyCode === 'WheelZ'
-    );
-  }
-
-  /** @override */
-  static isButton(keyCode) {
-    return !this.isAxis(keyCode);
-  }
 
   /**
-   * Constructs a listening mouse with no listeners (yet).
+   * Constructs a mouse.
    *
    * @param {string} deviceName
    * @param {EventTarget} eventTarget
-   * @param {Object} [opts] Any additional options.
-   * @param {Boolean} [opts.eventsOnFocus=true] Whether to capture events only when it has focus.
+   * @param {object} [opts] Any additional options.
+   * @param {EventTarget} [opts.canvasTarget] The event target for `pointerlock` and mouse position offset.
+   * @param {boolean} [opts.eventsOnFocus] Whether to capture events only when it has focus.
    */
   constructor(deviceName, eventTarget, opts = {}) {
     super(deviceName, eventTarget);
 
-    const { eventsOnFocus = true } = opts;
+    const { eventsOnFocus = true, canvasTarget = getCanvasFromEventTarget(this.eventTarget) } = opts;
+
+    /** @readonly */
     this.eventsOnFocus = eventsOnFocus;
-    this.canvasTarget = this.getCanvasFromEventTarget(eventTarget);
+
+    /**
+     * @protected
+     * @readonly
+     */
+    this.canvasTarget = /** @type {HTMLCanvasElement} */ (canvasTarget || eventTarget);
 
     /** @private */
     this._downHasFocus = false;
-
-    /**
-     * @private
-     * @type {InputDeviceEvent}
-     */
-    this._eventObject = {
-      target: eventTarget,
-      device: deviceName,
-      code: '',
-      event: '',
-      // Button values
-      value: 0,
-      control: false,
-      shift: false,
-      alt: false,
-    };
-    /**
-     * @private
-     * @type {InputDeviceEvent}
-     */
-    this._positionObject = {
-      target: eventTarget,
-      device: deviceName,
-      code: '',
-      event: 'move',
-      // Pos values
-      value: 0,
-      movement: 0,
-    };
-    /**
-     * @private
-     * @type {InputDeviceEvent}
-     */
-    this._wheelObject = {
-      target: eventTarget,
-      device: deviceName,
-      code: '',
-      event: 'wheel',
-      // Wheel values
-      movement: 0,
-    };
 
     /** @private */
     this.onMouseDown = this.onMouseDown.bind(this);
@@ -110,46 +58,74 @@ export class MouseDevice extends InputDevice {
     /** @private */
     this.onWheel = this.onWheel.bind(this);
 
-    eventTarget.addEventListener('mousedown', this.onMouseDown);
-    eventTarget.addEventListener('contextmenu', this.onContextMenu);
-    eventTarget.addEventListener('wheel', this.onWheel);
-    document.addEventListener('mousemove', this.onMouseMove);
-    document.addEventListener('mouseup', this.onMouseUp);
+    /** @private */
+    this.clickEvent = new InputDeviceEvent('input', this.name, '', 'pressed');
+    /** @private */
+    this.moveEvent = new InputDeviceEvent('input', this.name, '', 'moved');
+    /** @private */
+    this.wheelEvent = new InputDeviceEvent('input', this.name, '', 'wheel');
+
+    if (this.eventTarget) {
+      // @ts-ignore
+      this.eventTarget.addEventListener('mousedown', this.onMouseDown);
+      // @ts-ignore
+      this.eventTarget.addEventListener('contextmenu', this.onContextMenu);
+      // @ts-ignore
+      this.eventTarget.addEventListener('wheel', this.onWheel);
+      document.addEventListener('mousemove', this.onMouseMove);
+      document.addEventListener('mouseup', this.onMouseUp);
+    }
   }
 
-  /** @override */
+  /**
+   * @override
+   * @param {EventTarget} eventTarget
+   */
   setEventTarget(eventTarget) {
-    if (this.eventTarget) this.destroy();
     super.setEventTarget(eventTarget);
-    this.canvasTarget = this.getCanvasFromEventTarget(eventTarget);
-    eventTarget.addEventListener('mousedown', this.onMouseDown);
-    eventTarget.addEventListener('contextmenu', this.onContextMenu);
-    eventTarget.addEventListener('wheel', this.onWheel);
-    document.addEventListener('mousemove', this.onMouseMove);
-    document.addEventListener('mouseup', this.onMouseUp);
+    // @ts-ignore
+    this.canvasTarget = /** @type {HTMLCanvasElement} */ (getCanvasFromEventTarget(eventTarget) || eventTarget);
+    if (this.eventTarget) {
+      // @ts-ignore
+      this.eventTarget.addEventListener('mousedown', this.onMouseDown);
+      // @ts-ignore
+      this.eventTarget.addEventListener('contextmenu', this.onContextMenu);
+      // @ts-ignore
+      this.eventTarget.addEventListener('wheel', this.onWheel);
+      document.addEventListener('mousemove', this.onMouseMove);
+      document.addEventListener('mouseup', this.onMouseUp);
+    }
+    return this;
   }
 
   /** @override */
   destroy() {
-    let eventTarget = this.eventTarget;
-    eventTarget.removeEventListener('mousedown', this.onMouseDown);
-    eventTarget.removeEventListener('contextmenu', this.onContextMenu);
-    eventTarget.removeEventListener('wheel', this.onWheel);
-    document.removeEventListener('mousemove', this.onMouseMove);
-    document.removeEventListener('mouseup', this.onMouseUp);
+    if (this.eventTarget) {
+      // @ts-ignore
+      this.eventTarget.removeEventListener('mousedown', this.onMouseDown);
+      // @ts-ignore
+      this.eventTarget.removeEventListener('contextmenu', this.onContextMenu);
+      // @ts-ignore
+      this.eventTarget.removeEventListener('wheel', this.onWheel);
+      document.removeEventListener('mousemove', this.onMouseMove);
+      document.removeEventListener('mouseup', this.onMouseUp);
+    }
     super.destroy();
   }
 
   setPointerLock(force = true) {
+    const target = /** @type {HTMLCanvasElement} */ (this.canvasTarget);
     if (force) {
-      this.eventTarget.requestPointerLock();
+      target.requestPointerLock();
     } else {
-      this.eventTarget.exitPointerLock();
+      // NOTE: Exit is done on the document.
+      document.exitPointerLock();
     }
   }
 
   hasPointerLock() {
-    return document.pointerLockElement === this.eventTarget;
+    const target = /** @type {HTMLCanvasElement} */ (this.canvasTarget);
+    return document.pointerLockElement === target;
   }
 
   /**
@@ -159,17 +135,11 @@ export class MouseDevice extends InputDevice {
   onMouseDown(e) {
     this._downHasFocus = true;
 
-    let event = this._eventObject;
-    // We care more about location (code) than print char (key).
-    event.code = 'Button' + e.button;
-    event.event = 'pressed';
-    event.value = 1;
-    event.control = e.ctrlKey;
-    event.shift = e.shiftKey;
-    event.alt = e.altKey;
-
-    let result = this.dispatchInputEvent(event);
-    if (result) {
+    // NOTE: We care more about location (code) than print char (key).
+    let event = this.clickEvent;
+    event.initInputDeviceEvent(`Button${e.button}`, 'pressed', 1, 0, e.ctrlKey, e.shiftKey, e.altKey);
+    const result = this.dispatchEvent(event);
+    if (!result) {
       // Make sure it has focus first.
       if (document.activeElement === this.eventTarget) {
         e.preventDefault();
@@ -214,18 +184,20 @@ export class MouseDevice extends InputDevice {
         break;
     }
 
-    let result = 0;
-    let event = this._wheelObject;
-    event.code = 'WheelX';
-    event.movement = dx;
-    result |= this.dispatchInputEvent(event);
-    event.code = 'WheelY';
-    event.movement = dy;
-    result |= this.dispatchInputEvent(event);
-    event.code = 'WheelZ';
-    event.movement = dz;
-    result |= this.dispatchInputEvent(event);
-    if (result) {
+    let result = true;
+
+    // NOTE: We care more about location (code) than print char (key).
+    let event = this.wheelEvent;
+    event.initInputDeviceEvent('WheelX', 'wheel', 0, dx);
+    result &&= this.dispatchEvent(event);
+
+    event.initInputDeviceEvent('WheelY', 'wheel', 0, dy);
+    result &&= this.dispatchEvent(event);
+
+    event.initInputDeviceEvent('WheelZ', 'wheel', 0, dz);
+    result &&= this.dispatchEvent(event);
+    
+    if (!result) {
       e.preventDefault();
       e.stopPropagation();
       return false;
@@ -241,17 +213,11 @@ export class MouseDevice extends InputDevice {
     if (!this._downHasFocus) return;
     this._downHasFocus = false;
 
-    let event = this._eventObject;
-    // We care more about location (code) than print char (key).
-    event.code = 'Button' + e.button;
-    event.event = 'released';
-    event.value = 1;
-    event.control = e.ctrlKey;
-    event.shift = e.shiftKey;
-    event.alt = e.altKey;
-
-    let result = this.dispatchInputEvent(event);
-    if (result) {
+    // NOTE: We care more about location (code) than print char (key).
+    let event = this.clickEvent;
+    event.initInputDeviceEvent(`Button${e.button}`, 'released', 1, 0, e.ctrlKey, e.shiftKey, e.altKey);
+    const result = this.dispatchEvent(event);
+    if (!result) {
       e.preventDefault();
       e.stopPropagation();
       return false;
@@ -263,8 +229,9 @@ export class MouseDevice extends InputDevice {
    * @param {MouseEvent} e
    */
   onMouseMove(e) {
-    if (this.eventsOnFocus && document.activeElement !== this.eventTarget)
+    if (this.eventsOnFocus && document.activeElement !== this.eventTarget) {
       return;
+    }
 
     const element = this.canvasTarget;
     const { clientWidth, clientHeight } = element;
@@ -275,29 +242,39 @@ export class MouseDevice extends InputDevice {
     let x = (e.clientX - rect.left) / clientWidth;
     let y = (e.clientY - rect.top) / clientHeight;
 
-    let event = this._positionObject;
-    event.code = 'PosX';
-    event.value = x;
-    event.movement = dx;
-    this.dispatchInputEvent(event);
-    event.code = 'PosY';
-    event.value = y;
-    event.movement = dy;
-    this.dispatchInputEvent(event);
-  }
+    let result = true;
 
-  /** @private */
-  getCanvasFromEventTarget(eventTarget) {
-    if (eventTarget instanceof HTMLCanvasElement) {
-      return eventTarget;
-    } else {
-      return (
-        eventTarget.canvas ||
-        eventTarget.querySelector('canvas') ||
-        (eventTarget.shadowRoot &&
-          eventTarget.shadowRoot.querySelector('canvas')) ||
-        eventTarget
-      );
+    let event = this.moveEvent;
+    event.initInputDeviceEvent('PosX', 'moved', x, dx);
+    result &&= this.dispatchEvent(event);
+
+    event.initInputDeviceEvent('PosY', 'moved', y, dy);
+    result &&= this.dispatchEvent(event);
+    
+    if (!result) {
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
     }
+  }
+}
+
+/**
+ * @param {EventTarget|null} eventTarget
+ * @returns {HTMLCanvasElement|null}
+ */
+function getCanvasFromEventTarget(eventTarget) {
+  if (!eventTarget) {
+    return null;
+  } else if (eventTarget instanceof HTMLCanvasElement) {
+    return eventTarget;
+  } else if ('canvas' in eventTarget) {
+    return /** @type {HTMLCanvasElement} */ (eventTarget.canvas);
+  } else if ('querySelector' in eventTarget) {
+    return /** @type {ParentNode} */ (eventTarget).querySelector('canvas');
+  } else if ('shadowRoot' in eventTarget) {
+    return /** @type {HTMLCanvasElement} */ (/** @type {Element} */ (eventTarget).shadowRoot?.querySelector('canvas'));
+  } else {
+    return null;
   }
 }

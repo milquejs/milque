@@ -1,6 +1,6 @@
 import { mat4, quat, vec3 } from 'gl-matrix';
 
-import { HEX } from '../../util/color';
+import { HEX } from '../util/color';
 
 export class Tia {
   constructor() {

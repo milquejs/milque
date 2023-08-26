@@ -1,3 +1,4 @@
-export * from './InputDevice.js';
-export { KeyboardDevice } from './KeyboardDevice.js';
-export { MouseDevice } from './MouseDevice.js';
+export * from './InputDevice';
+export { KeyboardDevice } from './KeyboardDevice';
+export { MouseDevice } from './MouseDevice';
+export { GamepadDevice } from './GamepadDevice';

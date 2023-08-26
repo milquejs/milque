@@ -2,6 +2,7 @@
 
 ## v0.0.3
 - Added AnimationFrameDetail
+- Added Gamepad key codes
 - Changed callback to initialize on AnimationFrameLoop.start() instead of constructor()
 - Fixed FlexCanvas default to never stretch
 - Fixed unknown to any typing

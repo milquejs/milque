@@ -1,23 +1,5 @@
-import { KeyCode } from './KeyCode.js';
-
-/**
- * @param {string} device 
- * @param {string} code
- */
-export function from(device, code) {
-  return new KeyCode(device, code);
-}
-
-/**
- * @param {any} object
- */
-export function isKeyCode(object) {
-  return object && 'device' in object && 'code' in object;
-}
-
-export const KEYBOARD = 'Keyboard';
-export const MOUSE = 'Mouse';
-export const GAMEPAD = 'Gamepad';
+import { KeyCode } from './KeyCode';
+import { KEYBOARD, MOUSE, GAMEPAD } from './DeviceCodes';
 
 export const KEY_A = new KeyCode(KEYBOARD, 'KeyA');
 export const KEY_B = new KeyCode(KEYBOARD, 'KeyB');
@@ -82,72 +64,85 @@ export const ARROW_DOWN = new KeyCode(KEYBOARD, 'ArrowDown');
 export const ARROW_LEFT = new KeyCode(KEYBOARD, 'ArrowLeft');
 export const ARROW_RIGHT = new KeyCode(KEYBOARD, 'ArrowRight');
 
+/** Left Mouse Button */
 export const MOUSE_BUTTON_0 = new KeyCode(MOUSE, 'Button0');
+/** Middle Mouse Button */
 export const MOUSE_BUTTON_1 = new KeyCode(MOUSE, 'Button1');
+/** Right Mouse Button */
 export const MOUSE_BUTTON_2 = new KeyCode(MOUSE, 'Button2');
+/** Next Mouse Button */
 export const MOUSE_BUTTON_3 = new KeyCode(MOUSE, 'Button3');
+/** Back Mouse Button */
 export const MOUSE_BUTTON_4 = new KeyCode(MOUSE, 'Button4');
 
-export const MOUSE_POS_X = new KeyCode(MOUSE, 'PosX');
-export const MOUSE_POS_Y = new KeyCode(MOUSE, 'PosY');
+export const MOUSE_POS_X = new KeyCode(MOUSE, 'PosX', true);
+export const MOUSE_POS_Y = new KeyCode(MOUSE, 'PosY', true);
 
-export const MOUSE_WHEEL_X = new KeyCode(MOUSE, 'WheelX');
-export const MOUSE_WHEEL_Y = new KeyCode(MOUSE, 'WheelY');
-export const MOUSE_WHEEL_Z = new KeyCode(MOUSE, 'WheelZ');
+export const MOUSE_WHEEL_X = new KeyCode(MOUSE, 'WheelX', true);
+export const MOUSE_WHEEL_Y = new KeyCode(MOUSE, 'WheelY', true);
+export const MOUSE_WHEEL_Z = new KeyCode(MOUSE, 'WheelZ', true);
+
+/**
+ * Fires when a gamepad connects or disconnects.
+ */
+export const GAMEPAD_CONNECTION = new KeyCode(GAMEPAD, 'Connection');
 
 /** `A` (Nintendo), `B` (Xbox), `X` (Playstation) */
-export const GAMEPAD_BUTTON_0 = new KeyCode(GAMEPAD, '0');
+export const GAMEPAD_BUTTON_0 = new KeyCode(GAMEPAD, 'Button0');
 /** `B` (Nintendo), `A` (Xbox), `Circle` (Playstation) */
-export const GAMEPAD_BUTTON_1 = new KeyCode(GAMEPAD, '1');
+export const GAMEPAD_BUTTON_1 = new KeyCode(GAMEPAD, 'Button1');
 /** `Y` (Nintendo), `X` (Xbox), `Square` (Playstation) */
-export const GAMEPAD_BUTTON_2 = new KeyCode(GAMEPAD, '2');
+export const GAMEPAD_BUTTON_2 = new KeyCode(GAMEPAD, 'Button2');
 /** `X` (Nintendo), `Y` (Xbox), `Triangle` (Playstation) */
-export const GAMEPAD_BUTTON_3 = new KeyCode(GAMEPAD, '3');
+export const GAMEPAD_BUTTON_3 = new KeyCode(GAMEPAD, 'Button3');
 
 /** `L1`, Left Bumper */
-export const GAMEPAD_BUTTON_4 = new KeyCode(GAMEPAD, '4');
+export const GAMEPAD_BUTTON_4 = new KeyCode(GAMEPAD, 'Button4');
 /** `R1`, Right Bumper */
-export const GAMEPAD_BUTTON_5 = new KeyCode(GAMEPAD, '5');
+export const GAMEPAD_BUTTON_5 = new KeyCode(GAMEPAD, 'Button5');
 /** `L2`, Left Trigger */
-export const GAMEPAD_BUTTON_6 = new KeyCode(GAMEPAD, '6');
+export const GAMEPAD_BUTTON_6 = new KeyCode(GAMEPAD, 'Button6');
 /** `R2`, Right Trigger */
-export const GAMEPAD_BUTTON_7 = new KeyCode(GAMEPAD, '7');
-/** `SELECT` */
-export const GAMEPAD_BUTTON_8 = new KeyCode(GAMEPAD, '8');
-/** `START` */
-export const GAMEPAD_BUTTON_9 = new KeyCode(GAMEPAD, '9');
+export const GAMEPAD_BUTTON_7 = new KeyCode(GAMEPAD, 'Button7');
+/** `SELECT`, `BACK` */
+export const GAMEPAD_BUTTON_8 = new KeyCode(GAMEPAD, 'Button8');
+/** `START`, `FORWARD` */
+export const GAMEPAD_BUTTON_9 = new KeyCode(GAMEPAD, 'Button9');
 /** `L3`, Left Stick Button */
-export const GAMEPAD_BUTTON_10 = new KeyCode(GAMEPAD, '10');
+export const GAMEPAD_BUTTON_10 = new KeyCode(GAMEPAD, 'Button10');
 /** `R3`, Right Stick Button */
-export const GAMEPAD_BUTTON_11 = new KeyCode(GAMEPAD, '11');
+export const GAMEPAD_BUTTON_11 = new KeyCode(GAMEPAD, 'Button11');
 /** `D-pad ↑`, Up */
-export const GAMEPAD_BUTTON_12 = new KeyCode(GAMEPAD, '12');
+export const GAMEPAD_BUTTON_12 = new KeyCode(GAMEPAD, 'Button12');
 /** `D-pad ↓`, Down */
-export const GAMEPAD_BUTTON_13 = new KeyCode(GAMEPAD, '13');
+export const GAMEPAD_BUTTON_13 = new KeyCode(GAMEPAD, 'Button13');
 /** `D-pad ←`, Left */
-export const GAMEPAD_BUTTON_14 = new KeyCode(GAMEPAD, '14');
+export const GAMEPAD_BUTTON_14 = new KeyCode(GAMEPAD, 'Button14');
 /** `D-pad →`, Right */
-export const GAMEPAD_BUTTON_15 = new KeyCode(GAMEPAD, '15');
+export const GAMEPAD_BUTTON_15 = new KeyCode(GAMEPAD, 'Button15');
+/** `Home` */
+export const GAMEPAD_BUTTON_16 = new KeyCode(GAMEPAD, 'Button16');
 
-export const GAMEPAD_LEFT_STICK_X = new KeyCode(GAMEPAD, 'LeftStickX');
-export const GAMEPAD_LEFT_STICK_Y = new KeyCode(GAMEPAD, 'LeftStickY');
+export const GAMEPAD_LEFT_STICK_X = new KeyCode(GAMEPAD, 'Axis0', true);
+export const GAMEPAD_LEFT_STICK_Y = new KeyCode(GAMEPAD, 'Axis1', true);
 
-export const GAMEPAD_RIGHT_STICK_X = new KeyCode(GAMEPAD, 'RightStickX');
-export const GAMEPAD_RIGHT_STICK_Y = new KeyCode(GAMEPAD, 'RightStickY');
+export const GAMEPAD_RIGHT_STICK_X = new KeyCode(GAMEPAD, 'Axis2', true);
+export const GAMEPAD_RIGHT_STICK_Y = new KeyCode(GAMEPAD, 'Axis3', true);
 
-export const GAMEPAD_LEFT_BUMPER = new KeyCode(GAMEPAD, '4');
-export const GAMEPAD_RIGHT_BUMPER = new KeyCode(GAMEPAD, '5');
+export const GAMEPAD_LEFT_BUMPER = new KeyCode(GAMEPAD, 'Button4');
+export const GAMEPAD_RIGHT_BUMPER = new KeyCode(GAMEPAD, 'Button5');
 
-export const GAMEPAD_LEFT_TRIGGER = new KeyCode(GAMEPAD, '6');
-export const GAMEPAD_RIGHT_TRIGGER = new KeyCode(GAMEPAD, '7');
+export const GAMEPAD_LEFT_TRIGGER = new KeyCode(GAMEPAD, 'Button6');
+export const GAMEPAD_RIGHT_TRIGGER = new KeyCode(GAMEPAD, 'Button7');
 
-export const GAMEPAD_SELECT = new KeyCode(GAMEPAD, '8');
-export const GAMEPAD_START = new KeyCode(GAMEPAD, '9');
+export const GAMEPAD_SELECT = new KeyCode(GAMEPAD, 'Button8');
+export const GAMEPAD_START = new KeyCode(GAMEPAD, 'Button9');
+export const GAMEPAD_HOME = new KeyCode(GAMEPAD, 'Button16');
 
-export const GAMEPAD_LEFT_STICK_BUTTON = new KeyCode(GAMEPAD, '10');
-export const GAMEPAD_RIGHT_STICK_BUTTON = new KeyCode(GAMEPAD, '11');
+export const GAMEPAD_LEFT_STICK_BUTTON = new KeyCode(GAMEPAD, 'Button10');
+export const GAMEPAD_RIGHT_STICK_BUTTON = new KeyCode(GAMEPAD, 'Button11');
 
-export const GAMEPAD_DPAD_UP = new KeyCode(GAMEPAD, '12');
-export const GAMEPAD_DPAD_DOWN = new KeyCode(GAMEPAD, '13');
-export const GAMEPAD_DPAD_LEFT = new KeyCode(GAMEPAD, '14');
-export const GAMEPAD_DPAD_RIGHT = new KeyCode(GAMEPAD, '15');
+export const GAMEPAD_DPAD_UP = new KeyCode(GAMEPAD, 'Button12');
+export const GAMEPAD_DPAD_DOWN = new KeyCode(GAMEPAD, 'Button13');
+export const GAMEPAD_DPAD_LEFT = new KeyCode(GAMEPAD, 'Button14');
+export const GAMEPAD_DPAD_RIGHT = new KeyCode(GAMEPAD, 'Button15');

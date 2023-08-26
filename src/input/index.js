@@ -6,6 +6,7 @@ export * from './inputcode/InputCode.js';
 export { InputPort } from './inputport/InputPort.js';
 export * from './AutoPoller.js';
 export * from './DeviceInputAdapter.js';
+export * from './axisbutton';
 
 export { Keyboard } from './Keyboard.js';
 export { Mouse } from './Mouse.js';

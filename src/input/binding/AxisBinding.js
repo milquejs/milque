@@ -1,9 +1,7 @@
-import { stringsToKeyCodes } from '../keycode/KeyCodeHelper.js';
-import { from } from '../keycode/KeyCodes.js';
-import { InputBinding } from './InputBinding.js';
+import { KeyCode } from '../keycode/KeyCode';
+import { InputBinding } from './InputBinding';
 
 /**
- * @typedef {import('../keycode/KeyCode.js').KeyCode} KeyCode
  * @typedef {import('../InputContext.js').InputContext} InputContext
  */
 
@@ -16,7 +14,7 @@ export class AxisBinding extends InputBinding {
    * @returns {AxisBinding}
    */
   static fromBind(name, device, code, opts = undefined) {
-    return new AxisBinding(name, from(device, code), opts);
+    return new AxisBinding(name, KeyCode.parse(`${device}.${code}`), opts);
   }
 
   /**
@@ -25,7 +23,7 @@ export class AxisBinding extends InputBinding {
    * @returns {AxisBinding}
    */
   static fromString(name, ...strings) {
-    let keyCodes = stringsToKeyCodes(strings);
+    let keyCodes = strings.map(string => KeyCode.parse(string));
     return new AxisBinding(name, keyCodes);
   }
 

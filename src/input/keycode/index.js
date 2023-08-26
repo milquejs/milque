@@ -1,1 +1,3 @@
-export { stringsToKeyCodes, KeyCodes } from './KeyCodeHelper.js';
+export * from './KeyCodeWrapper';
+export * from './DeviceCodeWrapper';
+export * from './KeyModifierWrapper';

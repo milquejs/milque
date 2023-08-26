@@ -1,55 +1,30 @@
 /**
- * @typedef InputDeviceEvent
- * @property {EventTarget} target
- * @property {string} device
- * @property {string} code
- * @property {string} event
- * @property {number} [value] The input value of the triggered event (usually this is 1).
- * @property {number} [movement] The change in value for the triggered event.
- * @property {boolean} [control] Whether any control keys are down (false if up).
- * @property {boolean} [shift] Whether any shift keys are down (false if up).
- * @property {boolean} [alt] Whether any alt keys are down (false if up).
- *
- * @callback InputDeviceEventListener
- * @param {InputDeviceEvent} e
- */
-
-/**
  * A class that represents a raw system device that
  * emits input events.
+ * 
+ * @fires InputDeviceEvent
  */
-export class InputDevice {
-  /** @abstract */
-  // eslint-disable-next-line no-unused-vars
-  static isAxis(keyCode) {
-    return false;
-  }
-
-  /** @abstract */
-  // eslint-disable-next-line no-unused-vars
-  static isButton(keyCode) {
-    return false;
-  }
+export class InputDevice extends EventTarget {
 
   /**
    * @param {string} deviceName
    * @param {EventTarget} eventTarget
    */
   constructor(deviceName, eventTarget) {
+    super();
+
     if (!eventTarget) {
       throw new Error(`Missing event target for device ${deviceName}.`);
     }
 
+    /** @readonly */
     this.name = deviceName;
-    this.eventTarget = eventTarget;
-
     /**
-     * @private
-     * @type {Record<string, Array<InputDeviceEventListener>>}
+     * @protected
+     * @readonly
+     * @type {EventTarget|null}
      */
-    this.listeners = {
-      input: [],
-    };
+    this.eventTarget = eventTarget;
   }
 
   /**
@@ -59,53 +34,133 @@ export class InputDevice {
     if (!eventTarget) {
       throw new Error(`Missing event target for device ${this.name}.`);
     }
+    if (this.eventTarget) {
+      this.destroy();
+    }
+    // @ts-ignore
     this.eventTarget = eventTarget;
+    return this;
   }
 
+  /**
+   * @abstract
+   */
   destroy() {
-    let listeners = this.listeners;
-    for (let event in listeners) {
-      listeners[event].length = 0;
-    }
+    // @ts-ignore
+    this.eventTarget = null;
   }
 
   /**
+   * Should be called regularly to poll non-event-based inputs.
+   * @abstract
+   * @param {number} now
+   */
+  poll(now = performance.now()) {}
+}
+
+/**
+ * @typedef InputDeviceEventInit
+ * @property {number} [value] The input value of the triggered event (usually this is 1).
+ * @property {number} [movement] The change in value for the triggered event.
+ * @property {boolean} [control] Whether any control keys are down (false if up).
+ * @property {boolean} [shift] Whether any shift keys are down (false if up).
+ * @property {boolean} [alt] Whether any alt keys are down (false if up).
+ * @property {boolean} [repeat] Whether this is a repeat press from holding.
+ * @property {number} [deviceIndex] The device index (usually just 0 unless multiple gamepads).
+ */
+
+export class InputDeviceEvent extends Event {
+  /**
+   * @param {string} type
+   * @param {string} device
+   * @param {string} code
    * @param {string} event
-   * @param {InputDeviceEventListener} listener
+   * @param {InputDeviceEventInit} [eventInitDict]
    */
-  addEventListener(event, listener) {
-    let listeners = this.listeners;
-    if (event in listeners) {
-      listeners[event].push(listener);
-    } else {
-      listeners[event] = [listener];
-    }
+  constructor(type, device, code, event, eventInitDict) {
+    super(type, { bubbles: false, cancelable: true, composed: false });
+
+    /** @readonly */
+    this.device = device;
+    /** @readonly */
+    this.code = code;
+    /** @readonly */
+    this.event = event;
+
+    /**
+     * The input value of the triggered event (usually this is 1).
+     * @readonly
+     * @type {number}
+     */
+    this.value = Number(eventInitDict?.value || 0);
+    /**
+     * The change in value for the triggered event.
+     * @readonly
+     * @type {number}
+     */
+    this.movement = Number(eventInitDict?.movement || 0);
+    /**
+     * Whether any control keys are down (false if up).
+     * @readonly
+     * @type {boolean}
+     */
+    this.control = Boolean(eventInitDict?.control);
+    /**
+     * Whether any shift keys are down (false if up).
+     * @readonly
+     * @type {boolean}
+     */
+    this.shift = Boolean(eventInitDict?.shift);
+    /**
+     * Whether any alt keys are down (false if up).
+     * @readonly
+     * @type {boolean}
+     */
+    this.alt = Boolean(eventInitDict?.alt);
+    /**
+     * Whether this is a repeat press from holding.
+     * @readonly
+     * @type {boolean}
+     */
+    this.repeat = Boolean(eventInitDict?.repeat);
+    /**
+     * The device index (usually just 0 unless multiple gamepads).
+     * @readonly
+     * @type {number}
+     */
+    this.deviceIndex = Number(eventInitDict?.deviceIndex || 0);
   }
 
   /**
+   * @param {string} code
    * @param {string} event
-   * @param {InputDeviceEventListener} listener
+   * @param {number} [value]
+   * @param {number} [movement]
+   * @param {boolean} [control]
+   * @param {boolean} [shift]
+   * @param {boolean} [alt]
+   * @param {boolean} [repeat]
+   * @param {number} [deviceIndex]
    */
-  removeEventListener(event, listener) {
-    let listeners = this.listeners;
-    if (event in listeners) {
-      let list = listeners[event];
-      let i = list.indexOf(listener);
-      if (i >= 0) {
-        list.splice(i, 1);
-      }
-    }
-  }
-
-  /**
-   * @param {InputDeviceEvent} e
-   * @returns {boolean} Whether the input event should be consumed.
-   */
-  dispatchInputEvent(e) {
-    let flag = 0;
-    for (let listener of this.listeners.input) {
-      flag |= listener(e);
-    }
-    return Boolean(flag);
+  initInputDeviceEvent(code, event, value = 0, movement = 0, control = false, shift = false, alt = false, repeat = false, deviceIndex = -1) {
+    // @ts-ignore
+    this.code = code;
+    // @ts-ignore
+    this.event = event;
+    // @ts-ignore
+    this.value = value;
+    // @ts-ignore
+    this.movement = movement;
+    // @ts-ignore
+    this.control = control;
+    // @ts-ignore
+    this.shift = shift;
+    // @ts-ignore
+    this.alt = alt;
+    // @ts-ignore
+    this.repeat = repeat;
+    // @ts-ignore
+    this.deviceIndex = deviceIndex;
+    return this;
   }
 }

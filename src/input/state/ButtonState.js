@@ -74,6 +74,7 @@ export class ButtonState extends InputState {
   /**
    * @override
    * @protected
+   * @param {number} newSize
    */
   resize(newSize) {
     let oldState = this._state;

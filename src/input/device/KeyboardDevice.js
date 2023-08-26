@@ -1,6 +1,4 @@
-import { InputDevice } from './InputDevice.js';
-
-/** @typedef {import('./InputDevice.js').InputDeviceEvent} InputDeviceEvent */
+import { InputDevice, InputDeviceEvent } from './InputDevice.js';
 
 /**
  * A class that listens to the keyboard events from the event target and
@@ -11,71 +9,62 @@ import { InputDevice } from './InputDevice.js';
  * - Use this to help you determine the key code: https://keycode.info/
  */
 export class KeyboardDevice extends InputDevice {
-  /** @override */
-  // eslint-disable-next-line no-unused-vars
-  static isAxis(keyCode) {
-    return false;
-  }
-
-  /** @override */
-  // eslint-disable-next-line no-unused-vars
-  static isButton(keyCode) {
-    return true;
-  }
 
   /**
-   * Constructs a listening keyboard with no listeners (yet).
+   * Constructs a keyboard.
    *
    * @param {string} deviceName
    * @param {EventTarget} eventTarget
    * @param {object} [opts] Any additional options.
-   * @param {boolean} [opts.ignoreRepeat] Whether to
-   * accept repeated key events.
+   * @param {boolean} [opts.ignoreRepeat] Whether to accept repeated key events.
    */
   constructor(deviceName, eventTarget, opts = {}) {
     super(deviceName, eventTarget);
 
     const { ignoreRepeat = true } = opts;
-    this.ignoreRepeat = ignoreRepeat;
 
-    /**
-     * @private
-     * @type {InputDeviceEvent}
-     */
-    this._eventObject = {
-      target: eventTarget,
-      device: deviceName,
-      code: '',
-      event: '',
-      // Key values
-      value: 0,
-      control: false,
-      shift: false,
-      alt: false,
-    };
+    /** @readonly */
+    this.ignoreRepeat = ignoreRepeat;
 
     /** @private */
     this.onKeyDown = this.onKeyDown.bind(this);
     /** @private */
     this.onKeyUp = this.onKeyUp.bind(this);
 
-    eventTarget.addEventListener('keydown', this.onKeyDown);
-    eventTarget.addEventListener('keyup', this.onKeyUp);
+    /** @private */
+    this.keyEvent = new InputDeviceEvent('input', this.name, '', 'pressed');
+    
+    if (this.eventTarget) {
+      // @ts-ignore
+      this.eventTarget.addEventListener('keydown', this.onKeyDown);
+      // @ts-ignore
+      this.eventTarget.addEventListener('keyup', this.onKeyUp);
+    }
   }
 
-  /** @override */
+  /**
+   * @override
+   * @param {EventTarget} eventTarget
+   */
   setEventTarget(eventTarget) {
-    if (this.eventTarget) this.destroy();
     super.setEventTarget(eventTarget);
-    eventTarget.addEventListener('keydown', this.onKeyDown);
-    eventTarget.addEventListener('keyup', this.onKeyUp);
+    if (this.eventTarget) {
+      // @ts-ignore
+      this.eventTarget.addEventListener('keydown', this.onKeyDown);
+      // @ts-ignore
+      this.eventTarget.addEventListener('keyup', this.onKeyUp);
+    }
+    return this;
   }
 
   /** @override */
   destroy() {
-    let eventTarget = this.eventTarget;
-    eventTarget.removeEventListener('keydown', this.onKeyDown);
-    eventTarget.removeEventListener('keyup', this.onKeyUp);
+    if (this.eventTarget) {
+      // @ts-ignore
+      this.eventTarget.removeEventListener('keydown', this.onKeyDown);
+      // @ts-ignore
+      this.eventTarget.removeEventListener('keyup', this.onKeyUp);
+    }
     super.destroy();
   }
 
@@ -90,17 +79,11 @@ export class KeyboardDevice extends InputDevice {
       return false;
     }
 
-    let event = this._eventObject;
-    // We care more about location (code) than print char (key).
-    event.code = e.code;
-    event.event = 'pressed';
-    event.value = 1;
-    event.control = e.ctrlKey;
-    event.shift = e.shiftKey;
-    event.alt = e.altKey;
-
-    let result = this.dispatchInputEvent(event);
-    if (result) {
+    // NOTE: We care more about location (code) than print char (key).
+    let event = this.keyEvent;
+    event.initInputDeviceEvent(e.code, 'pressed', 1, 0, e.ctrlKey, e.shiftKey, e.altKey, e.repeat);
+    const result = this.dispatchEvent(event);
+    if (!result) {
       e.preventDefault();
       e.stopPropagation();
       return false;
@@ -112,18 +95,11 @@ export class KeyboardDevice extends InputDevice {
    * @param {KeyboardEvent} e
    */
   onKeyUp(e) {
-    /** @type {InputDeviceEvent} */
-    let event = this._eventObject;
-    // We care more about location (code) than print char (key).
-    event.code = e.code;
-    event.event = 'released';
-    event.value = 1;
-    event.control = e.ctrlKey;
-    event.shift = e.shiftKey;
-    event.alt = e.altKey;
-
-    let result = this.dispatchInputEvent(event);
-    if (result) {
+    // NOTE: We care more about location (code) than print char (key).
+    let event = this.keyEvent;
+    event.initInputDeviceEvent(e.code, 'released', 1, 0, e.ctrlKey, e.shiftKey, e.altKey);
+    const result = this.dispatchEvent(event);
+    if (!result) {
       e.preventDefault();
       e.stopPropagation();
       return false;
