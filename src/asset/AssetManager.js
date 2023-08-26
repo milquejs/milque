@@ -156,13 +156,15 @@ export class AssetManager {
   }
 
   /**
+   * @template T
    * @param {string} uri
+   * @returns {T}
    */
   current(uri) {
     const assets = /** @type {import('./AssetStore.js').AssetStore} */ (
       /** @type {unknown} */ (this)
     );
-    return getCurrentInStore(assets, uri);
+    return /** @type {any} */ (getCurrentInStore(assets, uri));
   }
 
   /**

@@ -43,12 +43,15 @@ export class AssetRef {
 
   /**
    * @param {AssetManager} assetManager
-   * @returns {T}
+   * @returns {T|null}
    */
   get(assetManager) {
+    /** @type {T|null} */
     let result;
     if (!assetManager.exists(this.uri)) {
-      if (this.initial && this.initial instanceof AssetRef) {
+      if (!this.initial) {
+        result = null;
+      } else if (this.initial instanceof AssetRef) {
         result = this.initial.get(assetManager);
       } else {
         result = this.initial;

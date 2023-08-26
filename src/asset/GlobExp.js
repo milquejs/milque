@@ -7,14 +7,15 @@ export class GlobExp {
   constructor(pattern) {
     let source;
     if (typeof pattern === 'object' && pattern instanceof GlobExp) {
-      source = pattern.source;
+      source = String(pattern.source);
     } else {
       source = String(pattern);
     }
+    /** @type {string} */
     this.source = source;
 
     /** @private */
-    this._re = makeRe(source);
+    this.re = makeRe(source);
   }
 
   /**
@@ -22,6 +23,6 @@ export class GlobExp {
    * @returns {boolean}
    */
   test(string) {
-    return this._re.test(string);
+    return this.re.test(string);
   }
 }

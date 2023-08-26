@@ -2,7 +2,7 @@ import { GlobExp } from './GlobExp.js';
 
 /**
  * @typedef AssetStore
- * @property {Record<string, object>} store
+ * @property {Record<string, any>} store
  * @property {Record<string, Loading>} loadings
  * @property {Array<Fallback>} defaults
  */
@@ -24,7 +24,8 @@ const FILE_URI_PREFIX_PATTERN = /^([_\w\d]+)\:\/\//;
  * - If loading to transform cached raw buffers from an asset pack, use `raw://`.
  * - Otherwise, it will call `fetch()` on src.
  *
- * @template T, S
+ * @template T
+ * @template {object} S
  * @param {AssetStore} assets
  * @param {string} uri
  * @param {string} src
@@ -36,6 +37,7 @@ const FILE_URI_PREFIX_PATTERN = /^([_\w\d]+)\:\/\//;
 export async function loadInStore(assets, uri, src, loader, opts, timeout) {
   const { loadings } = assets;
 
+  /** @type {Loading} */
   let loading;
   if (uri in loadings) {
     loading = loadings[uri];
@@ -46,7 +48,7 @@ export async function loadInStore(assets, uri, src, loader, opts, timeout) {
 
   const attempt = Loading.nextAttempt(loading);
 
-  /** @type {Array<Promise<T>>} */
+  /** @type {Array<Promise<T|undefined>>} */
   let promises = [loading.promise];
   if (FILE_URI_PREFIX_PATTERN.test(src)) {
     // Loading from cached file
@@ -69,7 +71,12 @@ export async function loadInStore(assets, uri, src, loader, opts, timeout) {
       ),
     );
   }
-  return await Promise.race(promises);
+  let result = await Promise.race(promises);
+  if (!result) {
+    // It must be loading in a different attempt.
+    throw new Error('Already loaded!');
+  }
+  return result;
 }
 
 /**
@@ -170,7 +177,7 @@ export function resetStore(assets) {
 /**
  * @param {AssetStore} assets
  * @param {string} uri
- * @returns {Promise<object>}
+ * @returns {Promise<object>|null}
  */
 export function getLoadingInStore(assets, uri) {
   const { loadings } = assets;
@@ -194,10 +201,11 @@ export function cancelLoadingInStore(assets, uri) {
 }
 
 /**
+ * @template T
  * @param {AssetStore} assets
  * @param {string} uri
  * @param {number} timeout
- * @returns {Promise<object>}
+ * @returns {Promise<T>}
  */
 export async function getLoadedInStore(assets, uri, timeout) {
   const { store, loadings } = assets;
@@ -215,7 +223,7 @@ export async function getLoadedInStore(assets, uri, timeout) {
 /**
  * @param {AssetStore} assets
  * @param {string} uri
- * @returns {object}
+ * @returns {object|null}
  */
 export function getDefaultInStore(assets, uri) {
   const { defaults } = assets;
@@ -287,7 +295,7 @@ class Loading {
    * @param {Loading} loading
    */
   static nextAttempt(loading) {
-    return ++loading._promiseHandle;
+    return ++loading.promiseHandle;
   }
 
   /**
@@ -295,29 +303,41 @@ class Loading {
    * @param {number} attempt
    */
   static isCurrentAttempt(loading, attempt) {
-    return loading._promiseHandle === attempt;
+    return loading.promiseHandle === attempt;
   }
 
+  /**
+   * @param {number} timeout 
+   */
   constructor(timeout) {
-    /** @private */
-    this._promiseHandle = 0;
-    /** @private */
+    /**
+     * @private
+     * @type {((value: any) => void)|null}
+     */
     this._resolve = null;
-    /** @private */
+    /**
+     * @private
+     * @type {((reason?: any) => void)|null}
+     */
     this._reject = null;
     /** @private */
     this._reason = null;
     /** @private */
     this._value = null;
+
     /** @private */
-    this._timeoutHandle =
+    this.promiseHandle = 0;
+    /** @private */
+    this.timeoutHandle =
       Number.isFinite(timeout) && timeout > 0
         ? setTimeout(() => {
             this.reject(`Asset loading exceeded timeout of ${timeout} ms.`);
           }, timeout)
         : null;
-    /** @private */
-    this._promise = new Promise((resolve, reject) => {
+    /**
+     * @readonly
+     */
+    this.promise = new Promise((resolve, reject) => {
       if (this._value) {
         resolve(this._value);
       } else {
@@ -331,14 +351,13 @@ class Loading {
     });
   }
 
-  get promise() {
-    return this._promise;
-  }
-
+  /**
+   * @param {any} value 
+   */
   resolve(value) {
-    if (this._timeoutHandle) {
-      clearTimeout(this._timeoutHandle);
-      this._timeoutHandle = null;
+    if (this.timeoutHandle) {
+      clearTimeout(this.timeoutHandle);
+      this.timeoutHandle = null;
     }
     if (this._resolve) {
       this._resolve(value);
@@ -347,10 +366,13 @@ class Loading {
     }
   }
 
+  /**
+   * @param {any} reason 
+   */
   reject(reason) {
-    if (this._timeoutHandle) {
-      clearTimeout(this._timeoutHandle);
-      this._timeoutHandle = null;
+    if (this.timeoutHandle) {
+      clearTimeout(this.timeoutHandle);
+      this.timeoutHandle = null;
     }
     if (this._reject) {
       this._reject(reason);
