@@ -1,1 +1,2 @@
-export * from './tia/index.js';
+export * from './tia/index';
+export * from './tio/index';

@@ -1,1 +1,1 @@
-export * from './Tia.js';
+export * from './Tia';

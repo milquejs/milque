@@ -307,7 +307,7 @@ class Loading {
   }
 
   /**
-   * @param {number} timeout 
+   * @param {number} timeout
    */
   constructor(timeout) {
     /**
@@ -352,7 +352,7 @@ class Loading {
   }
 
   /**
-   * @param {any} value 
+   * @param {any} value
    */
   resolve(value) {
     if (this.timeoutHandle) {
@@ -367,7 +367,7 @@ class Loading {
   }
 
   /**
-   * @param {any} reason 
+   * @param {any} reason
    */
   reject(reason) {
     if (this.timeoutHandle) {

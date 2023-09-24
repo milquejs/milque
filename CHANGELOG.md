@@ -5,6 +5,7 @@
 - Changed callback to initialize on AnimationFrameLoop.start() instead of constructor()
 - Fixed FlexCanvas default to never stretch
 - Fixed unknown to any typing
+- Add class constructors for EntityManager
 
 ## v0.0.2
 - Fixed Tia.spr() uv-st offset

@@ -1,7 +1,7 @@
 import { KeyCode } from './KeyCode.js';
 
 /**
- * @param {string} device 
+ * @param {string} device
  * @param {string} code
  */
 export function from(device, code) {
