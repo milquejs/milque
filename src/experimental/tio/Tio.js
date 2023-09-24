@@ -1,10 +1,10 @@
-import { AxisBinding, ButtonBinding, KeyCodes } from '@milquejs/milque';
+import { AxisBinding, ButtonBinding, KeyCodes } from '../../input';
 
 /**
- * @template {Record<string, import('@milquejs/milque').InputBinding> & {
- *  click: import('@milquejs/milque').InputBinding,
- *  posX: import('@milquejs/milque').InputBinding,
- *  posY: import('@milquejs/milque').InputBinding,
+ * @template {Record<string, import('../../input').InputBinding> & {
+ *  click: import('../../input').InputBinding,
+ *  posX: import('../../input').InputBinding,
+ *  posY: import('../../input').InputBinding,
  * }} Bindings
  */
 export class Tio {
@@ -54,7 +54,7 @@ export class Tio {
   }
 
   /**
-   * @param {import('@milquejs/milque').InputContext} axb
+   * @param {import('../../input').InputContext} axb
    */
   bindKeys(axb) {
     // TODO: Is there a better way than binding?
@@ -64,7 +64,7 @@ export class Tio {
   }
 
   /**
-   * @param {import('@milquejs/milque').InputContext} axb
+   * @param {import('../../input').InputContext} axb
    */
   poll(axb) {
     axb.poll();
@@ -84,7 +84,7 @@ export class Tio {
   }
 
   /**
-   * @param {import('@milquejs/milque').InputContext} axb
+   * @param {import('../../input').InputContext} axb
    * @param {number} [fromX]
    * @param {number} [fromY]
    * @param {number} [toX]
@@ -104,7 +104,7 @@ export class Tio {
   }
 
   /**
-   * @param {import('@milquejs/milque').InputContext} axb
+   * @param {import('../../input').InputContext} axb
    * @param {number} [fromX]
    * @param {number} [fromY]
    * @param {number} [toX]
@@ -122,18 +122,18 @@ export class Tio {
     return x >= fromX && x <= toX && y >= fromY && y <= toY;
   }
 
-  /** @param {import('@milquejs/milque').InputContext} axb */
+  /** @param {import('../../input').InputContext} axb */
   posX(axb) {
     return this.x + axb.getAxisValue(this.bindings.posX.name) * this.w;
   }
 
-  /** @param {import('@milquejs/milque').InputContext} axb */
+  /** @param {import('../../input').InputContext} axb */
   posY(axb) {
     return this.y + axb.getAxisValue(this.bindings.posY.name) * this.h;
   }
 
   /**
-   * @param {import('@milquejs/milque').InputContext} axb
+   * @param {import('../../input').InputContext} axb
    * @param {keyof Bindings} key
    */
   btn(axb, key) {
@@ -141,7 +141,7 @@ export class Tio {
   }
 
   /**
-   * @param {import('@milquejs/milque').InputContext} axb
+   * @param {import('../../input').InputContext} axb
    * @param {keyof Bindings} key
    */
   press(axb, key) {
@@ -149,7 +149,7 @@ export class Tio {
   }
 
   /**
-   * @param {import('@milquejs/milque').InputContext} axb
+   * @param {import('../../input').InputContext} axb
    * @param {keyof Bindings} key
    */
   release(axb, key) {
@@ -157,7 +157,7 @@ export class Tio {
   }
 
   /**
-   * @param {import('@milquejs/milque').InputContext} axb
+   * @param {import('../../input').InputContext} axb
    * @param {keyof Bindings} key
    */
   hold(axb, key, minTime = 0) {
@@ -165,7 +165,7 @@ export class Tio {
   }
 
   /**
-   * @param {import('@milquejs/milque').InputContext} axb
+   * @param {import('../../input').InputContext} axb
    * @param {keyof Bindings} key
    */
   value(axb, key) {
