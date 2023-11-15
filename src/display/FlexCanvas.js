@@ -1,43 +1,5 @@
-const INNER_HTML = /* html */ `<div class="container">
-  <div class="padding"></div>
-  <div class="innerContainer">
-    <div class="padding"></div>
-    <slot><canvas>Oh no! Your browser does not support canvas.</canvas></slot>
-    <div class="padding"></div>
-  </div>
-  <div class="padding"></div>
-</div>`;
-
-const INNER_STYLE = /* css */ `
-:host {
-  display: inline-block;
-  flex: 1;
-  --width: 300px;
-  --height: 150px;
-}
-:host([scaling="noscale"]) {
-  width: var(--width);
-  height: var(--height);
-}
-:host([sizing="viewport"]) {
-    position: fixed;
-    top: 0;
-    left: 0;
-}
-.container {
-  position: relative;
-  display: flex;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-}
-.innerContainer {
-  display: flex;
-  flex-direction: column;
-}
-.padding {
-  flex: 1;
-}`;
+import INNER_STYLE from './FlexCanvas.style';
+import INNER_HTML from './FlexCanvas.template';
 
 /**
  * No scaling is applied. The canvas size maintains a
@@ -117,8 +79,8 @@ const DEFAULT_HEIGHT = 150;
  * A canvas wrapper to scale and stretch with respect to the aspect ratio to fill the viewport or container.
  */
 export class FlexCanvas extends HTMLElement {
-  static define(customElements = window.customElements) {
-    customElements.define('flex-canvas', this);
+  static define(name = 'flex-canvas') {
+    window.customElements.define(name, this);
   }
 
   /** @private */
