@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## v0.0.4
+- Add toFloatVector for HEX color.
+- Change 0x00 alpha to represent opaque instead.
+- Add webgl support for Tia.
+
 ## v0.0.3
 - Added AnimationFrameDetail
 - Changed callback to initialize on AnimationFrameLoop.start() instead of constructor()

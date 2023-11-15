@@ -52,46 +52,44 @@ export class OrthographicCamera extends Camera {
    * @param {number} [viewportHeight]
    */
   resize(viewportWidth = undefined, viewportHeight = undefined) {
-    const { near, far } = this.clippingPlane;
-    const { left, top, right, bottom } = this.orthoBounds;
+    const { near = -1, far = 1 } = this.clippingPlane;
+    const { left, top = -1, right = 1, bottom = 1 } = this.orthoBounds;
 
     let projectionMatrix = this.projectionMatrix;
-    let hasViewport = typeof viewportWidth !== 'undefined';
-    let hasBounds = typeof left !== 'undefined';
-
-    if (hasViewport) {
-      if (hasBounds) {
-        // Use the defined bounds with respect to the viewport aspect ratio
-        const aspectRatio = viewportWidth / viewportHeight;
-        mat4.ortho(
-          projectionMatrix,
-          left * aspectRatio,
-          right * aspectRatio,
-          bottom,
-          top,
-          near,
-          far,
-        );
-      } else {
-        // Use the viewport dimensions as bounds
-        mat4.ortho(
-          projectionMatrix,
-          0,
-          viewportWidth,
-          viewportHeight,
-          0,
-          near,
-          far,
-        );
-      }
-    } else {
-      if (hasBounds) {
+    if (typeof viewportWidth === 'undefined' || typeof viewportHeight === 'undefined') {
+      if (typeof left !== 'undefined') {
         // Use the defined bounds as-is
         mat4.ortho(projectionMatrix, left, right, bottom, top, near, far);
       } else {
         // Use default bounds (since nothing else exists)
         mat4.ortho(projectionMatrix, -1, 1, 1, -1, -1, 1);
       }
+      return this;
+    }
+
+    if (typeof left !== 'undefined') {
+      // Use the defined bounds with respect to the viewport aspect ratio
+      const aspectRatio = viewportWidth / viewportHeight;
+      mat4.ortho(
+        projectionMatrix,
+        left * aspectRatio,
+        right * aspectRatio,
+        bottom,
+        top,
+        near,
+        far,
+      );
+    } else {
+      // Use the viewport dimensions as bounds
+      mat4.ortho(
+        projectionMatrix,
+        0,
+        viewportWidth,
+        viewportHeight,
+        0,
+        near,
+        far,
+      );
     }
     return this;
   }

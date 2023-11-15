@@ -81,8 +81,13 @@ export class BufferBuilder {
   constructor(gl, target, buffer = undefined) {
     /** @private */
     this.dataContext = new BufferDataContext(gl, target);
-    this.handle = buffer || gl.createBuffer();
-    gl.bindBuffer(target, this.handle);
+    const handle = buffer || gl.createBuffer();
+    if (!handle) {
+      throw new Error('Could not create webgl buffer - is webgl supported?');
+    }
+    gl.bindBuffer(target, handle);
+    /** @type {WebGLBuffer} */
+    this.handle = handle;
   }
 
   get gl() {

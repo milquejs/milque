@@ -1,4 +1,11 @@
+import { mat4 } from 'gl-matrix';
+
 export class Camera {
+
+  /**
+   * @param {mat4} projectionMatrix 
+   * @param {mat4} viewMatrix 
+   */
   constructor(projectionMatrix, viewMatrix) {
     this.projectionMatrix = projectionMatrix;
     this.viewMatrix = viewMatrix;
@@ -10,8 +17,14 @@ export class Camera {
    * @param {number} [viewportHeight]
    * @returns {Camera}
    */
-  // eslint-disable-next-line no-unused-vars
   resize(viewportWidth = undefined, viewportHeight = undefined) {
     return this;
+  }
+
+  /**
+   * @param {mat4} out 
+   */
+  toProjectionViewMatrix(out) {
+    return mat4.mul(out, this.projectionMatrix, this.viewMatrix);
   }
 }

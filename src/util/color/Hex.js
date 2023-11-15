@@ -44,14 +44,18 @@ export function bluef(hexValue) {
  * @param {number} hexValue
  */
 export function alpha(hexValue) {
-  return (hexValue >> 24) & 0xff;
+  let result = (hexValue >> 24) & 0xff;
+  if (result === 0x00) {
+    return 0xff;
+  }
+  return result;
 }
 
 /**
  * @param {number} hexValue
  */
 export function alphaf(hexValue) {
-  return ((hexValue >> 24) & 0xff) / 255.0;
+  return alpha(hexValue) / 255.0;
 }
 
 /**
@@ -76,14 +80,15 @@ export function hexf(redf, greenf, bluef, alphaf = 1) {
  * @param {number} delta
  */
 export function mix(from = 0x000000, to = 0xffffff, delta = 0.5) {
-  let rm = this.redf(from);
-  let gm = this.greenf(from);
-  let bm = this.bluef(from);
-  let am = this.alphaf(from);
-  let rf = (this.redf(to) - rm) * delta + rm;
-  let gf = (this.greenf(to) - gm) * delta + gm;
-  let bf = (this.bluef(to) - bm) * delta + bm;
-  let af = (this.alphaf(to) - am) * delta + am;
+  const rm = redf(from);
+  const gm = greenf(from);
+  const bm = bluef(from);
+  const am = alphaf(from);
+  const rf = (redf(to) - rm) * delta + rm;
+  const gf = (greenf(to) - gm) * delta + gm;
+  const bf = (bluef(to) - bm) * delta + bm;
+  /** @type {number|undefined} */
+  let af = (alphaf(to) - am) * delta + am;
   if (af < 0.01) {
     af = undefined;
   }
@@ -95,10 +100,25 @@ export function mix(from = 0x000000, to = 0xffffff, delta = 0.5) {
  */
 export function toCSSColor(hexValue) {
   if (typeof hexValue !== 'number') {
-    return hexValue;
+    throw new Error('Not a valid number for hex color value.');
   }
   let r = red(hexValue).toString(16).padStart(2, '0');
   let g = green(hexValue).toString(16).padStart(2, '0');
   let b = blue(hexValue).toString(16).padStart(2, '0');
   return `#${r}${g}${b}`;
+}
+
+/**
+ * @param {number} hexValue
+ */
+export function toFloatVector(hexValue) {
+  if (typeof hexValue !== 'number') {
+    throw new Error('Not a valid number for hex color value.');
+  }
+  return [
+    redf(hexValue),
+    greenf(hexValue),
+    bluef(hexValue),
+    alphaf(hexValue),
+  ];
 }
