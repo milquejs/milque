@@ -36,7 +36,7 @@ export function createBuffer(gl, target, bufferSource, usage = gl.STATIC_DRAW) {
 }
 
 /**
- * @param {WebGLRenderingContextBase} gl 
+ * @param {WebGLRenderingContextBase} gl
  * @param {GLenum} bufferType
  */
 export function getTypedArrayForBufferType(gl, bufferType) {
@@ -57,13 +57,15 @@ export function getTypedArrayForBufferType(gl, bufferType) {
     case gl.FLOAT:
       return Float32Array;
     default:
-      throw new Error(`Cannot find valid typed array for buffer type '${bufferType}'.`);
+      throw new Error(
+        `Cannot find valid typed array for buffer type '${bufferType}'.`,
+      );
   }
 }
 
 /**
- * @param {WebGLRenderingContextBase} gl 
- * @param {BufferSource} bufferSource 
+ * @param {WebGLRenderingContextBase} gl
+ * @param {BufferSource} bufferSource
  * @returns {GLenum}
  */
 export function getBufferTypeForBufferSource(gl, bufferSource) {
@@ -101,14 +103,14 @@ export function getByteCountForBufferType(gl, bufferType) {
 }
 
 /**
- * @param {WebGLRenderingContextBase} gl 
+ * @param {WebGLRenderingContextBase} gl
  * @param {Int8ArrayConstructor
  * |Uint8ArrayConstructor
  * |Int16ArrayConstructor
  * |Uint16ArrayConstructor
  * |Int32ArrayConstructor
  * |Uint32ArrayConstructor
- * |Float32ArrayConstructor} typedArray 
+ * |Float32ArrayConstructor} typedArray
  * @returns {GLenum}
  */
 export function getBufferTypeForTypedArray(gl, typedArray) {
@@ -134,9 +136,9 @@ export function getBufferTypeForTypedArray(gl, typedArray) {
 }
 
 /**
- * @param {WebGLRenderingContextBase} gl 
- * @param {GLenum} target 
- * @param {WebGLBuffer} buffer 
+ * @param {WebGLRenderingContextBase} gl
+ * @param {GLenum} target
+ * @param {WebGLBuffer} buffer
  * @returns {GLenum}
  */
 export function getBufferUsage(gl, target, buffer) {
@@ -145,9 +147,9 @@ export function getBufferUsage(gl, target, buffer) {
 }
 
 /**
- * @param {WebGLRenderingContextBase} gl 
- * @param {GLenum} target 
- * @param {WebGLBuffer} buffer 
+ * @param {WebGLRenderingContextBase} gl
+ * @param {GLenum} target
+ * @param {WebGLBuffer} buffer
  * @returns {GLenum}
  */
 export function getBufferByteCount(gl, target, buffer) {
@@ -156,11 +158,14 @@ export function getBufferByteCount(gl, target, buffer) {
 }
 
 /**
- * @param {WebGLRenderingContextBase} gl 
- * @param {GLenum} target 
- * @param {WebGLBuffer} buffer 
+ * @param {WebGLRenderingContextBase} gl
+ * @param {GLenum} target
+ * @param {WebGLBuffer} buffer
  * @returns {GLenum}
  */
 export function getBufferLength(gl, target, buffer, type) {
-  return Math.trunc(getBufferByteCount(gl, target, buffer) / getByteCountForBufferType(gl, type));
+  return Math.trunc(
+    getBufferByteCount(gl, target, buffer) /
+      getByteCountForBufferType(gl, type),
+  );
 }

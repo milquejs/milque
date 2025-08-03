@@ -1,10 +1,10 @@
-import { getActiveUniformsInfo } from './ProgramUniformInfo.js';
 import { getActiveAttribsInfo } from './ProgramAttributeInfo.js';
+import { getActiveUniformsInfo } from './ProgramUniformInfo.js';
 import { draw } from './helper/ProgramHelper.js';
 
 export class ProgramInfo {
   /**
-   * @param {WebGLRenderingContextBase} gl
+   * @param {WebGL2RenderingContext} gl
    * @param {WebGLProgram} program
    */
   constructor(gl, program) {
@@ -20,7 +20,7 @@ export class ProgramInfo {
    * Bind the program and prepare to draw. This returns the bound context
    * that can modify the draw state.
    *
-   * @param {WebGLRenderingContextBase} gl
+   * @param {WebGL2RenderingContext} gl
    * @returns {ProgramInfoDrawContext} The bound context to draw with.
    */
   bind(gl) {
@@ -32,12 +32,21 @@ export class ProgramInfo {
 }
 
 export class ProgramInfoDrawContext {
+  
+  /**
+   * @param {WebGL2RenderingContext} gl 
+   * @param {ProgramInfo} programInfo 
+   */
   constructor(gl, programInfo) {
     this.gl = gl;
     /** @private */
     this.parent = programInfo;
   }
 
+  /**
+   * @param {string} uniformName 
+   * @param {any} value
+   */
   uniform(uniformName, value) {
     const activeUniforms = this.parent.activeUniforms;
     if (uniformName in activeUniforms) {
@@ -64,7 +73,7 @@ export class ProgramInfoDrawContext {
     buffer,
     normalize = false,
     stride = 0,
-    offset = 0
+    offset = 0,
   ) {
     const gl = this.gl;
     const activeAttributes = this.parent.activeAttributes;
@@ -80,7 +89,7 @@ export class ProgramInfoDrawContext {
           bufferType,
           normalize,
           stride,
-          offset
+          offset,
         );
         gl.enableVertexAttribArray(location);
       } else {
@@ -93,13 +102,13 @@ export class ProgramInfoDrawContext {
   /**
    * Draws using this program.
    *
-   * @param {WebGLRenderingContext} gl
+   * @param {WebGL2RenderingContext} gl
    * @param {number} mode
    * @param {number} offset
    * @param {number} count
-   * @param {WebGLBuffer} elementBuffer
+   * @param {WebGLBuffer} [elementBuffer]
    */
-  draw(gl, mode, offset, count, elementBuffer = null) {
+  draw(gl, mode, offset, count, elementBuffer = undefined) {
     draw(gl, mode, offset, count, elementBuffer);
     return this.parent;
   }

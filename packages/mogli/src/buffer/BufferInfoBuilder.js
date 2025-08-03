@@ -1,6 +1,9 @@
-import { BufferInfo } from './BufferInfo.js';
 import { BufferBuilder } from './BufferBuilder.js';
-import { getBufferTypeForBufferSource, getBufferTypeForTypedArray } from './helper/BufferHelper.js';
+import { BufferInfo } from './BufferInfo.js';
+import {
+  getBufferTypeForBufferSource,
+  getBufferTypeForTypedArray,
+} from './helper/BufferHelper.js';
 
 export class BufferInfoBuilder {
   /**
@@ -53,7 +56,7 @@ export class BufferInfoBuilder {
     srcData,
     dstOffset = undefined,
     srcOffset = undefined,
-    srcLength = undefined
+    srcLength = undefined,
   ) {
     this.bufferBuilder.subData(srcData, dstOffset, srcOffset, srcLength);
     this.bufferType = getBufferTypeForBufferSource(this.gl, srcData);

@@ -1,6 +1,6 @@
-import { getActiveAttribs } from './helper/ProgramActives.js';
 import { getAttributeFunction } from './ProgramAttributeFunctions.js';
 import { getAttribVertexSize } from './ProgramAttributeHelper.js';
+import { getActiveAttribs } from './helper/ProgramActives.js';
 
 /**
  * @typedef {import('./ProgramAttributeFunctions.js').AttributeFunction} AttributeFunction
@@ -40,9 +40,37 @@ export function getActiveAttribsInfo(gl, program) {
       location: attributeLocation,
       size: attributeSize,
       applier: attributeApplier,
-      set value([buffer, vertexSize, bufferType, normalize, stride, offset, divisor]) {
-        this.applier(this.location, buffer, vertexSize, bufferType, normalize, stride, offset, divisor);
-      }
+      /**
+       * @param {[
+       *   buffer: WebGLBuffer,
+       *   vertexSize: number,
+       *   bufferType: GLenum,
+       *   normalize: boolean,
+       *   stride: number,
+       *   offset: number,
+       *   divisor: number,
+       * ]} args
+       */
+      set value([
+        buffer,
+        vertexSize,
+        bufferType,
+        normalize,
+        stride,
+        offset,
+        divisor,
+      ]) {
+        this.applier(
+          this.location,
+          buffer,
+          vertexSize,
+          bufferType,
+          normalize,
+          stride,
+          offset,
+          divisor,
+        );
+      },
     };
   }
   return result;

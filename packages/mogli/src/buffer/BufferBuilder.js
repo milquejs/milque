@@ -42,7 +42,7 @@ export class BufferDataContext {
     srcData,
     dstOffset = 0,
     srcOffset = undefined,
-    srcLength = undefined
+    srcLength = undefined,
   ) {
     const gl = this.gl;
     const target = this.target;
@@ -55,10 +55,10 @@ export class BufferDataContext {
       } else {
         // HACK: `subarray()` is in ALL TypedArrays, but not in BufferSource
         const srcSubData = srcLength
-          // @ts-ignore
-          ? srcData.subarray(srcOffset, srcOffset + srcLength)
-          // @ts-ignore
-          : srcData.subarray(srcOffset);
+          ? // @ts-ignore
+            srcData.subarray(srcOffset, srcOffset + srcLength)
+          : // @ts-ignore
+            srcData.subarray(srcOffset);
         /** @type {WebGLRenderingContext|WebGL2RenderingContext} */
         (gl).bufferSubData(target, dstOffset, srcSubData);
       }
@@ -81,8 +81,13 @@ export class BufferBuilder {
   constructor(gl, target, buffer = undefined) {
     /** @private */
     this.dataContext = new BufferDataContext(gl, target);
-    this.handle = buffer || gl.createBuffer();
-    gl.bindBuffer(target, this.handle);
+    const handle = buffer || gl.createBuffer();
+    if (!handle) {
+      throw new Error('Could not create webgl buffer - is webgl supported?');
+    }
+    gl.bindBuffer(target, handle);
+    /** @type {WebGLBuffer} */
+    this.handle = handle;
   }
 
   get gl() {
@@ -114,7 +119,7 @@ export class BufferBuilder {
     srcData,
     dstOffset = 0,
     srcOffset = undefined,
-    srcLength = undefined
+    srcLength = undefined,
   ) {
     this.dataContext.subData(srcData, dstOffset, srcOffset, srcLength);
     return this;

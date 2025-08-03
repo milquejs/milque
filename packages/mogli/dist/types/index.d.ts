@@ -48,6 +48,7 @@ declare class BufferBuilder {
     constructor(gl: WebGLRenderingContext, target: GLenum, buffer?: WebGLBuffer);
     /** @private */
     private dataContext;
+    /** @type {WebGLBuffer} */
     handle: WebGLBuffer;
     get gl(): WebGLRenderingContextBase;
     get target(): number;
@@ -139,18 +140,26 @@ type ActiveAttributeInfo = {
     value: number | Float32List | Int32List | Uint32List;
 };
 
+/** @typedef {Float32List|Int32List|Uint32List} UniformVector */
 /**
- * @callback UniformArrayFunction
+ * @callback WebGL1UniformArrayFunction
  * @param {WebGLUniformLocation} location The uniform location.
- * @param {Float32List|Int32List|Uint32List} value The vector array.
+ * @param {UniformVector} value The vector array.
  * @this {WebGLRenderingContext|WebGL2RenderingContext}
  *
- * @callback UniformComponentFunction
+ * @callback WebGL2UniformArrayFunction
  * @param {WebGLUniformLocation} location The uniform location.
- * @param {...number} values The components of the vector.
+ * @param {UniformVector} value The vector array.
+ * @this {WebGL2RenderingContext}
+ *
+ * @typedef {WebGL1UniformArrayFunction|WebGL2UniformArrayFunction} UniformArrayFunction
+ *
+ * @callback UniformOneComponentFunction
+ * @param {WebGLUniformLocation} location The uniform location.
+ * @param {GLfloat|GLint} x The x component of the vector.
  * @this {WebGLRenderingContext|WebGL2RenderingContext}
  *
- * @typedef {UniformArrayFunction|UniformComponentFunction} UniformFunction
+ * @typedef {UniformOneComponentFunction|UniformArrayFunction} UniformMixedFunction
  */
 /**
  * Gets the uniform modifier function by uniform type. For uniform vectors
@@ -159,57 +168,153 @@ type ActiveAttributeInfo = {
  *
  * @param {WebGLRenderingContextBase} gl The webgl context.
  * @param {GLenum} uniformType The uniform data type.
- * @returns {UniformFunction} The uniform modifier function.
+ * @returns {UniformMixedFunction} The uniform modifier function.
  */
-declare function getUniformFunction(gl: WebGLRenderingContextBase, uniformType: GLenum): UniformFunction$1;
+declare function getUniformFunction(gl: WebGLRenderingContextBase, uniformType: GLenum): UniformMixedFunction;
+/**
+ * @callback UniformXYFunction
+ * @param {WebGLUniformLocation} location The uniform location.
+ * @param {GLfloat|GLint} x The first component of the vector.
+ * @param {GLfloat|GLint} y The second component of the vector.
+ * @this {WebGLRenderingContext|WebGL2RenderingContext}
+ *
+ * @callback UniformXYZFunction
+ * @param {WebGLUniformLocation} location The uniform location.
+ * @param {GLfloat|GLint} x The first component of the vector.
+ * @param {GLfloat|GLint} y The second component of the vector.
+ * @param {GLfloat|GLint} z The third component of the vector.
+ * @this {WebGLRenderingContext|WebGL2RenderingContext}
+ *
+ * @callback UniformXYZWFunction
+ * @param {WebGLUniformLocation} location The uniform location.
+ * @param {GLfloat|GLint} x The first component of the vector.
+ * @param {GLfloat|GLint} y The second component of the vector.
+ * @param {GLfloat|GLint} z The third component of the vector.
+ * @param {GLfloat|GLint} w The fourth component of the vector.
+ * @this {WebGLRenderingContext|WebGL2RenderingContext}
+ *
+ * @callback Uniform17Function
+ * @param {WebGLUniformLocation} location The uniform location.
+ * @param {GLfloat} m1 The first component of the vector.
+ * @param {GLfloat} m2 The second component of the vector.
+ * @param {GLfloat} m3 The third component of the vector.
+ * @param {GLfloat} m4 The fourth component of the vector.
+ * @param {GLfloat} m5 The fifth component of the vector.
+ * @param {GLfloat} m6 The sixth component of the vector.
+ * @param {GLfloat} m7 The seventh component of the vector.
+ * @param {GLfloat} m8 The eighth component of the vector.
+ * @param {GLfloat} m9 The ninth component of the vector.
+ * @param {GLfloat} m10 The tenth component of the vector.
+ * @param {GLfloat} m11 The eleventh component of the vector.
+ * @param {GLfloat} m12 The twelth component of the vector.
+ * @param {GLfloat} m13 The thirteenth component of the vector.
+ * @param {GLfloat} m14 The fourteenth component of the vector.
+ * @param {GLfloat} m15 The fifteenth component of the vector.
+ * @param {GLfloat} m16 The sixteenth component of the vector.
+ * @param {GLfloat} m17 The seventeenth component of the vector.
+ * @this {WebGLRenderingContext|WebGL2RenderingContext}
+ *
+ * @callback WebGL2Uniform10Function
+ * @param {WebGLUniformLocation} location The uniform location.
+ * @param {GLfloat} m1 The first component of the vector.
+ * @param {GLfloat} m2 The second component of the vector.
+ * @param {GLfloat} m3 The third component of the vector.
+ * @param {GLfloat} m4 The fourth component of the vector.
+ * @param {GLfloat} m5 The fifth component of the vector.
+ * @param {GLfloat} m6 The sixth component of the vector.
+ * @param {GLfloat} m7 The seventh component of the vector.
+ * @param {GLfloat} m8 The eighth component of the vector.
+ * @param {GLfloat} m9 The ninth component of the vector.
+ * @param {GLfloat} m10 The tenth component of the vector.
+ * @this {WebGL2RenderingContext}
+ *
+ * @callback WebGL2Uniform13Function
+ * @param {WebGLUniformLocation} location The uniform location.
+ * @param {GLfloat} m1 The first component of the vector.
+ * @param {GLfloat} m2 The second component of the vector.
+ * @param {GLfloat} m3 The third component of the vector.
+ * @param {GLfloat} m4 The fourth component of the vector.
+ * @param {GLfloat} m5 The fifth component of the vector.
+ * @param {GLfloat} m6 The sixth component of the vector.
+ * @param {GLfloat} m7 The seventh component of the vector.
+ * @param {GLfloat} m8 The eighth component of the vector.
+ * @param {GLfloat} m9 The ninth component of the vector.
+ * @param {GLfloat} m10 The tenth component of the vector.
+ * @param {GLfloat} m11 The eleventh component of the vector.
+ * @param {GLfloat} m12 The twelth component of the vector.
+ * @param {GLfloat} m13 The thirteenth component of the vector.
+ * @this {WebGL2RenderingContext}
+ *
+ * @typedef {UniformOneComponentFunction
+ * | UniformXYFunction
+ * | UniformXYZFunction
+ * | UniformXYZWFunction
+ * | Uniform17Function
+ * | WebGL2Uniform10Function
+ * | WebGL2Uniform13Function} UniformManyComponentFunction
+ */
 /**
  * Get the per component uniform modifier function by uniform type.
  *
  * @param {WebGLRenderingContext|WebGL2RenderingContext} gl The webgl context.
  * @param {GLenum} uniformType The uniform data type.
- * @returns {UniformComponentFunction} The per component uniform modifier function.
+ * @returns {UniformManyComponentFunction} The per component uniform modifier function.
  */
-declare function getUniformComponentFunction(gl: WebGLRenderingContext | WebGL2RenderingContext, uniformType: GLenum): UniformComponentFunction;
+declare function getUniformManyComponentFunction(gl: WebGLRenderingContext | WebGL2RenderingContext, uniformType: GLenum): UniformManyComponentFunction;
 /**
  * Get the array uniform modifier function by uniform type.
  *
  * @param {WebGLRenderingContext|WebGL2RenderingContext} gl The webgl context.
  * @param {GLenum} uniformType The uniform data type.
- * @returns {UniformArrayFunction} The array uniform modifier function.
+ * @returns {UniformArrayFunction|WebGL2UniformArrayFunction} The array uniform modifier function.
  */
-declare function getUniformArrayFunction(gl: WebGLRenderingContext | WebGL2RenderingContext, uniformType: GLenum): UniformArrayFunction;
-type UniformArrayFunction = (location: WebGLUniformLocation, value: Float32List | Int32List | Uint32List) => any;
-type UniformComponentFunction = (location: WebGLUniformLocation, ...values: number[]) => any;
-type UniformFunction$1 = UniformArrayFunction | UniformComponentFunction;
+declare function getUniformArrayFunction(gl: WebGLRenderingContext | WebGL2RenderingContext, uniformType: GLenum): UniformArrayFunction | WebGL2UniformArrayFunction;
+type UniformVector = Float32List | Int32List | Uint32List;
+type WebGL1UniformArrayFunction = (this: WebGLRenderingContext | WebGL2RenderingContext, location: WebGLUniformLocation, value: UniformVector) => any;
+type WebGL2UniformArrayFunction = (this: WebGL2RenderingContext, location: WebGLUniformLocation, value: UniformVector) => any;
+type UniformArrayFunction = WebGL1UniformArrayFunction | WebGL2UniformArrayFunction;
+type UniformOneComponentFunction = (this: WebGLRenderingContext | WebGL2RenderingContext, location: WebGLUniformLocation, x: GLfloat | GLint) => any;
+type UniformMixedFunction = UniformOneComponentFunction | UniformArrayFunction;
+type UniformXYFunction = (this: WebGLRenderingContext | WebGL2RenderingContext, location: WebGLUniformLocation, x: GLfloat | GLint, y: GLfloat | GLint) => any;
+type UniformXYZFunction = (this: WebGLRenderingContext | WebGL2RenderingContext, location: WebGLUniformLocation, x: GLfloat | GLint, y: GLfloat | GLint, z: GLfloat | GLint) => any;
+type UniformXYZWFunction = (this: WebGLRenderingContext | WebGL2RenderingContext, location: WebGLUniformLocation, x: GLfloat | GLint, y: GLfloat | GLint, z: GLfloat | GLint, w: GLfloat | GLint) => any;
+type Uniform17Function = (this: WebGLRenderingContext | WebGL2RenderingContext, location: WebGLUniformLocation, m1: GLfloat, m2: GLfloat, m3: GLfloat, m4: GLfloat, m5: GLfloat, m6: GLfloat, m7: GLfloat, m8: GLfloat, m9: GLfloat, m10: GLfloat, m11: GLfloat, m12: GLfloat, m13: GLfloat, m14: GLfloat, m15: GLfloat, m16: GLfloat, m17: GLfloat) => any;
+type WebGL2Uniform10Function = (this: WebGL2RenderingContext, location: WebGLUniformLocation, m1: GLfloat, m2: GLfloat, m3: GLfloat, m4: GLfloat, m5: GLfloat, m6: GLfloat, m7: GLfloat, m8: GLfloat, m9: GLfloat, m10: GLfloat) => any;
+type WebGL2Uniform13Function = (this: WebGL2RenderingContext, location: WebGLUniformLocation, m1: GLfloat, m2: GLfloat, m3: GLfloat, m4: GLfloat, m5: GLfloat, m6: GLfloat, m7: GLfloat, m8: GLfloat, m9: GLfloat, m10: GLfloat, m11: GLfloat, m12: GLfloat, m13: GLfloat) => any;
+type UniformManyComponentFunction = UniformOneComponentFunction | UniformXYFunction | UniformXYZFunction | UniformXYZWFunction | Uniform17Function | WebGL2Uniform10Function | WebGL2Uniform13Function;
 
+type ProgramUniformFunctions_Uniform17Function = Uniform17Function;
 type ProgramUniformFunctions_UniformArrayFunction = UniformArrayFunction;
-type ProgramUniformFunctions_UniformComponentFunction = UniformComponentFunction;
+type ProgramUniformFunctions_UniformManyComponentFunction = UniformManyComponentFunction;
+type ProgramUniformFunctions_UniformMixedFunction = UniformMixedFunction;
+type ProgramUniformFunctions_UniformOneComponentFunction = UniformOneComponentFunction;
+type ProgramUniformFunctions_UniformVector = UniformVector;
+type ProgramUniformFunctions_UniformXYFunction = UniformXYFunction;
+type ProgramUniformFunctions_UniformXYZFunction = UniformXYZFunction;
+type ProgramUniformFunctions_UniformXYZWFunction = UniformXYZWFunction;
+type ProgramUniformFunctions_WebGL1UniformArrayFunction = WebGL1UniformArrayFunction;
+type ProgramUniformFunctions_WebGL2Uniform10Function = WebGL2Uniform10Function;
+type ProgramUniformFunctions_WebGL2Uniform13Function = WebGL2Uniform13Function;
+type ProgramUniformFunctions_WebGL2UniformArrayFunction = WebGL2UniformArrayFunction;
 declare const ProgramUniformFunctions_getUniformArrayFunction: typeof getUniformArrayFunction;
-declare const ProgramUniformFunctions_getUniformComponentFunction: typeof getUniformComponentFunction;
 declare const ProgramUniformFunctions_getUniformFunction: typeof getUniformFunction;
+declare const ProgramUniformFunctions_getUniformManyComponentFunction: typeof getUniformManyComponentFunction;
 declare namespace ProgramUniformFunctions {
-  export {
-    ProgramUniformFunctions_UniformArrayFunction as UniformArrayFunction,
-    ProgramUniformFunctions_UniformComponentFunction as UniformComponentFunction,
-    UniformFunction$1 as UniformFunction,
-    ProgramUniformFunctions_getUniformArrayFunction as getUniformArrayFunction,
-    ProgramUniformFunctions_getUniformComponentFunction as getUniformComponentFunction,
-    ProgramUniformFunctions_getUniformFunction as getUniformFunction,
-  };
+  export { ProgramUniformFunctions_getUniformArrayFunction as getUniformArrayFunction, ProgramUniformFunctions_getUniformFunction as getUniformFunction, ProgramUniformFunctions_getUniformManyComponentFunction as getUniformManyComponentFunction };
+  export type { ProgramUniformFunctions_Uniform17Function as Uniform17Function, ProgramUniformFunctions_UniformArrayFunction as UniformArrayFunction, ProgramUniformFunctions_UniformManyComponentFunction as UniformManyComponentFunction, ProgramUniformFunctions_UniformMixedFunction as UniformMixedFunction, ProgramUniformFunctions_UniformOneComponentFunction as UniformOneComponentFunction, ProgramUniformFunctions_UniformVector as UniformVector, ProgramUniformFunctions_UniformXYFunction as UniformXYFunction, ProgramUniformFunctions_UniformXYZFunction as UniformXYZFunction, ProgramUniformFunctions_UniformXYZWFunction as UniformXYZWFunction, ProgramUniformFunctions_WebGL1UniformArrayFunction as WebGL1UniformArrayFunction, ProgramUniformFunctions_WebGL2Uniform10Function as WebGL2Uniform10Function, ProgramUniformFunctions_WebGL2Uniform13Function as WebGL2Uniform13Function, ProgramUniformFunctions_WebGL2UniformArrayFunction as WebGL2UniformArrayFunction };
 }
 
-type UniformFunction = UniformFunction$1;
 type ActiveUniformInfo = {
     type: number;
     length: number;
     location: WebGLUniformLocation;
-    applier: UniformFunction;
+    applier: UniformMixedFunction;
     value: number | Float32List | Int32List | Uint32List;
 };
 
 /**
- * @typedef {import('../../buffer/helper/BufferInfoHelper').BufferInfo} BufferInfo
- * @typedef {import('../../buffer/helper/BufferInfoHelper').VertexArrayObjectInfo} VertexArrayObjectInfo
+ * @typedef {import('../../buffer/helper/BufferInfoHelper.js').BufferInfo} BufferInfo
+ * @typedef {import('../../buffer/helper/BufferInfoHelper.js').VertexArrayObjectInfo} VertexArrayObjectInfo
  */
 /**
  * @typedef ProgramInfo
@@ -220,11 +325,11 @@ type ActiveUniformInfo = {
 /**
  * Assumes all shaders already compiled and linked successfully.
  *
- * @param {WebGLRenderingContextBase} gl
+ * @param {WebGL2RenderingContext} gl
  * @param {WebGLProgram} program
  * @returns {ProgramInfo}
  */
-declare function createProgramInfo(gl: WebGLRenderingContextBase, program: WebGLProgram): ProgramInfo$1;
+declare function createProgramInfo(gl: WebGL2RenderingContext, program: WebGLProgram): ProgramInfo$1;
 /**
  * @param {WebGLRenderingContextBase} gl
  * @param {WebGLProgram} program
@@ -240,11 +345,11 @@ declare function linkProgramShaders(gl: WebGLRenderingContextBase, program: WebG
  */
 declare function bindProgramAttributes(gl: WebGLRenderingContextBase, programInfo: ReturnType<typeof createProgramInfo>, bufferOrVertexArrayObjectInfo: BufferInfo$1 | VertexArrayObjectInfo$1): void;
 /**
- * @param {WebGLRenderingContextBase} gl
+ * @param {WebGL2RenderingContext} gl
  * @param {ReturnType<createProgramInfo>} programInfo
  * @param {Record<string, number|Float32List|Int32List|Uint32List>} uniforms
  */
-declare function bindProgramUniforms(gl: WebGLRenderingContextBase, programInfo: ReturnType<typeof createProgramInfo>, uniforms: Record<string, number | Float32List | Int32List | Uint32List>): void;
+declare function bindProgramUniforms(gl: WebGL2RenderingContext, programInfo: ReturnType<typeof createProgramInfo>, uniforms: Record<string, number | Float32List | Int32List | Uint32List>): void;
 type BufferInfo$1 = BufferInfo;
 type VertexArrayObjectInfo$1 = VertexArrayObjectInfo;
 type ProgramInfo$1 = {
@@ -305,25 +410,25 @@ declare function createVertexArrayInfo(gl: WebGLRenderingContextBase, bufferInfo
  * @param {WebGLRenderingContextBase} gl
  * @param {BufferInfo|VertexArrayObjectInfo} bufferOrVertexArrayObjectInfo
  */
-declare function drawBufferInfo(gl: WebGLRenderingContextBase, bufferOrVertexArrayObjectInfo: BufferInfo | VertexArrayObjectInfo, mode?: number, offset?: number, vertexCount?: number, instanceCount?: any): void;
+declare function drawBufferInfo(gl: WebGLRenderingContextBase, bufferOrVertexArrayObjectInfo: BufferInfo | VertexArrayObjectInfo, mode?: 4, offset?: number, vertexCount?: number, instanceCount?: undefined): void;
 type AttribBufferLike = WebGLBuffer | BufferSource | Array<number>;
 type ArrayAttribOption = {
     buffer: AttribBufferLike;
-    name?: string;
-    size?: number;
-    type?: GLenum;
-    normalize?: boolean;
-    stride?: number;
-    offset?: number;
-    divisor?: number;
-    usage?: GLenum;
-    length?: number;
+    name?: string | undefined;
+    size?: number | undefined;
+    type?: number | undefined;
+    normalize?: boolean | undefined;
+    stride?: number | undefined;
+    offset?: number | undefined;
+    divisor?: number | undefined;
+    usage?: number | undefined;
+    length?: number | undefined;
 };
 type ElementAttribOption = {
     buffer: AttribBufferLike;
-    type?: GLenum;
-    usage?: GLenum;
-    length?: number;
+    type?: number | undefined;
+    usage?: number | undefined;
+    length?: number | undefined;
 };
 type ArrayAttrib = ReturnType<typeof createArrayAttrib>;
 type ElementAttrib = ReturnType<typeof createElementAttrib>;
@@ -459,46 +564,27 @@ declare const index$1_getBufferUsage: typeof getBufferUsage;
 declare const index$1_getByteCountForBufferType: typeof getByteCountForBufferType;
 declare const index$1_getTypedArrayForBufferType: typeof getTypedArrayForBufferType;
 declare namespace index$1 {
-  export {
-    index$1_ArrayAttrib as ArrayAttrib,
-    index$1_ArrayAttribOption as ArrayAttribOption,
-    index$1_AttribBufferLike as AttribBufferLike,
-    index$1_BufferInfo as BufferInfo,
-    index$1_ElementAttrib as ElementAttrib,
-    index$1_ElementAttribOption as ElementAttribOption,
-    index$1_VertexArrayObjectInfo as VertexArrayObjectInfo,
-    index$1_createBuffer as createBuffer,
-    index$1_createBufferInfo as createBufferInfo,
-    index$1_createBufferSource as createBufferSource,
-    index$1_createVertexArrayInfo as createVertexArrayInfo,
-    index$1_drawBufferInfo as drawBufferInfo,
-    index$1_getBufferByteCount as getBufferByteCount,
-    index$1_getBufferLength as getBufferLength,
-    index$1_getBufferTypeForBufferSource as getBufferTypeForBufferSource,
-    index$1_getBufferTypeForTypedArray as getBufferTypeForTypedArray,
-    index$1_getBufferUsage as getBufferUsage,
-    index$1_getByteCountForBufferType as getByteCountForBufferType,
-    index$1_getTypedArrayForBufferType as getTypedArrayForBufferType,
-  };
+  export { index$1_createBuffer as createBuffer, index$1_createBufferInfo as createBufferInfo, index$1_createBufferSource as createBufferSource, index$1_createVertexArrayInfo as createVertexArrayInfo, index$1_drawBufferInfo as drawBufferInfo, index$1_getBufferByteCount as getBufferByteCount, index$1_getBufferLength as getBufferLength, index$1_getBufferTypeForBufferSource as getBufferTypeForBufferSource, index$1_getBufferTypeForTypedArray as getBufferTypeForTypedArray, index$1_getBufferUsage as getBufferUsage, index$1_getByteCountForBufferType as getByteCountForBufferType, index$1_getTypedArrayForBufferType as getTypedArrayForBufferType };
+  export type { index$1_ArrayAttrib as ArrayAttrib, index$1_ArrayAttribOption as ArrayAttribOption, index$1_AttribBufferLike as AttribBufferLike, index$1_BufferInfo as BufferInfo, index$1_ElementAttrib as ElementAttrib, index$1_ElementAttribOption as ElementAttribOption, index$1_VertexArrayObjectInfo as VertexArrayObjectInfo };
 }
 
 declare namespace BufferEnums {
-    const BYTE: number;
-    const UNSIGNED_BYTE: number;
-    const SHORT: number;
-    const UNSIGNED_SHORT: number;
-    const INT: number;
-    const UNSIGNED_INT: number;
-    const FLOAT: number;
-    const HALF_FLOAT: number;
+    let BYTE: number;
+    let UNSIGNED_BYTE: number;
+    let SHORT: number;
+    let UNSIGNED_SHORT: number;
+    let INT: number;
+    let UNSIGNED_INT: number;
+    let FLOAT: number;
+    let HALF_FLOAT: number;
 }
 
 declare class ProgramInfo {
     /**
-     * @param {WebGLRenderingContextBase} gl
+     * @param {WebGL2RenderingContext} gl
      * @param {WebGLProgram} program
      */
-    constructor(gl: WebGLRenderingContextBase, program: WebGLProgram);
+    constructor(gl: WebGL2RenderingContext, program: WebGLProgram);
     handle: WebGLProgram;
     activeUniforms: Record<string, ActiveUniformInfo>;
     activeAttributes: Record<string, ActiveAttributeInfo>;
@@ -507,17 +593,25 @@ declare class ProgramInfo {
      * Bind the program and prepare to draw. This returns the bound context
      * that can modify the draw state.
      *
-     * @param {WebGLRenderingContextBase} gl
+     * @param {WebGL2RenderingContext} gl
      * @returns {ProgramInfoDrawContext} The bound context to draw with.
      */
-    bind(gl: WebGLRenderingContextBase): ProgramInfoDrawContext;
+    bind(gl: WebGL2RenderingContext): ProgramInfoDrawContext;
 }
 declare class ProgramInfoDrawContext {
-    constructor(gl: any, programInfo: any);
-    gl: any;
+    /**
+     * @param {WebGL2RenderingContext} gl
+     * @param {ProgramInfo} programInfo
+     */
+    constructor(gl: WebGL2RenderingContext, programInfo: ProgramInfo);
+    gl: WebGL2RenderingContext;
     /** @private */
     private parent;
-    uniform(uniformName: any, value: any): ProgramInfoDrawContext;
+    /**
+     * @param {string} uniformName
+     * @param {any} value
+     */
+    uniform(uniformName: string, value: any): this;
     /**
      * @param {string} attributeName Name of the attribute.
      * @param {GLenum} bufferType The buffer data type. This is usually `gl.FLOAT`
@@ -528,30 +622,30 @@ declare class ProgramInfoDrawContext {
      * @param {number} [stride=0] The stride for each vector in the buffer.
      * @param {number} [offset=0] The initial offset in the buffer.
      */
-    attribute(attributeName: string, bufferType: GLenum, buffer: WebGLBuffer, normalize?: boolean, stride?: number, offset?: number): ProgramInfoDrawContext;
+    attribute(attributeName: string, bufferType: GLenum, buffer: WebGLBuffer, normalize?: boolean, stride?: number, offset?: number): this;
     /**
      * Draws using this program.
      *
-     * @param {WebGLRenderingContext} gl
+     * @param {WebGL2RenderingContext} gl
      * @param {number} mode
      * @param {number} offset
      * @param {number} count
-     * @param {WebGLBuffer} elementBuffer
+     * @param {WebGLBuffer} [elementBuffer]
      */
-    draw(gl: WebGLRenderingContext, mode: number, offset: number, count: number, elementBuffer?: WebGLBuffer): any;
+    draw(gl: WebGL2RenderingContext, mode: number, offset: number, count: number, elementBuffer?: WebGLBuffer): ProgramInfo;
 }
 
 declare class ProgramInfoBuilder {
     /**
-     * @param {WebGLRenderingContextBase} gl
+     * @param {WebGL2RenderingContext} gl
      * @param {WebGLProgram} [program]
      */
-    constructor(gl: WebGLRenderingContextBase, program?: WebGLProgram);
+    constructor(gl: WebGL2RenderingContext, program?: WebGLProgram);
     /** @private */
     private programBuilder;
-    get gl(): WebGLRenderingContextBase;
+    get gl(): WebGL2RenderingContext;
     get handle(): WebGLProgram;
-    get shaders(): any[];
+    get shaders(): WebGLShader[];
     /**
      * @param {GLenum} shaderType
      * @param {string} shaderSource
@@ -566,14 +660,15 @@ declare class ProgramInfoBuilder {
 
 declare class ProgramBuilder {
     /**
-     * @param {WebGLRenderingContextBase} gl
+     * @param {WebGL2RenderingContext} gl
      * @param {WebGLProgram} [program]
      */
-    constructor(gl: WebGLRenderingContextBase, program?: WebGLProgram);
+    constructor(gl: WebGL2RenderingContext, program?: WebGLProgram);
     handle: WebGLProgram;
-    shaders: any[];
-    /** @type {WebGLRenderingContextBase} */
-    gl: WebGLRenderingContextBase;
+    /** @type {Array<WebGLShader>} */
+    shaders: Array<WebGLShader>;
+    /** @type {WebGL2RenderingContext} */
+    gl: WebGL2RenderingContext;
     /**
      * @param {GLenum} shaderType
      * @param {string} shaderSource
@@ -659,73 +754,60 @@ declare const index_getActiveUniforms: typeof getActiveUniforms;
 declare const index_getProgramStatus: typeof getProgramStatus;
 declare const index_linkProgramShaders: typeof linkProgramShaders;
 declare namespace index {
-  export {
-    BufferInfo$1 as BufferInfo,
-    ProgramInfo$1 as ProgramInfo,
-    VertexArrayObjectInfo$1 as VertexArrayObjectInfo,
-    index_bindProgramAttributes as bindProgramAttributes,
-    index_bindProgramUniforms as bindProgramUniforms,
-    index_createProgramInfo as createProgramInfo,
-    index_createShader as createShader,
-    index_createShaderProgram as createShaderProgram,
-    index_draw as draw,
-    index_getActiveAttribs as getActiveAttribs,
-    index_getActiveUniforms as getActiveUniforms,
-    index_getProgramStatus as getProgramStatus,
-    index_linkProgramShaders as linkProgramShaders,
-  };
+  export { index_bindProgramAttributes as bindProgramAttributes, index_bindProgramUniforms as bindProgramUniforms, index_createProgramInfo as createProgramInfo, index_createShader as createShader, index_createShaderProgram as createShaderProgram, index_draw as draw, index_getActiveAttribs as getActiveAttribs, index_getActiveUniforms as getActiveUniforms, index_getProgramStatus as getProgramStatus, index_linkProgramShaders as linkProgramShaders };
+  export type { BufferInfo$1 as BufferInfo, ProgramInfo$1 as ProgramInfo, VertexArrayObjectInfo$1 as VertexArrayObjectInfo };
 }
 
 declare namespace ProgramUniformEnums {
-    const FLOAT: number;
-    const FLOAT_VEC2: number;
-    const FLOAT_VEC3: number;
-    const FLOAT_VEC4: number;
-    const INT: number;
-    const INT_VEC2: number;
-    const INT_VEC3: number;
-    const INT_VEC4: number;
-    const BOOL: number;
-    const BOOL_VEC2: number;
-    const BOOL_VEC3: number;
-    const BOOL_VEC4: number;
-    const FLOAT_MAT2: number;
-    const FLOAT_MAT3: number;
-    const FLOAT_MAT4: number;
-    const SAMPLER_2D: number;
-    const SAMPLER_CUBE: number;
-    const UNSIGNED_INT: number;
-    const UNSIGNED_INT_VEC2: number;
-    const UNSIGNED_INT_VEC3: number;
-    const UNSIGNED_INT_VEC4: number;
-    const FLOAT_MAT2x3: number;
-    const FLOAT_MAT2x4: number;
-    const FLOAT_MAT3x2: number;
-    const FLOAT_MAT3x4: number;
-    const FLOAT_MAT4x2: number;
-    const FLOAT_MAT4x3: number;
-    const SAMPLER_3D: number;
-    const SAMPLER_2D_SHADOW: number;
-    const SAMPLER_2D_ARRAY: number;
-    const SAMPLER_2D_ARRAY_SHADOW: number;
-    const SAMPLER_CUBE_SHADOW: number;
-    const INT_SAMPLER_2D: number;
-    const INT_SAMPLER_3D: number;
-    const INT_SAMPLER_CUBE: number;
-    const INT_SAMPLER_2D_ARRAY: number;
-    const UNSIGNED_INT_SAMPLER_2D: number;
-    const UNSIGNED_INT_SAMPLER_3D: number;
-    const UNSIGNED_INT_SAMPLER_CUBE: number;
-    const UNSIGNED_INT_SAMPLER_2D_ARRAY: number;
+    let FLOAT: number;
+    let FLOAT_VEC2: number;
+    let FLOAT_VEC3: number;
+    let FLOAT_VEC4: number;
+    let INT: number;
+    let INT_VEC2: number;
+    let INT_VEC3: number;
+    let INT_VEC4: number;
+    let BOOL: number;
+    let BOOL_VEC2: number;
+    let BOOL_VEC3: number;
+    let BOOL_VEC4: number;
+    let FLOAT_MAT2: number;
+    let FLOAT_MAT3: number;
+    let FLOAT_MAT4: number;
+    let SAMPLER_2D: number;
+    let SAMPLER_CUBE: number;
+    let UNSIGNED_INT: number;
+    let UNSIGNED_INT_VEC2: number;
+    let UNSIGNED_INT_VEC3: number;
+    let UNSIGNED_INT_VEC4: number;
+    let FLOAT_MAT2x3: number;
+    let FLOAT_MAT2x4: number;
+    let FLOAT_MAT3x2: number;
+    let FLOAT_MAT3x4: number;
+    let FLOAT_MAT4x2: number;
+    let FLOAT_MAT4x3: number;
+    let SAMPLER_3D: number;
+    let SAMPLER_2D_SHADOW: number;
+    let SAMPLER_2D_ARRAY: number;
+    let SAMPLER_2D_ARRAY_SHADOW: number;
+    let SAMPLER_CUBE_SHADOW: number;
+    let INT_SAMPLER_2D: number;
+    let INT_SAMPLER_3D: number;
+    let INT_SAMPLER_CUBE: number;
+    let INT_SAMPLER_2D_ARRAY: number;
+    let UNSIGNED_INT_SAMPLER_2D: number;
+    let UNSIGNED_INT_SAMPLER_3D: number;
+    let UNSIGNED_INT_SAMPLER_CUBE: number;
+    let UNSIGNED_INT_SAMPLER_2D_ARRAY: number;
 }
 
 declare namespace ProgramAttributeEnums {
-    const BYTE: number;
-    const UNSIGNED_BYTE: number;
-    const SHORT: number;
-    const UNSIGNED_SHORT: number;
-    const FLOAT: number;
-    const HALF_FLOAT: number;
+    let BYTE: number;
+    let UNSIGNED_BYTE: number;
+    let SHORT: number;
+    let UNSIGNED_SHORT: number;
+    let FLOAT: number;
+    let HALF_FLOAT: number;
 }
 
 export { BufferBuilder, BufferDataContext, BufferEnums, index$1 as BufferHelper, BufferInfo$2 as BufferInfo, BufferInfoBuilder, GLHelper, ProgramAttributeEnums, ProgramBuilder, index as ProgramHelper, ProgramInfo, ProgramInfoBuilder, ProgramInfoDrawContext, ProgramUniformEnums, ProgramUniformFunctions };

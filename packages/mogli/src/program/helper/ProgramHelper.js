@@ -8,18 +8,22 @@
  * @returns {WebGLShader} The compiled shader.
  */
 export function createShader(gl, shaderType, shaderSource) {
-    let shader = gl.createShader(shaderType);
-    gl.shaderSource(shader, shaderSource);
-    gl.compileShader(shader);
+  let shader = gl.createShader(shaderType);
+  if (!shader) {
+    throw new Error(`Failed to create shader of type "${shaderType}".`);
+  }
+  gl.shaderSource(shader, shaderSource);
+  gl.compileShader(shader);
 
-    let status = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
-    if (!status) {
-        let log = gl.getShaderInfoLog(shader) +
-            `\nFailed to compile shader:\n${shaderSource}`;
-        gl.deleteShader(shader);
-        throw new Error(log);
-    }
-    return shader;
+  let status = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
+  if (!status) {
+    let log =
+      gl.getShaderInfoLog(shader) +
+      `\nFailed to compile shader:\n${shaderSource}`;
+    gl.deleteShader(shader);
+    throw new Error(log);
+  }
+  return shader;
 }
 
 /**
@@ -32,38 +36,38 @@ export function createShader(gl, shaderType, shaderSource) {
  * @returns {Promise<WebGLProgram>} The linked shader program.
  */
 export async function createShaderProgram(gl, program, shaders) {
-    // Attach to the program.
-    for (let shader of shaders) {
-        gl.attachShader(program, shader);
-    }
+  // Attach to the program.
+  for (let shader of shaders) {
+    gl.attachShader(program, shader);
+  }
 
-    // Link'em!
-    gl.linkProgram(program);
+  // Link'em!
+  gl.linkProgram(program);
 
-    // Might be async...
-    const ext = gl.getExtension('KHR_parallel_shader_compile');
-    if (ext) {
-        const statusInterval = 1000 / 60;
-        let result;
-        do {
-            await new Promise((resolve, _) => setTimeout(resolve, statusInterval));
-            result = gl.getProgramParameter(program, ext.COMPLETION_STATUS_KHR);
-        } while (!result);
-    }
+  // Might be async...
+  const ext = gl.getExtension('KHR_parallel_shader_compile');
+  if (ext) {
+    const statusInterval = 1000 / 60;
+    let result;
+    do {
+      await new Promise((resolve, _) => setTimeout(resolve, statusInterval));
+      result = gl.getProgramParameter(program, ext.COMPLETION_STATUS_KHR);
+    } while (!result);
+  }
 
-    // Don't forget to clean up the shaders! It's no longer needed.
-    for (let shader of shaders) {
-        gl.detachShader(program, shader);
-        gl.deleteShader(shader);
-    }
+  // Don't forget to clean up the shaders! It's no longer needed.
+  for (let shader of shaders) {
+    gl.detachShader(program, shader);
+    gl.deleteShader(shader);
+  }
 
-    let status = gl.getProgramParameter(program, gl.LINK_STATUS);
-    if (!status) {
-        let log = gl.getProgramInfoLog(program);
-        gl.deleteProgram(program);
-        throw new Error(log);
-    }
-    return program;
+  let status = gl.getProgramParameter(program, gl.LINK_STATUS);
+  if (!status) {
+    let log = gl.getProgramInfoLog(program);
+    gl.deleteProgram(program);
+    throw new Error(log ?? "Program failed - and no logs found :(");
+  }
+  return program;
 }
 
 /**
@@ -76,12 +80,12 @@ export async function createShaderProgram(gl, program, shaders) {
  * @param {WebGLBuffer} [elementBuffer]
  */
 export function draw(gl, mode, offset, count, elementBuffer = undefined) {
-    if (elementBuffer) {
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, elementBuffer);
-        gl.drawElements(mode, count, gl.UNSIGNED_SHORT, offset);
-    } else {
-        gl.drawArrays(mode, offset, count);
-    }
+  if (elementBuffer) {
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, elementBuffer);
+    gl.drawElements(mode, count, gl.UNSIGNED_SHORT, offset);
+  } else {
+    gl.drawArrays(mode, offset, count);
+  }
 }
 
 /**
@@ -89,14 +93,14 @@ export function draw(gl, mode, offset, count, elementBuffer = undefined) {
  * @param {WebGLProgram} program
  */
 export function getProgramStatus(gl, program) {
-    return {
-        /** @type {GLboolean} */
-        linkStatus: gl.getProgramParameter(program, gl.LINK_STATUS),
-        /** @type {GLboolean} */
-        deleteStatus: gl.getProgramParameter(program, gl.DELETE_STATUS),
-        /** @type {GLboolean} */
-        validateStatus: gl.getProgramParameter(program, gl.VALIDATE_STATUS),
-        /** @type {string} */
-        infoLog: gl.getProgramInfoLog(program),
-    };
+  return {
+    /** @type {GLboolean} */
+    linkStatus: gl.getProgramParameter(program, gl.LINK_STATUS),
+    /** @type {GLboolean} */
+    deleteStatus: gl.getProgramParameter(program, gl.DELETE_STATUS),
+    /** @type {GLboolean} */
+    validateStatus: gl.getProgramParameter(program, gl.VALIDATE_STATUS),
+    /** @type {string} */
+    infoLog: gl.getProgramInfoLog(program) ?? '',
+  };
 }

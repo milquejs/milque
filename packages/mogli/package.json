@@ -1,33 +1,21 @@
 {
-  "name": "@milque/mogli",
+  "name": "@milquejs/mogli",
+  "type": "module",
   "version": "1.0.0",
-  "description": "A WebGL helper.",
-  "main": "dist/milque-mogli.cjs.js",
-  "module": "dist/milque-mogli.esm.js",
-  "types": "dist/index.d.ts",
-  "exports": {
-    ".": {
-      "require": "./dist/milque-mogli.cjs.js",
-      "import": "./dist/milque-mogli.esm.js"
-    },
-    "./package.json": "./package.json"
-  },
-  "globals": {
-    "@milque/mogli": "milque.mogli"
-  },
+  "description": "A milque.js package for a collection of WebGL helpers.",
+  "main": "dist/umd/index.js",
+  "module": "dist/esm/index.js",
+  "types": "dist/types/index.d.ts",
   "scripts": {
-    "build": "milque-dev build"
+    "format": "prettier --write .",
+    "build": "rollup --config",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [
-    "milque",
-    "milque"
-  ],
-  "author": "Andrew Kuo <andrewbkuo@gmail.com>",
+  "keywords": [],
+  "author": "",
   "license": "MIT",
   "devDependencies": {
-    "milque-dev": "workspace:*"
-  },
-  "dependencies": {
-    "gl-matrix": "~3.4.3"
+    "@milquejs/prettier-config": "^1.0.0",
+    "@milquejs/rollup-config": "^1.0.0"
   }
 }

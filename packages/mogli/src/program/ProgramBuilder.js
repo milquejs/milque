@@ -2,13 +2,14 @@ import { createShader, createShaderProgram } from './helper/ProgramHelper.js';
 
 export class ProgramBuilder {
   /**
-   * @param {WebGLRenderingContextBase} gl
+   * @param {WebGL2RenderingContext} gl
    * @param {WebGLProgram} [program]
    */
   constructor(gl, program = undefined) {
     this.handle = program || gl.createProgram();
+    /** @type {Array<WebGLShader>} */
     this.shaders = [];
-    /** @type {WebGLRenderingContextBase} */
+    /** @type {WebGL2RenderingContext} */
     this.gl = gl;
   }
 

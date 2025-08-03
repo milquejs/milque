@@ -1,9 +1,9 @@
-import { ProgramInfo } from './ProgramInfo.js';
 import { ProgramBuilder } from './ProgramBuilder.js';
+import { ProgramInfo } from './ProgramInfo.js';
 
 export class ProgramInfoBuilder {
   /**
-   * @param {WebGLRenderingContextBase} gl
+   * @param {WebGL2RenderingContext} gl
    * @param {WebGLProgram} [program]
    */
   constructor(gl, program = undefined) {

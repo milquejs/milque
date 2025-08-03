@@ -2,22 +2,18 @@ import { getUniformFunction } from './ProgramUniformFunctions.js';
 import { getActiveUniforms } from './helper/ProgramActives.js';
 
 /**
- * @typedef {import('./ProgramUniformFunctions').UniformFunction} UniformFunction
- */
-
-/**
  * @typedef ActiveUniformInfo
  * @property {number} type
  * @property {number} length
  * @property {WebGLUniformLocation} location
- * @property {UniformFunction} applier
+ * @property {import('./ProgramUniformFunctions.js').UniformMixedFunction} applier
  * @property {number|Float32List|Int32List|Uint32List} value
  */
 
 /**
  * Get map of all active uniforms to their info in the shader program.
  *
- * @param {WebGLRenderingContextBase} gl The webgl context.
+ * @param {WebGL2RenderingContext} gl The webgl context.
  * @param {WebGLProgram} program The program to get active uniforms from.
  * @returns {Record<string, ActiveUniformInfo>} An object mapping of uniform names to info.
  */
@@ -30,15 +26,21 @@ export function getActiveUniformsInfo(gl, program) {
     const uniformSize = activeInfo.size;
     const uniformType = activeInfo.type;
     const uniformLocation = gl.getUniformLocation(program, uniformName);
+    if (!uniformLocation) {
+      throw new Error(`Cannot find uniform location for "${uniformName}".`);
+    }
     const uniformApplier = getUniformFunction(gl, uniformType);
     result[uniformName] = {
       type: uniformType,
       length: uniformSize,
       location: uniformLocation,
       applier: uniformApplier,
+      /**
+       * @param {number|Float32List|Int32List|Uint32List} value
+       */
       set value(value) {
-        this.applier.call(gl, this.location, value);
-      }
+        this.applier.call(gl, this.location, /** @type {any} */ (value));
+      },
     };
   }
   return result;

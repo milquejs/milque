@@ -1,17 +1,26 @@
 import { isWebGL2Supported } from '../GLHelper.js';
 
+/** @typedef {Float32List|Int32List|Uint32List} UniformVector */
+
 /**
- * @callback UniformArrayFunction
+ * @callback WebGL1UniformArrayFunction
  * @param {WebGLUniformLocation} location The uniform location.
- * @param {Float32List|Int32List|Uint32List} value The vector array.
+ * @param {UniformVector} value The vector array.
  * @this {WebGLRenderingContext|WebGL2RenderingContext}
  *
- * @callback UniformComponentFunction
+ * @callback WebGL2UniformArrayFunction
  * @param {WebGLUniformLocation} location The uniform location.
- * @param {...number} values The components of the vector.
- * @this {WebGLRenderingContext|WebGL2RenderingContext}
+ * @param {UniformVector} value The vector array.
+ * @this {WebGL2RenderingContext}
  *
- * @typedef {UniformArrayFunction|UniformComponentFunction} UniformFunction
+ * @typedef {WebGL1UniformArrayFunction|WebGL2UniformArrayFunction} UniformArrayFunction
+ *
+ * @callback UniformOneComponentFunction
+ * @param {WebGLUniformLocation} location The uniform location.
+ * @param {GLfloat|GLint} x The x component of the vector.
+ * @this {WebGLRenderingContext|WebGL2RenderingContext}
+ * 
+ * @typedef {UniformOneComponentFunction|UniformArrayFunction} UniformMixedFunction
  */
 
 /**
@@ -21,7 +30,7 @@ import { isWebGL2Supported } from '../GLHelper.js';
  *
  * @param {WebGLRenderingContextBase} gl The webgl context.
  * @param {GLenum} uniformType The uniform data type.
- * @returns {UniformFunction} The uniform modifier function.
+ * @returns {UniformMixedFunction} The uniform modifier function.
  */
 export function getUniformFunction(gl, uniformType) {
   // https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API/Constants
@@ -110,13 +119,96 @@ export function getUniformFunction(gl, uniformType) {
 }
 
 /**
+ * @callback UniformXYFunction
+ * @param {WebGLUniformLocation} location The uniform location.
+ * @param {GLfloat|GLint} x The first component of the vector.
+ * @param {GLfloat|GLint} y The second component of the vector.
+ * @this {WebGLRenderingContext|WebGL2RenderingContext}
+ *
+ * @callback UniformXYZFunction
+ * @param {WebGLUniformLocation} location The uniform location.
+ * @param {GLfloat|GLint} x The first component of the vector.
+ * @param {GLfloat|GLint} y The second component of the vector.
+ * @param {GLfloat|GLint} z The third component of the vector.
+ * @this {WebGLRenderingContext|WebGL2RenderingContext}
+ *
+ * @callback UniformXYZWFunction
+ * @param {WebGLUniformLocation} location The uniform location.
+ * @param {GLfloat|GLint} x The first component of the vector.
+ * @param {GLfloat|GLint} y The second component of the vector.
+ * @param {GLfloat|GLint} z The third component of the vector.
+ * @param {GLfloat|GLint} w The fourth component of the vector.
+ * @this {WebGLRenderingContext|WebGL2RenderingContext}
+ * 
+ * @callback Uniform17Function
+ * @param {WebGLUniformLocation} location The uniform location.
+ * @param {GLfloat} m1 The first component of the vector.
+ * @param {GLfloat} m2 The second component of the vector.
+ * @param {GLfloat} m3 The third component of the vector.
+ * @param {GLfloat} m4 The fourth component of the vector.
+ * @param {GLfloat} m5 The fifth component of the vector.
+ * @param {GLfloat} m6 The sixth component of the vector.
+ * @param {GLfloat} m7 The seventh component of the vector.
+ * @param {GLfloat} m8 The eighth component of the vector.
+ * @param {GLfloat} m9 The ninth component of the vector.
+ * @param {GLfloat} m10 The tenth component of the vector.
+ * @param {GLfloat} m11 The eleventh component of the vector.
+ * @param {GLfloat} m12 The twelth component of the vector.
+ * @param {GLfloat} m13 The thirteenth component of the vector.
+ * @param {GLfloat} m14 The fourteenth component of the vector.
+ * @param {GLfloat} m15 The fifteenth component of the vector.
+ * @param {GLfloat} m16 The sixteenth component of the vector.
+ * @param {GLfloat} m17 The seventeenth component of the vector.
+ * @this {WebGLRenderingContext|WebGL2RenderingContext}
+ * 
+ * @callback WebGL2Uniform10Function
+ * @param {WebGLUniformLocation} location The uniform location.
+ * @param {GLfloat} m1 The first component of the vector.
+ * @param {GLfloat} m2 The second component of the vector.
+ * @param {GLfloat} m3 The third component of the vector.
+ * @param {GLfloat} m4 The fourth component of the vector.
+ * @param {GLfloat} m5 The fifth component of the vector.
+ * @param {GLfloat} m6 The sixth component of the vector.
+ * @param {GLfloat} m7 The seventh component of the vector.
+ * @param {GLfloat} m8 The eighth component of the vector.
+ * @param {GLfloat} m9 The ninth component of the vector.
+ * @param {GLfloat} m10 The tenth component of the vector.
+ * @this {WebGL2RenderingContext}
+ * 
+ * @callback WebGL2Uniform13Function
+ * @param {WebGLUniformLocation} location The uniform location.
+ * @param {GLfloat} m1 The first component of the vector.
+ * @param {GLfloat} m2 The second component of the vector.
+ * @param {GLfloat} m3 The third component of the vector.
+ * @param {GLfloat} m4 The fourth component of the vector.
+ * @param {GLfloat} m5 The fifth component of the vector.
+ * @param {GLfloat} m6 The sixth component of the vector.
+ * @param {GLfloat} m7 The seventh component of the vector.
+ * @param {GLfloat} m8 The eighth component of the vector.
+ * @param {GLfloat} m9 The ninth component of the vector.
+ * @param {GLfloat} m10 The tenth component of the vector.
+ * @param {GLfloat} m11 The eleventh component of the vector.
+ * @param {GLfloat} m12 The twelth component of the vector.
+ * @param {GLfloat} m13 The thirteenth component of the vector.
+ * @this {WebGL2RenderingContext}
+ * 
+ * @typedef {UniformOneComponentFunction
+ * | UniformXYFunction
+ * | UniformXYZFunction
+ * | UniformXYZWFunction
+ * | Uniform17Function
+ * | WebGL2Uniform10Function
+ * | WebGL2Uniform13Function} UniformManyComponentFunction
+ */
+
+/**
  * Get the per component uniform modifier function by uniform type.
  *
  * @param {WebGLRenderingContext|WebGL2RenderingContext} gl The webgl context.
  * @param {GLenum} uniformType The uniform data type.
- * @returns {UniformComponentFunction} The per component uniform modifier function.
+ * @returns {UniformManyComponentFunction} The per component uniform modifier function.
  */
-export function getUniformComponentFunction(gl, uniformType) {
+export function getUniformManyComponentFunction(gl, uniformType) {
   // https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API/Constants
   const gl1 = /** @type {WebGLRenderingContext} */ (gl);
   switch (uniformType) {
@@ -207,7 +299,7 @@ export function getUniformComponentFunction(gl, uniformType) {
  *
  * @param {WebGLRenderingContext|WebGL2RenderingContext} gl The webgl context.
  * @param {GLenum} uniformType The uniform data type.
- * @returns {UniformArrayFunction} The array uniform modifier function.
+ * @returns {UniformArrayFunction|WebGL2UniformArrayFunction} The array uniform modifier function.
  */
 export function getUniformArrayFunction(gl, uniformType) {
   // https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API/Constants
@@ -294,18 +386,49 @@ export function getUniformArrayFunction(gl, uniformType) {
   throw new Error('Cannot find array uniform function for gl enum.');
 }
 
+/**
+ * @param {WebGLUniformLocation} location
+ * @param {UniformVector} value
+ * @this {WebGLRenderingContext|WebGL2RenderingContext}
+ */
 function uniformMatrix2fv(location, value) {
   this.uniformMatrix2fv(location, false, value);
 }
 
+/**
+ * @param {WebGLUniformLocation} location
+ * @param {GLfloat} m00
+ * @param {GLfloat} m01
+ * @param {GLfloat} m10
+ * @param {GLfloat} m11
+ * @this {WebGLRenderingContext|WebGL2RenderingContext}
+ */
 function uniformMatrix2f(location, m00, m01, m10, m11) {
   this.uniformMatrix2fv(location, false, [m00, m01, m10, m11]);
 }
 
+/**
+ * @param {WebGLUniformLocation} location
+ * @param {UniformVector} value
+ * @this {WebGLRenderingContext|WebGL2RenderingContext}
+ */
 function uniformMatrix3fv(location, value) {
   this.uniformMatrix3fv(location, false, value);
 }
 
+/**
+ * @param {WebGLUniformLocation} location
+ * @param {GLfloat} m00
+ * @param {GLfloat} m01
+ * @param {GLfloat} m02
+ * @param {GLfloat} m10
+ * @param {GLfloat} m11
+ * @param {GLfloat} m12
+ * @param {GLfloat} m20
+ * @param {GLfloat} m21
+ * @param {GLfloat} m22
+ * @this {WebGLRenderingContext|WebGL2RenderingContext}
+ */
 function uniformMatrix3f(
   location,
   m00,
@@ -331,10 +454,35 @@ function uniformMatrix3f(
   ]);
 }
 
+/**
+ * @param {WebGLUniformLocation} location
+ * @param {UniformVector} value
+ * @this {WebGLRenderingContext|WebGL2RenderingContext}
+ */
 function uniformMatrix4fv(location, value) {
   this.uniformMatrix4fv(location, false, value);
 }
 
+/**
+ * @param {WebGLUniformLocation} location
+ * @param {GLfloat} m00
+ * @param {GLfloat} m01
+ * @param {GLfloat} m02
+ * @param {GLfloat} m03
+ * @param {GLfloat} m10
+ * @param {GLfloat} m11
+ * @param {GLfloat} m12
+ * @param {GLfloat} m13
+ * @param {GLfloat} m20
+ * @param {GLfloat} m21
+ * @param {GLfloat} m22
+ * @param {GLfloat} m23
+ * @param {GLfloat} m30
+ * @param {GLfloat} m31
+ * @param {GLfloat} m32
+ * @param {GLfloat} m33
+ * @this {WebGLRenderingContext|WebGL2RenderingContext}
+ */
 function uniformMatrix4f(
   location,
   m00,
@@ -374,18 +522,58 @@ function uniformMatrix4f(
   ]);
 }
 
+/**
+ * Only supported on WebGL2.
+ *
+ * @param {WebGLUniformLocation} location
+ * @param {UniformVector} value
+ * @this {WebGL2RenderingContext}
+ */
 function uniformMatrix2x3fv(location, value) {
   this.uniformMatrix2x3fv(location, false, value);
 }
 
+/**
+ * Only supported on WebGL2.
+ *
+ * @param {WebGLUniformLocation} location
+ * @param {GLfloat} m00
+ * @param {GLfloat} m01
+ * @param {GLfloat} m02
+ * @param {GLfloat} m10
+ * @param {GLfloat} m11
+ * @param {GLfloat} m12
+ * @this {WebGL2RenderingContext}
+ */
 function uniformMatrix2x3f(location, m00, m01, m02, m10, m11, m12) {
   this.uniformMatrix2x3fv(location, false, [m00, m01, m02, m10, m11, m12]);
 }
 
+/**
+ * Only supported on WebGL2.
+ *
+ * @param {WebGLUniformLocation} location
+ * @param {UniformVector} value
+ * @this {WebGL2RenderingContext}
+ */
 function uniformMatrix2x4fv(location, value) {
   this.uniformMatrix2x4fv(location, false, value);
 }
 
+/**
+ * Only supported on WebGL2.
+ *
+ * @param {WebGLUniformLocation} location
+ * @param {GLfloat} m00
+ * @param {GLfloat} m01
+ * @param {GLfloat} m02
+ * @param {GLfloat} m03
+ * @param {GLfloat} m10
+ * @param {GLfloat} m11
+ * @param {GLfloat} m12
+ * @param {GLfloat} m13
+ * @this {WebGL2RenderingContext}
+ */
 function uniformMatrix2x4f(location, m00, m01, m02, m03, m10, m11, m12, m13) {
   this.uniformMatrix2x4fv(location, false, [
     m00,
@@ -399,18 +587,62 @@ function uniformMatrix2x4f(location, m00, m01, m02, m03, m10, m11, m12, m13) {
   ]);
 }
 
+/**
+ * Only supported on WebGL2.
+ *
+ * @param {WebGLUniformLocation} location
+ * @param {UniformVector} value
+ * @this {WebGL2RenderingContext}
+ */
 function uniformMatrix3x2fv(location, value) {
   this.uniformMatrix3x2fv(location, false, value);
 }
 
+/**
+ * Only supported on WebGL2.
+ *
+ * @param {WebGLUniformLocation} location
+ * @param {GLfloat} m00
+ * @param {GLfloat} m01
+ * @param {GLfloat} m10
+ * @param {GLfloat} m11
+ * @param {GLfloat} m20
+ * @param {GLfloat} m21
+ * @this {WebGL2RenderingContext}
+ */
 function uniformMatrix3x2f(location, m00, m01, m10, m11, m20, m21) {
   this.uniformMatrix3x2fv(location, false, [m00, m01, m10, m11, m20, m21]);
 }
 
+/**
+ * Only supported on WebGL2.
+ *
+ * @param {WebGLUniformLocation} location
+ * @param {UniformVector} value
+ * @this {WebGL2RenderingContext}
+ */
 function uniformMatrix3x4fv(location, value) {
   this.uniformMatrix3x4fv(location, false, value);
 }
 
+/**
+ * Only supported on WebGL2.
+ *
+ * @param {WebGLUniformLocation} location
+ * @param {GLfloat} m00
+ * @param {GLfloat} m01
+ * @param {GLfloat} m02
+ * @param {GLfloat} m03
+ * @param {GLfloat} m10
+ * @param {GLfloat} m11
+ * @param {GLfloat} m12
+ * @param {GLfloat} m13
+ * @param {GLfloat} m20
+ * @param {GLfloat} m21
+ * @param {GLfloat} m22
+ * @param {GLfloat} m23
+ * @this {WebGL2RenderingContext}
+ */
 function uniformMatrix3x4f(
   location,
   m00,
@@ -442,10 +674,31 @@ function uniformMatrix3x4f(
   ]);
 }
 
+/**
+ * Only supported on WebGL2.
+ *
+ * @param {WebGLUniformLocation} location
+ * @param {UniformVector} value
+ * @this {WebGL2RenderingContext}
+ */
 function uniformMatrix4x2fv(location, value) {
   this.uniformMatrix4x2fv(location, false, value);
 }
 
+/**
+ * Only supported on WebGL2.
+ *
+ * @param {WebGLUniformLocation} location
+ * @param {GLfloat} m00
+ * @param {GLfloat} m01
+ * @param {GLfloat} m10
+ * @param {GLfloat} m11
+ * @param {GLfloat} m20
+ * @param {GLfloat} m21
+ * @param {GLfloat} m30
+ * @param {GLfloat} m31
+ * @this {WebGL2RenderingContext}
+ */
 function uniformMatrix4x2f(location, m00, m01, m10, m11, m20, m21, m30, m31) {
   this.uniformMatrix4x2fv(location, false, [
     m00,
@@ -459,10 +712,35 @@ function uniformMatrix4x2f(location, m00, m01, m10, m11, m20, m21, m30, m31) {
   ]);
 }
 
+/**
+ * Only supported on WebGL2.
+ *
+ * @param {WebGLUniformLocation} location
+ * @param {UniformVector} value
+ * @this {WebGL2RenderingContext}
+ */
 function uniformMatrix4x3fv(location, value) {
   this.uniformMatrix4x3fv(location, false, value);
 }
 
+/**
+ * Only supported on WebGL2.
+ *
+ * @param {WebGLUniformLocation} location
+ * @param {GLfloat} m00
+ * @param {GLfloat} m01
+ * @param {GLfloat} m02
+ * @param {GLfloat} m10
+ * @param {GLfloat} m11
+ * @param {GLfloat} m12
+ * @param {GLfloat} m20
+ * @param {GLfloat} m21
+ * @param {GLfloat} m22
+ * @param {GLfloat} m30
+ * @param {GLfloat} m31
+ * @param {GLfloat} m32
+ * @this {WebGL2RenderingContext}
+ */
 function uniformMatrix4x3f(
   location,
   m00,
