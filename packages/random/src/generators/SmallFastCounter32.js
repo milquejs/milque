@@ -1,11 +1,11 @@
-import { RandomBase } from './RandomBase.js';
+import { RandomGenerator } from './RandomGenerator';
 
 /**
  * A very fast 32-bit PRNG.
  *
  * @see https://github.com/bryc/code/blob/master/jshash/PRNGs.md
  */
-export class SmallFastCounter32 extends RandomBase {
+export class SmallFastCounter32 extends RandomGenerator {
   /**
    * @param {number} a An unsigned 32-bit integer.
    * @param {number} b An unsigned 32-bit integer.
@@ -26,7 +26,7 @@ export class SmallFastCounter32 extends RandomBase {
   }
 
   /** @override */
-  next() {
+  random() {
     let { a, b, c, d } = this;
     a |= 0;
     b |= 0;

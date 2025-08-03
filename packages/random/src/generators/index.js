@@ -1,4 +1,4 @@
-export { RandomBase } from './RandomBase.js';
-export { MathRandom } from './MathRandom.js';
-export { Mulberry32 } from './Mulberry32.js';
-export { SmallFastCounter32 } from './SmallFastCounter32.js';
+export * from './MathRandom';
+export * from './Mulberry32';
+export * from './SmallFastCounter32';
+export * from './RandomGenerator';
