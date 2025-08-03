@@ -1,0 +1,24 @@
+{
+  "name": "@milquejs/rollup-config",
+  "version": "1.0.0",
+  "description": "",
+  "private": true,
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "peerDependencies": {
+    "rollup": "^4.39.0"
+  },
+  "dependencies": {
+    "@loonguo/rollup-plugin-raw": "^0.0.5",
+    "@rollup/plugin-commonjs": "^28.0.3",
+    "@rollup/plugin-json": "^6.1.0",
+    "@rollup/plugin-node-resolve": "^16.0.1",
+    "@rollup/plugin-terser": "^0.4.4",
+    "rollup-plugin-delete": "^3.0.1",
+    "rollup-plugin-dts": "^6.2.1",
+    "rollup-plugin-polyfill-node": "^0.13.0"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "name": "@milquejs/prettier-config",
+  "version": "1.0.0",
+  "description": "",
+  "private": true,
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "peerDependencies": {
+    "prettier": "^3.5.3"
+  },
+  "dependencies": {
+    "@ianvs/prettier-plugin-sort-imports": "^4.4.1",
+    "prettier-package-json": "^2.8.0"
+  }
+}
