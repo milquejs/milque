@@ -1,0 +1,25 @@
+{
+  "name": "@milquejs/aseprite",
+  "version": "1.0.0",
+  "description": "A milque.js package for parsing aseprite files.",
+  "type": "module",
+  "main": "dist/umd/index.js",
+  "module": "dist/esm/index.js",
+  "types": "dist/types/index.d.ts",
+  "scripts": {
+    "format": "prettier --write .",
+    "build": "rollup --config",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "peerDependencies": {
+    "@milquejs/color": "^1.0.0",
+    "fflate": "^0.8.2"
+  },
+  "devDependencies": {
+    "@milquejs/prettier-config": "^1.0.0",
+    "@milquejs/rollup-config": "^1.0.0"
+  }
+}
