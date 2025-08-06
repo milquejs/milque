@@ -1,34 +1,24 @@
 {
-  "name": "@milque/asset",
-  "version": "1.0.1",
-  "description": "An asset manager with async loading.",
-  "main": "dist/milque-asset.cjs.js",
-  "module": "dist/milque-asset.esm.js",
-  "types": "dist/index.d.ts",
-  "exports": {
-    ".": {
-      "require": "./dist/milque-asset.cjs.js",
-      "import": "./dist/milque-asset.esm.js"
-    },
-    "./package.json": "./package.json"
-  },
-  "globals": {
-    "@milque/asset": "milque.asset"
-  },
+  "name": "@milquejs/asset",
+  "version": "1.0.0",
+  "description": "A milque.js package for async caching and loading of assets.",
+  "type": "module",
+  "main": "dist/umd/index.js",
+  "module": "dist/esm/index.js",
+  "types": "dist/types/index.d.ts",
   "scripts": {
-    "build": "milque-dev build"
+    "format": "prettier --write .",
+    "build": "rollup --config",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [
-    "milque",
-    "asset"
-  ],
-  "author": "Andrew Kuo <andrewbkuo@gmail.com>",
+  "keywords": [],
+  "author": "",
   "license": "MIT",
   "devDependencies": {
-    "milque-dev": "workspace:*"
+    "@milquejs/prettier-config": "^1.0.0",
+    "@milquejs/rollup-config": "^1.0.0"
   },
   "dependencies": {
-    "fflate": "~0.7.4",
-    "picomatch": "~2.3.1"
+    "picomatch": "^4.0.2"
   }
 }

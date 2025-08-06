@@ -1,5 +1,16 @@
-export { GlobExp } from './GlobExp.js';
-export * from './AssetHelper.js';
-export * from './AssetManager.js';
-export { AssetRef } from './AssetRef.js';
-export * from './loaders/index.js';
+export { LocalAsset, LocalAssetStore } from './local'
+
+/**
+ * @template T
+ * @template {object} Options
+ * @typedef {import('./AssetTypes').AssetLike<T, Options>} AssetLike
+ */
+
+/**
+ * @template T
+ * @template {object} Options
+ * @typedef {import('./AssetTypes').AssetLoader<T, Options>} AssetLoader
+ */
+
+export { Asset } from './Asset';
+export * from './GlobExp';
