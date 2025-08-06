@@ -40,7 +40,7 @@ export function isCached(assets, target) {
  * @param {import('../AssetTypes').AssetLike<T, any>} target
  * @returns {T|null}
  */
-export function get(assets, target) {
+export function getOrNull(assets, target) {
   if (hasCurrentValue(assets, target.uri)) {
     return /** @type {T} */ (currentValue(assets, target.uri));
   }
@@ -58,7 +58,7 @@ export function get(assets, target) {
  * @returns {T}
  */
 export function getOrThrow(assets, target) {
-  let result = get(assets, target);
+  let result = getOrNull(assets, target);
   if (result !== null) {
     return result;
   }

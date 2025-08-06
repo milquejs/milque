@@ -49,8 +49,8 @@ export class Asset {
   }
 
   /** Get the cached or default asset value. Returns null if not present. */
-  get() {
-    return LocalAsset.get(Asset.globalCache, this);
+  getOrNull() {
+    return LocalAsset.getOrNull(Asset.globalCache, this);
   }
 
   /** Get the cached or default asset value. Throws if not present. */
