@@ -24,8 +24,5 @@
     "keycode"
   ],
   "author": "Andrew Kuo <andrewbkuo@gmail.com>",
-  "license": "MIT",
-  "devDependencies": {
-    "milque-dev": "workspace:*"
-  }
+  "license": "MIT"
 }

@@ -25,9 +25,6 @@
   ],
   "author": "Andrew Kuo <andrewbkuo@gmail.com>",
   "license": "MIT",
-  "devDependencies": {
-    "milque-dev": "workspace:*"
-  },
   "dependencies": {
     "gl-matrix": "~3.4.3"
   }
