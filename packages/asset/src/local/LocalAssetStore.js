@@ -1,8 +1,6 @@
 import { GlobExp } from '../GlobExp';
 
-/** @typedef {ReturnType<create>} AssetStoreLike */
-
-export function create() {
+export function createStore() {
   return {
     /** @type {Record<string, any>} */
     cached: {},
@@ -16,9 +14,10 @@ export function create() {
 /**
  * Load asset using a loader with the given filePath.
  * 
+ * @private
  * @template T
  * @template {object} Options
- * @param {AssetStoreLike} assets
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {string} uri
  * @param {string} filePath
  * @param {import('../AssetTypes').AssetLoader<T, Options>} loader
@@ -62,18 +61,19 @@ export async function loadThenCache(assets, uri, filePath, loader, opts, timeout
 }
 
 /**
- * @param {AssetStoreLike} assets 
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets 
  * @param {Array<import('../AssetTypes').AssetLike<?, ?>>} targets 
  * @param {number} timeout
  */
-export async function loadAllThenCache(assets, targets, timeout) {
+export async function loadAll(assets, targets, timeout) {
   await Promise.all(targets.map(target => loadThenCache(
     assets, target.uri, target.uri, target.loader, target.opts, timeout)));
 }
 
 /**
+ * @internal
  * @template T
- * @param {AssetStoreLike} assets
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {string} uri
  * @param {T} value
  */
@@ -89,11 +89,11 @@ export function cacheAndResolve(assets, uri, value) {
 
 /**
  * @template T
- * @param {AssetStoreLike} assets
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {string|GlobExp} glob
  * @param {T} value
  */
-export function cacheAndResolveAsFallback(assets, glob, value) {
+export function fallbackFor(assets, glob, value) {
   const { defaults } = assets;
   if (typeof glob === 'string') {
     glob = new GlobExp(glob);
@@ -104,7 +104,8 @@ export function cacheAndResolveAsFallback(assets, glob, value) {
 }
 
 /**
- * @param {AssetStoreLike} assets
+ * @internal
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {string} uri
  */
 export function deleteAndReject(assets, uri) {
@@ -116,7 +117,8 @@ export function deleteAndReject(assets, uri) {
 }
 
 /**
- * @param {AssetStoreLike} assets
+ * @internal
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {string|GlobExp} glob
  */
 export function deleteAndRejectByGlob(assets, glob) {
@@ -141,7 +143,8 @@ export function deleteAndRejectByGlob(assets, glob) {
 /**
  * Cancel loading the uri, if loading. Otherwise, do nothing and return false.
  * 
- * @param {AssetStoreLike} assets
+ * @internal
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {string} uri
  * @param {string} [rejectMessage]
  */
@@ -157,7 +160,8 @@ export function cancelAndReject(assets, uri, rejectMessage = 'Cancel loading ass
 }
 
 /**
- * @param {AssetStoreLike} assets 
+ * @internal
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets 
  * @param {string} uri 
  * @param {number} timeout
  * @returns {Promise<object>}
@@ -174,9 +178,9 @@ export async function promiseWhenLoaded(assets, uri, timeout) {
 }
 
 /**
- * @param {AssetStoreLike} assets
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  */
-export function clearStore(assets) {
+export function resetStore(assets) {
   const { cached, loadings, defaults } = assets;
   // Clear loadings
   for (let uri of Object.keys(loadings)) {
@@ -191,7 +195,8 @@ export function clearStore(assets) {
 }
 
 /**
- * @param {AssetStoreLike} assets
+ * @internal
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {string} uri
  * @returns {Promise<object>}
  */
@@ -205,7 +210,8 @@ export function currentLoading(assets, uri) {
 }
 
 /**
- * @param {AssetStoreLike} assets
+ * @internal
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {string} uri
  * @returns {object|null}
  */
@@ -220,7 +226,8 @@ export function currentFallback(assets, uri) {
 }
 
 /**
- * @param {AssetStoreLike} assets
+ * @internal
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {string} uri
  * @returns {object}
  */
@@ -233,15 +240,16 @@ export function currentValue(assets, uri) {
 }
 
 /**
- * @param {AssetStoreLike} assets
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @returns {Array<string>}
  */
-export function currentKeys(assets) {
+export function keys(assets) {
   return Object.keys(assets.cached);
 }
 
 /**
- * @param {AssetStoreLike} assets
+ * @internal
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {string} uri
  * @returns {boolean}
  */
@@ -250,7 +258,8 @@ export function hasCurrentValue(assets, uri) {
 }
 
 /**
- * @param {AssetStoreLike} assets
+ * @internal
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {string} uri
  * @returns {boolean}
  */

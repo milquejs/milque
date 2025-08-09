@@ -2164,9 +2164,7 @@ class GlobExp {
   }
 }
 
-/** @typedef {ReturnType<create>} AssetStoreLike */
-
-function create$1() {
+function createStore() {
   return {
     /** @type {Record<string, any>} */
     cached: {},
@@ -2180,9 +2178,10 @@ function create$1() {
 /**
  * Load asset using a loader with the given filePath.
  * 
+ * @private
  * @template T
  * @template {object} Options
- * @param {AssetStoreLike} assets
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {string} uri
  * @param {string} filePath
  * @param {import('../AssetTypes').AssetLoader<T, Options>} loader
@@ -2226,18 +2225,19 @@ async function loadThenCache(assets, uri, filePath, loader, opts, timeout) {
 }
 
 /**
- * @param {AssetStoreLike} assets 
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets 
  * @param {Array<import('../AssetTypes').AssetLike<?, ?>>} targets 
  * @param {number} timeout
  */
-async function loadAllThenCache(assets, targets, timeout) {
+async function loadAll(assets, targets, timeout) {
   await Promise.all(targets.map(target => loadThenCache(
     assets, target.uri, target.uri, target.loader, target.opts, timeout)));
 }
 
 /**
+ * @internal
  * @template T
- * @param {AssetStoreLike} assets
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {string} uri
  * @param {T} value
  */
@@ -2253,11 +2253,11 @@ function cacheAndResolve(assets, uri, value) {
 
 /**
  * @template T
- * @param {AssetStoreLike} assets
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {string|GlobExp} glob
  * @param {T} value
  */
-function cacheAndResolveAsFallback(assets, glob, value) {
+function fallbackFor(assets, glob, value) {
   const { defaults } = assets;
   if (typeof glob === 'string') {
     glob = new GlobExp(glob);
@@ -2268,7 +2268,8 @@ function cacheAndResolveAsFallback(assets, glob, value) {
 }
 
 /**
- * @param {AssetStoreLike} assets
+ * @internal
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {string} uri
  */
 function deleteAndReject(assets, uri) {
@@ -2280,7 +2281,8 @@ function deleteAndReject(assets, uri) {
 }
 
 /**
- * @param {AssetStoreLike} assets
+ * @internal
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {string|GlobExp} glob
  */
 function deleteAndRejectByGlob(assets, glob) {
@@ -2305,7 +2307,8 @@ function deleteAndRejectByGlob(assets, glob) {
 /**
  * Cancel loading the uri, if loading. Otherwise, do nothing and return false.
  * 
- * @param {AssetStoreLike} assets
+ * @internal
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {string} uri
  * @param {string} [rejectMessage]
  */
@@ -2321,7 +2324,8 @@ function cancelAndReject(assets, uri, rejectMessage = 'Cancel loading asset.') {
 }
 
 /**
- * @param {AssetStoreLike} assets 
+ * @internal
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets 
  * @param {string} uri 
  * @param {number} timeout
  * @returns {Promise<object>}
@@ -2338,9 +2342,9 @@ async function promiseWhenLoaded(assets, uri, timeout) {
 }
 
 /**
- * @param {AssetStoreLike} assets
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  */
-function clearStore(assets) {
+function resetStore(assets) {
   const { cached, loadings, defaults } = assets;
   // Clear loadings
   for (let uri of Object.keys(loadings)) {
@@ -2355,7 +2359,8 @@ function clearStore(assets) {
 }
 
 /**
- * @param {AssetStoreLike} assets
+ * @internal
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {string} uri
  * @returns {Promise<object>}
  */
@@ -2369,7 +2374,8 @@ function currentLoading(assets, uri) {
 }
 
 /**
- * @param {AssetStoreLike} assets
+ * @internal
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {string} uri
  * @returns {object|null}
  */
@@ -2384,7 +2390,8 @@ function currentFallback(assets, uri) {
 }
 
 /**
- * @param {AssetStoreLike} assets
+ * @internal
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {string} uri
  * @returns {object}
  */
@@ -2397,15 +2404,16 @@ function currentValue(assets, uri) {
 }
 
 /**
- * @param {AssetStoreLike} assets
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @returns {Array<string>}
  */
-function currentKeys(assets) {
+function keys(assets) {
   return Object.keys(assets.cached);
 }
 
 /**
- * @param {AssetStoreLike} assets
+ * @internal
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {string} uri
  * @returns {boolean}
  */
@@ -2414,7 +2422,8 @@ function hasCurrentValue(assets, uri) {
 }
 
 /**
- * @param {AssetStoreLike} assets
+ * @internal
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {string} uri
  * @returns {boolean}
  */
@@ -2530,21 +2539,21 @@ var LocalAssetStore = /*#__PURE__*/Object.freeze({
   Fallback: Fallback,
   Loading: Loading,
   cacheAndResolve: cacheAndResolve,
-  cacheAndResolveAsFallback: cacheAndResolveAsFallback,
   cancelAndReject: cancelAndReject,
-  clearStore: clearStore,
-  create: create$1,
+  createStore: createStore,
   currentFallback: currentFallback,
-  currentKeys: currentKeys,
   currentLoading: currentLoading,
   currentValue: currentValue,
   deleteAndReject: deleteAndReject,
   deleteAndRejectByGlob: deleteAndRejectByGlob,
+  fallbackFor: fallbackFor,
   hasCurrentValue: hasCurrentValue,
   isCurrentLoading: isCurrentLoading,
-  loadAllThenCache: loadAllThenCache,
+  keys: keys,
+  loadAll: loadAll,
   loadThenCache: loadThenCache,
-  promiseWhenLoaded: promiseWhenLoaded
+  promiseWhenLoaded: promiseWhenLoaded,
+  resetStore: resetStore
 });
 
 /**
@@ -2563,7 +2572,7 @@ function create(uri, loader, opts = /** @type {any} */ ({})) {
 }
 
 /**
- * @param {import('./LocalAssetStore').AssetStoreLike} assets
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {import('../AssetTypes').AssetLike<any, any>} target
  * @returns {boolean}
  */
@@ -2573,11 +2582,11 @@ function isCached(assets, target) {
 
 /**
  * @template T
- * @param {import('./LocalAssetStore').AssetStoreLike} assets
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {import('../AssetTypes').AssetLike<T, any>} target
  * @returns {T|null}
  */
-function get(assets, target) {
+function getOrNull(assets, target) {
   if (hasCurrentValue(assets, target.uri)) {
     return /** @type {T} */ (currentValue(assets, target.uri));
   }
@@ -2590,12 +2599,12 @@ function get(assets, target) {
 
 /**
  * @template T
- * @param {import('./LocalAssetStore').AssetStoreLike} assets
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {import('../AssetTypes').AssetLike<T, any>} target
  * @returns {T}
  */
 function getOrThrow(assets, target) {
-  let result = get(assets, target);
+  let result = getOrNull(assets, target);
   if (result !== null) {
     return result;
   }
@@ -2608,7 +2617,7 @@ function getOrThrow(assets, target) {
  * Pre-load target into cache ONLY if not yet loaded or loading. Otherwise, will throw.
  * 
  * @template T
- * @param {import('./LocalAssetStore').AssetStoreLike} assets
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {import('../AssetTypes').AssetLike<T, any>} target
  * @param {number} timeout
  * @returns {Promise<T>}
@@ -2633,7 +2642,7 @@ async function preload(assets, target, timeout) {
  * Load target into cache if not yet loaded. Otherwise, return already cached value or loading promise.
  * 
  * @template T
- * @param {import('./LocalAssetStore').AssetStoreLike} assets
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {import('../AssetTypes').AssetLike<T, any>} target
  * @param {number} timeout
  * @returns {Promise<T>}
@@ -2660,7 +2669,7 @@ async function load(assets, target, timeout) {
  * Re-load target into cache. Will always replace cached value.
  * 
  * @template T
- * @param {import('./LocalAssetStore').AssetStoreLike} assets
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {import('../AssetTypes').AssetLike<T, any>} target
  * @param {number} timeout
  * @returns {Promise<T>}
@@ -2678,7 +2687,7 @@ async function reload(assets, target, timeout) {
 
 /**
  * @template T
- * @param {import('./LocalAssetStore').AssetStoreLike} assets
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {import('../AssetTypes').AssetLike<T, any>} target
  * @returns {Promise<boolean>}
  */
@@ -2690,7 +2699,7 @@ async function cancel(assets, target) {
  * Cache target with value. Will always replace cached value.
  * 
  * @template T
- * @param {import('./LocalAssetStore').AssetStoreLike} assets
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {import('../AssetTypes').AssetLike<T, any>} target
  * @param {T} value
  */
@@ -2702,7 +2711,7 @@ async function cachePut(assets, target, value) {
  * Cache target with value ONLY if not yet loaded or loading. Otherwise, will throw.
  * 
  * @template T
- * @param {import('./LocalAssetStore').AssetStoreLike} assets
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {import('../AssetTypes').AssetLike<T, any>} target
  * @param {T} value
  */
@@ -2717,7 +2726,7 @@ async function cacheSafely(assets, target, value) {
 
 /**
  * @template T
- * @param {import('./LocalAssetStore').AssetStoreLike} assets
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {import('../AssetTypes').AssetLike<T, any>} target
  */
 async function dispose(assets, target) {
@@ -2731,49 +2740,13 @@ var LocalAsset = /*#__PURE__*/Object.freeze({
   cancel: cancel,
   create: create,
   dispose: dispose,
-  get: get,
+  getOrNull: getOrNull,
   getOrThrow: getOrThrow,
   isCached: isCached,
   load: load,
   preload: preload,
   reload: reload
 });
-
-class AssetStore {
-  /** @type {Record<string, any>} */
-  cached = {};
-  /** @type {Record<string, LocalAssetStore.Loading>} */
-  loadings = {};
-  /** @type {Array<LocalAssetStore.Fallback>} */
-  defaults = [];
-
-  /**
-   * @param {Array<import('./AssetTypes').AssetLike<any, any>>} targets
-   * @param {number} timeout
-   */
-  async loadAll(targets, timeout) {
-    loadAllThenCache(this, targets, timeout);
-  }
-
-  /**
-   * Register a fallback value for any asset with uri matching the
-   * glob pattern.
-   * 
-   * @param {string|import('./GlobExp').GlobExp} glob 
-   * @param {any} value 
-   */
-  fallbackFor(glob, value) {
-    cacheAndResolveAsFallback(this, glob, value);
-  }
-
-  keys() {
-    return currentKeys(this);
-  }
-
-  async clear() {
-    clearStore(this);
-  }
-}
 
 /**
  * @template T
@@ -2786,7 +2759,7 @@ class Asset {
   /** The default timeout for loading assets. */
   static DEFAULT_TIMEOUT = 5_000;
   /** The global asset store. */
-  static globalCache = new AssetStore();
+  static globalCache = createStore();
 
   /**
    * Create an asset to load target resource from uri. Assets with
@@ -2823,8 +2796,8 @@ class Asset {
   }
 
   /** Get the cached or default asset value. Returns null if not present. */
-  get() {
-    return get(Asset.globalCache, this);
+  getOrNull() {
+    return getOrNull(Asset.globalCache, this);
   }
 
   /** Get the cached or default asset value. Throws if not present. */

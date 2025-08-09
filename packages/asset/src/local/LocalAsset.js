@@ -26,7 +26,7 @@ export function create(uri, loader, opts = /** @type {any} */ ({})) {
 }
 
 /**
- * @param {import('./LocalAssetStore').AssetStoreLike} assets
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {import('../AssetTypes').AssetLike<any, any>} target
  * @returns {boolean}
  */
@@ -36,7 +36,7 @@ export function isCached(assets, target) {
 
 /**
  * @template T
- * @param {import('./LocalAssetStore').AssetStoreLike} assets
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {import('../AssetTypes').AssetLike<T, any>} target
  * @returns {T|null}
  */
@@ -53,7 +53,7 @@ export function getOrNull(assets, target) {
 
 /**
  * @template T
- * @param {import('./LocalAssetStore').AssetStoreLike} assets
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {import('../AssetTypes').AssetLike<T, any>} target
  * @returns {T}
  */
@@ -71,7 +71,7 @@ export function getOrThrow(assets, target) {
  * Pre-load target into cache ONLY if not yet loaded or loading. Otherwise, will throw.
  * 
  * @template T
- * @param {import('./LocalAssetStore').AssetStoreLike} assets
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {import('../AssetTypes').AssetLike<T, any>} target
  * @param {number} timeout
  * @returns {Promise<T>}
@@ -96,7 +96,7 @@ export async function preload(assets, target, timeout) {
  * Load target into cache if not yet loaded. Otherwise, return already cached value or loading promise.
  * 
  * @template T
- * @param {import('./LocalAssetStore').AssetStoreLike} assets
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {import('../AssetTypes').AssetLike<T, any>} target
  * @param {number} timeout
  * @returns {Promise<T>}
@@ -123,7 +123,7 @@ export async function load(assets, target, timeout) {
  * Re-load target into cache. Will always replace cached value.
  * 
  * @template T
- * @param {import('./LocalAssetStore').AssetStoreLike} assets
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {import('../AssetTypes').AssetLike<T, any>} target
  * @param {number} timeout
  * @returns {Promise<T>}
@@ -141,7 +141,7 @@ export async function reload(assets, target, timeout) {
 
 /**
  * @template T
- * @param {import('./LocalAssetStore').AssetStoreLike} assets
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {import('../AssetTypes').AssetLike<T, any>} target
  * @returns {Promise<boolean>}
  */
@@ -153,7 +153,7 @@ export async function cancel(assets, target) {
  * Cache target with value. Will always replace cached value.
  * 
  * @template T
- * @param {import('./LocalAssetStore').AssetStoreLike} assets
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {import('../AssetTypes').AssetLike<T, any>} target
  * @param {T} value
  */
@@ -165,7 +165,7 @@ export async function cachePut(assets, target, value) {
  * Cache target with value ONLY if not yet loaded or loading. Otherwise, will throw.
  * 
  * @template T
- * @param {import('./LocalAssetStore').AssetStoreLike} assets
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {import('../AssetTypes').AssetLike<T, any>} target
  * @param {T} value
  */
@@ -180,7 +180,7 @@ export async function cacheSafely(assets, target, value) {
 
 /**
  * @template T
- * @param {import('./LocalAssetStore').AssetStoreLike} assets
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {import('../AssetTypes').AssetLike<T, any>} target
  */
 export async function dispose(assets, target) {

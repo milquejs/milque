@@ -1,5 +1,4 @@
-import { AssetStore } from './AssetStore';
-import { LocalAsset } from './local';
+import { LocalAsset, LocalAssetStore } from './local';
 
 /**
  * @template T
@@ -12,7 +11,7 @@ export class Asset {
   /** The default timeout for loading assets. */
   static DEFAULT_TIMEOUT = 5_000;
   /** The global asset store. */
-  static globalCache = new AssetStore();
+  static globalCache = LocalAssetStore.createStore();
 
   /**
    * Create an asset to load target resource from uri. Assets with

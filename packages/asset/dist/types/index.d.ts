@@ -14,8 +14,7 @@ declare class GlobExp {
     test(string: string): boolean;
 }
 
-/** @typedef {ReturnType<create>} AssetStoreLike */
-declare function create$1(): {
+declare function createStore(): {
     /** @type {Record<string, any>} */
     cached: Record<string, any>;
     /** @type {Record<string, Loading>} */
@@ -26,9 +25,10 @@ declare function create$1(): {
 /**
  * Load asset using a loader with the given filePath.
  *
+ * @private
  * @template T
  * @template {object} Options
- * @param {AssetStoreLike} assets
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {string} uri
  * @param {string} filePath
  * @param {import('../AssetTypes').AssetLoader<T, Options>} loader
@@ -38,85 +38,95 @@ declare function create$1(): {
  */
 declare function loadThenCache<T, Options extends object>(assets: AssetStoreLike, uri: string, filePath: string, loader: AssetLoader$1<T, Options>, opts: Options, timeout: number): Promise<T>;
 /**
- * @param {AssetStoreLike} assets
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {Array<import('../AssetTypes').AssetLike<?, ?>>} targets
  * @param {number} timeout
  */
-declare function loadAllThenCache(assets: AssetStoreLike, targets: Array<AssetLike$1<unknown, unknown>>, timeout: number): Promise<void>;
+declare function loadAll(assets: AssetStoreLike, targets: Array<AssetLike$1<unknown, unknown>>, timeout: number): Promise<void>;
 /**
+ * @internal
  * @template T
- * @param {AssetStoreLike} assets
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {string} uri
  * @param {T} value
  */
 declare function cacheAndResolve<T>(assets: AssetStoreLike, uri: string, value: T): void;
 /**
  * @template T
- * @param {AssetStoreLike} assets
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {string|GlobExp} glob
  * @param {T} value
  */
-declare function cacheAndResolveAsFallback<T>(assets: AssetStoreLike, glob: string | GlobExp, value: T): void;
+declare function fallbackFor<T>(assets: AssetStoreLike, glob: string | GlobExp, value: T): void;
 /**
- * @param {AssetStoreLike} assets
+ * @internal
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {string} uri
  */
 declare function deleteAndReject(assets: AssetStoreLike, uri: string): void;
 /**
- * @param {AssetStoreLike} assets
+ * @internal
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {string|GlobExp} glob
  */
 declare function deleteAndRejectByGlob(assets: AssetStoreLike, glob: string | GlobExp): void;
 /**
  * Cancel loading the uri, if loading. Otherwise, do nothing and return false.
  *
- * @param {AssetStoreLike} assets
+ * @internal
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {string} uri
  * @param {string} [rejectMessage]
  */
 declare function cancelAndReject(assets: AssetStoreLike, uri: string, rejectMessage?: string): boolean;
 /**
- * @param {AssetStoreLike} assets
+ * @internal
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {string} uri
  * @param {number} timeout
  * @returns {Promise<object>}
  */
 declare function promiseWhenLoaded(assets: AssetStoreLike, uri: string, timeout: number): Promise<object>;
 /**
- * @param {AssetStoreLike} assets
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  */
-declare function clearStore(assets: AssetStoreLike): void;
+declare function resetStore(assets: AssetStoreLike): void;
 /**
- * @param {AssetStoreLike} assets
+ * @internal
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {string} uri
  * @returns {Promise<object>}
  */
 declare function currentLoading(assets: AssetStoreLike, uri: string): Promise<object>;
 /**
- * @param {AssetStoreLike} assets
+ * @internal
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {string} uri
  * @returns {object|null}
  */
 declare function currentFallback(assets: AssetStoreLike, uri: string): object | null;
 /**
- * @param {AssetStoreLike} assets
+ * @internal
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {string} uri
  * @returns {object}
  */
 declare function currentValue(assets: AssetStoreLike, uri: string): object;
 /**
- * @param {AssetStoreLike} assets
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @returns {Array<string>}
  */
-declare function currentKeys(assets: AssetStoreLike): Array<string>;
+declare function keys(assets: AssetStoreLike): Array<string>;
 /**
- * @param {AssetStoreLike} assets
+ * @internal
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {string} uri
  * @returns {boolean}
  */
 declare function hasCurrentValue(assets: AssetStoreLike, uri: string): boolean;
 /**
- * @param {AssetStoreLike} assets
+ * @internal
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {string} uri
  * @returns {boolean}
  */
@@ -175,39 +185,51 @@ declare class Loading {
      */
     reject(reason: any): void;
 }
-type AssetStoreLike = ReturnType<typeof create$1>;
 
-type LocalAssetStore_AssetStoreLike = AssetStoreLike;
 type LocalAssetStore_Fallback = Fallback;
 declare const LocalAssetStore_Fallback: typeof Fallback;
 type LocalAssetStore_Loading = Loading;
 declare const LocalAssetStore_Loading: typeof Loading;
 declare const LocalAssetStore_cacheAndResolve: typeof cacheAndResolve;
-declare const LocalAssetStore_cacheAndResolveAsFallback: typeof cacheAndResolveAsFallback;
 declare const LocalAssetStore_cancelAndReject: typeof cancelAndReject;
-declare const LocalAssetStore_clearStore: typeof clearStore;
+declare const LocalAssetStore_createStore: typeof createStore;
 declare const LocalAssetStore_currentFallback: typeof currentFallback;
-declare const LocalAssetStore_currentKeys: typeof currentKeys;
 declare const LocalAssetStore_currentLoading: typeof currentLoading;
 declare const LocalAssetStore_currentValue: typeof currentValue;
 declare const LocalAssetStore_deleteAndReject: typeof deleteAndReject;
 declare const LocalAssetStore_deleteAndRejectByGlob: typeof deleteAndRejectByGlob;
+declare const LocalAssetStore_fallbackFor: typeof fallbackFor;
 declare const LocalAssetStore_hasCurrentValue: typeof hasCurrentValue;
 declare const LocalAssetStore_isCurrentLoading: typeof isCurrentLoading;
-declare const LocalAssetStore_loadAllThenCache: typeof loadAllThenCache;
+declare const LocalAssetStore_keys: typeof keys;
+declare const LocalAssetStore_loadAll: typeof loadAll;
 declare const LocalAssetStore_loadThenCache: typeof loadThenCache;
 declare const LocalAssetStore_promiseWhenLoaded: typeof promiseWhenLoaded;
+declare const LocalAssetStore_resetStore: typeof resetStore;
 declare namespace LocalAssetStore {
-  export { LocalAssetStore_Fallback as Fallback, LocalAssetStore_Loading as Loading, LocalAssetStore_cacheAndResolve as cacheAndResolve, LocalAssetStore_cacheAndResolveAsFallback as cacheAndResolveAsFallback, LocalAssetStore_cancelAndReject as cancelAndReject, LocalAssetStore_clearStore as clearStore, create$1 as create, LocalAssetStore_currentFallback as currentFallback, LocalAssetStore_currentKeys as currentKeys, LocalAssetStore_currentLoading as currentLoading, LocalAssetStore_currentValue as currentValue, LocalAssetStore_deleteAndReject as deleteAndReject, LocalAssetStore_deleteAndRejectByGlob as deleteAndRejectByGlob, LocalAssetStore_hasCurrentValue as hasCurrentValue, LocalAssetStore_isCurrentLoading as isCurrentLoading, LocalAssetStore_loadAllThenCache as loadAllThenCache, LocalAssetStore_loadThenCache as loadThenCache, LocalAssetStore_promiseWhenLoaded as promiseWhenLoaded };
-  export type { LocalAssetStore_AssetStoreLike as AssetStoreLike };
+  export {
+    LocalAssetStore_Fallback as Fallback,
+    LocalAssetStore_Loading as Loading,
+    LocalAssetStore_cacheAndResolve as cacheAndResolve,
+    LocalAssetStore_cancelAndReject as cancelAndReject,
+    LocalAssetStore_createStore as createStore,
+    LocalAssetStore_currentFallback as currentFallback,
+    LocalAssetStore_currentLoading as currentLoading,
+    LocalAssetStore_currentValue as currentValue,
+    LocalAssetStore_deleteAndReject as deleteAndReject,
+    LocalAssetStore_deleteAndRejectByGlob as deleteAndRejectByGlob,
+    LocalAssetStore_fallbackFor as fallbackFor,
+    LocalAssetStore_hasCurrentValue as hasCurrentValue,
+    LocalAssetStore_isCurrentLoading as isCurrentLoading,
+    LocalAssetStore_keys as keys,
+    LocalAssetStore_loadAll as loadAll,
+    LocalAssetStore_loadThenCache as loadThenCache,
+    LocalAssetStore_promiseWhenLoaded as promiseWhenLoaded,
+    LocalAssetStore_resetStore as resetStore,
+  };
 }
 
-type AssetLoader$1<T, Options extends object> = (uri: string, opts: Options, assets: AssetStoreLike) => Promise<T>;
-type AssetLike$1<T, Options extends object> = {
-    uri: string;
-    loader: AssetLoader$1<T, Options>;
-    opts?: Options;
-};
+type AssetStoreLike = ReturnType<typeof createStore>;
 
 /**
  * @template T
@@ -222,21 +244,21 @@ declare function create<T, Options extends object>(uri: string, loader: AssetLoa
     readonly opts: Options;
 };
 /**
- * @param {import('./LocalAssetStore').AssetStoreLike} assets
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {import('../AssetTypes').AssetLike<any, any>} target
  * @returns {boolean}
  */
 declare function isCached(assets: AssetStoreLike, target: AssetLike$1<any, any>): boolean;
 /**
  * @template T
- * @param {import('./LocalAssetStore').AssetStoreLike} assets
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {import('../AssetTypes').AssetLike<T, any>} target
  * @returns {T|null}
  */
-declare function get<T>(assets: AssetStoreLike, target: AssetLike$1<T, any>): T | null;
+declare function getOrNull<T>(assets: AssetStoreLike, target: AssetLike$1<T, any>): T | null;
 /**
  * @template T
- * @param {import('./LocalAssetStore').AssetStoreLike} assets
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {import('../AssetTypes').AssetLike<T, any>} target
  * @returns {T}
  */
@@ -245,7 +267,7 @@ declare function getOrThrow<T>(assets: AssetStoreLike, target: AssetLike$1<T, an
  * Pre-load target into cache ONLY if not yet loaded or loading. Otherwise, will throw.
  *
  * @template T
- * @param {import('./LocalAssetStore').AssetStoreLike} assets
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {import('../AssetTypes').AssetLike<T, any>} target
  * @param {number} timeout
  * @returns {Promise<T>}
@@ -255,7 +277,7 @@ declare function preload<T>(assets: AssetStoreLike, target: AssetLike$1<T, any>,
  * Load target into cache if not yet loaded. Otherwise, return already cached value or loading promise.
  *
  * @template T
- * @param {import('./LocalAssetStore').AssetStoreLike} assets
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {import('../AssetTypes').AssetLike<T, any>} target
  * @param {number} timeout
  * @returns {Promise<T>}
@@ -265,7 +287,7 @@ declare function load<T>(assets: AssetStoreLike, target: AssetLike$1<T, any>, ti
  * Re-load target into cache. Will always replace cached value.
  *
  * @template T
- * @param {import('./LocalAssetStore').AssetStoreLike} assets
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {import('../AssetTypes').AssetLike<T, any>} target
  * @param {number} timeout
  * @returns {Promise<T>}
@@ -273,7 +295,7 @@ declare function load<T>(assets: AssetStoreLike, target: AssetLike$1<T, any>, ti
 declare function reload<T>(assets: AssetStoreLike, target: AssetLike$1<T, any>, timeout: number): Promise<T>;
 /**
  * @template T
- * @param {import('./LocalAssetStore').AssetStoreLike} assets
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {import('../AssetTypes').AssetLike<T, any>} target
  * @returns {Promise<boolean>}
  */
@@ -282,7 +304,7 @@ declare function cancel<T>(assets: AssetStoreLike, target: AssetLike$1<T, any>):
  * Cache target with value. Will always replace cached value.
  *
  * @template T
- * @param {import('./LocalAssetStore').AssetStoreLike} assets
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {import('../AssetTypes').AssetLike<T, any>} target
  * @param {T} value
  */
@@ -291,14 +313,14 @@ declare function cachePut<T>(assets: AssetStoreLike, target: AssetLike$1<T, any>
  * Cache target with value ONLY if not yet loaded or loading. Otherwise, will throw.
  *
  * @template T
- * @param {import('./LocalAssetStore').AssetStoreLike} assets
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {import('../AssetTypes').AssetLike<T, any>} target
  * @param {T} value
  */
 declare function cacheSafely<T>(assets: AssetStoreLike, target: AssetLike$1<T, any>, value: T): Promise<void>;
 /**
  * @template T
- * @param {import('./LocalAssetStore').AssetStoreLike} assets
+ * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {import('../AssetTypes').AssetLike<T, any>} target
  */
 declare function dispose<T>(assets: AssetStoreLike, target: AssetLike$1<T, any>): Promise<void>;
@@ -308,7 +330,7 @@ declare const LocalAsset_cacheSafely: typeof cacheSafely;
 declare const LocalAsset_cancel: typeof cancel;
 declare const LocalAsset_create: typeof create;
 declare const LocalAsset_dispose: typeof dispose;
-declare const LocalAsset_get: typeof get;
+declare const LocalAsset_getOrNull: typeof getOrNull;
 declare const LocalAsset_getOrThrow: typeof getOrThrow;
 declare const LocalAsset_isCached: typeof isCached;
 declare const LocalAsset_load: typeof load;
@@ -321,7 +343,7 @@ declare namespace LocalAsset {
     LocalAsset_cancel as cancel,
     LocalAsset_create as create,
     LocalAsset_dispose as dispose,
-    LocalAsset_get as get,
+    LocalAsset_getOrNull as getOrNull,
     LocalAsset_getOrThrow as getOrThrow,
     LocalAsset_isCached as isCached,
     LocalAsset_load as load,
@@ -330,29 +352,12 @@ declare namespace LocalAsset {
   };
 }
 
-declare class AssetStore {
-    /** @type {Record<string, any>} */
-    cached: Record<string, any>;
-    /** @type {Record<string, LocalAssetStore.Loading>} */
-    loadings: Record<string, Loading>;
-    /** @type {Array<LocalAssetStore.Fallback>} */
-    defaults: Array<Fallback>;
-    /**
-     * @param {Array<import('./AssetTypes').AssetLike<any, any>>} targets
-     * @param {number} timeout
-     */
-    loadAll(targets: Array<AssetLike$1<any, any>>, timeout: number): Promise<void>;
-    /**
-     * Register a fallback value for any asset with uri matching the
-     * glob pattern.
-     *
-     * @param {string|import('./GlobExp').GlobExp} glob
-     * @param {any} value
-     */
-    fallbackFor(glob: string | GlobExp, value: any): void;
-    keys(): string[];
-    clear(): Promise<void>;
-}
+type AssetLoader$1<T, Options extends object> = (uri: string, opts: Options, assets: AssetStoreLike) => Promise<T>;
+type AssetLike$1<T, Options extends object> = {
+    uri: string;
+    loader: AssetLoader$1<T, Options>;
+    opts?: Options;
+};
 
 /**
  * @template T
@@ -364,7 +369,11 @@ declare class Asset<T, Options extends object> {
     /** The default timeout for loading assets. */
     static DEFAULT_TIMEOUT: number;
     /** The global asset store. */
-    static globalCache: AssetStore;
+    static globalCache: {
+        cached: Record<string, any>;
+        loadings: Record<string, Loading>;
+        defaults: Array<Fallback>;
+    };
     /**
      * Create an asset to load target resource from uri. Assets with
      * the same uri will share the same resource instance.
@@ -392,7 +401,7 @@ declare class Asset<T, Options extends object> {
     /** Whether this asset has a loaded value in the global cache. */
     isCached(): boolean;
     /** Get the cached or default asset value. Returns null if not present. */
-    get(): T | null;
+    getOrNull(): T | null;
     /** Get the cached or default asset value. Throws if not present. */
     getOrThrow(): T;
     /** Try load and cache the result for this asset, only if not yet loaded. */
