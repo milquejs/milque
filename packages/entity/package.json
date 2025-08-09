@@ -1,0 +1,21 @@
+{
+  "name": "@milquejs/entity",
+  "type": "module",
+  "version": "1.0.0",
+  "description": "A milque.js package for managing entity and its components.",
+  "main": "dist/umd/index.js",
+  "module": "dist/esm/index.js",
+  "types": "dist/types/index.d.ts",
+  "scripts": {
+    "format": "prettier --write .",
+    "build": "rollup --config",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@milquejs/prettier-config": "^1.0.0",
+    "@milquejs/rollup-config": "^1.0.0"
+  }
+}
