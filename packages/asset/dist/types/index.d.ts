@@ -229,7 +229,11 @@ declare namespace LocalAssetStore {
   };
 }
 
-type AssetStoreLike = ReturnType<typeof createStore>;
+type AssetStoreLike = {
+    cached: Record<string, any>;
+    loadings: Record<string, Loading>;
+    defaults: Array<Fallback>;
+};
 
 /**
  * @template T
