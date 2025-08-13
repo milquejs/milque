@@ -147,6 +147,78 @@ type EntityPoolLike = {
     deadEntityIds: Array<EntityId>;
 };
 
+/**
+ * @template {import('./MatchTypes').MatchClass<any>[]} Components
+ * @typedef {MatchFilter<'SomeOf', Components, InstanceType<Components[number]> | null>} MatchFilterSomeOf
+ */
+/**
+ * @template {import('./MatchTypes').MatchClass<any>[]} Components
+ * @typedef {MatchFilter<'NoneOf', Components, null>} MatchFilterNoneOf
+ */
+/**
+ * @template {'SomeOf'|'NoneOf'} Name
+ * @template {import('./MatchTypes').MatchClass<any>[]} Components
+ * @template OutputType
+ */
+declare class MatchFilter<Name extends "SomeOf" | "NoneOf", Components extends MatchClass<any>[], OutputType> {
+    /**
+     * Match some or none of the matching components.
+     *
+     * @template {import('./MatchTypes').MatchClass<any>[]} T
+     * @param {T} componentClasses
+     * @returns {MatchFilterSomeOf<T>}
+     */
+    static SomeOf<T extends MatchClass<any>[]>(...componentClasses: T): MatchFilterSomeOf<T>;
+    /**
+     * Match none of the matching components.
+     *
+     * @template {import('./MatchTypes').MatchClass<any>[]} T
+     * @param {T} componentClasses
+     * @returns {MatchFilterNoneOf<T>}
+     */
+    static NoneOf<T extends MatchClass<any>[]>(...componentClasses: T): MatchFilterNoneOf<T>;
+    /**
+     * @param {Name} name
+     * @param {Components} keys
+     * @param {OutputType} output
+     */
+    constructor(name: Name, keys: Components, output: OutputType);
+    /** @readonly */
+    readonly name: Name;
+    /** @readonly */
+    readonly keys: Components;
+    /** @readonly */
+    readonly output: OutputType;
+}
+type MatchFilterSomeOf<Components extends MatchClass<any>[]> = MatchFilter<"SomeOf", Components, InstanceType<Components[number]> | null>;
+type MatchFilterNoneOf<Components extends MatchClass<any>[]> = MatchFilter<"NoneOf", Components, null>;
+
+type MatchClass<T extends abstract new (...args: any) => any> = T & {
+    name: string;
+};
+type MatchTemplate = Record<string, MatchClass<any> | MatchFilter<any, any, any>>;
+/**
+ * <T>
+ */
+type MatchTemplateInstancesOf<T extends MatchTemplate> = { [K in keyof T]: T[K] extends EntityId ? EntityId : T[K] extends MatchFilter<any, any, any> ? T[K]["output"] : T[K] extends MatchClass<infer V> ? InstanceType<V> : never; };
+type MatchResult<T extends MatchTemplate> = MatchTemplateInstancesOf<T>;
+
+/**
+ * @template {import('./MatchTypes').MatchTemplate} T
+ * @param {import('../local').EntityPoolLike} entityPool
+ * @param {T} selector
+ * @param {EntityId} [entityId]
+ * @returns {import('./MatchTypes').MatchResult<T>|null}
+ */
+declare function find<T extends MatchTemplate>(entityPool: EntityPoolLike, selector: T, entityId?: EntityId): MatchResult<T> | null;
+/**
+ * @template {import('./MatchTypes').MatchTemplate} T
+ * @param {import('../local').EntityPoolLike} entityPool
+ * @param {T} selector
+ * @returns {Generator<import('./MatchTypes').MatchResult<T>>}
+ */
+declare function findAll<T extends MatchTemplate>(entityPool: EntityPoolLike, selector: T): Generator<MatchResult<T>>;
+
 /** @returns {import('./EntityTypes').EntityPoolLike} */
 declare function createPool(): EntityPoolLike;
 /**
@@ -198,114 +270,121 @@ declare function lookupEntity<T>(entityPool: EntityPoolLike, componentClass: Com
  * @template T
  * @param {import('./EntityTypes').EntityPoolLike} entityPool
  * @param {import('../component').ComponentClass<T>} componentClass
- * @returns {Iterable<T>}
+ * @returns {Iterable<EntityId> & ArrayLike<EntityId>}
  */
-declare function values<T>(entityPool: EntityPoolLike, componentClass: ComponentClass<T>): Iterable<T>;
+declare function keysOf<T>(entityPool: EntityPoolLike, componentClass: ComponentClass<T>): Iterable<EntityId> & ArrayLike<EntityId>;
+/**
+ * @template T
+ * @param {import('./EntityTypes').EntityPoolLike} entityPool
+ * @param {import('../component').ComponentClass<T>} componentClass
+ * @returns {Iterable<T> & ArrayLike<T>}
+ */
+declare function instancesOf<T>(entityPool: EntityPoolLike, componentClass: ComponentClass<T>): Iterable<T> & ArrayLike<T>;
+/**
+ * @template T
+ * @param {import('./EntityTypes').EntityPoolLike} entityPool
+ * @param {import('../component').ComponentClass<T>} componentClass
+ * @returns {number}
+ */
+declare function countComponents<T>(entityPool: EntityPoolLike, componentClass: ComponentClass<T>): number;
 
 declare const LocalEntityPool_attachComponent: typeof attachComponent;
+declare const LocalEntityPool_countComponents: typeof countComponents;
 declare const LocalEntityPool_createPool: typeof createPool;
 declare const LocalEntityPool_deleteEntity: typeof deleteEntity;
 declare const LocalEntityPool_detachComponent: typeof detachComponent;
+declare const LocalEntityPool_find: typeof find;
+declare const LocalEntityPool_findAll: typeof findAll;
+declare const LocalEntityPool_instancesOf: typeof instancesOf;
+declare const LocalEntityPool_keysOf: typeof keysOf;
 declare const LocalEntityPool_lookupComponent: typeof lookupComponent;
 declare const LocalEntityPool_lookupEntity: typeof lookupEntity;
 declare const LocalEntityPool_newEntity: typeof newEntity;
 declare const LocalEntityPool_resetPool: typeof resetPool;
-declare const LocalEntityPool_values: typeof values;
 declare namespace LocalEntityPool {
   export {
     LocalEntityPool_attachComponent as attachComponent,
+    LocalEntityPool_countComponents as countComponents,
     LocalEntityPool_createPool as createPool,
     LocalEntityPool_deleteEntity as deleteEntity,
     LocalEntityPool_detachComponent as detachComponent,
+    LocalEntityPool_find as find,
+    LocalEntityPool_findAll as findAll,
+    LocalEntityPool_instancesOf as instancesOf,
+    LocalEntityPool_keysOf as keysOf,
     LocalEntityPool_lookupComponent as lookupComponent,
     LocalEntityPool_lookupEntity as lookupEntity,
     LocalEntityPool_newEntity as newEntity,
     LocalEntityPool_resetPool as resetPool,
-    LocalEntityPool_values as values,
   };
 }
 
-type MatchClass<T extends abstract new (...args: any) => any> = T & {
-    name: string;
-};
-type Match<T> = {
-    matchId: string;
-    template: T;
-    all: Array<MatchClass<any>>;
-    any: Array<MatchClass<any>>;
-    none: Array<MatchClass<any>>;
-    maybe: Array<MatchClass<any>>;
-};
-type MatchTemplate = Record<string, MatchClass<any>>;
-/**
- * <T>
- */
-type MatchTemplateInstancesOf<T extends MatchTemplate> = { [K in keyof T]: T[K] extends EntityId ? EntityId : T[K] extends MatchClass<infer V> ? InstanceType<V> : never; };
-type MatchResult<T extends MatchTemplate> = MatchTemplateInstancesOf<T>;
-
-/**
- * @template {Record<string, import('./MatchTypes').MatchClass<any>>} T
- * @param {T} template
- * @returns {import('./MatchTypes').Match<T>}
- */
-declare function createMatch<T extends Record<string, MatchClass<any>>>(template: T): Match<T>;
-
-declare const MatchFactory_createMatch: typeof createMatch;
-declare namespace MatchFactory {
-  export {
-    MatchFactory_createMatch as createMatch,
-  };
-}
-
-/**
- * @template {object} T
- * @param {import('../local').EntityPoolLike} entityPool
- * @param {import('./MatchTypes').Match<T>} match
- * @param {EntityId} [entityId]
- * @returns {import('./MatchTypes').MatchResult<T>|null}
- */
-declare function queryMatch<T extends object>(entityPool: EntityPoolLike, match: Match<T>, entityId?: EntityId): MatchResult<T> | null;
-/**
- * @template {object} T
- * @param {import('../local').EntityPoolLike} entityPool
- * @param {import('./MatchTypes').Match<T>} match
- * @returns {Generator<import('./MatchTypes').MatchResult<T>>}
- */
-declare function queryMatchAll<T extends object>(entityPool: EntityPoolLike, match: Match<T>): Generator<MatchResult<T>>;
-
-/**
- * @template {import('../match').MatchTemplate} T
- */
-declare class Archetype<T extends MatchTemplate> {
+declare class EntityManager {
+    /** @type {import('./local').EntityPoolLike['components']} */
+    components: EntityPoolLike["components"];
+    /** @type {import('./local').EntityPoolLike['nextAvailableEntityId']} */
+    nextAvailableEntityId: EntityPoolLike["nextAvailableEntityId"];
+    /** @type {import('./local').EntityPoolLike['unclaimedEntityIds']} */
+    unclaimedEntityIds: EntityPoolLike["unclaimedEntityIds"];
+    /** @type {import('./local').EntityPoolLike['deadEntityIds']} */
+    deadEntityIds: EntityPoolLike["deadEntityIds"];
+    newEntity(): number;
     /**
-     * @template {import('../match').MatchTemplate} T
-     * @param {T} components
+     * @param {EntityId} entityId
      */
-    static from<T_1 extends MatchTemplate>(components: T_1): Archetype<T_1>;
+    deleteEntity(entityId: EntityId): void;
     /**
-     * @private
-     * @param {T} components
+     * @template T
+     * @param {EntityId} entityId
+     * @param {import('./component').ComponentClass<T>} componentClass
      */
-    private constructor();
-    /** @private */
-    private components;
-    match: Match<T>;
+    attachComponent<T>(entityId: EntityId, componentClass: ComponentClass<T>): T;
     /**
-     * @param {import('../local').EntityPoolLike} entityPool
-     * @returns {import('../match').MatchResult<T>}
+     * @template T
+     * @param {EntityId} entityId
+     * @param {import('./component').ComponentClass<T>} componentClass
      */
-    newEntity(entityPool: EntityPoolLike): MatchResult<T>;
+    detachComponent<T>(entityId: EntityId, componentClass: ComponentClass<T>): boolean;
     /**
-     * @param {import('../local').EntityPoolLike} entityPool
+     * @template T
+     * @param {EntityId} entityId
+     * @param {import('./component').ComponentClass<T>} componentClass
+     */
+    lookupComponent<T>(entityId: EntityId, componentClass: ComponentClass<T>): T | null;
+    /**
+     * @template T
+     * @param {import('./component').ComponentClass<T>} componetClass
+     * @param {T} instance
+     */
+    lookupEntity<T>(componetClass: ComponentClass<T>, instance: T): number;
+    /**
+     * @template T
+     * @param {import('./component').ComponentClass<T>} componentClass
+     */
+    countComponents<T>(componentClass: ComponentClass<T>): number;
+    /**
+     * @template T
+     * @param {import('./component').ComponentClass<T>} componentClass
+     */
+    keysOf<T>(componentClass: ComponentClass<T>): Iterable<number> & ArrayLike<number>;
+    /**
+     * @template T
+     * @param {import('./component').ComponentClass<T>} componentClass
+     */
+    instancesOf<T>(componentClass: ComponentClass<T>): Iterable<T> & ArrayLike<T>;
+    /**
+     * @template {import('./match').MatchTemplate} T
+     * @param {T} selector
      * @param {EntityId} [entityId]
      */
-    query(entityPool: EntityPoolLike, entityId?: EntityId): MatchTemplateInstancesOf<T> | null;
+    find<T extends MatchTemplate>(selector: T, entityId?: EntityId): MatchTemplateInstancesOf<T> | null;
     /**
-     * @param {import('../local').EntityPoolLike} entityPool
+     * @template {import('./match').MatchTemplate} T
+     * @param {T} selector
      */
-    queryAll(entityPool: EntityPoolLike): Generator<MatchTemplateInstancesOf<T>, any, any>;
-    asMatch(): Match<T>;
+    findAll<T extends MatchTemplate>(selector: T): Generator<MatchTemplateInstancesOf<T>, void, any>;
+    resetPool(): void;
 }
 
-export { Archetype, ComponentFactory, EntityId, LocalEntityPool, MatchFactory, queryMatch, queryMatchAll };
-export type { ComponentClass, ComponentConstructor, EntityPoolLike, Match, MatchClass, MatchResult, MatchTemplate, MatchTemplateInstancesOf };
+export { ComponentFactory, EntityId, EntityManager, LocalEntityPool, MatchFilter };
+export type { ComponentClass, ComponentConstructor, EntityPoolLike, MatchClass, MatchFilterNoneOf, MatchFilterSomeOf, MatchResult, MatchTemplate, MatchTemplateInstancesOf };

@@ -1,4 +1,8 @@
 import { ComponentInstanceMap } from './ComponentInstanceMap';
+import { EntityId } from './EntityId';
+
+// This is not usual, but for the api, we will export it here.
+export * from '../match/MatchFinder';
 
 /** @returns {import('./EntityTypes').EntityPoolLike} */
 export function createPool() {
@@ -111,8 +115,28 @@ export function lookupEntity(entityPool, componentClass, componentInstance) {
  * @template T
  * @param {import('./EntityTypes').EntityPoolLike} entityPool 
  * @param {import('../component').ComponentClass<T>} componentClass 
- * @returns {Iterable<T>}
+ * @returns {Iterable<EntityId> & ArrayLike<EntityId>}
  */
-export function values(entityPool, componentClass) {
+export function keysOf(entityPool, componentClass) {
+  return entityPool.components[componentClass.name]?.keys() ?? [];
+}
+
+/**
+ * @template T
+ * @param {import('./EntityTypes').EntityPoolLike} entityPool 
+ * @param {import('../component').ComponentClass<T>} componentClass 
+ * @returns {Iterable<T> & ArrayLike<T>}
+ */
+export function instancesOf(entityPool, componentClass) {
   return entityPool.components[componentClass.name]?.values() ?? [];
+}
+
+/**
+ * @template T
+ * @param {import('./EntityTypes').EntityPoolLike} entityPool 
+ * @param {import('../component').ComponentClass<T>} componentClass 
+ * @returns {number}
+ */
+export function countComponents(entityPool, componentClass) {
+  return entityPool.components[componentClass.name]?.values().length ?? 0;
 }

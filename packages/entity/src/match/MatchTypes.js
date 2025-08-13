@@ -1,4 +1,4 @@
-import { EntityId } from '../local';
+import './MatchFinder'; // This is necessary to include this file in js.
 
 /**
  * @template {abstract new (...args: any) => any} T
@@ -6,23 +6,20 @@ import { EntityId } from '../local';
  */
 
 /**
- * @template T
- * @typedef Match
- * @property {string} matchId
- * @property {T} template
- * @property {Array<MatchClass<any>>} all
- * @property {Array<MatchClass<any>>} any
- * @property {Array<MatchClass<any>>} none
- * @property {Array<MatchClass<any>>} maybe
- */
-
-/**
- * @typedef {Record<string, MatchClass<any>>} MatchTemplate
+ * @typedef {Record<string, MatchClass<any>|import('./MatchFilter').MatchFilter<any, any, any>>} MatchTemplate
  */
 
 /**
  * @template {MatchTemplate} T
- * @typedef {{[K in keyof T]: T[K] extends EntityId ? EntityId : T[K] extends MatchClass<infer V> ? InstanceType<V> : never}} MatchTemplateInstancesOf<T>
+ * @typedef {{
+ *  [K in keyof T]: T[K] extends import('../local').EntityId
+ *    ? import('../local').EntityId
+ *    : T[K] extends import('./MatchFilter').MatchFilter<any, any, any>
+ *      ? T[K]['output']
+ *      : T[K] extends MatchClass<infer V>
+ *        ? InstanceType<V>
+ *        : never
+ * }} MatchTemplateInstancesOf<T>
  */
 
 /**
