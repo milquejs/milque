@@ -2730,7 +2730,7 @@ async function cacheSafely(assets, target, value) {
  * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {import('../AssetTypes').AssetLike<T, any>} target
  */
-async function dispose(assets, target) {
+async function unload(assets, target) {
   deleteAndReject(assets, target.uri);
 }
 
@@ -2740,13 +2740,13 @@ var LocalAsset = /*#__PURE__*/Object.freeze({
   cacheSafely: cacheSafely,
   cancel: cancel,
   create: create,
-  dispose: dispose,
   getOrNull: getOrNull,
   getOrThrow: getOrThrow,
   isCached: isCached,
   load: load,
   preload: preload,
-  reload: reload
+  reload: reload,
+  unload: unload
 });
 
 /**
@@ -2847,8 +2847,8 @@ class Asset {
   /**
    * Delete the value in cache for this asset, if already loaded.
    */
-  async dispose() {
-    dispose(Asset.globalCache, this);
+  async unload() {
+    unload(Asset.globalCache, this);
   }
 }
 

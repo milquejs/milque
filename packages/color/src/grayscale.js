@@ -1,7 +1,6 @@
 /**
- * @typedef {ReturnType<create>} Grayscale
+ * @returns {import('./ColorTypes').Grayscale}
  */
-
 export function create() {
   return 0x0;
 }
@@ -27,21 +26,21 @@ export function fromFloats(grayf, alphaf = 1.0) {
 }
 
 /**
- * @param {Grayscale} hexValue
+ * @param {import('./ColorTypes').Grayscale} hexValue
  */
 export function gray(hexValue) {
   return hexValue & 0xff;
 }
 
 /**
- * @param {Grayscale} hexValue
+ * @param {import('./ColorTypes').Grayscale} hexValue
  */
 export function grayf(hexValue) {
   return (hexValue & 0xff) / 255.0;
 }
 
 /**
- * @param {Grayscale} hexValue
+ * @param {import('./ColorTypes').Grayscale} hexValue
  */
 export function alpha(hexValue) {
   let result = (hexValue >> 8) & 0xff;
@@ -52,7 +51,7 @@ export function alpha(hexValue) {
 }
 
 /**
- * @param {Grayscale} hexValue
+ * @param {import('./ColorTypes').Grayscale} hexValue
  */
 export function alphaf(hexValue) {
   return alpha(hexValue) / 255.0;
@@ -61,8 +60,8 @@ export function alphaf(hexValue) {
 const OPACITY_EPSILON = 0.01;
 
 /**
- * @param {Grayscale} from
- * @param {Grayscale} to
+ * @param {import('./ColorTypes').Grayscale} from
+ * @param {import('./ColorTypes').Grayscale} to
  * @param {number} delta
  */
 export function mix(from = 0x0000, to = 0xffff, delta = 0.5) {
@@ -78,7 +77,7 @@ export function mix(from = 0x0000, to = 0xffff, delta = 0.5) {
 }
 
 /**
- * @param {Grayscale} hexValue
+ * @param {import('./ColorTypes').Grayscale} hexValue
  */
 export function toCSSColorString(hexValue) {
   if (typeof hexValue !== 'number') {
@@ -89,7 +88,7 @@ export function toCSSColorString(hexValue) {
 }
 
 /**
- * @param {Grayscale} hexValue
+ * @param {import('./ColorTypes').Grayscale} hexValue
  */
 export function toFloatVector(hexValue) {
   if (typeof hexValue !== 'number') {

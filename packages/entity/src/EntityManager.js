@@ -92,6 +92,15 @@ export class EntityManager {
   }
 
   /**
+   * @template T
+   * @param {import('./component').ComponentClass<T>} componentClass 
+   * @param {EntityId} [entityId]
+   */
+  findOne(componentClass, entityId) {
+    return LocalEntityPool.findOne(this, componentClass, entityId);
+  }
+
+  /**
    * @template {import('./match').MatchTemplate} T
    * @param {T} selector 
    */

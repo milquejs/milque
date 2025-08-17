@@ -1,5 +1,3 @@
-import './MatchFinder'; // This is necessary to include this file in js.
-
 /**
  * @template {abstract new (...args: any) => any} T
  * @typedef {T & { name: string }} MatchClass
@@ -26,3 +24,5 @@ import './MatchFinder'; // This is necessary to include this file in js.
  * @template {MatchTemplate} T
  * @typedef {MatchTemplateInstancesOf<T>} MatchResult
  */
+
+export {};

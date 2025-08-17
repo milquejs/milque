@@ -1,5 +1,3 @@
-import './ComponentFactory'; // This is necessary to include this file in js.
-
 /**
  * @template T
  * @typedef {{ name: string, new (): T }} ComponentConstructor
@@ -14,3 +12,5 @@ import './ComponentFactory'; // This is necessary to include this file in js.
  * @template T
  * @typedef {ComponentFactory<T>|ComponentConstructor<T>} ComponentClass
  */
+
+export {};

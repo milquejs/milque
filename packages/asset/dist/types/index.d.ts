@@ -327,32 +327,32 @@ declare function cacheSafely<T>(assets: AssetStoreLike, target: AssetLike$1<T, a
  * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {import('../AssetTypes').AssetLike<T, any>} target
  */
-declare function dispose<T>(assets: AssetStoreLike, target: AssetLike$1<T, any>): Promise<void>;
+declare function unload<T>(assets: AssetStoreLike, target: AssetLike$1<T, any>): Promise<void>;
 
 declare const LocalAsset_cachePut: typeof cachePut;
 declare const LocalAsset_cacheSafely: typeof cacheSafely;
 declare const LocalAsset_cancel: typeof cancel;
 declare const LocalAsset_create: typeof create;
-declare const LocalAsset_dispose: typeof dispose;
 declare const LocalAsset_getOrNull: typeof getOrNull;
 declare const LocalAsset_getOrThrow: typeof getOrThrow;
 declare const LocalAsset_isCached: typeof isCached;
 declare const LocalAsset_load: typeof load;
 declare const LocalAsset_preload: typeof preload;
 declare const LocalAsset_reload: typeof reload;
+declare const LocalAsset_unload: typeof unload;
 declare namespace LocalAsset {
   export {
     LocalAsset_cachePut as cachePut,
     LocalAsset_cacheSafely as cacheSafely,
     LocalAsset_cancel as cancel,
     LocalAsset_create as create,
-    LocalAsset_dispose as dispose,
     LocalAsset_getOrNull as getOrNull,
     LocalAsset_getOrThrow as getOrThrow,
     LocalAsset_isCached as isCached,
     LocalAsset_load as load,
     LocalAsset_preload as preload,
     LocalAsset_reload as reload,
+    LocalAsset_unload as unload,
   };
 }
 
@@ -431,7 +431,7 @@ declare class Asset<T, Options extends object> {
     /**
      * Delete the value in cache for this asset, if already loaded.
      */
-    dispose(): Promise<void>;
+    unload(): Promise<void>;
 }
 
 type AssetLike<T, Options extends object> = AssetLike$1<T, Options>;

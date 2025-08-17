@@ -98,7 +98,7 @@ export class Asset {
   /**
    * Delete the value in cache for this asset, if already loaded.
    */
-  async dispose() {
-    LocalAsset.dispose(Asset.globalCache, this);
+  async unload() {
+    LocalAsset.unload(Asset.globalCache, this);
   }
 }

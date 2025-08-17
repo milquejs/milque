@@ -212,6 +212,14 @@ type MatchResult<T extends MatchTemplate> = MatchTemplateInstancesOf<T>;
  */
 declare function find<T extends MatchTemplate>(entityPool: EntityPoolLike, selector: T, entityId?: EntityId): MatchResult<T> | null;
 /**
+ * @template T
+ * @param {import('../local').EntityPoolLike} entityPool
+ * @param {import('../component').ComponentClass<T>} componentClass
+ * @param {EntityId} [entityId]
+ * @returns {T|null}
+ */
+declare function findOne<T>(entityPool: EntityPoolLike, componentClass: ComponentClass<T>, entityId?: EntityId): T | null;
+/**
  * @template {import('./MatchTypes').MatchTemplate} T
  * @param {import('../local').EntityPoolLike} entityPool
  * @param {T} selector
@@ -295,6 +303,7 @@ declare const LocalEntityPool_deleteEntity: typeof deleteEntity;
 declare const LocalEntityPool_detachComponent: typeof detachComponent;
 declare const LocalEntityPool_find: typeof find;
 declare const LocalEntityPool_findAll: typeof findAll;
+declare const LocalEntityPool_findOne: typeof findOne;
 declare const LocalEntityPool_instancesOf: typeof instancesOf;
 declare const LocalEntityPool_keysOf: typeof keysOf;
 declare const LocalEntityPool_lookupComponent: typeof lookupComponent;
@@ -310,6 +319,7 @@ declare namespace LocalEntityPool {
     LocalEntityPool_detachComponent as detachComponent,
     LocalEntityPool_find as find,
     LocalEntityPool_findAll as findAll,
+    LocalEntityPool_findOne as findOne,
     LocalEntityPool_instancesOf as instancesOf,
     LocalEntityPool_keysOf as keysOf,
     LocalEntityPool_lookupComponent as lookupComponent,
@@ -378,6 +388,12 @@ declare class EntityManager {
      * @param {EntityId} [entityId]
      */
     find<T extends MatchTemplate>(selector: T, entityId?: EntityId): MatchTemplateInstancesOf<T> | null;
+    /**
+     * @template T
+     * @param {import('./component').ComponentClass<T>} componentClass
+     * @param {EntityId} [entityId]
+     */
+    findOne<T>(componentClass: ComponentClass<T>, entityId?: EntityId): T | null;
     /**
      * @template {import('./match').MatchTemplate} T
      * @param {T} selector

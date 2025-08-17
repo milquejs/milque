@@ -1,7 +1,4 @@
-/**
- * @typedef {ReturnType<create>} RGBA
- */
-
+/** @returns {import('./ColorTypes').Rgba} */
 function create$1() {
   return 0x0;
 }
@@ -33,49 +30,49 @@ function fromFloats$1(redf, greenf, bluef, alphaf = 1.0) {
 }
 
 /**
- * @param {RGBA} hexValue
+ * @param {import('./ColorTypes').Rgba} hexValue
  */
 function red(hexValue) {
   return (hexValue >> 16) & 0xff;
 }
 
 /**
- * @param {RGBA} hexValue
+ * @param {import('./ColorTypes').Rgba} hexValue
  */
 function redf(hexValue) {
   return ((hexValue >> 16) & 0xff) / 255.0;
 }
 
 /**
- * @param {RGBA} hexValue
+ * @param {import('./ColorTypes').Rgba} hexValue
  */
 function green(hexValue) {
   return (hexValue >> 8) & 0xff;
 }
 
 /**
- * @param {RGBA} hexValue
+ * @param {import('./ColorTypes').Rgba} hexValue
  */
 function greenf(hexValue) {
   return ((hexValue >> 8) & 0xff) / 255.0;
 }
 
 /**
- * @param {RGBA} hexValue
+ * @param {import('./ColorTypes').Rgba} hexValue
  */
 function blue(hexValue) {
   return hexValue & 0xff;
 }
 
 /**
- * @param {RGBA} hexValue
+ * @param {import('./ColorTypes').Rgba} hexValue
  */
 function bluef(hexValue) {
   return (hexValue & 0xff) / 255.0;
 }
 
 /**
- * @param {RGBA} hexValue
+ * @param {import('./ColorTypes').Rgba} hexValue
  */
 function alpha$1(hexValue) {
   let result = (hexValue >> 24) & 0xff;
@@ -86,7 +83,7 @@ function alpha$1(hexValue) {
 }
 
 /**
- * @param {RGBA} hexValue
+ * @param {import('./ColorTypes').Rgba} hexValue
  */
 function alphaf$1(hexValue) {
   return alpha$1(hexValue) / 255.0;
@@ -95,8 +92,8 @@ function alphaf$1(hexValue) {
 const OPACITY_EPSILON$1 = 0.01;
 
 /**
- * @param {RGBA} from
- * @param {RGBA} to
+ * @param {import('./ColorTypes').Rgba} from
+ * @param {import('./ColorTypes').Rgba} to
  * @param {number} delta
  */
 function mix$1(from = 0x000000, to = 0xffffff, delta = 0.5) {
@@ -116,7 +113,7 @@ function mix$1(from = 0x000000, to = 0xffffff, delta = 0.5) {
 }
 
 /**
- * @param {RGBA} hexValue
+ * @param {import('./ColorTypes').Rgba} hexValue
  */
 function toCSSColorString$1(hexValue) {
   if (typeof hexValue !== 'number') {
@@ -129,7 +126,7 @@ function toCSSColorString$1(hexValue) {
 }
 
 /**
- * @param {RGBA} hexValue
+ * @param {import('./ColorTypes').Rgba} hexValue
  */
 function toFloatVector$1(hexValue) {
   if (typeof hexValue !== 'number') {
@@ -157,9 +154,8 @@ var rgba = /*#__PURE__*/Object.freeze({
 });
 
 /**
- * @typedef {ReturnType<create>} Grayscale
+ * @returns {import('./ColorTypes').Grayscale}
  */
-
 function create() {
   return 0x0;
 }
@@ -185,21 +181,21 @@ function fromFloats(grayf, alphaf = 1.0) {
 }
 
 /**
- * @param {Grayscale} hexValue
+ * @param {import('./ColorTypes').Grayscale} hexValue
  */
 function gray(hexValue) {
   return hexValue & 0xff;
 }
 
 /**
- * @param {Grayscale} hexValue
+ * @param {import('./ColorTypes').Grayscale} hexValue
  */
 function grayf(hexValue) {
   return (hexValue & 0xff) / 255.0;
 }
 
 /**
- * @param {Grayscale} hexValue
+ * @param {import('./ColorTypes').Grayscale} hexValue
  */
 function alpha(hexValue) {
   let result = (hexValue >> 8) & 0xff;
@@ -210,7 +206,7 @@ function alpha(hexValue) {
 }
 
 /**
- * @param {Grayscale} hexValue
+ * @param {import('./ColorTypes').Grayscale} hexValue
  */
 function alphaf(hexValue) {
   return alpha(hexValue) / 255.0;
@@ -219,8 +215,8 @@ function alphaf(hexValue) {
 const OPACITY_EPSILON = 0.01;
 
 /**
- * @param {Grayscale} from
- * @param {Grayscale} to
+ * @param {import('./ColorTypes').Grayscale} from
+ * @param {import('./ColorTypes').Grayscale} to
  * @param {number} delta
  */
 function mix(from = 0x0000, to = 0xffff, delta = 0.5) {
@@ -236,7 +232,7 @@ function mix(from = 0x0000, to = 0xffff, delta = 0.5) {
 }
 
 /**
- * @param {Grayscale} hexValue
+ * @param {import('./ColorTypes').Grayscale} hexValue
  */
 function toCSSColorString(hexValue) {
   if (typeof hexValue !== 'number') {
@@ -247,7 +243,7 @@ function toCSSColorString(hexValue) {
 }
 
 /**
- * @param {Grayscale} hexValue
+ * @param {import('./ColorTypes').Grayscale} hexValue
  */
 function toFloatVector(hexValue) {
   if (typeof hexValue !== 'number') {

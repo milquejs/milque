@@ -432,6 +432,28 @@ function find(entityPool, selector, entityId = undefined) {
 }
 
 /**
+ * @template T
+ * @param {import('../local').EntityPoolLike} entityPool
+ * @param {import('../component').ComponentClass<T>} componentClass
+ * @param {EntityId} [entityId]
+ * @returns {T|null}
+ */
+function findOne(entityPool, componentClass, entityId = undefined) {
+  const map = entityPool.components[componentClass.name];
+  if (!map) {
+    return null;
+  }
+  const keys = map.keys();
+  if (keys.length <= 0) {
+    return null;
+  }
+  if (typeof entityId === 'undefined') {
+    entityId = keys[0];
+  }
+  return map.lookup(entityId);
+}
+
+/**
  * @template {import('./MatchTypes').MatchTemplate} T
  * @param {import('../local').EntityPoolLike} entityPool
  * @param {T} selector
@@ -693,6 +715,7 @@ var LocalEntityPool = /*#__PURE__*/Object.freeze({
   detachComponent: detachComponent,
   find: find,
   findAll: findAll,
+  findOne: findOne,
   instancesOf: instancesOf,
   keysOf: keysOf,
   lookupComponent: lookupComponent,
@@ -790,6 +813,15 @@ class EntityManager {
    */
   find(selector, entityId) {
     return find(this, selector, entityId);
+  }
+
+  /**
+   * @template T
+   * @param {import('./component').ComponentClass<T>} componentClass 
+   * @param {EntityId} [entityId]
+   */
+  findOne(componentClass, entityId) {
+    return findOne(this, componentClass, entityId);
   }
 
   /**

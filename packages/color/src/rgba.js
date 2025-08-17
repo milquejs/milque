@@ -1,7 +1,4 @@
-/**
- * @typedef {ReturnType<create>} RGBA
- */
-
+/** @returns {import('./ColorTypes').Rgba} */
 export function create() {
   return 0x0;
 }
@@ -33,49 +30,49 @@ export function fromFloats(redf, greenf, bluef, alphaf = 1.0) {
 }
 
 /**
- * @param {RGBA} hexValue
+ * @param {import('./ColorTypes').Rgba} hexValue
  */
 export function red(hexValue) {
   return (hexValue >> 16) & 0xff;
 }
 
 /**
- * @param {RGBA} hexValue
+ * @param {import('./ColorTypes').Rgba} hexValue
  */
 export function redf(hexValue) {
   return ((hexValue >> 16) & 0xff) / 255.0;
 }
 
 /**
- * @param {RGBA} hexValue
+ * @param {import('./ColorTypes').Rgba} hexValue
  */
 export function green(hexValue) {
   return (hexValue >> 8) & 0xff;
 }
 
 /**
- * @param {RGBA} hexValue
+ * @param {import('./ColorTypes').Rgba} hexValue
  */
 export function greenf(hexValue) {
   return ((hexValue >> 8) & 0xff) / 255.0;
 }
 
 /**
- * @param {RGBA} hexValue
+ * @param {import('./ColorTypes').Rgba} hexValue
  */
 export function blue(hexValue) {
   return hexValue & 0xff;
 }
 
 /**
- * @param {RGBA} hexValue
+ * @param {import('./ColorTypes').Rgba} hexValue
  */
 export function bluef(hexValue) {
   return (hexValue & 0xff) / 255.0;
 }
 
 /**
- * @param {RGBA} hexValue
+ * @param {import('./ColorTypes').Rgba} hexValue
  */
 export function alpha(hexValue) {
   let result = (hexValue >> 24) & 0xff;
@@ -86,7 +83,7 @@ export function alpha(hexValue) {
 }
 
 /**
- * @param {RGBA} hexValue
+ * @param {import('./ColorTypes').Rgba} hexValue
  */
 export function alphaf(hexValue) {
   return alpha(hexValue) / 255.0;
@@ -95,8 +92,8 @@ export function alphaf(hexValue) {
 const OPACITY_EPSILON = 0.01;
 
 /**
- * @param {RGBA} from
- * @param {RGBA} to
+ * @param {import('./ColorTypes').Rgba} from
+ * @param {import('./ColorTypes').Rgba} to
  * @param {number} delta
  */
 export function mix(from = 0x000000, to = 0xffffff, delta = 0.5) {
@@ -116,7 +113,7 @@ export function mix(from = 0x000000, to = 0xffffff, delta = 0.5) {
 }
 
 /**
- * @param {RGBA} hexValue
+ * @param {import('./ColorTypes').Rgba} hexValue
  */
 export function toCSSColorString(hexValue) {
   if (typeof hexValue !== 'number') {
@@ -129,7 +126,7 @@ export function toCSSColorString(hexValue) {
 }
 
 /**
- * @param {RGBA} hexValue
+ * @param {import('./ColorTypes').Rgba} hexValue
  */
 export function toFloatVector(hexValue) {
   if (typeof hexValue !== 'number') {

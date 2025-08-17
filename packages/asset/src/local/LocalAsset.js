@@ -183,6 +183,6 @@ export async function cacheSafely(assets, target, value) {
  * @param {import('./AssetStoreTypes').AssetStoreLike} assets
  * @param {import('../AssetTypes').AssetLike<T, any>} target
  */
-export async function dispose(assets, target) {
+export async function unload(assets, target) {
   deleteAndReject(assets, target.uri);
 }
