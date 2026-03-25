@@ -19,6 +19,6 @@
     "@milquejs/rollup-config": "^1.0.0"
   },
   "dependencies": {
-    "picomatch": "^4.0.2"
+    "picomatch": "^4.0.4"
   }
 }
